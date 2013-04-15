@@ -123,8 +123,8 @@
 			<integer>58</integer>
 			<key>Points</key>
 			<array>
-				<string>{150.4801049844948, 389.31912829433361}</string>
-				<string>{150.47868786195849, 429.46585476165967}</string>
+				<string>{150.48100876317878, 389.31912831116165}</string>
+				<string>{150.4807316476311, 429.46585462678297}</string>
 			</array>
 			<key>Style</key>
 			<dict>
@@ -158,8 +158,8 @@
 			<integer>57</integer>
 			<key>Points</key>
 			<array>
-				<string>{58.835766509119274, 389.31912830941928}</string>
-				<string>{58.835248224671652, 429.4658546349782}</string>
+				<string>{58.836097048240511, 389.31912831176857}</string>
+				<string>{58.835995698727331, 429.46585462374554}</string>
 			</array>
 			<key>Style</key>
 			<dict>
@@ -437,8 +437,8 @@
 			<integer>38</integer>
 			<key>Points</key>
 			<array>
-				<string>{314.16554423224352, 357.49146127899212}</string>
-				<string>{417.90271409118492, 357.49144075232113}</string>
+				<string>{314.16554423224346, 357.49146127899212}</string>
+				<string>{417.90271409117395, 357.49146127899212}</string>
 			</array>
 			<key>Style</key>
 			<dict>
@@ -472,8 +472,8 @@
 			<integer>37</integer>
 			<key>Points</key>
 			<array>
-				<string>{496.74432343082429, 312.96697874071032}</string>
-				<string>{472.8257301481122, 335.59134506621075}</string>
+				<string>{496.75112181918092, 312.97415655577356}</string>
+				<string>{472.83957212158134, 335.60593724475291}</string>
 			</array>
 			<key>Style</key>
 			<dict>
@@ -507,8 +507,8 @@
 			<integer>36</integer>
 			<key>Points</key>
 			<array>
-				<string>{402.70206603713626, 312.9821272596846}</string>
-				<string>{426.60580907691661, 335.62216758559998}</string>
+				<string>{402.70615501124126, 312.97781360406293}</string>
+				<string>{426.61412373966647, 335.61338793214406}</string>
 			</array>
 			<key>Style</key>
 			<dict>
@@ -542,8 +542,8 @@
 			<integer>35</integer>
 			<key>Points</key>
 			<array>
-				<string>{449.72692752146435, 389.3191280960952}</string>
-				<string>{449.72257923363355, 429.46585557887624}</string>
+				<string>{449.72970066890548, 389.31912830589982}</string>
+				<string>{449.72885036973247, 429.46585470272106}</string>
 			</array>
 			<key>Style</key>
 			<dict>
@@ -577,8 +577,8 @@
 			<integer>34</integer>
 			<key>Points</key>
 			<array>
-				<string>{282.33573539542243, 389.3191281994458}</string>
-				<string>{282.33302575767198, 429.46585500464369}</string>
+				<string>{282.33746348367907, 389.31912830930969}</string>
+				<string>{282.33693361930932, 429.46585463553379}</string>
 			</array>
 			<key>Style</key>
 			<dict>
@@ -6821,7 +6821,7 @@
 	<key>MasterSheets</key>
 	<array/>
 	<key>ModificationDate</key>
-	<string>2013-03-11 00:03:22 +0000</string>
+	<string>2013-04-15 23:37:05 +0000</string>
 	<key>Modifier</key>
 	<string>Jess Hamrick</string>
 	<key>NotesVisible</key>
@@ -6879,7 +6879,7 @@
 	<key>RowSpacing</key>
 	<real>36</real>
 	<key>SheetTitle</key>
-	<string>Canvas 1</string>
+	<string>causal-structure</string>
 	<key>SmartAlignmentGuidesActive</key>
 	<string>YES</string>
 	<key>SmartDistanceGuidesActive</key>
@@ -6898,7 +6898,7 @@
 		<array>
 			<dict>
 				<key>name</key>
-				<string>Canvas 1</string>
+				<string>causal-structure</string>
 			</dict>
 		</array>
 		<key>Frame</key>
@@ -6922,7 +6922,7 @@
 		<key>ZoomValues</key>
 		<array>
 			<array>
-				<string>Canvas 1</string>
+				<string>causal-structure</string>
 				<real>1</real>
 				<real>0.5</real>
 			</array>

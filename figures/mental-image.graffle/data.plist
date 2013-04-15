@@ -221,7 +221,7 @@
 			<key>Points</key>
 			<array>
 				<string>{113.50001655331043, 403.82763602988962}</string>
-				<string>{155.54093894599905, 403.82763602988962}</string>
+				<string>{155.54093894599879, 403.82763602988962}</string>
 			</array>
 			<key>Style</key>
 			<dict>
@@ -255,8 +255,8 @@
 			<integer>91</integer>
 			<key>Points</key>
 			<array>
-				<string>{217.43239375102695, 332.45293358847317}</string>
-				<string>{259.26385084831355, 347.02132411023297}</string>
+				<string>{217.43239375113959, 332.45293358814911}</string>
+				<string>{259.26385084858282, 347.02132410945802}</string>
 			</array>
 			<key>Style</key>
 			<dict>
@@ -4886,7 +4886,7 @@
 	<key>MasterSheets</key>
 	<array/>
 	<key>ModificationDate</key>
-	<string>2013-03-11 00:22:41 +0000</string>
+	<string>2013-04-15 23:16:02 +0000</string>
 	<key>Modifier</key>
 	<string>Jess Hamrick</string>
 	<key>NotesVisible</key>
@@ -4944,7 +4944,7 @@
 	<key>RowSpacing</key>
 	<real>36</real>
 	<key>SheetTitle</key>
-	<string>Canvas 1</string>
+	<string>mental-image</string>
 	<key>SmartAlignmentGuidesActive</key>
 	<string>YES</string>
 	<key>SmartDistanceGuidesActive</key>
@@ -4963,7 +4963,7 @@
 		<array>
 			<dict>
 				<key>name</key>
-				<string>Canvas 1</string>
+				<string>mental-image</string>
 			</dict>
 		</array>
 		<key>Frame</key>
@@ -4987,7 +4987,7 @@
 		<key>ZoomValues</key>
 		<array>
 			<array>
-				<string>Canvas 1</string>
+				<string>mental-image</string>
 				<real>1</real>
 				<real>0.5</real>
 			</array>
