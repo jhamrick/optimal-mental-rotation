@@ -46,7 +46,7 @@
 	<key>Creator</key>
 	<string>Jess Hamrick</string>
 	<key>DisplayScale</key>
-	<string>1 0/72 in = 1 0/72 in</string>
+	<string>1 0/72 in = 1.0000 in</string>
 	<key>GraphDocumentVersion</key>
 	<integer>8</integer>
 	<key>GraphicsList</key>
@@ -201,7 +201,7 @@
 	<key>MasterSheets</key>
 	<array/>
 	<key>ModificationDate</key>
-	<string>2013-04-18 20:32:35 +0000</string>
+	<string>2013-04-18 21:03:39 +0000</string>
 	<key>Modifier</key>
 	<string>Jess Hamrick</string>
 	<key>NotesVisible</key>
@@ -259,7 +259,7 @@
 	<key>RowSpacing</key>
 	<real>36</real>
 	<key>SheetTitle</key>
-	<string>Canvas 1</string>
+	<string>shepard-rotation</string>
 	<key>SmartAlignmentGuidesActive</key>
 	<string>YES</string>
 	<key>SmartDistanceGuidesActive</key>
@@ -278,7 +278,7 @@
 		<array>
 			<dict>
 				<key>name</key>
-				<string>Canvas 1</string>
+				<string>shepard-rotation</string>
 			</dict>
 		</array>
 		<key>Frame</key>
@@ -302,7 +302,7 @@
 		<key>ZoomValues</key>
 		<array>
 			<array>
-				<string>Canvas 1</string>
+				<string>shepard-rotation</string>
 				<real>0.125</real>
 				<real>0.25</real>
 			</array>
