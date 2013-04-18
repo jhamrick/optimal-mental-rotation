@@ -5,10 +5,14 @@ all: figures pdf
 figures:
 	./makefigs.sh
 
-pdf:
-	./makepdf.sh mental-rotation
+notes:
+	./nb2pdf.sh notes
+
+proposal:
+	./tex2pdf.sh proposal
 
 clean:
 	rm -f figures/*.png
-	rm -rf mental-rotation_files/
-	rm -f mental-rotation.pdf
+	rm -f man/*.pdf
+	rm -rf man/notes_files/
+	rm -rf man/proposal_files/
