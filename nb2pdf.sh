@@ -1,6 +1,7 @@
 #!/bin/sh -e
 
 base=$1
+cd man
 curpath=`pwd`
 suffix="_files"
 filedir="$base$suffix"
@@ -15,7 +16,7 @@ echo "Converting '$curpath/$base.ipynb'"
 if [ ! -d "$filedir" ]; then
     mkdir "$filedir"
 fi
-cd ../nbconvert
+cd $HOME/project/nbconvert
 ./nbconvert2.py latex_base "$curpath/$base.ipynb" > "$curpath/$filedir/$base.tex"
 
 cd "$curpath"
