@@ -1,0 +1,155 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{nips12submit_e,times}
+%\documentstyle[nips12submit_09,times,art10]{article} % For LaTeX 2.09
+
+\usepackage{amsmath, amsthm, amssymb}
+% \usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+
+\pagestyle{empty}
+
+% \usepackage{etoolbox}
+% \makeatletter
+% \patchcmd{\thebibliography}{%
+%   \chapter*{\bibname}\@mkboth{\MakeUppercase\bibname}{\MakeUppercase\bibname}}{%
+%   \subsubsection*{References}}{}{}
+% \makeatother
+
+\title{Optimal strategies in mental rotation tasks}
+\author{Jessica B.~Hamrick\\
+  Department of Psychology\\
+  University of California, Berkeley\\
+  Berkeley, CA 94720\\
+  \texttt{jhamrick@berkeley.edu}}
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to \LaTeX{} to determine where to break
+% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
+% puts 3 of 4 authors names on the first line, and the last on the second
+% line, try using \AND instead of \And before the third author name.
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+
+\nipsfinalcopy % Uncomment for camera-ready version
+
+\begin{document}
+
+\maketitle
+
+% Your proposal should be one page long (single-spaced), and should have
+% four sections:
+
+% \begin{wrapfigure}{r}{0.4\textwidth}
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[width=0.95\textwidth]{../figures/shepard-rotation.png}
+  \end{center}
+  \caption{Classic mental rotation task from \cite{Shepard1971}.}
+  \label{fig:mental-rotation}
+% \end{wrapfigure}
+\end{figure}
+
+\section{Background}
+% - Background. Identify the topic your project will explore, and
+% briefly provide some of the context for your project, describing
+% what previous research has found in this area.
+
+% 1. The big picture
+% 2. Our contribution
+% 3. How we do it
+% 4. What's in the paper
+
+
+Consider the objects in Figure \ref{fig:mental-rotation}. In each
+panel, are the two depicted objects identical (except for a rotation),
+or distinct? When presented with this mental rotation task, people
+default to a strategy in which they visualize one object rotating until
+it is congruent with the other \cite{Shepard1971}. There is strong
+evidence for such \textit{mental imagery} or \textit{mental
+  simulation}: we can imagine three-dimensional objects in our minds
+and manipulate them, to a certain extent, as if they were real
+\cite{Kosslyn:2009tj}.
+
+However, the use of mental simulation is predicated on determining
+appropriate parameters to give the simulation, and people's cognitive
+constraints may furthermore place limitations on the duration or
+precision of simulation. One hypothesis for how these issues are
+handled argues that people use a ``rational'' solution, meaning that
+it is optimal under the given constraints
+\cite{Lieder:2012wg,Vul:2009wy,Griffiths2012a}.
+
+\section{Question}
+% - Question. State the specific question you are going to examine in
+% your final project.
+
+In the case of the classic mental rotation task, we might ask: in what
+direction should the object be rotated?  What are the requirements for
+``congruency''? When should one stop rotating and accept the
+hypothesis that the objects are different? In this project, I will
+investigate the optimal computational solution to this task. Thus, the
+specific question this project aims to answer is: what is the rational
+computational solution to the mental rotation task, and does it
+predict the people's behavior on the task?
+
+\section{Method}
+% - Method. Briefly describe the method you are going to use to try to
+% answer this question. Give some of the details behind your
+% experimental procedure, your approach to modeling or analyzing the
+% data, your plans for analyzing the model, or the position you will
+% take in your review.
+
+We can formalize the mental rotation task as an instance of function
+learning. Given two images $I_a$ and $I_b$, we wish to determine the
+probability of seeing both images given the hypothesis ($h_1$) that
+one is merely a rotation of the other: $\Pr(I_b, I_a|h_1)$. We can
+generate some mental image $I_M$ using mental rotation, but this is a
+costly operation and each $I_M$ must be computed sequentially (that
+is, each $I_t$ must be generated from $I_{t-\delta}$, where $\delta$
+is a small angle). Let us define the pixel-space similarity between
+$I_b$ and $I_M$ as $S(I_b| I_M)$. Then:
+
+\begin{equation}
+\Pr(I_b, I_a | h_1)\approx\int_{I_M}S(I_b| I_M)\Pr(I_M|I_a)\Pr(I_a)\ \mathrm{d}I_M\propto \int_{I_M}S(I_b|I_M)\ \mathrm{d}I_M
+\end{equation}
+
+We do not know the form of $S$, and so cannot compute this integral
+analytically. We cannot rely on a simple Monte Carlo simulation to
+estimate it, either: because mental rotation is costly in terms of
+cognitive resources and must be performed in a sequence, we cannot
+evaluate $S(I_b|I_M)$ at arbitrary $I_M$. Instead, we must choose a
+relatively small, sequential set of $I_M$ to estimate the
+integral. 
+
+Bayesian quadrature \cite{Diaconis:1988uo} provides an alternate
+method for evaluating the integral by placing a prior distribution on
+functions and then computing a posterior over values of the
+integral. While Bayesian quadrature itself does not address the issue
+of choosing points to evaluate the function at, recent work in
+statistics and machine learning has examined how to optimally select
+these samples \cite{Osborne:2012tm}.
+
+In this project, I will apply these methods to the classic mental
+rotation task in both two and three dimensions. From the extensive
+literature on mental imagery, I will determine appropriate cognitive
+limitations and compute the optimal tradeoff between computation time
+(precision) and certainty of answer (accuracy). Finally, I will
+compare the results of this model with real behavioral data to test
+whether people are, in fact, using a rational solution in the mental
+rotation task.
+
+
+% \renewcommand\bibsection{\subsubsection*{\refname}}
+\renewcommand\refname{\normalsize{References}}
+\bibliographystyle{ieeetr}
+\bibliography{references}
+% - References. Give at least three references cited in describing the
+% background to your project.
+
+\end{document}
+
+
+
