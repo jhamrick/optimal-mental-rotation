@@ -136,3 +136,27 @@ def rotate_image(I, theta):
     rimg = img.rotate(np.degrees(theta))
     rI = 1-np.array(rimg)
     return rI
+
+
+def plot_regression(x, y, xi, yi, xo, yo_mean, yo_var):
+    """Plot the original function and the regression estimate.
+
+    """
+
+    fig = plt.figure()
+    fig.clf()
+
+    plt.plot(x, y, 'r--', label="actual")
+    plt.plot(xi, yi, 'ro', label="samples")
+
+    lower = yo_mean - np.sqrt(yo_var)
+    upper = yo_mean + np.sqrt(yo_var)
+    plt.fill_between(xo, lower, upper, color='k', alpha=0.3)
+    plt.plot(xo, yo_mean, 'k-', label="estimate")
+
+    plt.xlim(0, 2 * np.pi)
+    plt.xticks(
+        [0, np.pi / 2., np.pi, 3 * np.pi / 2., 2 * np.pi],
+        ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
+
+    plt.legend(loc=0)
