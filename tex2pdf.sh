@@ -23,5 +23,3 @@ mv "$base."* "$filedir/"
 mv "texput.log" "$filedir/" || true
 cp "$filedir/$base.pdf" .
 cp "$filedir/$base.tex" .
-
-
