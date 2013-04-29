@@ -143,9 +143,6 @@ def plot_regression(x, y, xi, yi, xo, yo_mean, yo_var):
 
     """
 
-    fig = plt.figure()
-    fig.clf()
-
     plt.plot(x, y, 'r--', label="actual")
     plt.plot(xi, yi, 'ro', label="samples")
 
@@ -158,5 +155,3 @@ def plot_regression(x, y, xi, yi, xo, yo_mean, yo_var):
     plt.xticks(
         [0, np.pi / 2., np.pi, 3 * np.pi / 2., 2 * np.pi],
         ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
-
-    plt.legend(loc=0)
