@@ -19,7 +19,7 @@ def make_stimulus(npoints, rso):
     return X
 
 
-def plot_stimulus(X):
+def draw_stimulus(X):
     plt.plot(X[:, 0], X[:, 1],
              color='k',
              linewidth=2)
@@ -27,42 +27,6 @@ def plot_stimulus(X):
     plt.yticks([], [])
     plt.axis([-0.5, 0.5, -0.5, 0.5])
     plt.box('off')
-
-
-def plot_stimuli(**kwargs):
-    """Plot the original stimulus and it's rotated counterpart.
-
-    """
-    nstim = len(kwargs)
-
-    plt.clf()
-    fig = plt.gcf()
-    fig.set_figwidth(nstim*2.25)
-    fig.set_figheight(2)
-
-    Xs = sorted(kwargs.keys())
-    for i, X in enumerate(Xs):
-        plt.subplot(1, nstim, i+1)
-        plot_stimulus(kwargs[X])
-        plt.title("$%s$" % X)
-
-
-def plot_images(**kwargs):
-    nimg = len(kwargs)
-
-    plt.clf()
-    fig = plt.gcf()
-    fig.set_figwidth(nimg*2.25)
-    fig.set_figheight(2)
-
-    Is = sorted(kwargs.keys())
-    for i, I in enumerate(Is):
-        plt.subplot(1, nimg, i+1)
-        plt.imshow(kwargs[I], cmap='gray', vmin=0, vmax=1)
-        plt.xticks([], [])
-        plt.yticks([], [])
-        plt.box('off')
-        plt.title("$%s$" % I)
 
 
 @memory.cache
@@ -79,7 +43,7 @@ def render(X):
     # make the plot fit the full figure width, since we don't have
     # axis/tick labels or a title, etc.
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-    plot_stimulus(X)
+    draw_stimulus(X)
 
     # convert the image to pixels and close it
     img = plot_to_array(fig)
@@ -136,22 +100,3 @@ def rotate_image(I, theta):
     rimg = img.rotate(np.degrees(theta))
     rI = 1-np.array(rimg)
     return rI
-
-
-def plot_regression(x, y, xi, yi, xo, yo_mean, yo_var):
-    """Plot the original function and the regression estimate.
-
-    """
-
-    plt.plot(x, y, 'r--', label="actual")
-    plt.plot(xi, yi, 'ro', label="samples")
-
-    lower = yo_mean - np.sqrt(yo_var)
-    upper = yo_mean + np.sqrt(yo_var)
-    plt.fill_between(xo, lower, upper, color='k', alpha=0.3)
-    plt.plot(xo, yo_mean, 'k-', label="estimate")
-
-    plt.xlim(0, 2 * np.pi)
-    plt.xticks(
-        [0, np.pi / 2., np.pi, 3 * np.pi / 2., 2 * np.pi],
-        ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
