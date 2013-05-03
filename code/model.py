@@ -4,11 +4,17 @@ import scipy.optimize as opt
 
 from sympy.utilities.lambdify import lambdify
 from numpy import pi
-from numpy import log, exp, sign, trace, dot
-from numpy.linalg import inv, det
+from numpy import log, exp, sign, trace, dot, abs
+from numpy.linalg import inv, slogdet
 
-from snippets.stats import GP
-from snippets.stats import circular_gaussian_kernel as make_kernel
+import snippets.stats as stats
+
+reload(opt)
+reload(stats)
+GP = stats.GP
+make_kernel = stats.circular_gaussian_kernel
+# from snippets.stats import GP
+# from snippets.stats import circular_gaussian_kernel as make_kernel
 
 
 def similarity(I0, I1, sf=1):
@@ -24,19 +30,23 @@ class GP_MarginalLogLikelihood(object):
         d = sym.Symbol('d')
         h = sym.Symbol('h')
         w = sym.Symbol('w')
+        s = sym.Symbol('s')
 
-        k0 = (h**2 / (sym.sqrt(2 * sym.pi) * w))
-        k1 = sym.exp(-(d)**2 / (2 * w**2))
+        k0 = h ** 2
+        k1 = sym.exp(-0.5 * (d ** 2) / (w ** 2))
         self.sym_K = k0 * k1
 
         self.sym_dK_dh = sym.diff(self.sym_K, h)
-        self.dK_dh = lambdify(((h, w), d), self.sym_dK_dh)
+        self.dK_dh = lambdify(((h, w, s), d), self.sym_dK_dh)
 
         self.sym_dK_dw = sym.diff(self.sym_K, w)
-        self.dK_dw = lambdify(((h, w), d), self.sym_dK_dw)
+        self.dK_dw = lambdify(((h, w, s), d), self.sym_dK_dw)
+
+        self.dK_ds = lambda theta, d: 2*theta[2] * (float(abs(d) < 1e-6))
 
     @staticmethod
     def _d_dthetaj(Ki, dK_dthetaj, theta, x, y):
+        h, w, s = theta
         dj = np.empty((x.size, x.size))
         for i in xrange(x.size):
             for j in xrange(x.size):
@@ -45,7 +55,7 @@ class GP_MarginalLogLikelihood(object):
                     diff = d - (sign(d) * 2 * pi)
                 else:
                     diff = d
-                dj[i, j] = dK_dthetaj(theta, diff)
+                dj[i, j] = dK_dthetaj((h, w, s), diff)
 
         t0 = 0.5 * dot(y.T, dot(dot(Ki, dot(dj, Ki)), y))
         t1 = -0.5 * trace(dot(Ki, dj))
@@ -63,57 +73,80 @@ class GP_MarginalLogLikelihood(object):
 
         """
 
-        (h, w) = theta
+        h, w, s = theta
 
         # the overhead of JIT compiling isn't it worth it here because
         # this is just a temporary kernel function
-        K = make_kernel(h, w, jit=False)(x, x)
+        K = make_kernel(h, w, s, jit=False)(x, x)
 
-        try:
-            Ki = inv(K)
-        except np.linalg.LinAlgError as err:
-            print theta
-            raise err
-
+        Ki = inv(K)
         t1 = -0.5 * dot(dot(y.T, Ki), y)
-        t2 = -0.5 * log(det(K))
+        t2 = -0.5 * slogdet(K)[1]
         t3 = -0.5 * x.size * log(2 * pi)
         mll = (t1 + t2 + t3)
+        out = -mll
 
-        return -mll
+        return out
 
     def jacobian(self, theta, x, y):
-        h, w = theta
-        K = make_kernel(h, w, jit=False)(x, x)
 
-        try:
-            Ki = inv(K)
-        except np.linalg.LinAlgError as err:
-            print theta
-            raise err
+        h, w, s = theta
 
+        # the overhead of JIT compiling isn't it worth it here because
+        # this is just a temporary kernel function
+        K = make_kernel(h, w, s, jit=False)(x, x)
+
+        Ki = inv(K)
         dmll = np.array([
             self._d_dthetaj(Ki, self.dK_dh, theta, x, y),
             self._d_dthetaj(Ki, self.dK_dw, theta, x, y),
+            self._d_dthetaj(Ki, self.dK_ds, theta, x, y),
         ])
 
         return -dmll
 
-    def maximize(self, x, y):
-        popt = opt.minimize(
-            fun=self,
-            x0=(1, 1),
-            args=(x, y),
-            method='L-BFGS-B',
-            bounds=((1e-6, None), (1e-6, 2*pi)),
-            jac=self.jacobian,
-        )
+    def maximize(self, x, y, ntry=10):
+        args = np.empty((ntry, 3))
+        fval = np.empty(ntry)
 
-        if not popt['success']:
-            print popt
-            raise RuntimeError("Could not estimate parameters")
+        for i in xrange(ntry):
+            h0 = np.random.uniform(0, np.ptp(y)**2)
+            w0 = np.random.uniform(0, np.pi)
+            s0 = np.random.uniform(0, np.sqrt(np.var(y)))
 
-        return tuple(popt['x'])
+            try:
+                popt = opt.minimize(
+                    fun=self,
+                    x0=(h0, w0, s0),
+                    args=(x, y),
+                    # method='L-BFGS-B',
+                    # tol=1e-4,
+                    # bounds=((1e-6, None), (1e-6, pi), (0, None)),
+                    jac=self.jacobian,
+                )
+            except ArithmeticError:
+                success = False
+            except np.linalg.LinAlgError:
+                success = False
+            else:
+                success = popt['success']
+
+            if not success:
+                args[i] = np.nan
+                fval[i] = np.inf
+            else:
+                args[i] = abs(popt['x'])
+                fval[i] = popt['fun']
+
+                print "-MLL(%s) = %f" % (
+                    args[i], fval[i])
+
+        best = np.argmin(fval)
+        if np.isinf(fval[best]) and sign(fval[best]) > 0:
+            print args[best], fval[best]
+            raise RuntimeError("Could not find MLII parameter estimates")
+
+        return args[best]
 
 
 def fit_likelihood(ll, R, Sr, iix, cix):
