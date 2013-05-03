@@ -17,6 +17,7 @@ proposal:
 clean: clean-figs clean-pdf
 clean-figs:
 	rm -f figures/*.png
+	rm -f figures/*.pdf
 clean-pdf:
 	rm -f man/*.pdf
 	rm -rf man/notes_files/
