@@ -14,6 +14,7 @@ def stimuli_shapes(**kwargs):
     fig = plt.gcf()
     fig.set_figwidth(nstim*2.25)
     fig.set_figheight(2)
+    plt.subplots_adjust(top=0.8, bottom=0)
 
     Xs = sorted(kwargs.keys())
     for i, X in enumerate(Xs):
@@ -29,6 +30,7 @@ def stimuli_images(**kwargs):
     fig = plt.gcf()
     fig.set_figwidth(nimg*2.25)
     fig.set_figheight(2)
+    plt.subplots_adjust(top=0.8, bottom=0)
 
     Is = sorted(kwargs.keys())
     for i, I in enumerate(Is):
@@ -117,6 +119,8 @@ def likelihood_modeling_steps(R, Sr, delta, xi, yi, xc, yc,
 
 
 def likelihood_modeling(R, Sr, xi, yi, m):
+    plt.figure()
+
     # combine the two regression means to estimate E[Z]
     gp_regression(R, Sr, xi, yi, R, m, None)
     plt.title(r"Final Gaussian process regression for $S$")
