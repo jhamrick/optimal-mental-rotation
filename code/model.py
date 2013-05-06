@@ -13,8 +13,7 @@ from snippets.stats import periodic_kernel as periodic_kernel
 
 
 def similarity(I0, I1, sf=1):
-    """Computes the similarity between images I0 and I1"""
-    # C = log(1. / sqrt(2 * pi * sf**2))
+    """Computes the similarity between images `I0` and `I1`."""
     diff = exp(np.sum(-0.5 * (I0 - I1)**2 / (sf**2))) + 1
     return diff
 
@@ -111,7 +110,7 @@ class GP_MarginalLogLikelihood(object):
 
         return -dmll
 
-    def maximize(self, x, y, ntry=10):
+    def maximize(self, x, y, ntry=10, verbose=False):
         args = np.empty((ntry, 3))
         fval = np.empty(ntry)
 
@@ -120,32 +119,24 @@ class GP_MarginalLogLikelihood(object):
             w0 = np.random.uniform(0, np.pi)
             s0 = np.random.uniform(0, np.sqrt(np.var(y)))
 
-            try:
-                popt = opt.minimize(
-                    fun=self,
-                    x0=(h0, w0, s0),
-                    args=(x, y),
-                    # method='L-BFGS-B',
-                    # tol=1e-4,
-                    # bounds=((1e-6, None), (1e-6, pi), (0, None)),
-                    jac=self.jacobian,
-                )
-            except ArithmeticError:
-                success = False
-            except np.linalg.LinAlgError:
-                success = False
-            else:
-                success = popt['success']
+            popt = opt.minimize(
+                fun=self,
+                x0=(h0, w0, s0),
+                args=(x, y),
+                jac=self.jacobian,
+            )
+            success = popt['success']
 
             if not success:
                 args[i] = np.nan
                 fval[i] = np.inf
+                if verbose:
+                    print "Failed: %s" % popt['message']
             else:
                 args[i] = abs(popt['x'])
                 fval[i] = popt['fun']
-
-                print "-MLL(%s) = %f" % (
-                    args[i], fval[i])
+                if verbose:
+                    print "-MLL(%s) = %f" % (args[i], fval[i])
 
         best = np.argmin(fval)
         if np.isinf(fval[best]) and sign(fval[best]) > 0:
