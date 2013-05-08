@@ -281,7 +281,6 @@ class LikelihoodRegression(object):
     2) Estimate log(S) using second GP
     3) Estimate delta_C using a third GP
 
-
     References
     ----------
     Osborne, M. A., Duvenaud, D., Garnett, R., Rasmussen, C. E.,
@@ -291,7 +290,7 @@ class LikelihoodRegression(object):
 
     """
 
-    def __init__(self, x, y, mll, verbose=False):
+    def __init__(self, x, y, mll, ntry=10, verbose=False):
         """Initialize the likelihood estimator object.
 
         Parameters
@@ -311,6 +310,8 @@ class LikelihoodRegression(object):
         self.y = y.copy()
         # marginal log likelihood object
         self.mll = mll
+        # number of ML tries
+        self.ntry = ntry
         # print fitting information
         self.verbose = verbose
 
@@ -319,7 +320,8 @@ class LikelihoodRegression(object):
             print "Fitting parameters for GP over %s ..." % name
 
         # fit parameters
-        theta = self.mll.maximize(xi, yi, verbose=self.verbose)
+        theta = self.mll.maximize(
+            xi, yi, ntry=self.ntry, verbose=self.verbose)
 
         if self.verbose:
             print theta
