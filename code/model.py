@@ -272,9 +272,18 @@ def similarity(I0, I1, sf=1):
     diff = exp(np.sum(-0.5 * (I0 - I1)**2 / (sf**2))) + 1
     return diff
 
+
+class LikelihoodRegression(object):
+    """Estimate a likelihood function, S(y|x) using Gaussian Process
+    regressions, as in Osborne et al. (2012):
+
+    1) Estimate S using a GP
+    2) Estimate log(S) using second GP
+    3) Estimate delta_C using a third GP
+
+
     References
     ----------
-
     Osborne, M. A., Duvenaud, D., Garnett, R., Rasmussen, C. E.,
         Roberts, S. J., & Ghahramani, Z. (2012). Active Learning of
         Model Evidence Using Bayesian Quadrature. *Advances in Neural
@@ -282,34 +291,83 @@ def similarity(I0, I1, sf=1):
 
     """
 
-    # input points for the GPs over S and log S
-    xi = R[iix].copy()
-    yi = Sr[iix].copy()
+    def __init__(self, x, y, mll, verbose=False):
+        """Initialize the likelihood estimator object.
 
-    # GPR for S
-    print "Fitting parameters for GP over S..."
-    theta_S = ll.maximize(xi, yi)
-    print theta_S
-    print "Computing GP over S..."
-    mu_S, cov_S = GP(periodic_kernel(*theta_S), xi, yi, R)
-    # GPR for log S
-    print "Fitting parameters for GP over log S..."
-    theta_logS = ll.maximize(xi, log(yi))
-    print theta_logS
-    print "Computing GP over log S..."
-    mu_logS, cov_logS = GP(periodic_kernel(*theta_logS), xi, log(yi), R)
+        Parameters
+        ----------
+        mll : PeriodicMLL object
+        x : numpy.ndarray
+            Vector of x values
+        y : numpy.ndarray
+            Vector of (actual) y values
+        verbose : bool (default=False)
+            Whether to print information during fitting
 
-    # "candidate" points
-    delta = mu_logS - log(mu_S)
-    xc = R[cix].copy()
-    yc = delta[cix].copy()
+        """
 
-    # GPR for Delta
-    print "Fitting parameters for GP over Dc..."
-    theta_Dc = ll.maximize(xc, yc)
-    print theta_Dc
-    print "Computing GP over Dc..."
-    mu_Dc, cov_Dc = GP(periodic_kernel(*theta_Dc), xc, yc, R)
+        # true x and y values for the likelihood
+        self.x = x.copy()
+        self.y = y.copy()
+        # marginal log likelihood object
+        self.mll = mll
+        # print fitting information
+        self.verbose = verbose
 
-    return (delta, xi, yi, xc, yc,
-            mu_S, cov_S, mu_logS, cov_logS, mu_Dc, cov_Dc)
+    def _fit_gp(self, xi, yi, name):
+        if self.verbose:
+            print "Fitting parameters for GP over %s ..." % name
+
+        # fit parameters
+        theta = self.mll.maximize(xi, yi, verbose=self.verbose)
+
+        if self.verbose:
+            print theta
+            print "Computing GP over %s..." % name
+
+        # GP regression
+        mu, cov = GP(
+            periodic_kernel(*theta), xi, yi, self.x)
+
+        return mu, cov, theta
+
+    def fit(self, iix, cix):
+        """Run the GP regressions to fit the likelihood function.
+
+        Parameters
+        ----------
+        iix : numpy.ndarray
+            Integer array of indices corresponding to the "given" x and y data
+        cix : numpy.ndarray
+            Integer array of indices corresponding to the "candidate" x points.
+
+        References
+        ----------
+        Osborne, M. A., Duvenaud, D., Garnett, R., Rasmussen, C. E.,
+            Roberts, S. J., & Ghahramani, Z. (2012). Active Learning of
+            Model Evidence Using Bayesian Quadrature. *Advances in Neural
+            Information Processing Systems*, 25.
+
+        """
+
+        # input data
+        self.xi = self.x[iix].copy()
+        self.yi = self.y[iix].copy()
+
+        # compute GP regressions for S and log(S)
+        self.mu_S, self.cov_S, self.theta_S = self._fit_gp(
+            self.xi, self.yi, "S")
+        self.mu_logS, self.cov_logS, self.theta_logS = self._fit_gp(
+            self.xi, log(self.yi), "log(S)")
+
+        # choose "candidate" points
+        self.delta = self.mu_logS - log(self.mu_S)
+        self.xc = self.x[cix].copy()
+        self.yc = self.delta[cix].copy()
+
+        # compute GP regression for Delta_c
+        self.mu_Dc, self.cov_Dc, self.theta_Dc = self._fit_gp(
+            self.xc, self.yc, "Delta_c")
+
+        # mean of the final regression for S
+        self.mean = self.mu_S * (1 + self.delta)
