@@ -76,9 +76,7 @@ def gp_regression(x, y, xi, yi, xo, yo_mean, yo_var):
         ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
 
 
-def likelihood_modeling_steps(R, Sr, delta, xi, yi, xc, yc,
-                              mu_S, cov_S, mu_logS, cov_logS,
-                              mu_Dc, cov_Dc):
+def likelihood_modeling_steps(lhr):
     fig = plt.figure()
     plt.clf()
 
@@ -90,8 +88,8 @@ def likelihood_modeling_steps(R, Sr, delta, xi, yi, xc, yc,
     # plot the regression for S
     plt.subplot(1, 3, 1)
     gp_regression(
-        R, Sr, xi, yi,
-        R, mu_S, np.diag(cov_S).copy())
+        lhr.x, lhr.y, lhr.xi, lhr.yi,
+        lhr.x, lhr.mu_S, np.diag(lhr.cov_S))
     plt.title("GPR for $S$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel("Similarity ($S$)")
@@ -101,8 +99,8 @@ def likelihood_modeling_steps(R, Sr, delta, xi, yi, xc, yc,
     # plot the regression for log S
     plt.subplot(1, 3, 2)
     gp_regression(
-        R, np.log(Sr), xi, np.log(yi),
-        R, mu_logS, np.diag(cov_logS).copy())
+        lhr.x, np.log(lhr.y), lhr.xi, np.log(lhr.yi),
+        lhr.x, lhr.mu_logS, np.diag(lhr.cov_logS))
     plt.title(r"GPR for $\log S$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel(r"Log similarity ($\log S$)")
@@ -111,18 +109,19 @@ def likelihood_modeling_steps(R, Sr, delta, xi, yi, xc, yc,
     # plot the regression for mu_logS - log_muS
     plt.subplot(1, 3, 3)
     gp_regression(
-        R, delta, xc, yc,
-        R, mu_Dc, np.diag(cov_Dc).copy())
+        lhr.x, lhr.delta, lhr.xc, lhr.yc,
+        lhr.x, lhr.mu_Dc, np.diag(lhr.cov_Dc))
     plt.title(r"GPR for $\Delta$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel(r"Difference ($\Delta$)")
 
 
-def likelihood_modeling(R, Sr, xi, yi, m):
+def likelihood_modeling(lhr):
     plt.figure()
+    plt.clf()
 
     # combine the two regression means to estimate E[Z]
-    gp_regression(R, Sr, xi, yi, R, m, None)
+    gp_regression(lhr.x, lhr.y, lhr.xi, lhr.yi, lhr.x, lhr.mean, None)
     plt.title(r"Final Gaussian process regression for $S$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel("Similarity ($S$)")
