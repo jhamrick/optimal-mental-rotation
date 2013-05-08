@@ -57,9 +57,18 @@ def make_stimulus(stimname, npoints, sigma, blur, R, rso):
     print "Saving: %s" % path
     np.savez(
         path,
+        # rotations
+        R=R,
+        theta=theta,
+        # shapes
         Xm=Xm,
+        Xb=Xb,
+        # images
         Im=Im,
-        Sr=Sr)
+        Ib=Ib,
+        # similarity
+        Sr=Sr,
+    )
 
 if __name__ == "__main__":
     # random state, for reproducibility
