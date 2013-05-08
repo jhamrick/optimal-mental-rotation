@@ -22,7 +22,7 @@ def draw_stimulus(X):
              linewidth=2)
     plt.xticks([], [])
     plt.yticks([], [])
-    plt.axis([-0.5, 0.5, -0.5, 0.5])
+    plt.axis([-1, 1, -1, 1])
     plt.box('off')
 
 
