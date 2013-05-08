@@ -60,15 +60,15 @@ def gp_regression(x, y, xi, yi, xo, yo_mean, yo_var):
 
     """
 
-    plt.plot(x, y, 'r--', label="actual")
+    plt.plot(x, y, 'k-', label="actual", linewidth=2)
     plt.plot(xi, yi, 'ro', label="samples")
 
     if yo_var is not None:
         lower = yo_mean - np.sqrt(yo_var)
         upper = yo_mean + np.sqrt(yo_var)
-        plt.fill_between(xo, lower, upper, color='k', alpha=0.3)
+        plt.fill_between(xo, lower, upper, color='r', alpha=0.25)
 
-    plt.plot(xo, yo_mean, 'k-', label="estimate")
+    plt.plot(xo, yo_mean, 'r-', label="estimate", linewidth=2)
 
     plt.xlim(0, 2 * np.pi)
     plt.xticks(
@@ -81,33 +81,33 @@ def likelihood_modeling_steps(lhr):
     plt.clf()
 
     # overall figure settings
-    fig.set_figwidth(15)
-    fig.set_figheight(4)
+    fig.set_figwidth(8)
+    fig.set_figheight(8)
     plt.subplots_adjust(wspace=0.4)
 
     # plot the regression for S
-    plt.subplot(1, 3, 1)
+    plt.subplot(2, 2, 1)
     gp_regression(
         lhr.x, lhr.y, lhr.xi, lhr.yi,
         lhr.x, lhr.mu_S, np.diag(lhr.cov_S))
     plt.title("GPR for $S$")
-    plt.xlabel("Rotation ($R$)")
+    plt.xticks(plt.xticks()[0], [])
     plt.ylabel("Similarity ($S$)")
     plt.legend(loc=0, fontsize=12)
-    plt.ylim(1, 2.5)
+    ylim1 = plt.ylim()
 
     # plot the regression for log S
-    plt.subplot(1, 3, 2)
+    plt.subplot(2, 2, 2)
     gp_regression(
         lhr.x, np.log(lhr.y), lhr.xi, np.log(lhr.yi),
         lhr.x, lhr.mu_logS, np.diag(lhr.cov_logS))
     plt.title(r"GPR for $\log S$")
-    plt.xlabel("Rotation ($R$)")
+    plt.xticks(plt.xticks()[0], [])
     plt.ylabel(r"Log similarity ($\log S$)")
-    plt.ylim(np.log(1), np.log(2.5))
+    ylim2 = plt.ylim()
 
     # plot the regression for mu_logS - log_muS
-    plt.subplot(1, 3, 3)
+    plt.subplot(2, 2, 3)
     gp_regression(
         lhr.x, lhr.delta, lhr.xc, lhr.yc,
         lhr.x, lhr.mu_Dc, np.diag(lhr.cov_Dc))
@@ -115,15 +115,25 @@ def likelihood_modeling_steps(lhr):
     plt.xlabel("Rotation ($R$)")
     plt.ylabel(r"Difference ($\Delta$)")
 
-
-def likelihood_modeling(lhr):
-    plt.figure()
-    plt.clf()
-
     # combine the two regression means to estimate E[Z]
-    gp_regression(lhr.x, lhr.y, lhr.xi, lhr.yi, lhr.x, lhr.mean, None)
-    plt.title(r"Final Gaussian process regression for $S$")
+    plt.subplot(2, 2, 4)
+    gp_regression(
+        lhr.x, lhr.y, lhr.xi, lhr.yi,
+        lhr.x, lhr.mean, None)
+    plt.title(r"Final GPR for $S$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel("Similarity ($S$)")
-    plt.legend(loc=0)
-    plt.ylim(1, 2.5)
+    ylim3 = plt.ylim()
+
+    # figure out appropriate y-axis limits
+    ylims = np.array([ylim1, np.exp(ylim2), ylim3])
+    ylo = np.min(ylims[:, 0])
+    yhi = np.max(ylims[:, 1])
+
+    # set these axis limits
+    plt.subplot(2, 2, 1)
+    plt.ylim(ylo, yhi)
+    plt.subplot(2, 2, 2)
+    plt.ylim(np.log(ylo), np.log(yhi))
+    plt.subplot(2, 2, 4)
+    plt.ylim(ylo, yhi)
