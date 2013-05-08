@@ -27,7 +27,9 @@ class PeriodicMLL(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, obs_noise=True):
+        self.obs_noise = obs_noise
+
         # create symbolic variables
         d = sym.Symbol('d')
         h = sym.Symbol('h')
@@ -36,19 +38,27 @@ class PeriodicMLL(object):
 
         # symbolic version of the periodic kernel function
         k1 = (h ** 2) * sym.exp(-2. * sym.sin(d / 2.) ** 2 / (w ** 2))
-        k2 = (s ** 2) * delta(d)
-        self.sym_K = k1 + k2
+        if self.obs_noise:
+            k2 = (s ** 2) * delta(d)
+            self.sym_K = k1 + k2
+        else:
+            self.sym_K = k1
 
         # compute partial derivatives
         self.sym_dK_dh = sym.diff(self.sym_K, h)
         self.sym_dK_dw = sym.diff(self.sym_K, w)
-        self.sym_dK_ds = sym.diff(self.sym_K, s)
+        if self.obs_noise:
+            self.sym_dK_ds = sym.diff(self.sym_K, s)
 
         # turn partial derivatives into functions, so we can evaluate
         # them (to compute the Jacobian)
-        self.dK_dh = lambdify(((h, w, s), d), self.sym_dK_dh)
-        self.dK_dw = lambdify(((h, w, s), d), self.sym_dK_dw)
-        self.dK_ds = lambdify(((h, w, s), d), self.sym_dK_ds)
+        if self.obs_noise:
+            self.dK_dh = lambdify(((h, w, s), d), self.sym_dK_dh)
+            self.dK_dw = lambdify(((h, w, s), d), self.sym_dK_dw)
+            self.dK_ds = lambdify(((h, w, s), d), self.sym_dK_ds)
+        else:
+            self.dK_dh = lambdify(((h, w), d), self.sym_dK_dh)
+            self.dK_dw = lambdify(((h, w), d), self.sym_dK_dw)
 
     @staticmethod
     def _d_dthetaj(Ki, dK_dthetaj, theta, x, y):
@@ -87,14 +97,12 @@ class PeriodicMLL(object):
 
         """
 
-        h, w, s = theta
-
         # compute dK/dtheta_j matrix
         dj = np.empty((x.size, x.size))
         for i in xrange(x.size):
             for j in xrange(x.size):
                 diff = x[i] - x[j]
-                dj[i, j] = dK_dthetaj((h, w, s), diff)
+                dj[i, j] = dK_dthetaj(theta, diff)
 
         # compute the partial derivative of the marginal log likelihood
         k = dot(Ki, dj)
@@ -133,7 +141,11 @@ class PeriodicMLL(object):
 
         """
 
-        h, w, s = theta
+        if self.obs_noise:
+            h, w, s = theta
+        else:
+            h, w = theta
+            s = 0
 
         # the overhead of JIT compiling isn't it worth it here because
         # this is just a temporary kernel function
@@ -184,7 +196,11 @@ class PeriodicMLL(object):
 
         """
 
-        h, w, s = theta
+        if self.obs_noise:
+            h, w, s = theta
+        else:
+            h, w = theta
+            s = 0
 
         # the overhead of JIT compiling isn't it worth it here because
         # this is just a temporary kernel function
@@ -196,13 +212,15 @@ class PeriodicMLL(object):
         Li = inv(np.linalg.cholesky(K))
         Ki = dot(Li.T, Li)
 
-        dmll = np.array([
+        dmll = [
             self._d_dthetaj(Ki, self.dK_dh, theta, x, y),
-            self._d_dthetaj(Ki, self.dK_dw, theta, x, y),
-            self._d_dthetaj(Ki, self.dK_ds, theta, x, y),
-        ])
+            self._d_dthetaj(Ki, self.dK_dw, theta, x, y)
+        ]
 
-        return -dmll
+        if self.obs_noise:
+            dmll.append(self._d_dthetaj(Ki, self.dK_ds, theta, x, y))
+
+        return -np.array(dmll)
 
     def maximize(self, x, y, ntry=10, verbose=False):
         """Find kernel parameter values which maximize the marginal log
@@ -228,30 +246,50 @@ class PeriodicMLL(object):
 
         """
 
-        args = np.empty((ntry, 3))
+        if self.obs_noise:
+            args = np.empty((ntry, 3))
+        else:
+            args = np.empty((ntry, 2))
         fval = np.empty(ntry)
 
         for i in xrange(ntry):
             # randomize starting parameter values
             h0 = np.random.uniform(0, np.ptp(y)**2)
             w0 = np.random.uniform(0, np.pi)
-            s0 = np.random.uniform(0, np.sqrt(np.var(y)))
+            if self.obs_noise:
+                s0 = np.random.uniform(0, np.sqrt(np.var(y)))
+                p0 = (h0, w0, s0)
+                method = "BFGS"
+                bounds = None
+            else:
+                p0 = (h0, w0)
+                method = "L-BFGS-B"
+                bounds = ((1e-8, None), (1e-8, None))
 
             # run mimization function
-            popt = opt.minimize(
-                fun=self,
-                x0=(h0, w0, s0),
-                args=(x, y),
-                jac=self.jacobian,
-            )
+            try:
+                popt = opt.minimize(
+                    fun=self,
+                    x0=p0,
+                    args=(x, y),
+                    jac=self.jacobian,
+                    method=method,
+                    bounds=bounds
+                )
+            except np.linalg.LinAlgError as e:
+                # kernel matrix is not positive definite, probably
+                success = False
+                message = str(e)
+            else:
+                # get results of the optimization
+                success = popt['success']
+                message = popt['message']
 
-            # get results of the optimization
-            success = popt['success']
             if not success:
                 args[i] = np.nan
                 fval[i] = np.inf
                 if verbose:
-                    print "Failed: %s" % popt['message']
+                    print "Failed: %s" % message
             else:
                 args[i] = abs(popt['x'])
                 fval[i] = popt['fun']
