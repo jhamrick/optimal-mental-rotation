@@ -64,8 +64,9 @@ def gp_regression(x, y, xi, yi, xo, yo_mean, yo_var):
     plt.plot(xi, yi, 'ro', label="samples")
 
     if yo_var is not None:
-        lower = yo_mean - np.sqrt(yo_var)
-        upper = yo_mean + np.sqrt(yo_var)
+        yo_std = np.sqrt(yo_var)
+        lower = yo_mean - yo_std
+        upper = yo_mean + yo_std
         plt.fill_between(xo, lower, upper, color='r', alpha=0.25)
 
     plt.plot(xo, yo_mean, 'r-', label="estimate", linewidth=2)
@@ -76,20 +77,20 @@ def gp_regression(x, y, xi, yi, xo, yo_mean, yo_var):
         ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
 
 
-def likelihood_modeling_steps(lhr):
+def likelihood_modeling(lhr):
     fig = plt.figure()
     plt.clf()
 
     # overall figure settings
-    fig.set_figwidth(8)
+    fig.set_figwidth(9)
     fig.set_figheight(8)
     plt.subplots_adjust(wspace=0.4)
 
     # plot the regression for S
     plt.subplot(2, 2, 1)
     gp_regression(
-        lhr.x, lhr.y, lhr.xi, lhr.yi,
-        lhr.x, lhr.mu_S, np.diag(lhr.cov_S))
+        lhr.x, lhr.y+1, lhr.xi, lhr.yi+1,
+        lhr.x, lhr.mu_S+1, np.diag(lhr.cov_S))
     plt.title("GPR for $S$")
     plt.xticks(plt.xticks()[0], [])
     plt.ylabel("Similarity ($S$)")
@@ -99,12 +100,12 @@ def likelihood_modeling_steps(lhr):
     # plot the regression for log S
     plt.subplot(2, 2, 2)
     gp_regression(
-        lhr.x, np.log(lhr.y), lhr.xi, np.log(lhr.yi),
+        lhr.x, np.log(lhr.y+1), lhr.xi, np.log(lhr.yi+1),
         lhr.x, lhr.mu_logS, np.diag(lhr.cov_logS))
     plt.title(r"GPR for $\log S$")
     plt.xticks(plt.xticks()[0], [])
-    plt.ylabel(r"Log similarity ($\log S$)")
-    ylim2 = plt.ylim()
+    plt.ylabel(r"Similarity ($\log S$)")
+    ylim2 = np.exp(plt.ylim())
 
     # plot the regression for mu_logS - log_muS
     plt.subplot(2, 2, 3)
@@ -118,15 +119,15 @@ def likelihood_modeling_steps(lhr):
     # combine the two regression means to estimate E[Z]
     plt.subplot(2, 2, 4)
     gp_regression(
-        lhr.x, lhr.y, lhr.xi, lhr.yi,
-        lhr.x, lhr.mean, None)
+        lhr.x, lhr.y+1, lhr.xi, lhr.yi+1,
+        lhr.x, lhr.mean+1, None)
     plt.title(r"Final GPR for $S$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel("Similarity ($S$)")
     ylim3 = plt.ylim()
 
     # figure out appropriate y-axis limits
-    ylims = np.array([ylim1, np.exp(ylim2), ylim3])
+    ylims = np.array([ylim1, ylim2, ylim3])
     ylo = np.min(ylims[:, 0])
     yhi = np.max(ylims[:, 1])
 

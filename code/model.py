@@ -269,7 +269,7 @@ class PeriodicMLL(object):
 
 def similarity(I0, I1, sf=1):
     """Computes the similarity between images `I0` and `I1`."""
-    diff = exp(np.sum(-0.5 * (I0 - I1)**2 / (sf**2))) + 1
+    diff = exp(np.sum(-0.5 * (I0 - I1)**2 / (sf**2)))
     return diff
 
 
@@ -360,10 +360,10 @@ class LikelihoodRegression(object):
         self.mu_S, self.cov_S, self.theta_S = self._fit_gp(
             self.xi, self.yi, "S")
         self.mu_logS, self.cov_logS, self.theta_logS = self._fit_gp(
-            self.xi, log(self.yi), "log(S)")
+            self.xi, log(self.yi + 1), "log(S)")
 
         # choose "candidate" points
-        self.delta = self.mu_logS - log(self.mu_S)
+        self.delta = self.mu_logS - log(self.mu_S + 1)
         self.xc = self.x[cix].copy()
         self.yc = self.delta[cix].copy()
 
