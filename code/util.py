@@ -3,9 +3,6 @@ import matplotlib.pyplot as plt
 import scipy.ndimage as nd
 import PIL
 
-from joblib import Memory
-memory = Memory(cachedir='cache', verbose=0)
-
 from snippets.graphing import plot_to_array
 
 
@@ -29,7 +26,6 @@ def draw_stimulus(X):
     plt.box('off')
 
 
-@memory.cache
 def render(X):
     """Render the shape into pixel-space."""
 
