@@ -96,8 +96,8 @@ def bq_likelihood_regression(bq):
     # plot the regression for S
     plt.subplot(2, 2, 1)
     regression(
-        bq.x, bq.y + 1, bq.xi, bq.yi + 1,
-        bq.x, bq.mu_S + 1, np.diag(bq.cov_S))
+        bq.x, bq.y, bq.xi, bq.yi,
+        bq.x, bq.mu_S, np.diag(bq.cov_S))
     plt.title("GPR for $S$")
     plt.ylabel("Similarity ($S$)")
     sg.set_ylabel_coords(labelx)
@@ -109,11 +109,10 @@ def bq_likelihood_regression(bq):
     regression(
         bq.x, np.log(bq.y + 1), bq.xi, np.log(bq.yi + 1),
         bq.x, bq.mu_logS, np.diag(bq.cov_logS))
-    plt.title(r"GPR for $\log S$")
+    plt.title(r"GPR for $\log(S+1)$")
     plt.xlabel("Rotation ($R$)")
-    plt.ylabel(r"Similarity ($\log S$)")
+    plt.ylabel(r"Similarity ($\log(S+1)$)")
     sg.set_ylabel_coords(labelx)
-    ylim2 = np.exp(plt.ylim())
 
     # plot the regression for mu_logS - log_muS
     plt.subplot(2, 2, 4)
@@ -129,28 +128,27 @@ def bq_likelihood_regression(bq):
     # combine the two regression means to estimate E[Z]
     plt.subplot(2, 2, 2)
     regression(
-        bq.x, bq.y + 1, bq.xi, bq.yi + 1,
-        bq.x, bq.mean + 1, np.diag(bq.cov_logS))
+        bq.x, bq.y, bq.xi, bq.yi,
+        bq.x, bq.mean, np.diag(bq.cov_logS))
     plt.title(r"Final GPR for $S$")
     sg.no_xticklabels()
-    ylim3 = plt.ylim()
+    ylim2 = plt.ylim()
 
     # figure out appropriate y-axis limits
-    ylims = np.array([ylim1, ylim2, ylim3])
-    ylo = max(np.min(ylims[:, 0]), 1)
-    yhi = np.max(ylims[:, 1])
-    yr = (yhi - ylo) / 10
+    ylims = np.array([ylim1, ylim2])
+    ylo = ylims[:, 0].min()
+    yhi = ylims[:, 1].max()
 
     # set these axis limits
     plt.subplot(2, 2, 1)
     plt.ylim(ylo, yhi)
     plt.subplot(2, 2, 2)
     plt.ylim(ylo, yhi)
-    plt.subplot(2, 2, 3)
-    plt.ylim(np.log(ylo), np.log(yhi))
-    plt.subplot(2, 2, 4)
-    yl = plt.ylim()
-    plt.ylim(min(yl[0], -yr / 2.), max(yr, yl[1]))
+    # plt.subplot(2, 2, 3)
+    # plt.ylim(np.log(ylo), np.log(yhi))
+    # plt.subplot(2, 2, 4)
+    # yl = plt.ylim()
+    # plt.ylim(min(yl[0], -yr / 2.), max(yr, yl[1]))
 
 
 def parametric_regression(pr):
