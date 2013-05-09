@@ -86,7 +86,7 @@ def gp_regression(x, y, xi, yi, xo, yo_mean, yo_var):
     sg.clear_top()
 
 
-def likelihood_modeling(lhr):
+def bq_likelihood_regression(bq):
     labelx = -0.15
 
     # overall figure settings
@@ -96,8 +96,8 @@ def likelihood_modeling(lhr):
     # plot the regression for S
     plt.subplot(2, 2, 1)
     gp_regression(
-        lhr.x, lhr.y + 1, lhr.xi, lhr.yi + 1,
-        lhr.x, lhr.mu_S + 1, np.diag(lhr.cov_S))
+        bq.x, bq.y + 1, bq.xi, bq.yi + 1,
+        bq.x, bq.mu_S + 1, np.diag(bq.cov_S))
     plt.title("GPR for $S$")
     plt.ylabel("Similarity ($S$)")
     sg.set_ylabel_coords(labelx)
@@ -107,8 +107,8 @@ def likelihood_modeling(lhr):
     # plot the regression for log S
     plt.subplot(2, 2, 3)
     gp_regression(
-        lhr.x, np.log(lhr.y + 1), lhr.xi, np.log(lhr.yi + 1),
-        lhr.x, lhr.mu_logS, np.diag(lhr.cov_logS))
+        bq.x, np.log(bq.y + 1), bq.xi, np.log(bq.yi + 1),
+        bq.x, bq.mu_logS, np.diag(bq.cov_logS))
     plt.title(r"GPR for $\log S$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel(r"Similarity ($\log S$)")
@@ -118,8 +118,8 @@ def likelihood_modeling(lhr):
     # plot the regression for mu_logS - log_muS
     plt.subplot(2, 2, 4)
     gp_regression(
-        lhr.x, lhr.delta, lhr.xc, lhr.yc,
-        lhr.x, lhr.mu_Dc, np.diag(lhr.cov_Dc))
+        bq.x, bq.delta, bq.xc, bq.yc,
+        bq.x, bq.mu_Dc, np.diag(bq.cov_Dc))
     plt.title(r"GPR for $\Delta_c$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel(r"Difference ($\Delta_c$)")
@@ -129,8 +129,8 @@ def likelihood_modeling(lhr):
     # combine the two regression means to estimate E[Z]
     plt.subplot(2, 2, 2)
     gp_regression(
-        lhr.x, lhr.y + 1, lhr.xi, lhr.yi + 1,
-        lhr.x, lhr.mean + 1, np.diag(lhr.cov_logS))
+        bq.x, bq.y + 1, bq.xi, bq.yi + 1,
+        bq.x, bq.mean + 1, np.diag(bq.cov_logS))
     plt.title(r"Final GPR for $S$")
     sg.no_xticklabels()
     ylim3 = plt.ylim()
