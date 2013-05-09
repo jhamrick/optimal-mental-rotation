@@ -96,38 +96,25 @@ def likelihood_modeling(lhr):
 
     # overall figure settings
     fig.set_figwidth(9)
-    fig.set_figheight(8)
-    plt.subplots_adjust(wspace=0.2, left=0.05, bottom=0.05)
+    fig.set_figheight(5)
+    plt.subplots_adjust(wspace=0.2, hspace=0.3, left=0.05, bottom=0.05)
 
     # plot the regression for S
     plt.subplot(2, 2, 1)
     gp_regression(
-        lhr.x, lhr.y+1, lhr.xi, lhr.yi+1,
-        lhr.x, lhr.mu_S+1, np.diag(lhr.cov_S))
+        lhr.x, lhr.y + 1, lhr.xi, lhr.yi + 1,
+        lhr.x, lhr.mu_S + 1, np.diag(lhr.cov_S))
     plt.title("GPR for $S$")
     plt.xticks(plt.xticks()[0], [])
     plt.ylabel("Similarity ($S$)")
     plt.gca().yaxis.set_label_coords(labelx, 0.5)
     ylim1 = plt.ylim()
 
-    # combine the two regression means to estimate E[Z]
-    plt.subplot(2, 2, 2)
-    gp_regression(
-        lhr.x, lhr.y+1, lhr.xi, lhr.yi+1,
-        lhr.x, lhr.mean+1, np.diag(lhr.cov_logS))
-    plt.title(r"Final GPR for $S$")
-    plt.xticks(plt.xticks()[0], [])
-    #plt.yticks(plt.yticks()[0], [])
-    plt.gca().yaxis.set_label_coords(labelx, 0.5)
-    #plt.gca().spines['left'].set_color('none')
-    ylim3 = plt.ylim()
-
     # plot the regression for log S
     plt.subplot(2, 2, 3)
     gp_regression(
-        lhr.x, np.log(lhr.y+1), lhr.xi, np.log(lhr.yi+1),
+        lhr.x, np.log(lhr.y + 1), lhr.xi, np.log(lhr.yi + 1),
         lhr.x, lhr.mu_logS, np.diag(lhr.cov_logS))
-    plt.plot(lhr.x, lhr.mu_Dc, 'k--')
     plt.title(r"GPR for $\log S$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel(r"Similarity ($\log S$)")
@@ -139,17 +126,26 @@ def likelihood_modeling(lhr):
     gp_regression(
         lhr.x, lhr.delta, lhr.xc, lhr.yc,
         lhr.x, lhr.mu_Dc, np.diag(lhr.cov_Dc))
-    plt.title(r"GPR for $\Delta$")
+    plt.title(r"GPR for $\Delta_c$")
     plt.xlabel("Rotation ($R$)")
-    plt.ylabel(r"Difference ($\Delta$)")
-    plt.gca().yaxis.set_label_coords(labelx, 0.5)
-    plt.legend(loc=4, fontsize=14, frameon=False)
+    plt.ylabel(r"Difference ($\Delta_c$)")
+    plt.legend(loc=0, fontsize=14, frameon=False)
+    yt, ytl = plt.yticks()
+
+    # combine the two regression means to estimate E[Z]
+    plt.subplot(2, 2, 2)
+    gp_regression(
+        lhr.x, lhr.y + 1, lhr.xi, lhr.yi + 1,
+        lhr.x, lhr.mean + 1, np.diag(lhr.cov_logS))
+    plt.title(r"Final GPR for $S$")
+    plt.xticks(plt.xticks()[0], [])
+    ylim3 = plt.ylim()
 
     # figure out appropriate y-axis limits
     ylims = np.array([ylim1, ylim2, ylim3])
     ylo = max(np.min(ylims[:, 0]), 1)
     yhi = np.max(ylims[:, 1])
-    yr = yhi - ylo
+    yr = (yhi - ylo) / 10
 
     # set these axis limits
     plt.subplot(2, 2, 1)
@@ -159,4 +155,5 @@ def likelihood_modeling(lhr):
     plt.subplot(2, 2, 3)
     plt.ylim(np.log(ylo), np.log(yhi))
     plt.subplot(2, 2, 4)
-    plt.ylim(-yr / 10., yr / 10.)
+    yl = plt.ylim()
+    plt.ylim(min(yl[0], -yr / 2.), max(yr, yl[1]))
