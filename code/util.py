@@ -96,3 +96,22 @@ def rotate_image(I, theta):
     rimg = img.rotate(np.degrees(theta))
     rI = 1-np.array(rimg)
     return rI
+
+
+def reflect(Xa):
+    """Reflect a set of points given in `Xa` (shape Nx2) about the y-axis.
+
+    """
+    M = np.array([
+        [-1, 0],
+        [0, 1]
+    ])
+    Xb = np.dot(Xa, M)
+    return Xb
+
+
+def reflect_image(I):
+    img = PIL.Image.fromarray(I)
+    rimg = img.transpose(PIL.Image.FLIP_LEFT_RIGHT)
+    rI = np.array(rimg)
+    return rI
