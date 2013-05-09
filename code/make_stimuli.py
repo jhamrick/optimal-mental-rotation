@@ -77,7 +77,7 @@ if __name__ == "__main__":
     # config variables
     npoints = 5
     sigma = 0.0
-    blur = 3
+    blur = 5.8
     nstim = 10
 
     # all the angles we want to try
