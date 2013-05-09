@@ -429,6 +429,36 @@ class BayesianQuadrature(object):
         # mean of the final regression for S
         self.mean = ((self.mu_S + 1) * (1 + self.delta)) - 1
 
+    def integrate(self, px):
+        """Compute the mean and variance of our estimate of the integral:
+
+        $$Z = \int S(y|x)p(x) dx$$
+
+        Where S(y|x) is the function being estimated by `self.fit`.
+
+        Parameters
+        ----------
+        px : numpy.ndarray
+            Prior probabilities over x-values
+
+        Returns
+        -------
+        out : 2-tuple
+            The mean and variance of the integral
+
+        References
+        ----------
+        Osborne, M. A., Duvenaud, D., Garnett, R., Rasmussen, C. E.,
+            Roberts, S. J., & Ghahramani, Z. (2012). Active Learning of
+            Model Evidence Using Bayesian Quadrature. *Advances in Neural
+            Information Processing Systems*, 25.
+
+        """
+
+        m_Z = sum(px * self.mean)
+        V_Z = dot(px * self.mu_S, dot(self.cov_logS, px * self.mu_S))
+        return m_Z, V_Z
+
 
 class VonMisesMSE(object):
     """Object representing the mean squared error (MSE) of a
@@ -580,3 +610,26 @@ class ParametricRegression(object):
         self.theta = self.mse.minimize(
             self.xi, self.yi, ntry=self.ntry, verbose=self.verbose)
         self.mean = self.theta[2] * circ.vmpdf(self.x, *self.theta[:2])
+
+    def integrate(self, px):
+        """Compute the mean and variance of our estimate of the integral:
+
+        $$Z = \int S(y|x)p(x) dx$$
+
+        Where S(y|x) is the function being estimated by `self.fit`.
+
+        Parameters
+        ----------
+        px : numpy.ndarray
+            Prior probabilities over x-values
+
+        Returns
+        -------
+        out : 2-tuple
+            The mean and variance of the integral
+
+        """
+
+        m_Z = sum(px * self.mean)
+        V_Z = 0
+        return m_Z, V_Z
