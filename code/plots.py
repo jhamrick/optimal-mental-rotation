@@ -64,9 +64,13 @@ def gp_regression(x, y, xi, yi, xo, yo_mean, yo_var):
     plt.plot(xi, yi, 'ro', label="samples")
 
     if yo_var is not None:
-        yo_std = np.sqrt(yo_var)
-        lower = yo_mean - yo_std
-        upper = yo_mean + yo_std
+        # hack, for if there are zero or negative variances
+        yv = np.abs(yo_var)
+        ys = np.zeros(yv.shape)
+        ys[yv != 0] = np.sqrt(yv[yv != 0])
+        # compute upper and lower bounds
+        lower = yo_mean - ys
+        upper = yo_mean + ys
         plt.fill_between(xo, lower, upper, color='r', alpha=0.25)
 
     plt.plot(xo, yo_mean, 'r-', label="estimate", linewidth=2)
@@ -120,7 +124,7 @@ def likelihood_modeling(lhr):
     plt.subplot(2, 2, 4)
     gp_regression(
         lhr.x, lhr.y+1, lhr.xi, lhr.yi+1,
-        lhr.x, lhr.mean+1, None)
+        lhr.x, lhr.mean+1, np.diag(lhr.cov_logS))
     plt.title(r"Final GPR for $S$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel("Similarity ($S$)")
@@ -128,7 +132,7 @@ def likelihood_modeling(lhr):
 
     # figure out appropriate y-axis limits
     ylims = np.array([ylim1, ylim2, ylim3])
-    ylo = np.min(ylims[:, 0])
+    ylo = 1
     yhi = np.max(ylims[:, 1])
 
     # set these axis limits
