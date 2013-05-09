@@ -275,7 +275,7 @@ class KernelMLL(object):
 
         for i in xrange(ntry):
             # randomize starting parameter values
-            h0 = np.random.uniform(0, np.ptp(y)**2)
+            h0 = np.random.uniform(0, np.max(np.abs(y))*2)
             w0 = np.random.uniform(0, 2*np.pi)
             if self.obs_noise:
                 s0 = np.random.uniform(0, np.sqrt(np.var(y)))
@@ -425,11 +425,10 @@ class BayesianQuadrature(object):
 
         # compute GP regression for Delta_c
         self.mu_Dc, self.cov_Dc, self.theta_Dc = self._fit_gp(
-            self.xc, self.yc, "Delta_c",
-            wmin=min(self.theta_S[1], self.theta_logS[1]) / 2.)
+            self.xc, self.yc, "Delta_c")
 
         # mean of the final regression for S
-        self.mean = ((self.mu_S + 1) * (1 + self.delta)) - 1
+        self.mean = ((self.mu_S + 1) * (1 + self.mu_Dc)) - 1
 
     def integrate(self, px):
         """Compute the mean and variance of our estimate of the integral:
