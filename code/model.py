@@ -322,7 +322,7 @@ def similarity(I0, I1, sf=1):
     return S
 
 
-class LikelihoodRegression(object):
+class BayesianQuadrature(object):
     """Estimate a likelihood function, S(y|x) using Gaussian Process
     regressions, as in Osborne et al. (2012):
 
@@ -382,7 +382,7 @@ class LikelihoodRegression(object):
 
         return mu, cov, theta
 
-    def fit(self, iix, cix):
+    def fit(self, iix):
         """Run the GP regressions to fit the likelihood function.
 
         Parameters
@@ -411,7 +411,10 @@ class LikelihoodRegression(object):
         self.mu_logS, self.cov_logS, self.theta_logS = self._fit_gp(
             self.xi, log(self.yi + 1), "log(S)")
 
-        # choose "candidate" points
+        # choose "candidate" points, halfway between given points
+        cix = cix = np.sort(np.unique(np.concatenate([
+            (iix + np.array(list(iix[1:]) + [self.x.size])) / 2,
+            iix])))
         self.delta = self.mu_logS - log(self.mu_S + 1)
         self.xc = self.x[cix].copy()
         self.yc = self.delta[cix].copy()
