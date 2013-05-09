@@ -415,35 +415,35 @@ class LikelihoodRegression(object):
         self.mean = self.mu_S * (1 + self.delta)
 
 
-def dm_dw(mll, theta, x, y, xo):
-    h, w, s = theta
+# def dm_dw(mll, theta, x, y, xo):
+#     h, w, s = theta
 
-    # the overhead of JIT compiling isn't it worth it here because
-    # this is just a temporary kernel function
-    K = kernel(h, w, jit=False)(x, x)
-    if s > 0:
-        K += np.eye(x.size) * (s ** 2)
+#     # the overhead of JIT compiling isn't it worth it here because
+#     # this is just a temporary kernel function
+#     K = kernel(h, w, jit=False)(x, x)
+#     if s > 0:
+#         K += np.eye(x.size) * (s ** 2)
 
-    # invert K
-    Li = inv(np.linalg.cholesky(K))
-    Ki = dot(Li.T, Li)
+#     # invert K
+#     Li = inv(np.linalg.cholesky(K))
+#     Ki = dot(Li.T, Li)
 
-    # get the partial derivative function
-    dK_dw = mll.dK_dw
+#     # get the partial derivative function
+#     dK_dw = mll.dK_dw
 
-    # compute dK/dtheta_j matrix
-    dKxx = np.empty((x.size, x.size))
-    for i in xrange(x.size):
-        for j in xrange(x.size):
-            diff = x[i] - x[j]
-            dKxx[i, j] = dK_dw((h, w, s), diff)
+#     # compute dK/dtheta_j matrix
+#     dKxx = np.empty((x.size, x.size))
+#     for i in xrange(x.size):
+#         for j in xrange(x.size):
+#             diff = x[i] - x[j]
+#             dKxx[i, j] = dK_dw((h, w, s), diff)
 
-    dKxxo = np.empty((x.size, xo.size))
-    for i in xrange(x.size):
-        for j in xrange(xo.size):
-            diff = x[i] - xo[j]
-            dKxxo[i, j] = dK_dw((h, w, s), diff)
+#     dKxxo = np.empty((x.size, xo.size))
+#     for i in xrange(x.size):
+#         for j in xrange(xo.size):
+#             diff = x[i] - xo[j]
+#             dKxxo[i, j] = dK_dw((h, w, s), diff)
 
-    dKi = dot(-Ki, dot(dKxx, Ki))
-    dm = dot(dKxxo.T, dot(dKi, y))
-    return dm
+#     dKi = dot(-Ki, dot(dKxx, Ki))
+#     dm = dot(dKxxo.T, dot(dKi, y))
+#     return dm
