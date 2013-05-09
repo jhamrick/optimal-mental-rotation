@@ -43,8 +43,8 @@ def stimuli_images(**kwargs):
         plt.title("$%s$" % I)
 
 
-def log_likelihood(R, log_Sr):
-    plt.plot(R, log_Sr)
+def likelihood(R, Sr):
+    plt.plot(R, Sr)
 
     plt.xlim(0, 2*np.pi)
     plt.xticks(
@@ -52,8 +52,8 @@ def log_likelihood(R, log_Sr):
         ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
 
     plt.xlabel("Rotation ($R$)")
-    plt.ylabel(r"Log similarity ($\log S(I_b,I_R)$)")
-    plt.title("Log likelihood function")
+    plt.ylabel(r"Similarity ($S(I_b,I_R)$)")
+    plt.title("Likelihood function")
 
 
 def regression(x, y, xi, yi, xo, yo_mean, yo_var):
