@@ -9,12 +9,12 @@ from numpy import log, exp, sign, trace, dot, abs, diag
 from numpy.linalg import inv
 
 from snippets.stats import GP
-from snippets.stats import periodic_kernel as kernel
-#from snippets.stats import gaussian_kernel as kernel
+from snippets.stats import periodic_kernel
+from snippets.stats import gaussian_kernel
 
 
-class PeriodicMLL(object):
-    """Object representing the marginal log likelihood (MLL) of a periodic
+class KernelMLL(object):
+    """Object representing the marginal log likelihood (MLL) of a
     kernel function.
 
     Methods
@@ -28,7 +28,7 @@ class PeriodicMLL(object):
 
     """
 
-    def __init__(self, obs_noise=True):
+    def __init__(self, kernel, obs_noise=True):
         self.obs_noise = obs_noise
 
         # create symbolic variables
@@ -38,8 +38,15 @@ class PeriodicMLL(object):
         s = sym.Symbol('s')
 
         # symbolic version of the kernel function
-        k1 = (h ** 2) * sym.exp(-2. * (sym.sin(d / 2.) ** 2) / (w ** 2))
-        #k1 = (h ** 2) * sym.exp(-0.5 * (d ** 2) / (w ** 2))
+        if kernel == 'periodic':
+            self.kernel = periodic_kernel
+            k1 = (h ** 2) * sym.exp(-2. * (sym.sin(d / 2.) ** 2) / (w ** 2))
+        elif kernel == 'gaussian':
+            self.kernel = gaussian_kernel
+            k1 = (h ** 2) * sym.exp(-0.5 * (d ** 2) / (w ** 2))
+        else:
+            raise ValueError("unsupported kernel '%s'" % kernel)
+
         if self.obs_noise:
             k2 = (s ** 2) * delta(d)
             self.sym_K = k1 + k2
@@ -151,7 +158,7 @@ class PeriodicMLL(object):
 
         # the overhead of JIT compiling isn't it worth it here because
         # this is just a temporary kernel function
-        K = kernel(h, w, jit=False)(x, x)
+        K = self.kernel(h, w, jit=False)(x, x)
         if s > 0:
             K += np.eye(x.size) * (s ** 2)
 
@@ -206,7 +213,7 @@ class PeriodicMLL(object):
 
         # the overhead of JIT compiling isn't it worth it here because
         # this is just a temporary kernel function
-        K = kernel(h, w, jit=False)(x, x)
+        K = self.kernel(h, w, jit=False)(x, x)
         if s > 0:
             K += np.eye(x.size) * (s ** 2)
 
@@ -335,7 +342,7 @@ class LikelihoodRegression(object):
 
         Parameters
         ----------
-        mll : PeriodicMLL object
+        mll : KernelMLL object
         x : numpy.ndarray
             Vector of x values
         y : numpy.ndarray
@@ -369,7 +376,7 @@ class LikelihoodRegression(object):
 
         # GP regression
         mu, cov = GP(
-            kernel(*theta), xi, yi, self.x)
+            self.mll.kernel(*theta), xi, yi, self.x)
 
         return mu, cov, theta
 
