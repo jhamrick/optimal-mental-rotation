@@ -56,7 +56,7 @@ def log_likelihood(R, log_Sr):
     plt.title("Log likelihood function")
 
 
-def gp_regression(x, y, xi, yi, xo, yo_mean, yo_var):
+def regression(x, y, xi, yi, xo, yo_mean, yo_var):
     """Plot the original function and the regression estimate.
 
     """
@@ -95,7 +95,7 @@ def bq_likelihood_regression(bq):
 
     # plot the regression for S
     plt.subplot(2, 2, 1)
-    gp_regression(
+    regression(
         bq.x, bq.y + 1, bq.xi, bq.yi + 1,
         bq.x, bq.mu_S + 1, np.diag(bq.cov_S))
     plt.title("GPR for $S$")
@@ -106,7 +106,7 @@ def bq_likelihood_regression(bq):
 
     # plot the regression for log S
     plt.subplot(2, 2, 3)
-    gp_regression(
+    regression(
         bq.x, np.log(bq.y + 1), bq.xi, np.log(bq.yi + 1),
         bq.x, bq.mu_logS, np.diag(bq.cov_logS))
     plt.title(r"GPR for $\log S$")
@@ -117,7 +117,7 @@ def bq_likelihood_regression(bq):
 
     # plot the regression for mu_logS - log_muS
     plt.subplot(2, 2, 4)
-    gp_regression(
+    regression(
         bq.x, bq.delta, bq.xc, bq.yc,
         bq.x, bq.mu_Dc, np.diag(bq.cov_Dc))
     plt.title(r"GPR for $\Delta_c$")
@@ -128,7 +128,7 @@ def bq_likelihood_regression(bq):
 
     # combine the two regression means to estimate E[Z]
     plt.subplot(2, 2, 2)
-    gp_regression(
+    regression(
         bq.x, bq.y + 1, bq.xi, bq.yi + 1,
         bq.x, bq.mean + 1, np.diag(bq.cov_logS))
     plt.title(r"Final GPR for $S$")
@@ -151,3 +151,15 @@ def bq_likelihood_regression(bq):
     plt.subplot(2, 2, 4)
     yl = plt.ylim()
     plt.ylim(min(yl[0], -yr / 2.), max(yr, yl[1]))
+
+
+def parametric_regression(pr):
+    # overall figure settings
+    sg.set_figsize(4, 4)
+
+    # plot the regression for S
+    regression(
+        pr.x, pr.y, pr.xi, pr.yi,
+        pr.x, pr.mean, None)
+    plt.title("Parametric regression for $S$")
+    plt.ylabel("Similarity ($S$)")
