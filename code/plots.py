@@ -80,15 +80,24 @@ def gp_regression(x, y, xi, yi, xo, yo_mean, yo_var):
         [0, np.pi / 2., np.pi, 3 * np.pi / 2., 2 * np.pi],
         ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
 
+    ax = plt.gca()
+    ax.tick_params(direction='out')
+    ax.spines['right'].set_color('none')
+    ax.yaxis.tick_left()
+    ax.spines['top'].set_color('none')
+    ax.xaxis.tick_bottom()
+
 
 def likelihood_modeling(lhr):
     fig = plt.figure()
     plt.clf()
 
+    labelx = -0.15
+
     # overall figure settings
     fig.set_figwidth(9)
     fig.set_figheight(8)
-    plt.subplots_adjust(wspace=0.4)
+    plt.subplots_adjust(wspace=0.2, left=0.05, bottom=0.05)
 
     # plot the regression for S
     plt.subplot(2, 2, 1)
@@ -98,47 +107,56 @@ def likelihood_modeling(lhr):
     plt.title("GPR for $S$")
     plt.xticks(plt.xticks()[0], [])
     plt.ylabel("Similarity ($S$)")
-    plt.legend(loc=0, fontsize=12)
+    plt.gca().yaxis.set_label_coords(labelx, 0.5)
     ylim1 = plt.ylim()
 
-    # plot the regression for log S
+    # combine the two regression means to estimate E[Z]
     plt.subplot(2, 2, 2)
+    gp_regression(
+        lhr.x, lhr.y+1, lhr.xi, lhr.yi+1,
+        lhr.x, lhr.mean+1, np.diag(lhr.cov_logS))
+    plt.title(r"Final GPR for $S$")
+    plt.xticks(plt.xticks()[0], [])
+    #plt.yticks(plt.yticks()[0], [])
+    plt.gca().yaxis.set_label_coords(labelx, 0.5)
+    #plt.gca().spines['left'].set_color('none')
+    ylim3 = plt.ylim()
+
+    # plot the regression for log S
+    plt.subplot(2, 2, 3)
     gp_regression(
         lhr.x, np.log(lhr.y+1), lhr.xi, np.log(lhr.yi+1),
         lhr.x, lhr.mu_logS, np.diag(lhr.cov_logS))
+    plt.plot(lhr.x, lhr.mu_Dc, 'k--')
     plt.title(r"GPR for $\log S$")
-    plt.xticks(plt.xticks()[0], [])
+    plt.xlabel("Rotation ($R$)")
     plt.ylabel(r"Similarity ($\log S$)")
+    plt.gca().yaxis.set_label_coords(labelx, 0.5)
     ylim2 = np.exp(plt.ylim())
 
     # plot the regression for mu_logS - log_muS
-    plt.subplot(2, 2, 3)
+    plt.subplot(2, 2, 4)
     gp_regression(
         lhr.x, lhr.delta, lhr.xc, lhr.yc,
         lhr.x, lhr.mu_Dc, np.diag(lhr.cov_Dc))
     plt.title(r"GPR for $\Delta$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel(r"Difference ($\Delta$)")
-
-    # combine the two regression means to estimate E[Z]
-    plt.subplot(2, 2, 4)
-    gp_regression(
-        lhr.x, lhr.y+1, lhr.xi, lhr.yi+1,
-        lhr.x, lhr.mean+1, np.diag(lhr.cov_logS))
-    plt.title(r"Final GPR for $S$")
-    plt.xlabel("Rotation ($R$)")
-    plt.ylabel("Similarity ($S$)")
-    ylim3 = plt.ylim()
+    plt.gca().yaxis.set_label_coords(labelx, 0.5)
+    plt.legend(loc=4, fontsize=14, frameon=False)
 
     # figure out appropriate y-axis limits
     ylims = np.array([ylim1, ylim2, ylim3])
-    ylo = 1
+    ylo = max(np.min(ylims[:, 0]), 1)
     yhi = np.max(ylims[:, 1])
+    yr = yhi - ylo
 
     # set these axis limits
     plt.subplot(2, 2, 1)
     plt.ylim(ylo, yhi)
     plt.subplot(2, 2, 2)
+    plt.ylim(ylo, yhi)
+    plt.subplot(2, 2, 3)
     plt.ylim(np.log(ylo), np.log(yhi))
     plt.subplot(2, 2, 4)
-    plt.ylim(ylo, yhi)
+    plt.ylim(-yr / 10., yr / 10.)
