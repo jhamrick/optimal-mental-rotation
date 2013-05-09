@@ -231,7 +231,9 @@ class KernelMLL(object):
 
         return -np.array(dmll)
 
-    def maximize(self, x, y, ntry=10, verbose=False):
+    def maximize(self, x, y,
+                 hmin=1e-8, wmin=1e-8,
+                 ntry=10, verbose=False):
         """Find kernel parameter values which maximize the marginal log
         likelihood of the data.
 
@@ -264,7 +266,7 @@ class KernelMLL(object):
         for i in xrange(ntry):
             # randomize starting parameter values
             h0 = np.random.uniform(0, np.ptp(y)**2)
-            w0 = np.random.uniform(0, np.pi)
+            w0 = np.random.uniform(0, 2*np.pi)
             if self.obs_noise:
                 s0 = np.random.uniform(0, np.sqrt(np.var(y)))
                 p0 = (h0, w0, s0)
@@ -273,7 +275,7 @@ class KernelMLL(object):
             else:
                 p0 = (h0, w0)
                 method = "L-BFGS-B"
-                bounds = ((1e-8, None), (1e-8, None))
+                bounds = ((hmin, None), (wmin, None))
 
             # run mimization function
             try:
@@ -362,13 +364,13 @@ class LikelihoodRegression(object):
         # print fitting information
         self.verbose = verbose
 
-    def _fit_gp(self, xi, yi, name):
+    def _fit_gp(self, xi, yi, name, wmin=1e-8):
         if self.verbose:
             print "Fitting parameters for GP over %s ..." % name
 
         # fit parameters
         theta = self.mll.maximize(
-            xi, yi, ntry=self.ntry, verbose=self.verbose)
+            xi, yi, wmin=wmin, ntry=self.ntry, verbose=self.verbose)
 
         if self.verbose:
             print theta
@@ -416,10 +418,11 @@ class LikelihoodRegression(object):
 
         # compute GP regression for Delta_c
         self.mu_Dc, self.cov_Dc, self.theta_Dc = self._fit_gp(
-            self.xc, self.yc, "Delta_c")
+            self.xc, self.yc, "Delta_c",
+            wmin=min(self.theta_S[1], self.theta_logS[1]) / 2.)
 
         # mean of the final regression for S
-        self.mean = self.mu_S * (1 + self.delta)
+        self.mean = ((self.mu_S + 1) * (1 + self.delta)) - 1
 
 
 # def dm_dw(mll, theta, x, y, xo):
