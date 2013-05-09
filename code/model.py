@@ -9,7 +9,7 @@ from numpy import log, exp, sign, trace, dot, abs, diag
 from numpy.linalg import inv
 
 from snippets.stats import GP
-from snippets.stats import periodic_kernel as periodic_kernel
+from snippets.stats import periodic_kernel as kernel
 
 
 class PeriodicMLL(object):
@@ -36,8 +36,8 @@ class PeriodicMLL(object):
         w = sym.Symbol('w')
         s = sym.Symbol('s')
 
-        # symbolic version of the periodic kernel function
-        k1 = (h ** 2) * sym.exp(-2. * sym.sin(d / 2.) ** 2 / (w ** 2))
+        # symbolic version of the kernel function
+        k1 = (h ** 2) * sym.exp(-2. * (sym.sin(d / 2.) ** 2) / w)
         if self.obs_noise:
             k2 = (s ** 2) * delta(d)
             self.sym_K = k1 + k2
@@ -149,7 +149,7 @@ class PeriodicMLL(object):
 
         # the overhead of JIT compiling isn't it worth it here because
         # this is just a temporary kernel function
-        K = periodic_kernel(h, w, jit=False)(x, x)
+        K = kernel(h, np.sqrt(w), jit=False)(x, x)
         if s > 0:
             K += np.eye(x.size) * (s ** 2)
 
@@ -204,7 +204,7 @@ class PeriodicMLL(object):
 
         # the overhead of JIT compiling isn't it worth it here because
         # this is just a temporary kernel function
-        K = periodic_kernel(h, w, jit=False)(x, x)
+        K = kernel(h, np.sqrt(w), jit=False)(x, x)
         if s > 0:
             K += np.eye(x.size) * (s ** 2)
 
@@ -308,7 +308,7 @@ class PeriodicMLL(object):
 def similarity(I0, I1, sf=1):
     """Computes the similarity between images `I0` and `I1`."""
     e = np.sum(-0.5 * ((I0 - I1) ** 2) / sf)
-    S = np.exp(e / np.log(I0.size))
+    S = exp(e / log(I0.size))
     return S
 
 
@@ -367,8 +367,10 @@ class LikelihoodRegression(object):
             print "Computing GP over %s..." % name
 
         # GP regression
+        th = list(theta)
+        th[1] = np.sqrt(th[1])
         mu, cov = GP(
-            periodic_kernel(*theta), xi, yi, self.x)
+            kernel(*th), xi, yi, self.x)
 
         return mu, cov, theta
 
@@ -419,7 +421,7 @@ def dm_dw(mll, theta, x, y, xo):
 
     # the overhead of JIT compiling isn't it worth it here because
     # this is just a temporary kernel function
-    K = periodic_kernel(h, w, jit=False)(x, x)
+    K = kernel(h, np.sqrt(w), jit=False)(x, x)
     if s > 0:
         K += np.eye(x.size) * (s ** 2)
 
