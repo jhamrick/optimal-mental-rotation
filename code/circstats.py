@@ -794,7 +794,6 @@ def nancorrcc(alpha1, alpha2, axis=None):
       Statistics. Journal of Statistical Software, 31(10). Available
       from http://www.jstatsoft.org/v31/i10
 
-
     Fisher, N. & Lee, A. (1983). A correlation coefficient for circular
       data. Biometrika. 70 (2), 327-332.
 
