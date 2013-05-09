@@ -307,8 +307,9 @@ class PeriodicMLL(object):
 
 def similarity(I0, I1, sf=1):
     """Computes the similarity between images `I0` and `I1`."""
-    diff = exp(np.sum(-0.5 * (I0 - I1)**2 / (sf**2)))
-    return diff
+    e = np.sum(-0.5 * ((I0 - I1) ** 2) / sf)
+    S = np.exp(e / np.log(I0.size))
+    return S
 
 
 class LikelihoodRegression(object):
