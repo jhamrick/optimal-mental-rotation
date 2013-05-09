@@ -322,7 +322,7 @@ def similarity(I0, I1, sf=1):
     return S
 
 
-class LikelihoodRegression(object):
+class BayesianQuadrature(object):
     """Estimate a likelihood function, S(y|x) using Gaussian Process
     regressions, as in Osborne et al. (2012):
 
@@ -382,7 +382,7 @@ class LikelihoodRegression(object):
 
         return mu, cov, theta
 
-    def fit(self, iix, cix):
+    def fit(self, iix):
         """Run the GP regressions to fit the likelihood function.
 
         Parameters
@@ -411,7 +411,10 @@ class LikelihoodRegression(object):
         self.mu_logS, self.cov_logS, self.theta_logS = self._fit_gp(
             self.xi, log(self.yi + 1), "log(S)")
 
-        # choose "candidate" points
+        # choose "candidate" points, halfway between given points
+        cix = cix = np.sort(np.unique(np.concatenate([
+            (iix + np.array(list(iix[1:]) + [self.x.size])) / 2,
+            iix])))
         self.delta = self.mu_logS - log(self.mu_S + 1)
         self.xc = self.x[cix].copy()
         self.yc = self.delta[cix].copy()
@@ -423,37 +426,3 @@ class LikelihoodRegression(object):
 
         # mean of the final regression for S
         self.mean = ((self.mu_S + 1) * (1 + self.delta)) - 1
-
-
-# def dm_dw(mll, theta, x, y, xo):
-#     h, w, s = theta
-
-#     # the overhead of JIT compiling isn't it worth it here because
-#     # this is just a temporary kernel function
-#     K = kernel(h, w, jit=False)(x, x)
-#     if s > 0:
-#         K += np.eye(x.size) * (s ** 2)
-
-#     # invert K
-#     Li = inv(np.linalg.cholesky(K))
-#     Ki = dot(Li.T, Li)
-
-#     # get the partial derivative function
-#     dK_dw = mll.dK_dw
-
-#     # compute dK/dtheta_j matrix
-#     dKxx = np.empty((x.size, x.size))
-#     for i in xrange(x.size):
-#         for j in xrange(x.size):
-#             diff = x[i] - x[j]
-#             dKxx[i, j] = dK_dw((h, w, s), diff)
-
-#     dKxxo = np.empty((x.size, xo.size))
-#     for i in xrange(x.size):
-#         for j in xrange(xo.size):
-#             diff = x[i] - xo[j]
-#             dKxxo[i, j] = dK_dw((h, w, s), diff)
-
-#     dKi = dot(-Ki, dot(dKxx, Ki))
-#     dm = dot(dKxxo.T, dot(dKi, y))
-#     return dm
