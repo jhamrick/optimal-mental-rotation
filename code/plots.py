@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from util import draw_stimulus
+import snippets.graphing as sg
 
 
 def stimuli_shapes(**kwargs):
@@ -80,23 +81,16 @@ def gp_regression(x, y, xi, yi, xo, yo_mean, yo_var):
         [0, np.pi / 2., np.pi, 3 * np.pi / 2., 2 * np.pi],
         ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
 
-    ax = plt.gca()
-    ax.tick_params(direction='out')
-    ax.spines['right'].set_color('none')
-    ax.yaxis.tick_left()
-    ax.spines['top'].set_color('none')
-    ax.xaxis.tick_bottom()
+    sg.outward_ticks()
+    sg.clear_right()
+    sg.clear_top()
 
 
 def likelihood_modeling(lhr):
-    fig = plt.figure()
-    plt.clf()
-
     labelx = -0.15
 
     # overall figure settings
-    fig.set_figwidth(9)
-    fig.set_figheight(5)
+    sg.set_figsize(9, 5)
     plt.subplots_adjust(wspace=0.2, hspace=0.3, left=0.05, bottom=0.05)
 
     # plot the regression for S
@@ -105,9 +99,9 @@ def likelihood_modeling(lhr):
         lhr.x, lhr.y + 1, lhr.xi, lhr.yi + 1,
         lhr.x, lhr.mu_S + 1, np.diag(lhr.cov_S))
     plt.title("GPR for $S$")
-    plt.xticks(plt.xticks()[0], [])
     plt.ylabel("Similarity ($S$)")
-    plt.gca().yaxis.set_label_coords(labelx, 0.5)
+    sg.set_ylabel_coords(labelx)
+    sg.no_xticklabels()
     ylim1 = plt.ylim()
 
     # plot the regression for log S
@@ -118,7 +112,7 @@ def likelihood_modeling(lhr):
     plt.title(r"GPR for $\log S$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel(r"Similarity ($\log S$)")
-    plt.gca().yaxis.set_label_coords(labelx, 0.5)
+    sg.set_ylabel_coords(labelx)
     ylim2 = np.exp(plt.ylim())
 
     # plot the regression for mu_logS - log_muS
@@ -138,7 +132,7 @@ def likelihood_modeling(lhr):
         lhr.x, lhr.y + 1, lhr.xi, lhr.yi + 1,
         lhr.x, lhr.mean + 1, np.diag(lhr.cov_logS))
     plt.title(r"Final GPR for $S$")
-    plt.xticks(plt.xticks()[0], [])
+    sg.no_xticklabels()
     ylim3 = plt.ylim()
 
     # figure out appropriate y-axis limits
