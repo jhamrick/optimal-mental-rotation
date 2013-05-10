@@ -494,8 +494,8 @@ class VonMisesMSE(object):
         """
 
         thetahat, kappa, z = theta
-        pdf = z * circ.vmpdf(x, thetahat, kappa)
-        err = np.sum((y - pdf) ** 2)
+        pdf = np.log(z) + circ.vmlogpdf(x, thetahat, kappa)
+        err = np.sum((y - np.exp(pdf)) ** 2)
         return err
 
     def minimize(self, x, y, ntry=10, verbose=False):
@@ -529,7 +529,7 @@ class VonMisesMSE(object):
             # randomize starting parameter values
             t0 = np.random.uniform(0, 2*np.pi)
             k0 = np.random.gamma(2, 2)
-            z0 = 1
+            z0 = np.random.uniform(0, np.max(np.abs(y))*2)
             p0 = (t0, k0, z0)
 
             # run mimization function
