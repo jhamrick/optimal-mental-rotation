@@ -3,7 +3,7 @@ import numpy as np
 
 class NaiveModel(object):
 
-    def __init__(self, x, y, verbose=False):
+    def __init__(self, x, y, step, verbose=False):
         """Initialize the linear interpolation object.
 
         Parameters
@@ -12,6 +12,10 @@ class NaiveModel(object):
             Vector of x values
         y : numpy.ndarray
             Vector of (actual) y values
+        step : int
+            Angle of rotation in between sequential mental images
+        verbose : bool (default=False)
+            Print information during the modeling process
 
         """
 
@@ -60,17 +64,8 @@ class NaiveModel(object):
         V_Z = 0
         return m_Z, V_Z
 
-
-class HillClimbingSearch(object):
-
-    def __init__(self, li, step, verbose=False):
-        self.li = li
-        self.step = step
-        self.verbose = verbose
-
     def __iter__(self):
-        Sr = self.li.y
-        steps = np.arange(0, self.li.x.size, self.step)
+        steps = np.arange(0, self.x.size, self.step)
         iix = [0]
         curr = 0
         scurr = steps[curr]
@@ -87,18 +82,20 @@ class HillClimbingSearch(object):
 
             if next not in iix:
                 if self.verbose:
-                    print "R=% 3s degrees  S(X_b, X_R)=%f" % (snext, Sr[snext])
+                    print "R=% 3s degrees  S(X_b, X_R)=%f" % (
+                        snext, self.y[snext])
                 iix.append(next)
                 yield snext
             if prev not in iix:
                 if self.verbose:
-                    print "R=% 3s degrees  S(X_b, X_R)=%f" % (sprev, Sr[sprev])
+                    print "R=% 3s degrees  S(X_b, X_R)=%f" % (
+                        sprev, self.y[sprev])
                 iix.append(prev)
                 yield sprev
 
-            if Sr[snext] > Sr[scurr]:
+            if self.y[snext] > self.y[scurr]:
                 curr = next
-            elif Sr[sprev] > Sr[scurr]:
+            elif self.y[sprev] > self.y[scurr]:
                 curr = prev
             else:
                 break
