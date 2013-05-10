@@ -23,8 +23,11 @@ def log_prior_X(X):
     assert D == 2
     # n points picked at random angles around the circle
     log_pangle = -log(2*pi) * n
-    # one point has radius 1, the rest have random radii
-    log_pradius = log(1) * (n-1)
+    # one point has radius 1, the rest have random radii (this term
+    # doesn't actually matter in practice, but leaving it in to be
+    # explicit)
+    radius = 1
+    log_pradius = log(radius) * (n-1)
     # put it all together
     p_X = log_pangle + log_pradius
     return p_X
