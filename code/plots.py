@@ -159,5 +159,17 @@ def vm_regression(pr):
     regression(
         pr.x, pr.y, pr.xi, pr.yi,
         pr.x, pr.mean, None)
-    plt.title("Parametric regression for $S$")
+    plt.title("Von Mises regression for $S$")
+    plt.ylabel("Similarity ($S$)")
+
+
+def li_regression(pr):
+    # overall figure settings
+    sg.set_figsize(4, 4)
+
+    # plot the regression for S
+    regression(
+        pr.x, pr.y, pr.xi, pr.yi,
+        pr.x, pr.mean, None)
+    plt.title("Linear interpolation for $S$")
     plt.ylabel("Similarity ($S$)")

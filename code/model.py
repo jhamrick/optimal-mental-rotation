@@ -676,3 +676,63 @@ class ParametricRegression(object):
         m_Z = sum(px * self.mean)
         V_Z = 0
         return m_Z, V_Z
+
+
+class LinearInterpolation(object):
+
+    def __init__(self, x, y, verbose=False):
+        """Initialize the linear interpolation object.
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            Vector of x values
+        y : numpy.ndarray
+            Vector of (actual) y values
+
+        """
+
+        # true x and y values for the likelihood
+        self.x = x.copy()
+        self.y = y.copy()
+        # print fitting information
+        self.verbose = verbose
+
+    def fit(self, iix):
+        """Fit the likelihood function.
+
+        Parameters
+        ----------
+        iix : numpy.ndarray
+            Integer array of indices corresponding to the "given" x and y data
+
+        """
+
+        # input data -- wrap around, so the interpolation works correctly
+        self.xi = np.concatenate([self.x[iix], self.x[iix][[0]] + 2*pi])
+        self.yi = np.concatenate([self.y[iix], self.y[iix][[0]]])
+
+        self.mean = np.interp(self.x, self.xi, self.yi)
+
+    def integrate(self, px):
+        """Compute the mean and variance of our estimate of the integral:
+
+        $$Z = \int S(y|x)p(x) dx$$
+
+        Where S(y|x) is the function being estimated by `self.fit`.
+
+        Parameters
+        ----------
+        px : numpy.ndarray
+            Prior probabilities over x-values
+
+        Returns
+        -------
+        out : 2-tuple
+            The mean and variance of the integral
+
+        """
+
+        m_Z = sum(px * self.mean)
+        V_Z = 0
+        return m_Z, V_Z
