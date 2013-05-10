@@ -2,8 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.ndimage as nd
 import PIL
+import os
 
 from snippets.graphing import plot_to_array
+
+STIM_DIR = "../stimuli"
 
 
 def make_stimulus(npoints, rso):
@@ -121,3 +124,20 @@ def reflect_image(I):
     rimg = img.transpose(PIL.Image.FLIP_LEFT_RIGHT)
     rI = np.array(rimg)
     return rI
+
+
+def load_stimulus(stimname):
+    stimf = np.load(os.path.join(STIM_DIR, stimname + ".npz"))
+
+    # rotation
+    R = stimf['R']
+    theta = stimf['theta']
+    # shapes
+    Xm = stimf['Xm']
+    Xa = Xm[0]
+    Xb = stimf['Xb']
+    # similarity
+    Sr = stimf['Sr']
+
+    stimf.close()
+    return theta, Xa, Xb, R, Sr
