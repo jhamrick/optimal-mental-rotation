@@ -22,9 +22,9 @@ def log_prior_X(X):
     n, D = x.shape
     assert D == 2
     # n points picked at random angles around the circle
-    log_pangle = -np.log(2*pi) * n
+    log_pangle = -log(2*pi) * n
     # one point has radius 1, the rest have random radii
-    log_pradius = np.log(1) * (n-1)
+    log_pradius = log(1) * (n-1)
     # put it all together
     p_X = log_pangle + log_pradius
     return p_X
@@ -446,6 +446,8 @@ class BayesianQuadrature(object):
         # compute GP regressions for S and log(S)
         self.mu_S, self.cov_S, self.theta_S = self._fit_gp(
             self.xi, self.yi, "S")
+        if ((self.mu_S + 1) <= 0).any():
+            print "Warning: regression for mu_S returned negative values"
         self.mu_logS, self.cov_logS, self.theta_logS = self._fit_gp(
             self.xi, log(self.yi + 1), "log(S)")
 
@@ -453,13 +455,19 @@ class BayesianQuadrature(object):
         cix = cix = np.sort(np.unique(np.concatenate([
             (iix + np.array(list(iix[1:]) + [self.x.size])) / 2,
             iix])))
-        self.delta = self.mu_logS - log(self.mu_S + 1)
+        self.delta = self.mu_logS - np.log(self.mu_S + 1)
         self.xc = self.x[cix].copy()
         self.yc = self.delta[cix].copy()
+        # handle if some of the ycs are nan
+        if np.isnan(self.yc).any():
+            goodidx = ~np.isnan(self.yc)
+            self.xc = self.xc[goodidx]
+            self.yc = self.yc[goodidx]
 
-        # compute GP regression for Delta_c
-        self.mu_Dc, self.cov_Dc, self.theta_Dc = self._fit_gp(
-            self.xc, self.yc, "Delta_c")
+        # compute GP regression for Delta_c -- just use logS parameters
+        self.mu_Dc, self.cov_Dc = GP(
+            self.mll.kernel(*self.theta_logS),
+            self.xc, self.yc, self.x)
 
         # mean of the final regression for S
         self.mean = ((self.mu_S + 1) * (1 + self.mu_Dc)) - 1
