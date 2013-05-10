@@ -86,7 +86,7 @@ def regression(x, y, xi, yi, xo, yo_mean, yo_var):
     sg.clear_top()
 
 
-def bq_likelihood_regression(bq):
+def bq_regression(bq):
     labelx = -0.15
 
     # overall figure settings
@@ -151,7 +151,7 @@ def bq_likelihood_regression(bq):
     # plt.ylim(min(yl[0], -yr / 2.), max(yr, yl[1]))
 
 
-def parametric_regression(pr):
+def vm_regression(pr):
     # overall figure settings
     sg.set_figsize(4, 4)
 
