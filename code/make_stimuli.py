@@ -73,7 +73,7 @@ if __name__ == "__main__":
 
     # config variables
     npoints = 5
-    sigma = 0.2
+    sigma = 0.1
     nstim = 10
 
     # all the angles we want to try
