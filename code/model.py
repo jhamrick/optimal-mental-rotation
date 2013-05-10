@@ -15,6 +15,21 @@ from snippets.stats import gaussian_kernel
 import circstats as circ
 
 
+def log_prior_X(X):
+    # the beginning is the same as the end, so ignore the last vertex
+    x = X[:-1]
+    # number of points and number of dimensions
+    n, D = x.shape
+    assert D == 2
+    # n points picked at random angles around the circle
+    log_pangle = -np.log(2*pi) * n
+    # one point has radius 1, the rest have random radii
+    log_pradius = np.log(1) * (n-1)
+    # put it all together
+    p_X = log_pangle + log_pradius
+    return p_X
+
+
 def similarity(X0, X1, sf=1):
     """Computes the similarity between sets of vertices `X0` and `X1`."""
     # the beginning is the same as the end, so ignore the last vertex
