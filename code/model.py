@@ -1,5 +1,9 @@
 import numpy as np
 
+from model_naive import NaiveModel as Naive
+from model_vm import VonMisesModel as VonMises
+from model_bq import BayesianQuadratureModel as BayesianQuadrature
+
 
 def log_prior_X(X):
     # the beginning is the same as the end, so ignore the last vertex
