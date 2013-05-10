@@ -382,11 +382,11 @@ class BayesianQuadrature(object):
 
         Parameters
         ----------
-        mll : KernelMLL object
         x : numpy.ndarray
             Vector of x values
         y : numpy.ndarray
             Vector of (actual) y values
+        mll : KernelMLL object
         ntry : int (default=10)
             Number of optimizations to run
         verbose : bool (default=False)
@@ -614,11 +614,11 @@ class ParametricRegression(object):
 
         Parameters
         ----------
-        mll : VonMisesMSE object
         x : numpy.ndarray
             Vector of x values
         y : numpy.ndarray
             Vector of (actual) y values
+        mse : VonMisesMSE object
         ntry : int (default=10)
             Number of optimizations to run
         verbose : bool (default=False)
