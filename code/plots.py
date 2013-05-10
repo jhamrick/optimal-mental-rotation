@@ -118,7 +118,7 @@ def bq_likelihood_regression(bq):
     plt.subplot(2, 2, 4)
     regression(
         bq.x, bq.delta, bq.xc, bq.yc,
-        bq.x, bq.mu_Dc, np.diag(bq.cov_Dc))
+        bq.x, bq.mu_Dc, None)
     plt.title(r"GPR for $\Delta_c$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel(r"Difference ($\Delta_c$)")

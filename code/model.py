@@ -15,11 +15,45 @@ from snippets.stats import gaussian_kernel
 import circstats as circ
 
 
-def similarity(I0, I1, sf=1):
-    """Computes the similarity between images `I0` and `I1`."""
-    Z = 1. / (np.sqrt(2 * np.pi) * sf)
-    e = exp(np.sum(-0.5 * ((I0 - I1) ** 2) / (sf ** 2)))
-    S = Z * e
+def log_prior_X(X):
+    # the beginning is the same as the end, so ignore the last vertex
+    x = X[:-1]
+    # number of points and number of dimensions
+    n, D = x.shape
+    assert D == 2
+    # n points picked at random angles around the circle
+    log_pangle = -log(2*pi) * n
+    # one point has radius 1, the rest have random radii
+    log_pradius = log(1) * (n-1)
+    # put it all together
+    p_X = log_pangle + log_pradius
+    return p_X
+
+
+def similarity(X0, X1, sf=1):
+    """Computes the similarity between sets of vertices `X0` and `X1`."""
+    # the beginning is the same as the end, so ignore the last vertex
+    x0 = X0[:-1]
+    x1 = X1[:-1]
+    # number of points and number of dimensions
+    n, D = x0.shape
+    # covariance matrix
+    Sigma = np.eye(D) * sf
+    invSigma = np.eye(D) * (1. / sf)
+    # iterate through all permutations of the vertices -- but if two
+    # vertices are connected, they are next to each other in the list
+    # (or on the ends), so we really only need to cycle through n
+    # orderings
+    e = np.empty(n)
+    for i in xrange(n):
+        idx = np.arange(i, i+n) % n
+        d = x0 - x1[idx]
+        e[i] = -0.5 * np.sum(np.dot(d, invSigma) * d)
+    # constants
+    Z0 = (D / 2.) * np.log(2 * np.pi)
+    Z1 = 0.5 * np.linalg.slogdet(Sigma)[1]
+    # overall similarity, marginalizing out order
+    S = sum(exp(e + Z0 + Z1 - np.log(n)))
     return S
 
 
@@ -412,6 +446,8 @@ class BayesianQuadrature(object):
         # compute GP regressions for S and log(S)
         self.mu_S, self.cov_S, self.theta_S = self._fit_gp(
             self.xi, self.yi, "S")
+        if ((self.mu_S + 1) <= 0).any():
+            print "Warning: regression for mu_S returned negative values"
         self.mu_logS, self.cov_logS, self.theta_logS = self._fit_gp(
             self.xi, log(self.yi + 1), "log(S)")
 
@@ -419,13 +455,19 @@ class BayesianQuadrature(object):
         cix = cix = np.sort(np.unique(np.concatenate([
             (iix + np.array(list(iix[1:]) + [self.x.size])) / 2,
             iix])))
-        self.delta = self.mu_logS - log(self.mu_S + 1)
+        self.delta = self.mu_logS - np.log(self.mu_S + 1)
         self.xc = self.x[cix].copy()
         self.yc = self.delta[cix].copy()
+        # handle if some of the ycs are nan
+        if np.isnan(self.yc).any():
+            goodidx = ~np.isnan(self.yc)
+            self.xc = self.xc[goodidx]
+            self.yc = self.yc[goodidx]
 
-        # compute GP regression for Delta_c
-        self.mu_Dc, self.cov_Dc, self.theta_Dc = self._fit_gp(
-            self.xc, self.yc, "Delta_c")
+        # compute GP regression for Delta_c -- just use logS parameters
+        self.mu_Dc, self.cov_Dc = GP(
+            self.mll.kernel(*self.theta_logS),
+            self.xc, self.yc, self.x)
 
         # mean of the final regression for S
         self.mean = ((self.mu_S + 1) * (1 + self.mu_Dc)) - 1
