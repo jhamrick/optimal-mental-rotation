@@ -161,6 +161,7 @@ def vm_regression(pr):
         pr.x, pr.mean, None)
     plt.title("Von Mises regression for $S$")
     plt.ylabel("Similarity ($S$)")
+    plt.legend(loc=0, fontsize=14, frameon=False)
 
 
 def li_regression(pr):
@@ -173,3 +174,4 @@ def li_regression(pr):
         pr.x, pr.mean, None)
     plt.title("Linear interpolation for $S$")
     plt.ylabel("Similarity ($S$)")
+    plt.legend(loc=0, fontsize=14, frameon=False)
