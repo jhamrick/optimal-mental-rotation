@@ -11,7 +11,7 @@ import model
 stim_dir = "../stimuli/"
 
 
-def make_stimulus(stimnum, npoints, sigma, blur, R, rso):
+def make_stimulus(stimnum, npoints, sigma, R, rso):
 
     # randomly generate the angle of rotation
     theta = rso.uniform(0, 2*np.pi)
@@ -24,26 +24,18 @@ def make_stimulus(stimnum, npoints, sigma, blur, R, rso):
     # the same
     Xb1 = util.rotate(Xa, theta)
 
-    # render images
-    Ia = util.blur(util.make_image(Xa, sigma=sigma, rso=rso), blur)
-    Ib0 = util.blur(util.make_image(Xb0, sigma=sigma, rso=rso), blur)
-    Ib1 = util.blur(util.make_image(Xb1, sigma=sigma, rso=rso), blur)
-
     # the angular increment between each rotation
     r = R[1] - R[0]
 
-    for Xb, Ib, hyp in [(Xb0, Ib0, 'h0'), (Xb1, Ib1, 'h1')]:
+    for Xb, hyp in [(Xb0, 'h0'), (Xb1, 'h1')]:
         stimname = "%s_%s" % (hyp, stimnum)
 
         # array to store all the rotated shapes
         Xm = np.zeros(R.shape + Xa.shape)
         Xm[0] = Xa.copy()
-        # array to store all the rotated images
-        Im = np.zeros(R.shape + Ia.shape)
-        Im[0] = Ia.copy()
         # array to store all the similarities
         Sr = np.zeros(R.shape)
-        Sr[0] = model.similarity(Ib, Im[0], sf=blur)
+        Sr[0] = model.similarity(Xb, Xm[0], sf=sigma)
 
         # create stimuli directory, if it does not exist
         if not os.path.exists(stim_dir):
@@ -58,8 +50,7 @@ def make_stimulus(stimnum, npoints, sigma, blur, R, rso):
         # generate mental images and then compare them
         for i in xrange(1, R.size):
             Xm[i] = util.rotate(Xm[i-1], r)
-            Im[i] = util.blur(util.render(Xm[i]), blur)
-            Sr[i] = model.similarity(Ib, Im[i], sf=blur)
+            Sr[i] = model.similarity(Xb, Xm[i], sf=sigma)
             print "[%d / %d] %f" % (i+1, R.size, Sr[i])
 
         # save data to numpy arrays
@@ -72,9 +63,6 @@ def make_stimulus(stimnum, npoints, sigma, blur, R, rso):
             # shapes
             Xm=Xm,
             Xb=Xb,
-            # images
-            Im=Im,
-            Ib=Ib,
             # similarity
             Sr=Sr,
         )
@@ -85,8 +73,7 @@ if __name__ == "__main__":
 
     # config variables
     npoints = 5
-    sigma = 0.0
-    blur = 5.8
+    sigma = 0.2
     nstim = 10
 
     # all the angles we want to try
@@ -94,4 +81,4 @@ if __name__ == "__main__":
 
     for i in xrange(nstim):
         stimnum = "%03d" % i
-        make_stimulus(stimnum, npoints, sigma, blur, R, rso)
+        make_stimulus(stimnum, npoints, sigma, R, rso)
