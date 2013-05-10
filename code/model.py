@@ -580,7 +580,7 @@ class VonMisesMSE(object):
                 x0=p0,
                 args=(x, y),
                 method="L-BFGS-B",
-                bounds=((0, 2*np.pi), (0, None), (0, None))
+                bounds=((0, 2*np.pi), (1e-8, None), (1e-8, None))
             )
 
             # get results of the optimization
