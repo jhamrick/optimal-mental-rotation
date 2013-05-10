@@ -17,7 +17,9 @@ import circstats as circ
 
 def similarity(I0, I1, sf=1):
     """Computes the similarity between images `I0` and `I1`."""
-    S = exp(np.sum(-0.5 * ((I0 - I1) ** 2) / (sf ** 2)))
+    Z = 1. / (np.sqrt(2 * np.pi) * sf)
+    e = exp(np.sum(-0.5 * ((I0 - I1) ** 2) / (sf ** 2)))
+    S = Z * e
     return S
 
 
@@ -273,7 +275,7 @@ class KernelMLL(object):
 
         for i in xrange(ntry):
             # randomize starting parameter values
-            h0 = np.random.uniform(0, np.ptp(y)**2)
+            h0 = np.random.uniform(0, np.max(np.abs(y))*2)
             w0 = np.random.uniform(0, 2*np.pi)
             if self.obs_noise:
                 s0 = np.random.uniform(0, np.sqrt(np.var(y)))
@@ -423,11 +425,10 @@ class BayesianQuadrature(object):
 
         # compute GP regression for Delta_c
         self.mu_Dc, self.cov_Dc, self.theta_Dc = self._fit_gp(
-            self.xc, self.yc, "Delta_c",
-            wmin=min(self.theta_S[1], self.theta_logS[1]) / 2.)
+            self.xc, self.yc, "Delta_c")
 
         # mean of the final regression for S
-        self.mean = ((self.mu_S + 1) * (1 + self.delta)) - 1
+        self.mean = ((self.mu_S + 1) * (1 + self.mu_Dc)) - 1
 
     def integrate(self, px):
         """Compute the mean and variance of our estimate of the integral:
@@ -493,8 +494,8 @@ class VonMisesMSE(object):
         """
 
         thetahat, kappa, z = theta
-        pdf = z * circ.vmpdf(x, thetahat, kappa)
-        err = np.sum((y - pdf) ** 2)
+        pdf = np.log(z) + circ.vmlogpdf(x, thetahat, kappa)
+        err = np.sum((y - np.exp(pdf)) ** 2)
         return err
 
     def minimize(self, x, y, ntry=10, verbose=False):
@@ -528,7 +529,7 @@ class VonMisesMSE(object):
             # randomize starting parameter values
             t0 = np.random.uniform(0, 2*np.pi)
             k0 = np.random.gamma(2, 2)
-            z0 = 1
+            z0 = np.random.uniform(0, np.max(np.abs(y))*2)
             p0 = (t0, k0, z0)
 
             # run mimization function

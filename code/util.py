@@ -8,8 +8,14 @@ from snippets.graphing import plot_to_array
 
 def make_stimulus(npoints, rso):
     """Make a shape with `npoints` vertices."""
+    # pick random points
     X = rso.rand(npoints, 2)
+    # subtract off the mean
     X = X - np.mean(X, axis=0)
+    # normalize the shape's size, so the furthest point is distance 1
+    # away from the origin
+    X = X / np.max(np.sqrt(np.sum(X ** 2, axis=1)))
+    # order them by angle, so they plot nicely
     r = np.arctan2(X[:, 1], X[:, 0])
     idx = np.argsort(r)
     X = np.concatenate([X[idx], X[[idx[0]]]], axis=0)
@@ -95,4 +101,23 @@ def rotate_image(I, theta):
     img = PIL.Image.fromarray(1-I)
     rimg = img.rotate(np.degrees(theta))
     rI = 1-np.array(rimg)
+    return rI
+
+
+def reflect(Xa):
+    """Reflect a set of points given in `Xa` (shape Nx2) about the y-axis.
+
+    """
+    M = np.array([
+        [-1, 0],
+        [0, 1]
+    ])
+    Xb = np.dot(Xa, M)
+    return Xb
+
+
+def reflect_image(I):
+    img = PIL.Image.fromarray(I)
+    rimg = img.transpose(PIL.Image.FLIP_LEFT_RIGHT)
+    rI = np.array(rimg)
     return rI
