@@ -607,7 +607,7 @@ class VonMisesMSE(object):
         return args[best]
 
 
-class ParametricRegression(object):
+class VonMisesRegression(object):
 
     def __init__(self, x, y, mse, ntry=10, verbose=False):
         """Initialize the likelihood estimator object.
