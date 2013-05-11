@@ -151,14 +151,14 @@ def bq_regression(bq):
     # plt.ylim(min(yl[0], -yr / 2.), max(yr, yl[1]))
 
 
-def vm_regression(pr):
+def vm_regression(model):
     # overall figure settings
     sg.set_figsize(4, 4)
 
     # plot the regression for S
     regression(
-        pr.x, pr.y, pr.xi, pr.yi,
-        pr.x, pr.mean, None)
+        model.R, model.S, model.Ri, model.Si,
+        model.R, model.m_S, model.V_S)
     plt.title("Von Mises regression for $S$")
     plt.ylabel("Similarity ($S$)")
     plt.legend(loc=0, fontsize=14, frameon=False)
