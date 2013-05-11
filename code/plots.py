@@ -164,14 +164,14 @@ def vm_regression(pr):
     plt.legend(loc=0, fontsize=14, frameon=False)
 
 
-def li_regression(pr):
+def li_regression(model):
     # overall figure settings
     sg.set_figsize(4, 4)
 
     # plot the regression for S
     regression(
-        pr.R, pr.S, pr.Ri, pr.Si,
-        pr.R, pr.m_S, pr.V_S)
+        model.R, model.S, model.Ri, model.Si,
+        model.R, model.m_S, model.V_S)
     plt.title("Linear interpolation for $S$")
     plt.ylabel("Similarity ($S$)")
     plt.legend(loc=0, fontsize=14, frameon=False)
