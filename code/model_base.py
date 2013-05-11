@@ -51,7 +51,7 @@ class Model(object):
         self._rotations = np.arange(0, self.R.size, self.dr)
 
         # samples
-        self.ix = [0, self.R.size-1]
+        self.ix = []
         # sampled R and S values
         self.Ri = None
         self.Si = None
@@ -63,6 +63,10 @@ class Model(object):
         # mean and variance of Z
         self.Z_mean = None
         self.Z_var = None
+
+        # we get the first (and last, because it's circular data)
+        # observation for free
+        self.sample(0)
 
     def sample(self, r):
         S = self.S[r]
