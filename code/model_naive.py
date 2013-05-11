@@ -35,8 +35,9 @@ class NaiveModel(Model):
         if self.opt['verbose']:
             print "Fitting likelihood..."
 
-        self.ix = sorted(self.ix)
+        self.ix = sorted(self.ix) + [0]
         self.Ri = self.R[self.ix]
+        self.Ri[-1] = 2*np.pi
         self.Si = self.S[self.ix]
         self.S_mean = np.interp(self.R, self.Ri, self.Si)
         self.S_var = np.zeros(self.S_mean.shape)

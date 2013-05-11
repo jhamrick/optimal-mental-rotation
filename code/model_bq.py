@@ -107,7 +107,7 @@ class BayesianQuadratureModel(Model):
         """
 
         # input data
-        self.ix = sorted(self.ix)
+        self.ix = sorted(self.ix) + [self.R.size]
         self.Ri = self.R[self.ix[:-1]].copy()
         self.Si = self.S[self.ix[:-1]].copy()
 
