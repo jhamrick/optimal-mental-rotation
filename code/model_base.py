@@ -86,9 +86,12 @@ class Model(object):
             if self.opt['verbose']:
                 self.fit()
                 self.integrate()
-                print "mu_Z  = %f" % self.m_Z
-                print "var_Z = %f" % self.V_Z
+                print "Z_mean  = %f" % self.Z_mean
+                print "Z_var   = %f" % self.Z_var
 
         if self.Ri is None or self.Si is None:
             self.fit()
             self.integrate()
+            if self.opt['verbose']:
+                print "Z_mean  = %f" % self.Z_mean
+                print "Z_var   = %f" % self.Z_var
