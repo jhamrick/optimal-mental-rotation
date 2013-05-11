@@ -158,7 +158,7 @@ def vm_regression(model):
     # plot the regression for S
     regression(
         model.R, model.S, model.Ri, model.Si,
-        model.R, model.m_S, model.V_S)
+        model.R, model.S_mean, model.S_var)
     plt.title("Von Mises regression for $S$")
     plt.ylabel("Similarity ($S$)")
     plt.legend(loc=0, fontsize=14, frameon=False)
@@ -171,7 +171,7 @@ def li_regression(model):
     # plot the regression for S
     regression(
         model.R, model.S, model.Ri, model.Si,
-        model.R, model.m_S, model.V_S)
+        model.R, model.S_mean, model.S_var)
     plt.title("Linear interpolation for $S$")
     plt.ylabel("Similarity ($S$)")
     plt.legend(loc=0, fontsize=14, frameon=False)

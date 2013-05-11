@@ -57,12 +57,12 @@ class Model(object):
         self.Si = None
 
         # mean and variance of S
-        self.m_S = None
-        self.V_S = None
+        self.S_mean = None
+        self.S_var = None
 
         # mean and variance of Z
-        self.m_Z = None
-        self.V_Z = None
+        self.Z_mean = None
+        self.Z_var = None
 
     def sample(self, r):
         S = self.S[r]

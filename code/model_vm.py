@@ -121,7 +121,8 @@ class VonMisesModel(Model):
             raise RuntimeError("Could not find parameter estimates")
 
         self.theta = args[best]
-        self.m_S = self.theta[2] * circ.vmpdf(self.R, *self.theta[:2])
+        self.S_mean = self.theta[2] * circ.vmpdf(self.R, *self.theta[:2])
+        self.S_var = np.zeros(self.S_mean.shape)
 
     def integrate(self):
         """Compute the mean and variance of Z:
@@ -130,12 +131,12 @@ class VonMisesModel(Model):
 
         """
 
-        if self.m_S is None:
+        if self.S_mean is None or self.S_var is None:
             raise RuntimeError(
-                "self.m_S is not set, did you call self.fit first?")
+                "S_mean or S_var is not set, did you call self.fit first?")
 
         if self.opt['verbose']:
             print "Computing mean and variance of estimate of Z..."
 
-        self.m_Z = sum(self.pR * self.m_S)
-        self.V_Z = 0
+        self.Z_mean = sum(self.pR * self.S_mean)
+        self.Z_var = 0
