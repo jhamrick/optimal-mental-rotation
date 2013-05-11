@@ -33,7 +33,7 @@ class NaiveModel(Model):
         """Fit the likelihood function."""
 
         if self.opt['verbose']:
-           print "Fitting likelihood..."
+            print "Fitting likelihood..."
 
         self.ix = sorted(self.ix)
         self.Ri = self.R[self.ix]
@@ -53,7 +53,7 @@ class NaiveModel(Model):
                 "self.m_S is not set, did you call self.fit first?")
 
         if self.opt['verbose']:
-           print "Computing mean and variance of estimate of Z..."
+            print "Computing mean and variance of estimate of Z..."
 
         self.m_Z = sum(self.pR * self.m_S)
         self.V_Z = 0
