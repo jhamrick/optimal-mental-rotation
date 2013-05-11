@@ -95,3 +95,7 @@ class Model(object):
             if self.opt['verbose']:
                 print "Z_mean  = %f" % self.Z_mean
                 print "Z_var   = %f" % self.Z_var
+
+    def print_Z(self):
+        print "mu_Z  = %f" % self.Z_mean
+        print "var_Z = %f" % self.Z_var
