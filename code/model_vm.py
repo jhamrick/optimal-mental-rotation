@@ -1,36 +1,17 @@
 import numpy as np
 import circstats as circ
 import scipy.optimize as opt
+from model_base import Model
 
 
-class VonMisesModel(object):
+class VonMisesModel(Model):
 
-    def __init__(self, x, y, ntry=10, verbose=False):
-        """Initialize the likelihood estimator object.
-
-        Parameters
-        ----------
-        x : numpy.ndarray
-            Vector of x values
-        y : numpy.ndarray
-            Vector of (actual) y values
-        ntry : int (default=10)
-            Number of optimizations to run
-        verbose : bool (default=False)
-            Whether to print information during fitting
-
-        """
-
-        # true x and y values for the likelihood
-        self.x = x.copy()
-        self.y = y.copy()
-        # number of optimization tries
-        self.ntry = ntry
-        # print fitting information
-        self.verbose = verbose
+    def __init__(self, *args, **kwargs):
+        super(VonMisesModel, self).__init__(*args, **kwargs)
+        self._icurr = 0
 
     @staticmethod
-    def mse(theta, x, y):
+    def _mse(theta, x, y):
         """Computes the mean squared error of the Von Mises PDF.
 
         Parameters
@@ -54,35 +35,52 @@ class VonMisesModel(object):
         err = np.sum((y - np.exp(pdf)) ** 2)
         return err
 
-    def fit(self, iix):
-        """Fit the likelihood function.
+    def next(self):
+        """Sample the next point."""
 
-        Parameters
-        ----------
-        iix : numpy.ndarray
-            Integer array of indices corresponding to the "given" x and y data
+        inext = self._icurr + 1
+        iprev = self._icurr - 1
 
-        """
+        rcurr = self._rotations[self._icurr]
+        rnext = self._rotations[inext]
+        rprev = self._rotations[iprev]
 
-        # input data
-        self.xi = self.x[iix].copy()
-        self.yi = self.y[iix].copy()
+        scurr = self.sample(rcurr)
+        snext = self.sample(rnext)
+        sprev = self.sample(rprev)
 
-        args = np.empty((self.ntry, 3))
-        fval = np.empty(self.ntry)
+        if snext > scurr and snext > sprev:
+            self._icurr = inext
+        elif sprev > scurr and sprev > snext:
+            self._icurr = iprev
+        else:
+            raise StopIteration
 
-        for i in xrange(self.ntry):
+    def fit(self):
+        """Fit the likelihood function."""
+
+        if self.opt['verbose']:
+            print "Fitting likelihood..."
+
+        self.ix = sorted(self.ix)
+        self.Ri = self.R[self.ix]
+        self.Si = self.S[self.ix]
+
+        args = np.empty((self.opt['ntry'], 3))
+        fval = np.empty(self.opt['ntry'])
+
+        for i in xrange(self.opt['ntry']):
             # randomize starting parameter values
             t0 = np.random.uniform(0, 2*np.pi)
             k0 = np.random.gamma(2, 2)
-            z0 = np.random.uniform(0, np.max(np.abs(self.yi))*2)
+            z0 = np.random.uniform(0, np.max(np.abs(self.Si))*2)
             p0 = (t0, k0, z0)
 
             # run mimization function
             popt = opt.minimize(
-                fun=self,
+                fun=self._mse,
                 x0=p0,
-                args=(self.xi, self.yi),
+                args=(self.Ri, self.Si),
                 method="L-BFGS-B",
                 bounds=((0, 2*np.pi), (1e-8, None), (1e-8, None))
             )
@@ -94,12 +92,12 @@ class VonMisesModel(object):
             if not success:
                 args[i] = np.nan
                 fval[i] = np.inf
-                if self.verbose:
+                if self.opt['verbose']:
                     print "Failed: %s" % message
             else:
                 args[i] = abs(popt['x'])
                 fval[i] = popt['fun']
-                if self.verbose:
+                if self.opt['verbose']:
                     print "MSE(%s) = %f" % (args[i], fval[i])
 
         # choose the parameters that give the smallest MSE
@@ -109,27 +107,21 @@ class VonMisesModel(object):
             raise RuntimeError("Could not find parameter estimates")
 
         self.theta = args[best]
-        self.mean = self.theta[2] * circ.vmpdf(self.x, *self.theta[:2])
+        self.m_S = self.theta[2] * circ.vmpdf(self.R, *self.theta[:2])
 
-    def integrate(self, px):
-        """Compute the mean and variance of our estimate of the integral:
+    def integrate(self):
+        """Compute the mean and variance of Z:
 
-        $$Z = \int S(y|x)p(x) dx$$
-
-        Where S(y|x) is the function being estimated by `self.fit`.
-
-        Parameters
-        ----------
-        px : numpy.ndarray
-            Prior probabilities over x-values
-
-        Returns
-        -------
-        out : 2-tuple
-            The mean and variance of the integral
+        $$Z = \int S(X_b, X_R)p(R) dR$$
 
         """
 
-        m_Z = sum(px * self.mean)
-        V_Z = 0
-        return m_Z, V_Z
+        if self.m_S is None:
+            raise RuntimeError(
+                "self.m_S is not set, did you call self.fit first?")
+
+        if self.opt['verbose']:
+            print "Computing mean and variance of estimate of Z..."
+
+        self.m_Z = sum(self.pR * self.m_S)
+        self.V_Z = 0
