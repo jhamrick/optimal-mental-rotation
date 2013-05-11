@@ -86,7 +86,7 @@ def regression(x, y, xi, yi, xo, yo_mean, yo_var):
     sg.clear_top()
 
 
-def bq_regression(bq):
+def bq_regression(model):
     labelx = -0.15
 
     # overall figure settings
@@ -96,8 +96,8 @@ def bq_regression(bq):
     # plot the regression for S
     plt.subplot(2, 2, 1)
     regression(
-        bq.x, bq.y, bq.xi, bq.yi,
-        bq.x, bq.mu_S, np.diag(bq.cov_S))
+        model.R, model.S, model.Ri, model.Si,
+        model.R, model.mu_S, np.diag(model.cov_S))
     plt.title("GPR for $S$")
     plt.ylabel("Similarity ($S$)")
     sg.set_ylabel_coords(labelx)
@@ -107,8 +107,8 @@ def bq_regression(bq):
     # plot the regression for log S
     plt.subplot(2, 2, 3)
     regression(
-        bq.x, np.log(bq.y + 1), bq.xi, np.log(bq.yi + 1),
-        bq.x, bq.mu_logS, np.diag(bq.cov_logS))
+        model.R, np.log(model.S + 1), model.Ri, np.log(model.Si + 1),
+        model.R, model.mu_logS, np.diag(model.cov_logS))
     plt.title(r"GPR for $\log(S+1)$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel(r"Similarity ($\log(S+1)$)")
@@ -117,8 +117,8 @@ def bq_regression(bq):
     # plot the regression for mu_logS - log_muS
     plt.subplot(2, 2, 4)
     regression(
-        bq.x, bq.delta, bq.xc, bq.yc,
-        bq.x, bq.mu_Dc, None)
+        model.R, model.delta, model.Rc, model.Sc,
+        model.R, model.mu_Dc, None)
     plt.title(r"GPR for $\Delta_c$")
     plt.xlabel("Rotation ($R$)")
     plt.ylabel(r"Difference ($\Delta_c$)")
@@ -128,8 +128,8 @@ def bq_regression(bq):
     # combine the two regression means to estimate E[Z]
     plt.subplot(2, 2, 2)
     regression(
-        bq.x, bq.y, bq.xi, bq.yi,
-        bq.x, bq.mean, np.diag(bq.cov_logS))
+        model.R, model.S, model.Ri, model.Si,
+        model.R, model.S_mean, model.S_var)
     plt.title(r"Final GPR for $S$")
     sg.no_xticklabels()
     ylim2 = plt.ylim()
@@ -151,27 +151,27 @@ def bq_regression(bq):
     # plt.ylim(min(yl[0], -yr / 2.), max(yr, yl[1]))
 
 
-def vm_regression(pr):
+def vm_regression(model):
     # overall figure settings
     sg.set_figsize(4, 4)
 
     # plot the regression for S
     regression(
-        pr.x, pr.y, pr.xi, pr.yi,
-        pr.x, pr.mean, None)
+        model.R, model.S, model.Ri, model.Si,
+        model.R, model.S_mean, model.S_var)
     plt.title("Von Mises regression for $S$")
     plt.ylabel("Similarity ($S$)")
     plt.legend(loc=0, fontsize=14, frameon=False)
 
 
-def li_regression(pr):
+def li_regression(model):
     # overall figure settings
     sg.set_figsize(4, 4)
 
     # plot the regression for S
     regression(
-        pr.x, pr.y, pr.xi, pr.yi,
-        pr.x, pr.mean, None)
+        model.R, model.S, model.Ri, model.Si,
+        model.R, model.S_mean, model.S_var)
     plt.title("Linear interpolation for $S$")
     plt.ylabel("Similarity ($S$)")
     plt.legend(loc=0, fontsize=14, frameon=False)
