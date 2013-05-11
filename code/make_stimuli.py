@@ -77,7 +77,7 @@ if __name__ == "__main__":
     nstim = 10
 
     # all the angles we want to try
-    R = np.linspace(0, 2*np.pi, 360)
+    R = np.linspace(0, 2*np.pi, 361)[:-1]
 
     for i in xrange(nstim):
         stimnum = "%03d" % i
