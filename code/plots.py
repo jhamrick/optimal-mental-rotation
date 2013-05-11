@@ -43,19 +43,6 @@ def stimuli_images(**kwargs):
         plt.title("$%s$" % I)
 
 
-def likelihood(R, Sr):
-    plt.plot(R, Sr)
-
-    plt.xlim(0, 2*np.pi)
-    plt.xticks(
-        [0, np.pi/2., np.pi, 3*np.pi/2., 2*np.pi],
-        ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
-
-    plt.xlabel("Rotation ($R$)")
-    plt.ylabel(r"Similarity ($S(I_b,I_R)$)")
-    plt.title("Likelihood function")
-
-
 def regression(x, y, xi, yi, xo, yo_mean, yo_var):
     """Plot the original function and the regression estimate.
 
@@ -175,3 +162,24 @@ def li_regression(model):
     plt.title("Linear interpolation for $S$")
     plt.ylabel("Similarity ($S$)")
     plt.legend(loc=0, fontsize=14, frameon=False)
+
+
+def likelihood(model):
+    # overall figure settings
+    sg.set_figsize(4, 4)
+
+    # plot the likelihood
+    plt.plot(model.R, model.S, 'k-', linewidth=2)
+
+    plt.xlim(0, 2 * np.pi)
+    plt.xticks(
+        [0, np.pi / 2., np.pi, 3 * np.pi / 2., 2 * np.pi],
+        ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
+
+    sg.outward_ticks()
+    sg.clear_right()
+    sg.clear_top()
+
+    plt.xlabel("Rotation ($R$)")
+    plt.ylabel(r"Similarity ($S$)")
+    plt.title("Likelihood function")
