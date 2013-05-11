@@ -48,3 +48,14 @@ def similarity(X0, X1, sf=1):
     # overall similarity, marginalizing out order
     S = np.sum(np.exp(e + Z0 + Z1 - np.log(n)))
     return S
+
+
+def likelihood_ratio(model, S_scale, p_Xa, p_XaXb_h0):
+    p_XaXb_h1 = p_Xa + np.log(model.Z_mean / S_scale)
+    ratio = np.exp(p_XaXb_h1 - p_XaXb_h0)
+    return ratio
+
+
+def ratio_test(ratio):
+    print "p(Xa, Xb | h1) / p(Xa, Xb | h0) = %f" % ratio
+    print "\n--> Hypothesis %d is more likely" % (0 if ratio < 1 else 1)
