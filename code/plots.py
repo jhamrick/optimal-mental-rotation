@@ -170,8 +170,8 @@ def li_regression(pr):
 
     # plot the regression for S
     regression(
-        pr.x, pr.y, pr.xi, pr.yi,
-        pr.x, pr.mean, None)
+        pr.R, pr.S, pr.Ri, pr.Si,
+        pr.R, pr.m_S, pr.V_S)
     plt.title("Linear interpolation for $S$")
     plt.ylabel("Similarity ($S$)")
     plt.legend(loc=0, fontsize=14, frameon=False)
