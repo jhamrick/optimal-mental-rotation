@@ -7,6 +7,20 @@ from model_base import Model
 class VonMisesModel(Model):
 
     def __init__(self, *args, **kwargs):
+        """See Model.__init__
+
+        Additional model options
+        ------------------------
+        ntry : int (default=10)
+           Number of times to run optimization function
+
+        """
+
+        # default options
+        self.opt = {
+            'ntry': 10
+        }
+
         super(VonMisesModel, self).__init__(*args, **kwargs)
         self._icurr = 0
 

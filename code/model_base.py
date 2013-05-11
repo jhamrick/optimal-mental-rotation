@@ -28,8 +28,16 @@ class Model(object):
 
         """
 
-        # options
-        self.opt = opt.copy()
+        # default options
+        default_opt = {
+            'verbose': False
+        }
+        # self.opt was defined by a subclass
+        if hasattr(self, 'opt'):
+            default_opt.update(self.opt)
+        # user overrides
+        default_opt.update(opt)
+        self.opt = default_opt
 
         # step size
         self.dr = dr
