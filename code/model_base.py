@@ -5,22 +5,20 @@ import util
 
 class Model(object):
 
-    def __init__(self, R, S, dr, pR, **opt):
+    def __init__(self, Xa, Xb, Xm, R, **opt):
         """Initialize the linear interpolation object.
 
         Parameters
         ----------
+        Xa : numpy.ndarray
+            Stimulus A
+        Xb : numpy.ndarray
+            Stimulus B
+        Xm : numpy.ndarray
+            Array of rotations of stimulus A, corresponding to R
         R : numpy.ndarray
             Vector of all possible rotations, in radians. Each index i
             should correspond to an angle i in degrees.
-        S : numpy.ndarray
-            Vector of all values of the similarity function S. Each
-            index i should correspond to an angle i in degrees.
-        dr : int
-            Angle of rotation in between sequential mental images
-        pR : numpy.ndarray
-            Probability vector for all values of R. Should have the same
-            dimensions as S.
         **opt : Model options (see below)
 
         Model options
@@ -29,6 +27,12 @@ class Model(object):
             Print information during the modeling process
         scale : float (default=1)
             Scale of the data
+        dr : int (default=10)
+            Angle of rotation, in degrees, between sequential mental images
+        sigma : float (default=0.2)
+            Standard deviation in similarity function
+        prior_R : float or numpy.ndarray (default=1/2pi)
+            Prior over rotations
 
         """
 
@@ -36,6 +40,9 @@ class Model(object):
         default_opt = {
             'verbose': False,
             'scale': 1,
+            'dr': 10,
+            'sigma': 0.2,
+            'prior_R': 1. / (2*np.pi),
         }
         # self.opt was defined by a subclass
         if hasattr(self, 'opt'):
@@ -44,16 +51,28 @@ class Model(object):
         default_opt.update(opt)
         self.opt = default_opt
 
-        # step size
-        self.dr = dr
+        # stimuli
+        self.Xa = Xa.copy()
+        self.Xb = Xb.copy()
+        self.Xm = Xm.copy()
 
-        # prior over angles
-        self.pR = pR
-
-        # x and y values
+        # all possible rotations
         self.R = R.copy()
-        self.S = S.copy()
-        self._rotations = np.arange(0, self.R.size, self.dr)
+        self._rotations = np.arange(0, self.R.size, self.opt['dr'])
+        # compute similarities
+        self._S_scale = self.Xa.shape[0] - 1
+        self._S_scale /= (2 * np.pi * self.opt['sigma']) * self.opt['scale']
+        self.S = np.array([self.similarity(X) for X in self.Xm])
+        self.S *= self._S_scale
+
+        # prior over stimuli
+        self.p_Xa = self.prior_X(Xa)
+        self.p_Xb = self.prior_X(Xb)
+        # uniform prior over angles
+        self.pR = np.ones(R.size) / (2*np.pi)
+
+        # joint of h0
+        self.p_XaXb_h0 = self.p_Xa * self.p_Xb
 
         # samples
         self.ix = []
