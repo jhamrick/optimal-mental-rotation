@@ -85,9 +85,7 @@ class Model(object):
 
     def run(self):
         for i in self:
-            if self.opt['verbose']:
-                self.fit()
-                self.integrate()
+            pass
 
         if self.Ri is None or self.Si is None:
             self.fit()
