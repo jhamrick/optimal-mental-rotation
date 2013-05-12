@@ -97,7 +97,15 @@ class Model(object):
             self.print_Z()
 
     def print_Z(self, level=-1):
-        self.debug("Z = %f +/- %f" % (self.Z_mean, self.Z_var), level=level)
+        if self.Z_var == 0:
+            self.debug("Z = %f" % (self.Z_mean), level=level)
+        else:
+            std = np.sqrt(self.Z_var)
+            mean = self.Z_mean
+            lower = mean - 2*std
+            upper = mean + 2*std
+            self.debug("Z = %f  [%f, %f]" % (mean, lower, upper),
+                       level=level)
 
     def debug(self, msg, level=0):
         if self.opt['verbose'] > level:
