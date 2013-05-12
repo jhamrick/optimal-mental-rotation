@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import scipy.ndimage as nd
 import PIL
 import os
+import yaml
 
 from snippets.graphing import plot_to_array
 
@@ -189,3 +190,14 @@ def run_model(stims, model, opt):
         ratio=ratio,
         hyp=hyp
     )
+
+
+def load_opt():
+    with open('options.yml', 'r') as fh:
+        opt = yaml.load(fh)
+    return opt
+
+
+def find_stims():
+    stims = sorted([os.path.splitext(x)[0] for x in os.listdir(STIM_DIR)])
+    return stims
