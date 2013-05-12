@@ -24,14 +24,30 @@ class KernelMLL(object):
 
     """
 
-    def __init__(self, kernel, obs_noise=True):
-        self.obs_noise = obs_noise
+    def __init__(self, kernel, **params):
 
         # create symbolic variables
         d = sym.Symbol('d')
-        h = sym.Symbol('h')
-        w = sym.Symbol('w')
-        s = sym.Symbol('s')
+
+        free_params = []
+        # output scale (height)
+        if params.get('h', None):
+            h = params['h']
+        else:
+            h = sym.Symbol('h')
+            free_params.append(h)
+        # input scale (width)
+        if params.get('w', None):
+            w = params['w']
+        else:
+            w = sym.Symbol('w')
+            free_params.append(w)
+        # observation noise
+        if params.get('s', None) is not None:
+            s = params['s']
+        else:
+            s = sym.Symbol('s')
+            free_params.append(s)
 
         # symbolic version of the kernel function
         if kernel == 'periodic':
@@ -43,27 +59,22 @@ class KernelMLL(object):
         else:
             raise ValueError("unsupported kernel '%s'" % kernel)
 
-        if self.obs_noise:
-            k2 = (s ** 2) * delta(d)
-            self.sym_K = k1 + k2
-        else:
-            self.sym_K = k1
+        k2 = (s ** 2) * delta(d)
+        self.sym_K = k1 + k2
 
-        # compute partial derivatives
-        self.sym_dK_dh = sym.diff(self.sym_K, h)
-        self.sym_dK_dw = sym.diff(self.sym_K, w)
-        if self.obs_noise:
-            self.sym_dK_ds = sym.diff(self.sym_K, s)
+        # compute partial derivatives adn turn them into functions, so
+        # we can evaluate them (to compute the Jacobian)
+        self.sym_dK_dtheta = []
+        self.dK_dtheta = []
+        for p in free_params:
+            sym_f = sym.diff(self.sym_K, p)
+            f = lambdify((tuple(free_params), d), sym_f)
+            self.sym_dK_dtheta.append(sym_f)
+            self.dK_dtheta.append(f)
 
-        # turn partial derivatives into functions, so we can evaluate
-        # them (to compute the Jacobian)
-        if self.obs_noise:
-            self.dK_dh = lambdify(((h, w, s), d), self.sym_dK_dh)
-            self.dK_dw = lambdify(((h, w, s), d), self.sym_dK_dw)
-            self.dK_ds = lambdify(((h, w, s), d), self.sym_dK_ds)
-        else:
-            self.dK_dh = lambdify(((h, w), d), self.sym_dK_dh)
-            self.dK_dw = lambdify(((h, w), d), self.sym_dK_dw)
+        self.h = None if type(h) is sym.Symbol else h
+        self.w = None if type(w) is sym.Symbol else w
+        self.s = None if type(s) is sym.Symbol else s
 
     @staticmethod
     def _d_dthetaj(Ki, dK_dthetaj, theta, x, y):
@@ -146,11 +157,10 @@ class KernelMLL(object):
 
         """
 
-        if self.obs_noise:
-            h, w, s = theta
-        else:
-            h, w = theta
-            s = 0
+        th = list(theta)
+        h = th.pop(0) if self.h is None else self.h
+        w = th.pop(0) if self.w is None else self.w
+        s = th.pop(0) if self.s is None else self.s
 
         # the overhead of JIT compiling isn't it worth it here because
         # this is just a temporary kernel function
@@ -201,11 +211,10 @@ class KernelMLL(object):
 
         """
 
-        if self.obs_noise:
-            h, w, s = theta
-        else:
-            h, w = theta
-            s = 0
+        th = list(theta)
+        h = th.pop(0) if self.h is None else self.h
+        w = th.pop(0) if self.w is None else self.w
+        s = th.pop(0) if self.s is None else self.s
 
         # the overhead of JIT compiling isn't it worth it here because
         # this is just a temporary kernel function
@@ -217,18 +226,14 @@ class KernelMLL(object):
         Li = np.linalg.inv(np.linalg.cholesky(K))
         Ki = np.dot(Li.T, Li)
 
-        dmll = [
-            self._d_dthetaj(Ki, self.dK_dh, theta, x, y),
-            self._d_dthetaj(Ki, self.dK_dw, theta, x, y)
-        ]
-
-        if self.obs_noise:
-            dmll.append(self._d_dthetaj(Ki, self.dK_ds, theta, x, y))
+        dmll = [self._d_dthetaj(Ki, dK_dthetaj, theta, x, y)
+                for dK_dthetaj in self.dK_dtheta]
 
         return -np.array(dmll)
 
     def maximize(self, x, y,
-                 hmin=1e-8, wmin=1e-8,
+                 hmin=1e-8, hmax=None,
+                 wmin=1e-8, wmax=None,
                  ntry=10, verbose=False):
         """Find kernel parameter values which maximize the marginal log
         likelihood of the data.
@@ -253,25 +258,29 @@ class KernelMLL(object):
 
         """
 
-        if self.obs_noise:
-            args = np.empty((ntry, 3))
-        else:
-            args = np.empty((ntry, 2))
+        args = np.empty((ntry, len(self.dK_dtheta)))
         fval = np.empty(ntry)
 
         for i in xrange(ntry):
             # randomize starting parameter values
-            h0 = np.random.uniform(0, np.max(np.abs(y))*2)
-            w0 = np.random.uniform(0, 2*np.pi)
-            if self.obs_noise:
-                s0 = np.random.uniform(0, np.sqrt(np.var(y)))
-                p0 = (h0, w0, s0)
-                method = "BFGS"
-                bounds = None
-            else:
-                p0 = (h0, w0)
-                method = "L-BFGS-B"
-                bounds = ((hmin, None), (wmin, None))
+            p0 = []
+            bounds = []
+            if self.h is None:
+                p0.append(np.random.uniform(0, np.max(np.abs(y))*2))
+                bounds.append((hmin, hmax))
+            if self.w is None:
+                p0.append(np.random.uniform(0, 2*np.pi))
+                bounds.append((wmin, wmax))
+            if self.s is None:
+                p0.append(np.random.uniform(0, np.sqrt(np.var(y))))
+                bounds.append((0, None))
+
+            p0 = tuple(p0)
+            bounds = tuple(bounds)
+            method = "L-BFGS-B"
+
+            if verbose:
+                print "      p0 = %s" % (p0,)
 
             # run mimization function
             try:
@@ -309,4 +318,9 @@ class KernelMLL(object):
             print args[best], fval[best]
             raise RuntimeError("Could not find MLII parameter estimates")
 
-        return args[best]
+        th = list(args[best])
+        h = th.pop(0) if self.h is None else self.h
+        w = th.pop(0) if self.w is None else self.w
+        s = th.pop(0) if self.s is None else self.s
+
+        return (h, w, s)

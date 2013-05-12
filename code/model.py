@@ -56,7 +56,10 @@ def likelihood_ratio(model, S_scale, p_Xa, p_XaXb_h0):
             model.Z_mean + 2*std]
     ratios = []
     for val in vals:
-        p_XaXb_h1 = p_Xa + np.log(val / S_scale)
+        if val <= 0:
+            p_XaXb_h1 = -np.inf
+        else:
+            p_XaXb_h1 = p_Xa + np.log(val / S_scale)
         ratios.append(np.exp(p_XaXb_h1 - p_XaXb_h0))
     return tuple(ratios)
 
