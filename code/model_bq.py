@@ -41,17 +41,31 @@ class BayesianQuadratureModel(Model):
         self.opt = {
             'ntry': 10,
             'kernel': 'periodic',
-            'obs_noise': False
+            's': 0,
         }
 
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
         self._icurr = 0
         self._ilast = None
 
-        # marginal log likelihood object
-        self._mll = KernelMLL(
+        # marginal log likelihood objects
+        self._mll_S = KernelMLL(
             kernel=self.opt['kernel'],
-            obs_noise=self.opt['obs_noise']
+            h=self.opt['scale'],
+            w=None,
+            s=self.opt['s']
+        )
+        self._mll_logS = KernelMLL(
+            kernel=self.opt['kernel'],
+            h=np.log(self.opt['scale']+1),
+            w=None,
+            s=self.opt['s']
+        )
+        self._mll_Dc = KernelMLL(
+            kernel=self.opt['kernel'],
+            h=None,
+            w=None,
+            s=self.opt['s']
         )
 
     def next(self):
@@ -66,22 +80,22 @@ class BayesianQuadratureModel(Model):
         self._ilast = self._icurr
         self._icurr = icurr
 
-    def _fit_gp(self, Ri, Si, name, wmin=1e-8):
+    def _fit_gp(self, Ri, Si, mll, name):
         self.debug("Fitting parameters for GP over %s ..." % name, level=2)
 
         # fit parameters
-        theta = self._mll.maximize(
+        theta = mll.maximize(
             Ri, Si,
-            wmin=wmin,
+            wmax=np.pi/2.,
             ntry=self.opt['ntry'],
             verbose=self.opt['verbose'] > 3)
 
-        self.debug("Best parameters: %s" % theta, level=2)
+        self.debug("Best parameters: %s" % (theta,), level=2)
         self.debug("Computing GP over %s..." % name, level=2)
 
         # GP regression
         mu, cov = GP(
-            self._mll.kernel(*theta), Ri, Si, self.R)
+            mll.kernel(*theta[:-1]), Ri, Si, self.R)
 
         return mu, cov, theta
 
@@ -106,32 +120,39 @@ class BayesianQuadratureModel(Model):
 
         # compute GP regressions for S and log(S)
         self.mu_S, self.cov_S, self.theta_S = self._fit_gp(
-            self.Ri, self.Si, "S")
+            self.Ri, self.Si, self._mll_S, "S")
         if ((self.mu_S + 1) <= 0).any():
             print "Warning: regression for mu_S returned negative values"
         self.mu_logS, self.cov_logS, self.theta_logS = self._fit_gp(
-            self.Ri, np.log(self.Si + 1), "log(S)")
+            self.Ri, np.log(self.Si + 1), self._mll_logS, "log(S)")
 
         # choose "candidate" points, halfway between given points
-        cix = cix = np.sort(np.unique(np.concatenate([
+        cix = np.sort(np.unique(np.concatenate([
             (np.array(self.ix) + np.array(self.ix[1:] + [self.R.size])) / 2,
             self.ix])))
         self.delta = self.mu_logS - np.log(self.mu_S + 1)
         self.Rc = self.R[cix].copy()
-        self.Sc = self.delta[cix].copy()
+        self.Dc = self.delta[cix].copy()
         # handle if some of the ycs are nan
-        if np.isnan(self.Sc).any():
-            goodidx = ~np.isnan(self.Sc)
+        if np.isnan(self.Dc).any():
+            goodidx = ~np.isnan(self.Dc)
             self.Rc = self.Rc[goodidx]
-            self.Sc = self.Sc[goodidx]
+            self.Dc = self.Dc[goodidx]
 
         # compute GP regression for Delta_c -- just use logS parameters
-        self.mu_Dc, self.cov_Dc = GP(
-            self._mll.kernel(*self.theta_logS),
-            self.Rc, self.Sc, self.R)
+        self.mu_Dc, self.cov_Dc, self.theta_Dc = self._fit_gp(
+            self.Rc, self.Dc, self._mll_Dc, "Delta_c")
 
         # the final regression for S
-        self.S_mean = ((self.mu_S + 1) * (1 + self.mu_Dc)) - 1
+        #
+        # According to the Osborne paper, it should be this:
+        #   self.S_mean = ((self.mu_S + 1) * (1 + self.mu_Dc)) - 1
+        #
+        # But then if self.mu_S < 0, self.S_mean will also have
+        # negative parts. To get around this, I am replacing
+        # (self.mu_S + 1) with exp(self.mu_logS - self.mu_Dc)
+        mu_S_plus_one = np.exp(self.mu_logS - self.mu_Dc)
+        self.S_mean = (mu_S_plus_one * (1 + self.mu_Dc)) - 1
         self.S_var = np.diag(self.cov_logS)
 
     def integrate(self):
