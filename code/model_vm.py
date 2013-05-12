@@ -1,7 +1,9 @@
 import numpy as np
 import circstats as circ
 import scipy.optimize as opt
+
 from model_base import Model
+from search import hill_climbing
 
 
 class VonMisesModel(Model):
@@ -23,6 +25,7 @@ class VonMisesModel(Model):
 
         super(VonMisesModel, self).__init__(*args, **kwargs)
         self._icurr = 0
+        self._ilast = None
 
     @staticmethod
     def _mse(theta, x, y):
@@ -52,23 +55,12 @@ class VonMisesModel(Model):
     def next(self):
         """Sample the next point."""
 
-        inext = self._icurr + 1
-        iprev = self._icurr - 1
-
-        rcurr = self._rotations[self._icurr]
-        rnext = self._rotations[inext]
-        rprev = self._rotations[iprev]
-
-        scurr = self.sample(rcurr)
-        snext = self.sample(rnext)
-        sprev = self.sample(rprev)
-
-        if snext > scurr and snext > sprev:
-            self._icurr = inext
-        elif sprev > scurr and sprev > snext:
-            self._icurr = iprev
-        else:
+        icurr = hill_climbing(self)
+        if icurr is None:
             raise StopIteration
+
+        self._ilast = self._icurr
+        self._icurr = icurr
 
     def fit(self):
         """Fit the likelihood function."""
