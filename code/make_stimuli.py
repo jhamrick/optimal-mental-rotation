@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     # config variables
     npoints = 5
-    nstim = 10
+    nstim = 100
 
     # all the angles we want to try
     R = np.linspace(0, 2*np.pi, 361)[:-1]
