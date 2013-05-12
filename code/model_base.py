@@ -145,7 +145,7 @@ class Model(object):
         if ratios[1] > 1:
             self.debug("--> Hypothesis 1 is more likely", level=level)
             return 1
-        elif ratios[2] < 1 and ratios[2] > 0:
+        elif ratios[2] < 1 and ratios[0] > 0:
             self.debug("--> Hypothesis 0 is more likely", level=level)
             return 0
         else:
