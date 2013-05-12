@@ -42,7 +42,7 @@ class Model(object):
             'scale': 1,
             'dr': 10,
             'sigma': 0.2,
-            'prior_R': 1. / (2*np.pi),
+            'prior_R': np.ones_like(R) / (2*np.pi),
         }
         # self.opt was defined by a subclass
         if hasattr(self, 'opt'):
@@ -68,8 +68,6 @@ class Model(object):
         # prior over stimuli
         self.p_Xa = self.prior_X(Xa)
         self.p_Xb = self.prior_X(Xb)
-        # uniform prior over angles
-        self.pR = np.ones(R.size) / (2*np.pi)
 
         # joint of h0
         self.p_XaXb_h0 = self.p_Xa * self.p_Xb

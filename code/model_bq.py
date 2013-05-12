@@ -233,10 +233,11 @@ class BayesianQuadratureModel(Model):
                 "S_mean or S_var is not set, did you call self.fit first?")
 
         # mean
-        self.Z_mean = np.sum(self.pR * self.S_mean)
+        self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
 
         # variance
-        pRmuS = self.pR * (self.mu_S + 1)
-        self.Z_var = np.dot(pRmuS, np.dot(self.cov_logS, pRmuS))
+        pm = self.opt['prior_R'] * (self.mu_S + 1)
+        C = self.cov_logS * pm[:, None] * pm[None, :]
+        self.Z_var = np.trapz(np.trapz(C, self.R, axis=0), self.R)
 
         self.print_Z(level=0)
