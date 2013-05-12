@@ -3,7 +3,6 @@ import numpy as np
 from snippets.stats import GP
 from model_base import Model
 from kernel import KernelMLL
-from search import hill_climbing
 
 
 class BayesianQuadratureModel(Model):
@@ -73,9 +72,59 @@ class BayesianQuadratureModel(Model):
 
         self.debug("Finding next sample")
 
-        icurr = hill_climbing(self)
-        if icurr is None:
+        self.fit()
+        self.integrate()
+
+        std = self.Z_var
+        mean = self.opt['p_Xa'] * self.Z_mean / self.opt['scale']
+        lower = self.opt['p_Xa'] * (self.Z_mean - 2*std) / self.opt['scale']
+        upper = self.opt['p_Xa'] * (self.Z_mean + 2*std) / self.opt['scale']
+        ratio = mean / self.opt['p_XaXb_h0']
+        r_lower = lower / self.opt['p_XaXb_h0']
+        r_upper = upper / self.opt['p_XaXb_h0']
+        self.debug("ratio = %f  [%f, %f]" % (ratio, r_lower, r_upper), level=1)
+
+        if r_upper < 1:
             raise StopIteration
+        if r_lower > 1:
+            raise StopIteration
+
+        inext = self._icurr + 1
+        iprev = self._icurr - 1
+
+        n = self._rotations.size
+        if inext >= n or np.abs(iprev) >= n:
+            self.debug("Exhausted all samples", level=2)
+            return None
+
+        rcurr = self._rotations[self._icurr]
+        rnext = self._rotations[inext]
+        rprev = self._rotations[iprev]
+
+        scurr = self.sample(rcurr)
+        snext = self.sample(rnext)
+        sprev = self.sample(rprev)
+
+        self.debug("Current value: %f" % scurr, level=2)
+
+        choose_next = False
+        choose_prev = False
+
+        if (snext > sprev) and (inext != self._ilast):
+            choose_next = True
+        elif (sprev > snext) and (iprev != self._ilast):
+            choose_prev = True
+        elif (self._icurr - self._ilast) > 0:
+            choose_next = True
+        else:
+            choose_prev = True
+
+        if choose_next and not choose_prev:
+            self.debug("Choosing next: %d" % inext, level=2)
+            icurr = inext
+        else:
+            self.debug("Choosing prev: %d" % iprev, level=2)
+            icurr = iprev
 
         self._ilast = self._icurr
         self._icurr = icurr
