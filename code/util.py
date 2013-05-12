@@ -182,9 +182,13 @@ def run_model(stims, model, opt):
     if not os.path.exists(DATA_DIR):
         os.makedirs(DATA_DIR)
 
-    path = os.path.join(DATA_DIR, type(m).__name__)
+    name = type(m).__name__
+    if name.endswith("Model"):
+        name = name[:-len("Model")]
+    path = os.path.join(DATA_DIR, name)
     np.savez(
         path,
+        stims=stims,
         samps=samps,
         Z=Z,
         ratio=ratio,
