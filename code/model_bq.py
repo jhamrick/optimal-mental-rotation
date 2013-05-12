@@ -3,6 +3,7 @@ import numpy as np
 from snippets.stats import GP
 from model_base import Model
 from kernel import KernelMLL
+from search import hill_climbing
 
 
 class BayesianQuadratureModel(Model):
@@ -45,6 +46,7 @@ class BayesianQuadratureModel(Model):
 
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
         self._icurr = 0
+        self._ilast = None
 
         # marginal log likelihood object
         self._mll = KernelMLL(
@@ -55,38 +57,27 @@ class BayesianQuadratureModel(Model):
     def next(self):
         """Sample the next point."""
 
-        inext = self._icurr + 1
-        iprev = self._icurr - 1
+        self.debug("Finding next sample")
 
-        rcurr = self._rotations[self._icurr]
-        rnext = self._rotations[inext]
-        rprev = self._rotations[iprev]
-
-        scurr = self.sample(rcurr)
-        snext = self.sample(rnext)
-        sprev = self.sample(rprev)
-
-        if snext > scurr and snext > sprev:
-            self._icurr = inext
-        elif sprev > scurr and sprev > snext:
-            self._icurr = iprev
-        else:
+        icurr = hill_climbing(self)
+        if icurr is None:
             raise StopIteration
 
+        self._ilast = self._icurr
+        self._icurr = icurr
+
     def _fit_gp(self, Ri, Si, name, wmin=1e-8):
-        if self.opt['verbose']:
-            print "Fitting parameters for GP over %s ..." % name
+        self.debug("Fitting parameters for GP over %s ..." % name, level=2)
 
         # fit parameters
         theta = self._mll.maximize(
             Ri, Si,
             wmin=wmin,
             ntry=self.opt['ntry'],
-            verbose=self.opt['verbose'])
+            verbose=self.opt['verbose'] > 3)
 
-        if self.opt['verbose']:
-            print theta
-            print "Computing GP over %s..." % name
+        self.debug("Best parameters: %s" % theta, level=2)
+        self.debug("Computing GP over %s..." % name, level=2)
 
         # GP regression
         mu, cov = GP(
@@ -106,10 +97,12 @@ class BayesianQuadratureModel(Model):
 
         """
 
+        self.debug("Fitting likelihood")
+
         # input data
-        self.ix = sorted(self.ix) + [self.R.size]
-        self.Ri = self.R[self.ix[:-1]].copy()
-        self.Si = self.S[self.ix[:-1]].copy()
+        self.ix = sorted(self.ix)
+        self.Ri = self.R[self.ix].copy()
+        self.Si = self.S[self.ix].copy()
 
         # compute GP regressions for S and log(S)
         self.mu_S, self.cov_S, self.theta_S = self._fit_gp(
@@ -121,8 +114,8 @@ class BayesianQuadratureModel(Model):
 
         # choose "candidate" points, halfway between given points
         cix = cix = np.sort(np.unique(np.concatenate([
-            (np.array(self.ix)[:-1] + np.array(self.ix)[1:]) / 2,
-            self.ix[:-1]])))
+            (np.array(self.ix) + np.array(self.ix[1:] + [self.R.size])) / 2,
+            self.ix])))
         self.delta = self.mu_logS - np.log(self.mu_S + 1)
         self.Rc = self.R[cix].copy()
         self.Sc = self.delta[cix].copy()
@@ -159,12 +152,11 @@ class BayesianQuadratureModel(Model):
             raise RuntimeError(
                 "S_mean or S_var is not set, did you call self.fit first?")
 
-        if self.opt['verbose']:
-            print "Computing mean and variance of estimate of Z..."
-
         # mean
         self.Z_mean = np.sum(self.pR * self.S_mean)
 
         # variance
         pRmuS = self.pR * self.mu_S
         self.Z_var = np.dot(pRmuS, np.dot(self.cov_logS, pRmuS))
+
+        self.print_Z(level=0)

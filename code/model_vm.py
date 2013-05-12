@@ -1,7 +1,9 @@
 import numpy as np
 import circstats as circ
 import scipy.optimize as opt
+
 from model_base import Model
+from search import hill_climbing
 
 
 class VonMisesModel(Model):
@@ -23,6 +25,7 @@ class VonMisesModel(Model):
 
         super(VonMisesModel, self).__init__(*args, **kwargs)
         self._icurr = 0
+        self._ilast = None
 
     @staticmethod
     def _mse(theta, x, y):
@@ -52,29 +55,19 @@ class VonMisesModel(Model):
     def next(self):
         """Sample the next point."""
 
-        inext = self._icurr + 1
-        iprev = self._icurr - 1
+        self.debug("Finding next sample")
 
-        rcurr = self._rotations[self._icurr]
-        rnext = self._rotations[inext]
-        rprev = self._rotations[iprev]
-
-        scurr = self.sample(rcurr)
-        snext = self.sample(rnext)
-        sprev = self.sample(rprev)
-
-        if snext > scurr and snext > sprev:
-            self._icurr = inext
-        elif sprev > scurr and sprev > snext:
-            self._icurr = iprev
-        else:
+        icurr = hill_climbing(self)
+        if icurr is None:
             raise StopIteration
+
+        self._ilast = self._icurr
+        self._icurr = icurr
 
     def fit(self):
         """Fit the likelihood function."""
 
-        if self.opt['verbose']:
-            print "Fitting likelihood..."
+        self.debug("Fitting likelihood")
 
         self.ix = sorted(self.ix)
         self.Ri = self.R[self.ix]
@@ -106,13 +99,11 @@ class VonMisesModel(Model):
             if not success:
                 args[i] = np.nan
                 fval[i] = np.inf
-                if self.opt['verbose']:
-                    print "Failed: %s" % message
+                self.debug("Failed: %s" % message, level=3)
             else:
                 args[i] = abs(popt['x'])
                 fval[i] = popt['fun']
-                if self.opt['verbose']:
-                    print "MSE(%s) = %f" % (args[i], fval[i])
+                self.debug("MSE(%s) = %f" % (args[i], fval[i]), level=3)
 
         # choose the parameters that give the smallest MSE
         best = np.argmin(fval)
@@ -123,6 +114,8 @@ class VonMisesModel(Model):
         self.theta = args[best]
         self.S_mean = self.theta[2] * circ.vmpdf(self.R, *self.theta[:2])
         self.S_var = np.zeros(self.S_mean.shape)
+
+        self.debug("Best parameters: %s" % self.theta, level=2)
 
     def integrate(self):
         """Compute the mean and variance of Z:
@@ -135,8 +128,6 @@ class VonMisesModel(Model):
             raise RuntimeError(
                 "S_mean or S_var is not set, did you call self.fit first?")
 
-        if self.opt['verbose']:
-            print "Computing mean and variance of estimate of Z..."
-
         self.Z_mean = sum(self.pR * self.S_mean)
         self.Z_var = 0
+        self.print_Z(level=0)

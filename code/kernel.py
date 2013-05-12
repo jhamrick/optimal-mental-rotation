@@ -296,12 +296,12 @@ class KernelMLL(object):
                 args[i] = np.nan
                 fval[i] = np.inf
                 if verbose:
-                    print "Failed: %s" % message
+                    print "      Failed: %s" % message
             else:
                 args[i] = abs(popt['x'])
                 fval[i] = popt['fun']
                 if verbose:
-                    print "-MLL(%s) = %f" % (args[i], fval[i])
+                    print "      -MLL(%s) = %f" % (args[i], fval[i])
 
         # choose the parameters that give the best MLL
         best = np.argmin(fval)

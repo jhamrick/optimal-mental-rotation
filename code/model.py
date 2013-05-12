@@ -52,11 +52,22 @@ def similarity(X0, X1, sf=1):
 
 
 def likelihood_ratio(model, S_scale, p_Xa, p_XaXb_h0):
-    p_XaXb_h1 = p_Xa + np.log(model.Z_mean / S_scale)
-    ratio = np.exp(p_XaXb_h1 - p_XaXb_h0)
-    return ratio
+    std = 0 if model.Z_var == 0 else np.sqrt(model.Z_var)
+    vals = [model.Z_mean,
+            model.Z_mean - 2*std,
+            model.Z_mean + 2*std]
+    ratios = []
+    for val in vals:
+        p_XaXb_h1 = p_Xa + np.log(val / S_scale)
+        ratios.append(np.exp(p_XaXb_h1 - p_XaXb_h0))
+    return tuple(ratios)
 
 
-def ratio_test(ratio):
-    print "p(Xa, Xb | h1) / p(Xa, Xb | h0) = %f" % ratio
-    print "\n--> Hypothesis %d is more likely" % (0 if ratio < 1 else 1)
+def ratio_test(ratios):
+    print "p(Xa, Xb | h1) / p(Xa, Xb | h0) = %f  [%f, %f]" % ratios
+    if ratios[1] > 1:
+        print "\n--> Hypothesis 1 is more likely"
+    elif ratios[2] < 1:
+        print "\n--> Hypothesis 0 is more likely"
+    else:
+        print "\n--> Undecided"
