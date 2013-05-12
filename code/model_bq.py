@@ -144,6 +144,15 @@ class BayesianQuadratureModel(Model):
 
         return mu, cov, theta
 
+    def _candidate(self):
+        nc = len(self.ix) * 2
+        ideal = list(np.linspace(0, self.R.size, nc+1).astype('i8')[:-1])
+        for i in self.ix:
+            closest = np.argmin(np.abs(np.array(ideal) - i))
+            del ideal[closest]
+        c = sorted(ideal + self.ix)
+        return c
+
     def fit(self):
         """Run the GP regressions to fit the likelihood function.
 
@@ -172,10 +181,8 @@ class BayesianQuadratureModel(Model):
             self.Ri, np.log(self.Si + 1), self._mll_logS, "log(S)")
 
         # choose "candidate" points, halfway between given points
-        cix = np.sort(np.unique(np.concatenate([
-            (np.array(self.ix) + np.array(self.ix[1:] + [self.R.size])) / 2,
-            self.ix])))
         self.delta = self.mu_logS - np.log(self.mu_S + 1)
+        cix = self._candidate()
         self.Rc = self.R[cix].copy()
         self.Dc = self.delta[cix].copy()
         # handle if some of the ycs are nan
