@@ -105,15 +105,16 @@ class Model(object):
         return self
 
     def run(self):
+        verbose = self.opt['verbose']
+        util.print_line(verbose=verbose)
         for i in self:
-            pass
-
+            util.print_line(verbose=verbose)
         if self.Ri is None or self.Si is None:
             self.fit()
             self.integrate()
-
-        if not self.opt['verbose']:
-            self.print_Z()
+        util.print_line(char="#", verbose=verbose)
+        self.print_Z()
+        self.ratio_test()
 
     def print_Z(self, level=-1):
         if self.Z_var == 0:

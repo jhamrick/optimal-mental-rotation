@@ -34,4 +34,3 @@ class GoldStandardModel(Model):
 
         self.Z_mean = sum(self.pR * self.S_mean)
         self.Z_var = 0
-        self.print_Z(level=0)
