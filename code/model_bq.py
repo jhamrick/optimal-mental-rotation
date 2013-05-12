@@ -177,7 +177,7 @@ class BayesianQuadratureModel(Model):
         self.Z_mean = np.sum(self.pR * self.S_mean)
 
         # variance
-        pRmuS = self.pR * self.mu_S
+        pRmuS = self.pR * (self.mu_S + 1)
         self.Z_var = np.dot(pRmuS, np.dot(self.cov_logS, pRmuS))
 
         self.print_Z(level=0)
