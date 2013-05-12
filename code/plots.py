@@ -126,7 +126,7 @@ def bq_regression(model):
     # plot the regression for mu_logS - log_muS
     ax_Dc = plt.subplot(2, 2, 4)
     regression(
-        model.R, model.delta, model.Rc, model.Sc,
+        model.R, model.delta, model.Rc, model.Dc,
         model.R, model.mu_Dc, None,
         title=r"GPR for $\Delta_c$",
         ylabel=r"Difference ($\Delta_c$)")
