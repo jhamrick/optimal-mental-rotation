@@ -43,13 +43,27 @@ def stimuli_images(**kwargs):
         plt.title("$%s$" % I)
 
 
-def regression(x, y, xi, yi, xo, yo_mean, yo_var):
+def regression(x, y, xi, yi, xo, yo_mean, yo_var, **kwargs):
     """Plot the original function and the regression estimate.
 
     """
 
-    plt.plot(x, y, 'k-', label="actual", linewidth=2)
-    plt.plot(xi, yi, 'ro', label="samples")
+    opt = {
+        'title': None,
+        'xlabel': "Rotation ($R$)",
+        'ylabel': "Similarity ($S$)",
+        'legend': True,
+    }
+    opt.update(kwargs)
+
+    # overall figure settings
+    sg.set_figsize(4.5, 2)
+    plt.subplots_adjust(wspace=0.2, hspace=0.3, left=0.05, bottom=0.05)
+
+    if x is not None:
+        plt.plot(x, y, 'k-', label="actual", linewidth=2)
+    if xi is not None:
+        plt.plot(xi, yi, 'ro', label="samples")
 
     if yo_var is not None:
         # hack, for if there are zero or negative variances
@@ -61,127 +75,100 @@ def regression(x, y, xi, yi, xo, yo_mean, yo_var):
         upper = yo_mean + ys
         plt.fill_between(xo, lower, upper, color='r', alpha=0.25)
 
-    plt.plot(xo, yo_mean, 'r-', label="estimate", linewidth=2)
+    if xo is not None:
+        plt.plot(xo, yo_mean, 'r-', label="estimate", linewidth=2)
 
+    # customize x-axis
     plt.xlim(0, 2 * np.pi)
     plt.xticks(
         [0, np.pi / 2., np.pi, 3 * np.pi / 2., 2 * np.pi],
         ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
 
+    # axis styling
     sg.outward_ticks()
     sg.clear_right()
     sg.clear_top()
+    sg.set_scientific(-3, 4, axis='y')
+
+    # title and axis labels
+    if opt['title']:
+        plt.title(opt['title'])
+    if opt['xlabel']:
+        plt.xlabel(opt['xlabel'])
+    if opt['ylabel']:
+        plt.ylabel(opt['ylabel'])
+
+    if opt['legend']:
+        plt.legend(loc=0, fontsize=14, frameon=False)
 
 
 def bq_regression(model):
-    labelx = -0.15
-
-    # overall figure settings
-    sg.set_figsize(9, 5)
-    plt.subplots_adjust(wspace=0.2, hspace=0.3, left=0.05, bottom=0.05)
 
     # plot the regression for S
-    plt.subplot(2, 2, 1)
+    ax_S = plt.subplot(2, 2, 1)
     regression(
         model.R, model.S, model.Ri, model.Si,
-        model.R, model.mu_S, np.diag(model.cov_S))
-    plt.title("GPR for $S$")
-    plt.ylabel("Similarity ($S$)")
-    sg.set_ylabel_coords(labelx)
+        model.R, model.mu_S, np.diag(model.cov_S),
+        title="GPR for $S$",
+        xlabel=None,
+        legend=False)
     sg.no_xticklabels()
-    ylim1 = plt.ylim()
 
     # plot the regression for log S
-    plt.subplot(2, 2, 3)
+    ax_logS = plt.subplot(2, 2, 3)
     regression(
         model.R, np.log(model.S + 1), model.Ri, np.log(model.Si + 1),
-        model.R, model.mu_logS, np.diag(model.cov_logS))
-    plt.title(r"GPR for $\log(S+1)$")
-    plt.xlabel("Rotation ($R$)")
-    plt.ylabel(r"Similarity ($\log(S+1)$)")
-    sg.set_ylabel_coords(labelx)
+        model.R, model.mu_logS, np.diag(model.cov_logS),
+        title=r"GPR for $\log(S+1)$",
+        ylabel=r"Similarity ($\log(S+1)$)",
+        legend=False)
 
     # plot the regression for mu_logS - log_muS
-    plt.subplot(2, 2, 4)
+    ax_Dc = plt.subplot(2, 2, 4)
     regression(
         model.R, model.delta, model.Rc, model.Sc,
-        model.R, model.mu_Dc, None)
-    plt.title(r"GPR for $\Delta_c$")
-    plt.xlabel("Rotation ($R$)")
-    plt.ylabel(r"Difference ($\Delta_c$)")
-    plt.legend(loc=0, fontsize=14, frameon=False)
+        model.R, model.mu_Dc, None,
+        title=r"GPR for $\Delta_c$",
+        ylabel=r"Difference ($\Delta_c$)")
     yt, ytl = plt.yticks()
 
-    # combine the two regression means to estimate E[Z]
-    plt.subplot(2, 2, 2)
+    # combine the two regression means
+    ax_final = plt.subplot(2, 2, 2)
     regression(
         model.R, model.S, model.Ri, model.Si,
-        model.R, model.S_mean, model.S_var)
-    plt.title(r"Final GPR for $S$")
+        model.R, model.S_mean, model.S_var,
+        title=r"Final GPR for $S$",
+        xlabel=None,
+        ylabel=None,
+        legend=False)
     sg.no_xticklabels()
-    ylim2 = plt.ylim()
 
-    # figure out appropriate y-axis limits
-    ylims = np.array([ylim1, ylim2])
-    ylo = ylims[:, 0].min()
-    yhi = ylims[:, 1].max()
+    # align y-axis labels
+    sg.align_ylabels(-0.15, ax_S, ax_logS, ax_Dc)
+    # sync y-axis limits
+    sg.sync_ylims(ax_S, ax_final)
 
-    # set these axis limits
-    plt.subplot(2, 2, 1)
-    plt.ylim(ylo, yhi)
-    plt.subplot(2, 2, 2)
-    plt.ylim(ylo, yhi)
-    # plt.subplot(2, 2, 3)
-    # plt.ylim(np.log(ylo), np.log(yhi))
-    # plt.subplot(2, 2, 4)
-    # yl = plt.ylim()
-    # plt.ylim(min(yl[0], -yr / 2.), max(yr, yl[1]))
+    # overall figure settings
+    sg.set_figsize(9, 4)
+    plt.subplots_adjust(wspace=0.25, hspace=0.3, left=0.05, bottom=0.05)
 
 
 def vm_regression(model):
-    # overall figure settings
-    sg.set_figsize(4, 4)
-
-    # plot the regression for S
     regression(
         model.R, model.S, model.Ri, model.Si,
-        model.R, model.S_mean, model.S_var)
-    plt.title("Von Mises regression for $S$")
-    plt.xlabel("Rotation ($R$)")
-    plt.ylabel("Similarity ($S$)")
-    plt.legend(loc=0, fontsize=14, frameon=False)
+        model.R, model.S_mean, model.S_var,
+        title="Von Mises regression for $S$")
 
 
 def li_regression(model):
-    # overall figure settings
-    sg.set_figsize(4, 4)
-
-    # plot the regression for S
     regression(
         model.R, model.S, model.Ri, model.Si,
-        model.R, model.S_mean, model.S_var)
-    plt.title("Linear interpolation for $S$")
-    plt.xlabel("Rotation ($R$)")
-    plt.ylabel("Similarity ($S$)")
-    plt.legend(loc=0, fontsize=14, frameon=False)
+        model.R, model.S_mean, model.S_var,
+        title="Linear interpolation for $S$")
 
 
 def likelihood(model):
-    # overall figure settings
-    sg.set_figsize(4, 4)
-
-    # plot the likelihood
-    plt.plot(model.R, model.S, 'k-', linewidth=2)
-
-    plt.xlim(0, 2 * np.pi)
-    plt.xticks(
-        [0, np.pi / 2., np.pi, 3 * np.pi / 2., 2 * np.pi],
-        ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
-
-    sg.outward_ticks()
-    sg.clear_right()
-    sg.clear_top()
-
-    plt.xlabel("Rotation ($R$)")
-    plt.ylabel(r"Similarity ($S$)")
-    plt.title("Likelihood function")
+    regression(
+        model.R, model.S, None, None, None, None, None,
+        title="Likelihood function",
+        legend=False)
