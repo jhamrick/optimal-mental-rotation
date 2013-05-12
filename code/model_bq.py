@@ -67,27 +67,20 @@ class BayesianQuadratureModel(Model):
             s=self.opt['s']
         )
 
-    def next(self):
-        """Sample the next point."""
-
-        self.debug("Finding next sample")
-
         self.fit()
         self.integrate()
 
-        std = self.Z_var
-        mean = self.opt['p_Xa'] * self.Z_mean / self.opt['scale']
-        lower = self.opt['p_Xa'] * (self.Z_mean - 2*std) / self.opt['scale']
-        upper = self.opt['p_Xa'] * (self.Z_mean + 2*std) / self.opt['scale']
-        ratio = mean / self.opt['p_XaXb_h0']
-        r_lower = lower / self.opt['p_XaXb_h0']
-        r_upper = upper / self.opt['p_XaXb_h0']
-        self.debug("ratio = %f  [%f, %f]" % (ratio, r_lower, r_upper), level=1)
+    def next(self):
+        """Sample the next point."""
 
-        if r_upper < 1:
+        self.debug("Performing ratio test")
+
+        # check if we can accept a hypothesis
+        hyp = self.ratio_test(level=1)
+        if hyp != -1:
             raise StopIteration
-        if r_lower > 1:
-            raise StopIteration
+
+        self.debug("Finding next sample")
 
         inext = self._icurr + 1
         iprev = self._icurr - 1
@@ -95,7 +88,7 @@ class BayesianQuadratureModel(Model):
         n = self._rotations.size
         if inext >= n or np.abs(iprev) >= n:
             self.debug("Exhausted all samples", level=2)
-            return None
+            raise StopIteration
 
         rcurr = self._rotations[self._icurr]
         rnext = self._rotations[inext]
@@ -128,6 +121,9 @@ class BayesianQuadratureModel(Model):
 
         self._ilast = self._icurr
         self._icurr = icurr
+
+        self.fit()
+        self.integrate()
 
     def _fit_gp(self, Ri, Si, mll, name):
         self.debug("Fitting parameters for GP over %s ..." % name, level=2)
