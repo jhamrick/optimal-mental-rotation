@@ -1,6 +1,6 @@
 import numpy as np
 import circstats as circ
-import scipy.optimize as opt
+import scipy.optimize as sopt
 
 from model_base import Model
 from search import hill_climbing
@@ -84,7 +84,7 @@ class VonMisesModel(Model):
             p0 = (t0, k0, z0)
 
             # run mimization function
-            popt = opt.minimize(
+            popt = sopt.minimize(
                 fun=self._mse,
                 x0=p0,
                 args=(self.Ri, self.Si),
@@ -131,3 +131,10 @@ class VonMisesModel(Model):
         self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
         self.Z_var = 0
         self.print_Z(level=0)
+
+
+if __name__ == "__main__":
+    import util
+    opt = util.load_opt()
+    stims = util.find_stims()[:5]
+    util.run_model(stims, VonMisesModel, opt)

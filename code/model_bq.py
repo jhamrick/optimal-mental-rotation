@@ -241,3 +241,10 @@ class BayesianQuadratureModel(Model):
         self.Z_var = np.trapz(np.trapz(C, self.R, axis=0), self.R)
 
         self.print_Z(level=0)
+
+
+if __name__ == "__main__":
+    import util
+    opt = util.load_opt()
+    stims = util.find_stims()[:5]
+    util.run_model(stims, BayesianQuadratureModel, opt)

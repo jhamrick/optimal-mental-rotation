@@ -49,3 +49,10 @@ class NaiveModel(Model):
         self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
         self.Z_var = 0
         self.print_Z(level=0)
+
+
+if __name__ == "__main__":
+    import util
+    opt = util.load_opt()
+    stims = util.find_stims()[:5]
+    util.run_model(stims, NaiveModel, opt)
