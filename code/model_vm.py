@@ -55,6 +55,8 @@ class VonMisesModel(Model):
     def next(self):
         """Sample the next point."""
 
+        self.debug("Finding next sample")
+
         icurr = hill_climbing(self)
         if icurr is None:
             raise StopIteration
@@ -65,8 +67,7 @@ class VonMisesModel(Model):
     def fit(self):
         """Fit the likelihood function."""
 
-        if self.opt['verbose']:
-            print "Fitting likelihood..."
+        self.debug("Fitting likelihood")
 
         self.ix = sorted(self.ix)
         self.Ri = self.R[self.ix]
@@ -98,13 +99,11 @@ class VonMisesModel(Model):
             if not success:
                 args[i] = np.nan
                 fval[i] = np.inf
-                if self.opt['verbose']:
-                    print "Failed: %s" % message
+                self.debug("Failed: %s" % message, level=3)
             else:
                 args[i] = abs(popt['x'])
                 fval[i] = popt['fun']
-                if self.opt['verbose']:
-                    print "MSE(%s) = %f" % (args[i], fval[i])
+                self.debug("MSE(%s) = %f" % (args[i], fval[i]), level=3)
 
         # choose the parameters that give the smallest MSE
         best = np.argmin(fval)
@@ -115,6 +114,8 @@ class VonMisesModel(Model):
         self.theta = args[best]
         self.S_mean = self.theta[2] * circ.vmpdf(self.R, *self.theta[:2])
         self.S_var = np.zeros(self.S_mean.shape)
+
+        self.debug("Best parameters: %s" % self.theta, level=2)
 
     def integrate(self):
         """Compute the mean and variance of Z:
@@ -127,8 +128,6 @@ class VonMisesModel(Model):
             raise RuntimeError(
                 "S_mean or S_var is not set, did you call self.fit first?")
 
-        if self.opt['verbose']:
-            print "Computing mean and variance of estimate of Z..."
-
         self.Z_mean = sum(self.pR * self.S_mean)
         self.Z_var = 0
+        self.print_Z(level=0)

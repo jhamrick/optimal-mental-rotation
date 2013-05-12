@@ -57,6 +57,8 @@ class BayesianQuadratureModel(Model):
     def next(self):
         """Sample the next point."""
 
+        self.debug("Finding next sample")
+
         icurr = hill_climbing(self)
         if icurr is None:
             raise StopIteration
@@ -65,19 +67,17 @@ class BayesianQuadratureModel(Model):
         self._icurr = icurr
 
     def _fit_gp(self, Ri, Si, name, wmin=1e-8):
-        if self.opt['verbose']:
-            print "Fitting parameters for GP over %s ..." % name
+        self.debug("Fitting parameters for GP over %s ..." % name, level=2)
 
         # fit parameters
         theta = self._mll.maximize(
             Ri, Si,
             wmin=wmin,
             ntry=self.opt['ntry'],
-            verbose=self.opt['verbose'])
+            verbose=self.opt['verbose'] > 3)
 
-        if self.opt['verbose']:
-            print theta
-            print "Computing GP over %s..." % name
+        self.debug("Best parameters: %s" % theta, level=2)
+        self.debug("Computing GP over %s..." % name, level=2)
 
         # GP regression
         mu, cov = GP(
@@ -96,6 +96,8 @@ class BayesianQuadratureModel(Model):
             Information Processing Systems*, 25.
 
         """
+
+        self.debug("Fitting likelihood")
 
         # input data
         self.ix = sorted(self.ix)
@@ -150,12 +152,11 @@ class BayesianQuadratureModel(Model):
             raise RuntimeError(
                 "S_mean or S_var is not set, did you call self.fit first?")
 
-        if self.opt['verbose']:
-            print "Computing mean and variance of estimate of Z..."
-
         # mean
         self.Z_mean = np.sum(self.pR * self.S_mean)
 
         # variance
         pRmuS = self.pR * self.mu_S
         self.Z_var = np.dot(pRmuS, np.dot(self.cov_logS, pRmuS))
+
+        self.print_Z(level=0)

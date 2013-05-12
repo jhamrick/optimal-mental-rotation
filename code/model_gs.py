@@ -32,8 +32,6 @@ class GoldStandardModel(Model):
             raise RuntimeError(
                 "S_mean or S_var is not set, did you call self.fit first?")
 
-        if self.opt['verbose']:
-            print "Computing mean and variance of estimate of Z..."
-
         self.Z_mean = sum(self.pR * self.S_mean)
         self.Z_var = 0
+        self.print_Z(level=0)

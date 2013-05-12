@@ -77,8 +77,7 @@ class Model(object):
             self.ix.append(r)
             self.Ri = None
             self.Si = None
-            if self.opt['verbose']:
-                print "R=% 3s degrees  S(X_b, X_R)=%f" % (r, S)
+            self.debug("R=% 3s degrees  S(X_b, X_R)=%f" % (r, S), level=1)
         return S
 
     def __iter__(self):
@@ -89,16 +88,17 @@ class Model(object):
             if self.opt['verbose']:
                 self.fit()
                 self.integrate()
-                print "Z_mean  = %f" % self.Z_mean
-                print "Z_var   = %f" % self.Z_var
 
         if self.Ri is None or self.Si is None:
             self.fit()
             self.integrate()
-            if self.opt['verbose']:
-                print "Z_mean  = %f" % self.Z_mean
-                print "Z_var   = %f" % self.Z_var
 
-    def print_Z(self):
-        print "mu_Z  = %f" % self.Z_mean
-        print "var_Z = %f" % self.Z_var
+        if not self.opt['verbose']:
+            self.print_Z()
+
+    def print_Z(self, level=-1):
+        self.debug("Z = %f +/- %f" % (self.Z_mean, self.Z_var), level=level)
+
+    def debug(self, msg, level=0):
+        if self.opt['verbose'] > level:
+            print ("  "*level) + msg

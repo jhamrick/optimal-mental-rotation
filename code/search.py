@@ -11,8 +11,7 @@ def hill_climbing(model):
     snext = model.sample(rnext)
     sprev = model.sample(rprev)
 
-    if model.opt['verbose']:
-        print "Current value: %f" % scurr
+    model.debug("Current value: %f" % scurr, level=2)
 
     choose_next = False
     choose_prev = False
@@ -20,8 +19,7 @@ def hill_climbing(model):
     # we're at a super small scale, so we want to ignore
     # minima/maxima here
     if scurr <= (model.opt['scale'] / 1000.):
-        if model.opt['verbose']:
-            print "Below threshold, ignoring maxima/minima!"
+        model.debug("Below threshold, ignoring maxima/minima!", level=2)
         if (snext > sprev) and (inext != model._ilast):
             choose_next = True
         elif (sprev > snext) and (iprev != model._ilast):
@@ -36,16 +34,13 @@ def hill_climbing(model):
         choose_prev = True
 
     if choose_next and not choose_prev:
-        if model.opt['verbose']:
-            print "Choosing next: %d" % inext
+        model.debug("Choosing next: %d" % inext, level=2)
         icurr = inext
     elif choose_prev and not choose_next:
-        if model.opt['verbose']:
-            print "Choosing prev: %d" % iprev
+        model.debug("Choosing prev: %d" % iprev, level=2)
         icurr = iprev
     else:
-        if model.opt['verbose']:
-            print "Done"
+        model.debug("Done", level=2)
         icurr = None
         raise StopIteration
 
