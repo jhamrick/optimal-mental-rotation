@@ -65,7 +65,10 @@ def ratio_test(ratios):
     print "p(Xa, Xb | h1) / p(Xa, Xb | h0) = %f  [%f, %f]" % ratios
     if ratios[1] > 1:
         print "\n--> Hypothesis 1 is more likely"
+        return 1
     elif ratios[2] < 1:
         print "\n--> Hypothesis 0 is more likely"
+        return 0
     else:
         print "\n--> Undecided"
+        return -1
