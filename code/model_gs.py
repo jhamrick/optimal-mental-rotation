@@ -32,6 +32,5 @@ class GoldStandardModel(Model):
             raise RuntimeError(
                 "S_mean or S_var is not set, did you call self.fit first?")
 
-        self.Z_mean = sum(self.pR * self.S_mean)
+        self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
         self.Z_var = 0
-        self.print_Z(level=0)

@@ -3,7 +3,6 @@ import numpy as np
 from snippets.stats import GP
 from model_base import Model
 from kernel import KernelMLL
-from search import hill_climbing
 
 
 class BayesianQuadratureModel(Model):
@@ -68,17 +67,63 @@ class BayesianQuadratureModel(Model):
             s=self.opt['s']
         )
 
+        self.fit()
+        self.integrate()
+
     def next(self):
         """Sample the next point."""
 
+        self.debug("Performing ratio test")
+
+        # check if we can accept a hypothesis
+        hyp = self.ratio_test(level=1)
+        if hyp != -1:
+            raise StopIteration
+
         self.debug("Finding next sample")
 
-        icurr = hill_climbing(self)
-        if icurr is None:
+        inext = self._icurr + 1
+        iprev = self._icurr - 1
+
+        n = self._rotations.size
+        if inext >= n or np.abs(iprev) >= n:
+            self.debug("Exhausted all samples", level=2)
             raise StopIteration
+
+        rcurr = self._rotations[self._icurr]
+        rnext = self._rotations[inext]
+        rprev = self._rotations[iprev]
+
+        scurr = self.sample(rcurr)
+        snext = self.sample(rnext)
+        sprev = self.sample(rprev)
+
+        self.debug("Current value: %f" % scurr, level=2)
+
+        choose_next = False
+        choose_prev = False
+
+        if (snext > sprev) and (inext != self._ilast):
+            choose_next = True
+        elif (sprev > snext) and (iprev != self._ilast):
+            choose_prev = True
+        elif (self._icurr - self._ilast) > 0:
+            choose_next = True
+        else:
+            choose_prev = True
+
+        if choose_next and not choose_prev:
+            self.debug("Choosing next: %d" % inext, level=2)
+            icurr = inext
+        else:
+            self.debug("Choosing prev: %d" % iprev, level=2)
+            icurr = iprev
 
         self._ilast = self._icurr
         self._icurr = icurr
+
+        self.fit()
+        self.integrate()
 
     def _fit_gp(self, Ri, Si, mll, name):
         self.debug("Fitting parameters for GP over %s ..." % name, level=2)
@@ -98,6 +143,15 @@ class BayesianQuadratureModel(Model):
             mll.kernel(*theta[:-1]), Ri, Si, self.R)
 
         return mu, cov, theta
+
+    def _candidate(self):
+        nc = len(self.ix) * 2
+        ideal = list(np.linspace(0, self.R.size, nc+1).astype('i8')[:-1])
+        for i in self.ix:
+            closest = np.argmin(np.abs(np.array(ideal) - i))
+            del ideal[closest]
+        c = sorted(ideal + self.ix)
+        return c
 
     def fit(self):
         """Run the GP regressions to fit the likelihood function.
@@ -127,10 +181,8 @@ class BayesianQuadratureModel(Model):
             self.Ri, np.log(self.Si + 1), self._mll_logS, "log(S)")
 
         # choose "candidate" points, halfway between given points
-        cix = np.sort(np.unique(np.concatenate([
-            (np.array(self.ix) + np.array(self.ix[1:] + [self.R.size])) / 2,
-            self.ix])))
         self.delta = self.mu_logS - np.log(self.mu_S + 1)
+        cix = self._candidate()
         self.Rc = self.R[cix].copy()
         self.Dc = self.delta[cix].copy()
         # handle if some of the ycs are nan
@@ -140,8 +192,15 @@ class BayesianQuadratureModel(Model):
             self.Dc = self.Dc[goodidx]
 
         # compute GP regression for Delta_c -- just use logS parameters
-        self.mu_Dc, self.cov_Dc, self.theta_Dc = self._fit_gp(
-            self.Rc, self.Dc, self._mll_Dc, "Delta_c")
+        try:
+            self.mu_Dc, self.cov_Dc, self.theta_Dc = self._fit_gp(
+                self.Rc, self.Dc, self._mll_Dc, "Delta_c")
+        except RuntimeError:
+            Rc = list(self.Rc) + [2*np.pi]
+            Dc = list(self.Dc) + [self.Rc[0]]
+            self.mu_Dc = np.interp(self.R, Rc, Dc)
+            self.cov_Dc = np.zeros((self.mu_Dc.size, self.mu_Dc.size))
+            self.theta_Dc = None
 
         # the final regression for S
         #
@@ -174,10 +233,11 @@ class BayesianQuadratureModel(Model):
                 "S_mean or S_var is not set, did you call self.fit first?")
 
         # mean
-        self.Z_mean = np.sum(self.pR * self.S_mean)
+        self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
 
         # variance
-        pRmuS = self.pR * (self.mu_S + 1)
-        self.Z_var = np.dot(pRmuS, np.dot(self.cov_logS, pRmuS))
+        pm = self.opt['prior_R'] * (self.mu_S + 1)
+        C = self.cov_logS * pm[:, None] * pm[None, :]
+        self.Z_var = np.trapz(np.trapz(C, self.R, axis=0), self.R)
 
         self.print_Z(level=0)
