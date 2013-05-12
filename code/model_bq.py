@@ -189,8 +189,15 @@ class BayesianQuadratureModel(Model):
             self.Dc = self.Dc[goodidx]
 
         # compute GP regression for Delta_c -- just use logS parameters
-        self.mu_Dc, self.cov_Dc, self.theta_Dc = self._fit_gp(
-            self.Rc, self.Dc, self._mll_Dc, "Delta_c")
+        try:
+            self.mu_Dc, self.cov_Dc, self.theta_Dc = self._fit_gp(
+                self.Rc, self.Dc, self._mll_Dc, "Delta_c")
+        except RuntimeError:
+            Rc = list(self.Rc) + [2*np.pi]
+            Dc = list(self.Dc) + [self.Rc[0]]
+            self.mu_Dc = np.interp(self.R, Rc, Dc)
+            self.cov_Dc = np.zeros((self.mu_Dc.size, self.mu_Dc.size))
+            self.theta_Dc = None
 
         # the final regression for S
         #
