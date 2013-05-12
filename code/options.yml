@@ -10,5 +10,5 @@
     # standard deviation in similarity function
     sigma: 0.2, 
     # print extra information
-    verbose: 2
+    verbose: 0
 }
