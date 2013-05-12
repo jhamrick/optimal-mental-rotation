@@ -136,8 +136,6 @@ def load_stimulus(stimname):
     Xm = stimf['Xm']
     Xa = Xm[0]
     Xb = stimf['Xb']
-    # similarity
-    Sr = stimf['Sr']
 
     stimf.close()
-    return theta, Xa, Xb, R, Sr
+    return theta, Xa, Xb, Xm, R
