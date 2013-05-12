@@ -25,12 +25,15 @@ class Model(object):
         -------------
         verbose : bool (default=False)
             Print information during the modeling process
+        scale : float (default=1)
+            Scale of the data
 
         """
 
         # default options
         default_opt = {
-            'verbose': False
+            'verbose': False,
+            'scale': 1,
         }
         # self.opt was defined by a subclass
         if hasattr(self, 'opt'):
