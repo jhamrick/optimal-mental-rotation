@@ -205,3 +205,15 @@ def load_opt():
 def find_stims():
     stims = sorted([os.path.splitext(x)[0] for x in os.listdir(STIM_DIR)])
     return stims
+
+
+def load_sims(name):
+    path = os.path.join(DATA_DIR, name + '.npz')
+    data = np.load(path)
+    stims = data['stims']
+    samps = data['samps']
+    Z = data['Z']
+    ratio = data['ratio']
+    hyp = data['hyp']
+    data.close()
+    return stims, samps, Z, ratio, hyp
