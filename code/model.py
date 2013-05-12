@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.misc
 
 from model_gs import GoldStandardModel as GoldStandard
 from model_naive import NaiveModel as Naive
@@ -8,19 +9,16 @@ from model_bq import BayesianQuadratureModel as BayesianQuadrature
 
 def log_prior_X(X):
     # the beginning is the same as the end, so ignore the last vertex
-    x = X[:-1]
-    # number of points and number of dimensions
-    n, D = x.shape
-    assert D == 2
+    n = X.shape[0] - 1
     # n points picked at random angles around the circle
     log_pangle = -np.log(2*np.pi) * n
-    # one point has radius 1, the rest have random radii (this term
-    # doesn't actually matter in practice, but leaving it in to be
-    # explicit)
+    # random radii between 0 and 1
     radius = 1
-    log_pradius = np.log(radius) * (n-1)
+    log_pradius = -np.log(radius) * n
+    # number of possible permutations of the points
+    log_pperm = np.log(scipy.misc.factorial(n))
     # put it all together
-    p_X = log_pangle + log_pradius
+    p_X = log_pperm + log_pangle + log_pradius
     return p_X
 
 
@@ -67,7 +65,10 @@ def ratio_test(ratios):
     print "p(Xa, Xb | h1) / p(Xa, Xb | h0) = %f  [%f, %f]" % ratios
     if ratios[1] > 1:
         print "\n--> Hypothesis 1 is more likely"
+        return 1
     elif ratios[2] < 1:
         print "\n--> Hypothesis 0 is more likely"
+        return 0
     else:
         print "\n--> Undecided"
+        return -1
