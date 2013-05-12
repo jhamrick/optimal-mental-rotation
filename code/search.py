@@ -1,7 +1,15 @@
+import numpy as np
+
+
 def hill_climbing(model):
 
     inext = model._icurr + 1
     iprev = model._icurr - 1
+
+    n = model._rotations.size
+    if inext >= n or np.abs(iprev) >= n:
+        model.debug("Exhausted all samples", level=2)
+        return None
 
     rcurr = model._rotations[model._icurr]
     rnext = model._rotations[inext]
@@ -42,6 +50,5 @@ def hill_climbing(model):
     else:
         model.debug("Done", level=2)
         icurr = None
-        raise StopIteration
 
     return icurr
