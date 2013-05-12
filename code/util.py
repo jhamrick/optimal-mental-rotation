@@ -7,6 +7,7 @@ import os
 from snippets.graphing import plot_to_array
 
 STIM_DIR = "../stimuli"
+DATA_DIR = "../data"
 
 
 def make_stimulus(npoints, rso):
@@ -144,3 +145,47 @@ def load_stimulus(stimname):
 def print_line(char='-', verbose=True):
     if verbose:
         print "\n" + char*70
+
+
+def run_model(stims, model, opt):
+
+    # number of stims
+    nstim = len(stims)
+
+    # which points were sampled
+    samps = np.zeros((nstim, 360), dtype='bool')
+    # the estimate of Z
+    Z = np.empty((nstim, 2))
+    # the likelihood ratio
+    ratio = np.empty((nstim, 3))
+    # which hypothesis was accepted
+    hyp = np.empty(nstim)
+
+    for sidx, stim in enumerate(stims):
+        print_line(char='#')
+        print stim
+
+        # load the stimulus
+        theta, Xa, Xb, Xm, R = load_stimulus(stim)
+
+        # run the naive model
+        m = model(Xa, Xb, Xm, R, **opt)
+        m.run()
+
+        # fill in the data arrays
+        samps[sidx, m.ix] = True
+        Z[sidx] = (m.Z_mean, m.Z_var)
+        ratio[sidx] = m.likelihood_ratio()
+        hyp[sidx] = m.ratio_test(level=10)
+
+    if not os.path.exists(DATA_DIR):
+        os.makedirs(DATA_DIR)
+
+    path = os.path.join(DATA_DIR, type(m).__name__)
+    np.savez(
+        path,
+        samps=samps,
+        Z=Z,
+        ratio=ratio,
+        hyp=hyp
+    )
