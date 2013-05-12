@@ -134,7 +134,7 @@ class Model(object):
         vals = [self.Z_mean, self.Z_mean - 2*std, self.Z_mean + 2*std]
         ratios = []
         for val in vals:
-            p_XaXb_h1 = self.p_Xa * val / self.opt['scale']
+            p_XaXb_h1 = self.p_Xa * val / self._S_scale
             ratios.append(p_XaXb_h1 / self.p_XaXb_h0)
         return tuple(ratios)
 

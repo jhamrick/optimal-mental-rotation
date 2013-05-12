@@ -8,16 +8,18 @@ import numpy as np
 import model
 import util
 
-# data scale, to avoid underflow
-SCALE = 50
-# sigma, used in similarity function
-SIGMA = 0.2
-# prior over angles
-pR = 1 / 360.
-# the amount we rotate by
-dr = 20
-# print extra information
-verbose = False
+opt = {
+    # print extra information
+    'verbose': False,
+    # data scale, to avoid underflow
+    'scale': 1,
+    # the amount we rotate by
+    'dr': 20,
+    # standard deviation in similarity function
+    'sigma': 0.2,
+    # prior over angles
+    'prior_R': 1. / (2 * np.pi),
+}
 
 # array to hold number of wrong stimuli
 num_wrong = np.zeros(2)
@@ -35,22 +37,12 @@ for stim in stims:
     # load the stimulus
     theta, Xa, Xb, Xm, R = util.load_stimulus(stim)
 
-    # scale the similarities, so we don't get underflow
-    Sr_scale = (Xa.shape[0]-1) / (2 * np.pi * SIGMA) * SCALE
-    Sr = np.array([model.similarity(Xb, X, sf=SIGMA) for X in Xm]) * Sr_scale
-
-    # compute the joint probability of hypothesis 0
-    p_Xa = model.log_prior_X(Xa)
-    p_Xb = model.log_prior_X(Xb)
-    p_XaXb_h0 = p_Xa + p_Xb
-
     # run the naive model
-    gs = model.GoldStandard(R, Sr, dr, pR, verbose=verbose)
+    gs = model.GoldStandard(Xa, Xb, Xm, R, **opt)
     gs.run()
 
     # compute the ratio
-    ratio_naive = model.likelihood_ratio(gs, Sr_scale, p_Xa, p_XaXb_h0)
-    hyp = model.ratio_test(ratio_naive)
+    hyp = gs.ratio_test(level=10)
 
     if hyp != int(stim[1]):
         num_wrong[true_hyp] += 1
