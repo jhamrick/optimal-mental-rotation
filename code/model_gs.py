@@ -10,7 +10,7 @@ class GoldStandardModel(Model):
     def next(self):
         """Sample the next point."""
 
-        self.ix = np.arange(self.R.size)
+        self.ix = range(self.R.size)
         raise StopIteration
 
     def fit(self):

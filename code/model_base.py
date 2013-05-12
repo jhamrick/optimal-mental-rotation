@@ -58,7 +58,8 @@ class Model(object):
 
         # all possible rotations
         self.R = R.copy()
-        self._rotations = np.arange(0, self.R.size, self.opt['dr'])
+        rot = np.round(np.arange(0, self.R.size, self.opt['dr']))
+        self._rotations = np.round(rot).astype('i8')
         # compute similarities
         self._S_scale = self.Xa.shape[0] - 1
         self._S_scale /= (2 * np.pi * self.opt['sigma']) * self.opt['scale']
@@ -91,6 +92,7 @@ class Model(object):
         self.sample(0)
 
     def sample(self, r):
+        assert isinstance(r, int)
         S = self.S[r]
         if r not in self.ix:
             self.ix.append(r)
