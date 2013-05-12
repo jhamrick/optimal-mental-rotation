@@ -139,3 +139,8 @@ def load_stimulus(stimname):
 
     stimf.close()
     return theta, Xa, Xb, Xm, R
+
+
+def print_line(char='-', verbose=True):
+    if verbose:
+        print "\n" + char*70
