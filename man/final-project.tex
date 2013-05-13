@@ -320,7 +320,18 @@ parametric model, prior to estimating $Z$.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{../figures/bq_regression.pdf}
-  \caption{\textbf{Nonparametric model.} \TODO{}}
+  \caption{\textbf{Nonparametric model.} Each panel shows one step of
+    the Bayesian Quadrature regression. Upper left: the original
+    Gaussian Process (GP) regression for $S$. Lower left: the GP
+    regression for $\log(S+1)$. Lower right: the GP regression for
+    $\Delta_c=\mu_{\log S} - \log \mu_S$. Upper right: the adjusted
+    regression for $S$, where the mean is equal to
+    $\mu_S(1+\mu_{\Delta_c})$. The model uses this final estimate to
+    compute $Z$ and will continue rotating until the variance of $Z$
+    is low enough that a hypothesis may be accepted. This method
+    allows the model to avoid local maxima such as the one near
+    $\frac{\pi}{6}$, which causes trouble for the na\"ive and
+    parametric models in Figure \ref{fig:simple-models}.}
   \label{fig:bq}
 \end{figure}
 
