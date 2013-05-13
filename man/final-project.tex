@@ -273,7 +273,18 @@ $0$ and $2\pi$.
     \caption{Parametric model}
     \label{fig:vm}
   \end{subfigure}
-  \caption{\TODO{}}
+  \caption{\textbf{Simple methods of estimating $S$.} In both cases,
+    hill-climbing search is used until a maxima is found (in this
+    case, at approximately $\frac{\pi}{6}$). The sampled points
+    $\mathbf{R}$ (red circles) are then used to estimate $S$ (black
+    lines are the true $S$, red lines are the estimate). \textbf{(a)}
+    Linear interpolation. The overall estimate of $Z$ here will be too
+    low, but certain angles will have a disproportionate contribution
+    (e.g., between $\frac{\pi}{4}$ and $\frac{3\pi}{4}$. \textbf{(b)}
+    Best fit of scaled Von Mises PDF parameters. As in (a), $Z$ will
+    be underestimated. However, the fit around the maximum near
+    $\frac{\pi}{6}$ is much more accurate.}
+  \label{fig:simple-models}
 \end{figure}
 
 As a baseline, we defined a na\"ive model which performs a
