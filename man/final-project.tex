@@ -93,17 +93,6 @@ predict the people's behavior on the task?
 % statistics and machine learning has examined how to optimally select
 % these samples \cite{Osborne:2012tm}.
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.95\textwidth]{../figures/shepard-rotation.png}
-  \caption{\textbf{Classic mental rotation task}. Participants in
-    \cite{Shepard1971} saw stimuli such as these, and judged whether
-    each pair of shapes was the same shape in two different
-    orientations, or two different shapes. \textbf{A} shows a ``plane
-    rotation'', \textbf{B} shows a ``depth rotation'', and \textbf{C}
-    shows two distinct objects.}
-  \label{fig:mental-rotation}
-\end{figure}
 
 \section{Computational model}
 
@@ -149,6 +138,18 @@ doing so, we obtain:
 \begin{equation} 
   p(X_a,\ X_b\ \vert \ h_1)=\int_R p(X_a) p(X_b\vert X_a,R) p(R)\ \mathrm{d}R
 \end{equation}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\textwidth]{../figures/shepard-rotation.png}
+  \caption{\textbf{Classic mental rotation task}. Participants in
+    \cite{Shepard1971} saw stimuli such as these, and judged whether
+    each pair of shapes was the same shape in two different
+    orientations, or two different shapes. \textbf{A} shows a ``plane
+    rotation'', \textbf{B} shows a ``depth rotation'', and \textbf{C}
+    shows two distinct objects.}
+  \label{fig:mental-rotation}
+\end{figure}
 
 However, we cannot compute $p(X_b\vert X_a, R)$ directly. Instead, we
 introduce a new variable $X_R$ denoting a mental image, which
