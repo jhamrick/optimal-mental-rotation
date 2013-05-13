@@ -58,7 +58,7 @@ def regression(x, y, xi, yi, xo, yo_mean, yo_var, **kwargs):
 
     # overall figure settings
     sg.set_figsize(4.5, 2)
-    plt.subplots_adjust(wspace=0.2, hspace=0.3, left=0.05, bottom=0.05)
+    plt.subplots_adjust(wspace=0.2, hspace=0.3, left=0.1, bottom=0.1)
 
     if x is not None:
         plt.plot(x, y, 'k-', label="actual", linewidth=2)
@@ -99,7 +99,7 @@ def regression(x, y, xi, yi, xo, yo_mean, yo_var, **kwargs):
         plt.ylabel(opt['ylabel'])
 
     if opt['legend']:
-        plt.legend(loc=0, fontsize=14, frameon=False)
+        plt.legend(loc=0, fontsize=12, frameon=False)
 
 
 def bq_regression(model):
@@ -111,7 +111,7 @@ def bq_regression(model):
         model.R, model.mu_S, np.diag(model.cov_S),
         title="GPR for $S$",
         xlabel=None,
-        legend=False)
+        legend=True)
     sg.no_xticklabels()
 
     # plot the regression for log S
@@ -129,7 +129,8 @@ def bq_regression(model):
         model.R, model.delta, model.Rc, model.Dc,
         model.R, model.mu_Dc, None,
         title=r"GPR for $\Delta_c$",
-        ylabel=r"Difference ($\Delta_c$)")
+        ylabel=r"Difference ($\Delta_c$)",
+        legend=False)
     yt, ytl = plt.yticks()
 
     # combine the two regression means
@@ -144,13 +145,17 @@ def bq_regression(model):
     sg.no_xticklabels()
 
     # align y-axis labels
-    sg.align_ylabels(-0.15, ax_S, ax_logS, ax_Dc)
+    sg.align_ylabels(-0.12, ax_S, ax_logS)
+    sg.set_ylabel_coords(-0.16, ax=ax_Dc)
     # sync y-axis limits
     sg.sync_ylims(ax_S, ax_final)
 
     # overall figure settings
     sg.set_figsize(9, 4)
-    plt.subplots_adjust(wspace=0.25, hspace=0.3, left=0.05, bottom=0.05)
+    plt.subplots_adjust(
+        wspace=0.3, hspace=0.3, left=0.05,
+        bottom=0.05, top=0.85)
+    plt.suptitle("Bayesian Quadrature Regression", fontsize=16)
 
 
 def vm_regression(model):
