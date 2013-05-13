@@ -402,7 +402,16 @@ will continue to compute rotations and update its estimate of $Z$.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{../figures/model_rotations.pdf}
-  \caption{\textbf{Model rotations.} \TODO{}}
+  \caption{\textbf{Model rotations.} Each subplot shows the
+    correspondence between the true angle of rotation ($R$) for $h_1$
+    stimuli and the amount of rotation performed by the model. Dotted
+    lines indicate a perfect 1:1 relationship. The \naive{} and
+    parametric models (left and center panels, respectively) are
+    identical; they show modest agreement until rougly
+    $\frac{\pi}{2}$, after which agreement decreases as they tend to
+    encounter local maxima. The nonparametric model (right panel)
+    exhibits a significant correlation between the true angle and the
+    amount the model rotates.}
   \label{fig:rotations}
 \end{figure}
 
@@ -515,7 +524,17 @@ nonparametric model's error decreases significantly ($\MSE{}=0.03$).
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{../figures/Z_accuracy.pdf}
-  \caption{\textbf{Accuracy in estimating $Z$.} \TODO{}}
+  \caption{\textbf{Accuracy in estimating $Z$.} Each subplot shows the
+    true (``gold standard'') value of $Z$ vs. the value estimated by
+    the model. Black dotted lines indicate a perfect 1:1
+    correspondence between the true and estimated values. All models
+    perform well for $h_0$ stimuli, but exhibit different behavior for
+    $h_1$ stimuli. The \naive{} model (left panel) tends to either
+    greatly overestimate, or underestimate. The parametric model
+    (center panel) is very accurate for about half the $h_1$ stimuli,
+    and severly underestimates the rest. The nonparametric model
+    (right panel) maintains a decent correspondence with the true $Z$,
+    with the exception of a handful of outliers.}
   \label{fig:accuracy}
 \end{figure}
 
