@@ -90,7 +90,7 @@ def regression(x, y, xi, yi, xo, yo_mean, yo_var, **kwargs):
     sg.outward_ticks()
     sg.clear_right()
     sg.clear_top()
-    sg.set_scientific(-3, 4, axis='y')
+    sg.set_scientific(-2, 3, axis='y')
 
     # title and axis labels
     if opt['title']:
@@ -156,7 +156,10 @@ def bq_regression(model):
     sg.align_ylabels(-0.12, ax_S, ax_logS)
     sg.set_ylabel_coords(-0.16, ax=ax_Dc)
     # sync y-axis limits
-    sg.sync_ylims(ax_S, ax_final)
+    lim = (-0.2, 1.1)
+    ax_S.set_ylim(*lim)
+    ax_logS.set_ylim(*lim)
+    ax_final.set_ylim(*lim)
 
     # overall figure settings
     sg.set_figsize(9, 5)
