@@ -56,24 +56,36 @@ until it is congruent with the other \cite{Shepard1971}. There is
 strong evidence for such \textit{mental imagery} or \textit{mental
   simulation}: we can imagine three-dimensional objects in our minds
 and manipulate them, to a certain extent, as if they were real
-\cite{Kosslyn:2009tj}.
-
-However, the use of mental simulation is predicated on determining
-appropriate parameters to give the simulation, and people's cognitive
-constraints may furthermore place limitations on the duration or
-precision of simulation. One hypothesis for how these issues are
-handled argues that people use a ``rational'' solution, meaning that
-it is optimal under the given constraints
-\cite{Lieder:2012wg,Vul:2009wy,Griffiths2012a}.
+\cite{Kosslyn:2009tj}.  However, the use of mental simulation is
+predicated on determining appropriate parameters to give the
+simulation, and people's cognitive constraints may furthermore place
+limitations on the duration or precision of simulation. One hypothesis
+for how these issues are handled argues that people use a rational
+solution, meaning that it is optimal under existing constraints
+\cite{Lieder:2012wg,Vul:2009wy,Griffiths2012a}, such as processing
+speed, memory, or perceptual acuity.
 
 In the case of the classic mental rotation task, we might ask: in what
 direction should the object be rotated?  What are the requirements for
 ``congruence''? When should one stop rotating and accept the
-hypothesis that the objects are different? In this project, I will
-investigate the optimal computational solution to this task. Thus, the
-specific question this project aims to answer is: what is the rational
-computational solution to the mental rotation task, and does it
-predict the people's behavior on the task?
+hypothesis that the objects are different? We investigate several
+computational solutions to this task and qualitatively compare them to
+general mental rotation results. Of particular interest is a model
+which actively reasons about the amount of evidence it has, and
+performs mental rotations until it reaches a certain level of
+confidence. We contrast this model with simpler approaches which are
+less computationally demanding, but which employ less flexible
+strategies.
+
+The plan of the paper is as follows. First, we give a brief overview
+of the work on mental rotation and active learning. Next, we present
+the problem domain and a computational-level analysis of how to solve
+it. We describe three different models which approximate this
+solution, evaluate their accuracy at approximating the computational
+solution, and qualitatively compare their behavior to that of the
+classic mental rotation results. We end with a discussion of the
+strengths and weaknesses of each model, as well as directions for
+future work.
 
 \section{Background}
 
