@@ -206,9 +206,11 @@ def model_rotations():
     ax1.set_ylim(0, 105)
     sg.align_xlabels(-0.2, ax0, ax1)
 
-    sg.set_figsize(8, 2.5)
+    sg.set_figsize(7, 3)
     plt.suptitle("Model Rotations", fontsize=14)
-    plt.subplots_adjust(wspace=0.1, top=0.8)
+    plt.subplots_adjust(
+        wspace=0.1, top=0.8, bottom=0.2,
+        left=0.1, right=0.95)
 
     return fig, axes
 
@@ -234,8 +236,10 @@ def model_z_accuracy(models):
         sg.clear_right(ax=ax)
         sg.clear_top(ax=ax)
 
-    sg.set_figsize(8, 2.5)
+    sg.set_figsize(8, 3)
     plt.suptitle("Accuracy of $Z$ estimates", fontsize=14)
-    plt.subplots_adjust(wspace=0.1, top=0.8)
+    plt.subplots_adjust(
+        wspace=0.1, top=0.8, bottom=0.2,
+        left=0.1, right=0.95)
 
     return fig, axes
