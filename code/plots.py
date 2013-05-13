@@ -232,7 +232,7 @@ def model_z_accuracy(models):
     ax0 = axes[0]
 
     ax0.set_ylabel(r"Estimated $Z$")
-    ax0.set_ylim(0, 1)
+    ax0.set_ylim(0, 0.7)
     ticks = [0.05, 0.15, 0.25]
     ticklabels = ["%.2f" % x for x in ticks]
     ax0.set_xlim(0, 0.3)
@@ -248,10 +248,9 @@ def model_z_accuracy(models):
         sg.clear_right(ax=ax)
         sg.clear_top(ax=ax)
 
-    sg.set_figsize(8, 3)
-    plt.suptitle("Accuracy of $Z$ estimates", fontsize=14)
+    sg.set_figsize(8, 2.7)
     plt.subplots_adjust(
-        wspace=0.1, top=0.8, bottom=0.2,
+        wspace=0.1, top=0.9, bottom=0.2,
         left=0.1, right=0.95)
 
     return fig, axes
