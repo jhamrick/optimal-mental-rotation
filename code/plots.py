@@ -11,11 +11,11 @@ def stimuli_shapes(**kwargs):
     """
     nstim = len(kwargs)
 
-    plt.clf()
-    fig = plt.gcf()
-    fig.set_figwidth(nstim*2.25)
-    fig.set_figheight(2)
-    plt.subplots_adjust(top=0.8, bottom=0)
+    plt.figure()
+    sg.set_figsize(nstim*2, 2)
+    plt.subplots_adjust(
+        top=0.8, bottom=0, left=0, right=1,
+        wspace=0)
 
     Xs = sorted(kwargs.keys())
     for i, X in enumerate(Xs):
@@ -27,11 +27,11 @@ def stimuli_shapes(**kwargs):
 def stimuli_images(**kwargs):
     nimg = len(kwargs)
 
-    plt.clf()
-    fig = plt.gcf()
-    fig.set_figwidth(nimg*2.25)
-    fig.set_figheight(2)
-    plt.subplots_adjust(top=0.8, bottom=0)
+    plt.figure()
+    sg.set_figsize(nimg*2, 2)
+    plt.subplots_adjust(
+        top=0.8, bottom=0, left=0, right=1,
+        wspace=0)
 
     Is = sorted(kwargs.keys())
     for i, I in enumerate(Is):
