@@ -131,6 +131,7 @@ class BayesianQuadratureModel(Model):
         # fit parameters
         theta = mll.maximize(
             Ri, Si,
+            wmin=np.radians(self.opt['dr']) / 2.,
             wmax=np.pi/2.,
             ntry=self.opt['ntry'],
             verbose=self.opt['verbose'] > 3)
