@@ -26,6 +26,10 @@
 % line, try using \AND instead of \And before the third author name.
 
 \newcommand{\TODO}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\MSE}[0]{\mathrm{MSE}}
+\newcommand{\ME}[0]{\mathrm{ME}}
+\newcommand{\naive}[0]{na\"ive}
+\newcommand{\Naive}[0]{Na\"ive}
 
 \nipsfinalcopy % Uncomment for camera-ready version
 
@@ -257,14 +261,14 @@ a ``gold standard''\footnote{This only gives an accurate estimate of
 evaluating $S(X_b, X_R)$ at 360 values of $R$ spaced evenly between
 $0$ and $2\pi$.
 
-\subsection{Na\"ive model}
+\subsection{\Naive{} model}
 
 \begin{figure}[t]
   \centering
   \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{../figures/li_regression.pdf}
-    \caption{Na\"ive model}
+    \caption{\Naive{} model}
     \label{fig:li}
   \end{subfigure}
   \begin{subfigure}[b]{0.45\textwidth}
@@ -287,11 +291,11 @@ $0$ and $2\pi$.
   \label{fig:simple-models}
 \end{figure}
 
-As a baseline, we defined a na\"ive model which performs a
+As a baseline, we defined a \naive{} model which performs a
 hill-climbing search over the similarity function until it reaches a
 (possibly local) maximum. Once a maximum as been found, the model
 computes an estimate of $Z$ by linearly interpolating between sampled
-rotations. Figure \ref{fig:li} shows an example of the na\"ive model
+rotations. Figure \ref{fig:li} shows an example of the \naive{} model
 prior to estimating $Z$.
 
 \subsection{Parametric (Von Mises) model}
@@ -310,7 +314,7 @@ preferred direction, $h$ is a scale parameter, and $I_0$ is the
 modified Bessel function of order zero. We fit these parameters by
 minimizing the mean squared error between this PDF and the computed
 values of $S$. To choose the sequence of rotations, we use the same
-hill-climbing strategy as in the na\"ive model. Figure \ref{fig:vm}
+hill-climbing strategy as in the \naive{} model. Figure \ref{fig:vm}
 shows an example of this parametric model, prior to estimating $Z$.
 
 \subsection{Nonparametric (Bayesian Quadrature) model}
@@ -328,7 +332,7 @@ shows an example of this parametric model, prior to estimating $Z$.
     compute $Z$ and will continue rotating until the variance of $Z$
     is low enough that a hypothesis may be accepted. This method
     allows the model to avoid local maxima such as the one near
-    $\frac{\pi}{6}$, which causes trouble for the na\"ive and
+    $\frac{\pi}{6}$, which causes trouble for the \naive{} and
     parametric models in Figure \ref{fig:simple-models}.}
   \label{fig:bq}
 \end{figure}
@@ -347,7 +351,7 @@ Bayesian Quadrature has its difficulties, however. While in our case
 $S$ is a non-negative likelihood function, GP regression enforces no
 such constraint. In an effort to avoid this problem,
 \cite{Osborne:2012tm} give a method which involves instead placing a
-prior over the log liklihood\footnote{In practice, as in
+prior over the log likelihood\footnote{In practice, as in
   \cite{Osborne:2012tm}, we use the transform of $\log(S+1)$.}, thus
 ensuring that $S=e^{\log S}$ will be positive\footnote{We are not
   guaranteed positivity, however, the approximation to the integral
@@ -407,81 +411,78 @@ We considered three metrics of performance in particular:
   corresponding to true rotation vs. rotation by the model, for each
   model.
 \item \textit{Responses}: how accurate is the model at choosing the
-  correct hypothesis? This is defined to be the mean error
-  ($\mathrm{ME}$), or fraction of times the model picks the incorrect
-  hypothesis.
+  correct hypothesis? This is defined to be the mean error ($\ME{}$),
+  or fraction of times the model picks the incorrect hypothesis.
 \item \textit{Estimates of $Z$}: how accurate is the model's estimate
-  of $Z$? This is defined to be the mean squared error
-  ($\mathrm{MSE}$) between the model's estimate of $Z$ and the ``gold
-  standard'' value, where the error has scale such that
-  $\mathrm{MSE}=0$ indicates no error, and $\mathrm{MSE}=1$ indicates
-  maximum error. Figure \ref{fig:accuracy} shows plots of the true
-  (gold standard) value of $Z$ vs. the model's estimate, for each
-  model.
+  of $Z$? This is defined to be the mean squared error ($\MSE{}$)
+  between the model's estimate of $Z$ and the ``gold standard'' value,
+  where the error has scale such that $\MSE{}=0$ indicates no error,
+  and $\MSE{}=1$ indicates maximum error. Figure \ref{fig:accuracy}
+  shows plots of the true (gold standard) value of $Z$ vs. the model's
+  estimate, for each model.
 \end{itemize}
 
 \paragraph{Gold standard} 
 
 The gold standard always evaluates $S$ at all angles, so the
 correlation between it and the true angle of rotation is
-undefined. The mean error of responses was $\mathrm{ME}=0.01$,
-indicating that $Z$ is a sufficient approximation\footnote{The one
-  error comes from a $h_0$ stimulus which is highly
-  symmetric. Although it is distinct enough for the author to
-  correctly judge when both images are viewed side by side, it remains
-  to be seen whether human participants, viewing the images
-  sequentially would also make the correct judgment.}  of $\int_R
-p(X_b\ \vert\ X_R)p(R)\ \mathrm{d}R$.
+undefined. The mean error of responses was $\ME{}=0.01$, indicating
+that $Z$ is a sufficient approximation\footnote{The one error comes
+  from a $h_0$ stimulus which is highly symmetric. Although it is
+  distinct enough for the author to correctly judge when both images
+  are viewed side by side, it remains to be seen whether human
+  participants, viewing the images sequentially would also make the
+  correct judgment.}  of $\int_R p(X_b\ \vert\ X_R)p(R)\ \mathrm{d}R$.
 
-\paragraph{Na\"ive model} 
+\paragraph{\Naive{} model} 
 
 The correlation between the number of rotations computed by the
-na\"ive model and the true angle of rotation was $\rho=-0.11$. The
+\naive{} model and the true angle of rotation was $\rho=-0.11$. The
 shape of the data is more interesting (see Figure \ref{fig:rotations},
-right panel): the na\"ive model actually corresponds quite well to the
-true angle of rotation for $R<\frac{\pi}{2}$ ($\rho=0.64$). This is
-unsurprising, because the closer the true angle is to zero, the less
-the model has to rotate, and the less likely it will get stuck on
+right panel): the \naive{} model actually corresponds quite well to
+the true angle of rotation for $R<\frac{\pi}{2}$ ($\rho=0.64$). This
+is unsurprising, because the closer the true angle is to zero, the
+less the model has to rotate, and the less likely it will get stuck on
 local maxima. Thus, it is more likely to locat the global maximum,
 which generally corresponds to the true angle of rotation. For
 $R>\frac{\pi}{2}$, we see an increasing tendency to under-rotate
 ($\rho=-0.42$); this is likely because it finds a local maxima and
 ends prematurely.
 
-The na\"ive model's response error rate was better than chance, but
-still quite high, with $\mathrm{ME}=0.23$. Closer inspection reveals
-that the bulk of this comes from $h_1$ stimuli ($\mathrm{ME}=0.36$
-vs. $\mathrm{ME}=0.1$ for $h_0$ stimuli). This is, as above, probably
+The \naive{} model's response error rate was better than chance, but
+still quite high, with $\ME{}=0.23$. Closer inspection reveals that
+the bulk of this comes from $h_1$ stimuli ($\ME{}=0.36$
+vs. $\ME{}=0.1$ for $h_0$ stimuli). This is, as above, probably
 related to finding only local maxima: if the model finds a local
 maxima which is low enough, the area under the estimated curve will
 not be large enough to accept $h_1$.
 
 This is reflected in the accuracy in estimating $Z$ as well
-($\mathrm{MSE}=0.14$). Figure \ref{fig:accuracy} (leftmost panel)
-shows individual estimates for each stimulus, color-coded by true
+($\MSE{}=0.14$). Figure \ref{fig:accuracy} (leftmost panel) shows
+individual estimates for each stimulus, color-coded by true
 hypothesis. The model underestimates $Z$ for significant portion of
-the $h_1$ stimuli. On the other $h_1$ stimuli, the na\"ive model
+the $h_1$ stimuli. On the other $h_1$ stimuli, the \naive{} model
 actually tends to overestimate because linear interpolation does not
 account for symmetry of global maxima (e.g., Figure \ref{fig:li}).
 
 \paragraph{Parametric (Von Mises) model}
 
-Like the na\"ive model, the parametric model uses hill-climbing as a
+Like the \naive{} model, the parametric model uses hill-climbing as a
 sampling strategy, so they have identical correlations with the true
 angle of rotation. However, given the same $\mathbf{R}$, the
 parametric model estimates $Z$ differently, thus giving rise to
 different response and estimated $Z$ error rates. The response error
-for the parametric model was higher than the na\"ive model, with
-$\mathrm{ME}=0.26$. Breaking this down, we see that the error for
-$h_1$ stimuli is $\mathrm{ME}=0.5$: in other words, the parametric
-model is at chance when determining whether two identical shapes are
-the same. This is because it never overestimates (see Figure
+for the parametric model was higher than the \naive{} model, with
+$\ME{}=0.26$. Breaking this down, we see that the error for $h_1$
+stimuli is $\ME{}=0.5$: in other words, the parametric model is at
+chance when determining whether two identical shapes are the
+same. This is because it never overestimates (see Figure
 \ref{fig:accuracy}, center panel). So, it accurately estimates $Z$ for
-stimuli which the na\"ive model would overestimate
-($\mathrm{MSE}=0.07$), but still has poor performance when $Z$ is
-underestimated. Indeed, if we exclude stimuli for which the na\"ive
-model overestimates ($Z\geq 3$), the error for the na\"ive model
-lowers to match that of the parametric model.
+stimuli which the \naive{} model would overestimate ($\MSE{}=0.07$),
+but still has poor performance when $Z$ is underestimated. Indeed, if
+we exclude stimuli for which the \naive{} model overestimates ($Z\geq
+3$), the error for the \naive{} model lowers to match that of the
+parametric model.
 
 \paragraph{Nonparametric (Bayesian Quadrature) model}
 
