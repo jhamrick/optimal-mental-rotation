@@ -230,6 +230,9 @@ minimize the number of rotations while still obtaining an estimate of
 $Z$ that is accurate enough to choose the correct hypothesis. With
 this in mind, we now examine several approaches to estimating $Z$.
 
+In each of these models, we denote the computed rotations to be a set
+$\mathbf{R}=\{R_1, R_2, \ldots{}\}$.
+
 \subsection{Gold standard model}
 
 To compare the accuracy of other models' estimates of $Z$, we computed
@@ -308,41 +311,51 @@ A more flexible strategy uses what is known as \emph{Bayesian
   quadrature} \cite{Diaconis:1988uo,OHagan:1991tx} to estimate $Z$.
 Bayesian quadrature allows us to compute a posterior distrbution over
 $Z$ by placing a Gaussian Process (GP) \cite{Rasmussen:2006vz} prior
-on the log likelihood function $\log S$ and evaluating $\log S$ at a
-particular set of points. For our purposes, we choose these points to
-be a sequence of $N$ consecutive mental rotations be
-$\mathbf{R}=\{R_1, \ldots{}, R_N\}$. To obtain a single estimate of
-$Z$, we want compute the posterior mean:
-\begin{equation}
+on the function $S$ and evaluating $S$ at a particular set of
+points. However, this strategy has its difficulties: while in our
+case, $S$ is a non-negative likelihood function, GP regression
+enforces no such constraint.
+
+\cite{Osborne:2012tm} give a method which more often (but not
+entirely) avoids this problem. Instead of placing a prior over $S$, a
+prior is instead placed over $\log S$, thus ensuring that $S=e^{\log
+  S}$ will be positive\footnote{In practice, as in
+  \cite{Osborne:2012tm}, we use the transform of $\log(S+1)$.}:
+\begin{equation*}
   E[Z\ \vert \ \log S]=\int_{\log S}\left(\int_R \exp(\log{S(X_b,X_R)})p(R)\ \mathrm{d}R\right)\mathcal{N}\left(\log{S}\ \vert \ \mu_{\log S}, \Sigma_{\log S}\right)\ \mathrm{d}\log S
-\end{equation}
-As in \cite{Osborne:2012tm}, we can approximate this with:
+\end{equation*}
+where $\mu_{\log S}$ and $\Sigma_{\log S}$ are the mean and
+covariance, respectively, of the GP regression over $\log S$ given
+$\mathbf{R}$. We approximate this according to the method given in
+\cite{Osborne:2012tm}:
 \begin{equation}
-  E[Z\ \vert \ \log S] \approx \int_R \mu_{S}(1 + \mu_\Delta) p(R)\ \mathrm{d}R
-\end{equation} 
-Where $\mu_x$ is the mean of a GP, as follows:
+  \mu_Z=E[Z\ \vert \ \log S] \approx \int_R \mu_{S}(1 + \mu_\Delta) p(R)\ \mathrm{d}R 
+  \label{eq:bq-Z-mean}
+\end{equation}
+where $\mu_S$ is the mean of a GP regression over $S$ given
+$\mathbf{R}$; and $\mu_{\Delta_c}$ is a regression over
+$\Delta_c=\mu_{\log S} - \log \mu_S$ given $\mathbf{R}_c$, which
+consists of $\mathbf{R}$ and a set of intermediate \emph{candidate
+  points}\footnote{These candidate points do not require evaluating
+  the true $S$, only the GP estimates of $S$ and $\log S$.} $c$ as
+described in \cite{Osborne:2012tm}. The variance of the estimate of
+$Z$ is given by:
+\begin{equation}
+  \sigma_Z=\mathrm{Var}(Z\ \vert \ S, \log S) = \int_R\int_{R^\prime} \mu_S(R)\mu_S(R^\prime) \Sigma_{\log S}(R, R^\prime)p(R)p(R^\prime)\ \mathrm{d}R\ \mathrm{d}R^\prime
+  \label{eq:bq-Z-var}
+\end{equation}
 
-\begin{itemize}
-\itemsep1pt\parskip0pt\parsep0pt
-\item $\mu_\Delta$ is a regression over $\Delta=\mu_{\log S} - \log
-  \mu_S$ given $\mathbf{R}_\Delta$, which consists of $\mathbf{R}$ and
-  a set of intermediate \emph{candidate points}, as described in
-  \cite{Osborne:2012tm}.
-\item $\mu_S$ is the mean of a GP regression over $S$ given
-  $\mathbf{R}$.
-\item $\mu_{\log S}$ is the mean of a GP regression over $\log S$
-  given $\mathbf{R}$.
-\end{itemize}
-
-\paragraph{Choosing the sequence of mental images}
-
-Because we can only evaluate $S(X_a, X_R)$ at a small number $k$ of
-rotations, we must make an explicit decision about which
-$\mathbf{R}=\{R_1, \ldots{}, R_k\}$ to use. Ideally, we should choose
-$\mathbf{R}$ such that it will give us the best approximation of
-$p(X_a, X_b\vert h_1)$. One option is to choose each $R_i$ in a greedy
-manner to minimize the variance of $Z$ (i.e.~give a more accurate
-estimate of $S$).
+To choose $\mathbf{R}$, we pick an initial direction of rotation which
+results in the higher value of $S$, and then continue rotating in that
+direction until the variance in Equation \ref{eq:bq-Z-var} is low
+enough that we are confident about the likelihood ratio $\ell$:
+\begin{equation*}
+p(\ell)\approx\frac{1}{p(X_b)}\ \mathcal{N}(Z\ \vert\ \mu_Z, \sigma_z)
+\end{equation*}
+Specifically, we choose $h_0$ when $p(\ell < 1)\geq 0.95$, and we
+choose $h_1$ when $p(\ell > 1)\geq 0.95$. Until one of these
+conditions are met (or the shape has been fully rotated), the model
+will continue to compute rotations and update its estimate of $Z$.
 
 \section{Results}
 
