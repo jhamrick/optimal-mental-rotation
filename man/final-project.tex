@@ -352,8 +352,12 @@ $S$ is a non-negative likelihood function, GP regression enforces no
 such constraint. In an effort to avoid this problem,
 \cite{Osborne:2012tm} give a method which involves instead placing a
 prior over the log likelihood\footnote{In practice, as in
-  \cite{Osborne:2012tm}, we use the transform of $\log(S+1)$.}, thus
-ensuring that $S=e^{\log S}$ will be positive\footnote{We are not
+  \cite{Osborne:2012tm}, we use the transform of
+  $\log(S+1)$. Additionally, while \cite{Osborne:2012tm} use a
+  combination of MLII and marginalization to fit the kernel
+  parameters, we set the output scale $h_S=0.125$ and $h_{\log
+    S}=\log(h_S + 1)$, and use MLII to fit all other parameters.},
+thus ensuring that $S=e^{\log S}$ will be positive\footnote{We are not
   guaranteed positivity, however, the approximation to the integral
   over $\log S$ (Equation \ref{eq:bq-Z-mean}) requires computing
   $\mu_S$, which may have nonpositive segments.}:
