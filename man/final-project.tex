@@ -68,7 +68,7 @@ it is optimal under the given constraints
 
 In the case of the classic mental rotation task, we might ask: in what
 direction should the object be rotated?  What are the requirements for
-``congruency''? When should one stop rotating and accept the
+``congruence''? When should one stop rotating and accept the
 hypothesis that the objects are different? In this project, I will
 investigate the optimal computational solution to this task. Thus, the
 specific question this project aims to answer is: what is the rational
@@ -340,7 +340,7 @@ shows an example of this parametric model, prior to estimating $Z$.
 
 A more flexible strategy uses what is known as \emph{Bayesian
   Quadrature} \cite{Diaconis:1988uo,OHagan:1991tx} to estimate $Z$.
-Bayesian Quadrature allows us to compute a posterior distrbution over
+Bayesian Quadrature allows us to compute a posterior distribution over
 $Z$ by placing a Gaussian Process (GP) prior on the function $S$ and
 evaluating $S$ at a particular set of points. Because our data is
 circular, we can use a periodic kernel \cite{Rasmussen:2006vz}:
@@ -361,7 +361,7 @@ prior over the log likelihood\footnote{In practice, as in
 thus ensuring that $S=e^{\log S}$ will be positive\footnote{We are not
   guaranteed positivity, however, the approximation to the integral
   over $\log S$ (Equation \ref{eq:bq-Z-mean}) requires computing
-  $\mu_S$, which may have nonpositive segments.}:
+  $\mu_S$, which may have non-positive segments.}:
 \begin{equation*}
   E[Z\ \vert \ \log S]=\int_{\log S}\left(\int_R \exp(\log{S(X_b,X_R)})p(R)\ \mathrm{d}R\right)\mathcal{N}\left(\log{S}\ \vert \ \mu_{\log S}, \Sigma_{\log S}\right)\ \mathrm{d}\log S
 \end{equation*}
@@ -408,7 +408,7 @@ will continue to compute rotations and update its estimate of $Z$.
     stimuli and the amount of rotation performed by the model. Dotted
     lines indicate a perfect 1:1 relationship. The \naive{} and
     parametric models (left and center panels, respectively) are
-    identical; they show modest agreement until rougly
+    identical; they show modest agreement until roughly
     $\frac{\pi}{2}$, after which agreement decreases as they tend to
     encounter local maxima. The nonparametric model (right panel)
     exhibits a significant correlation between the true angle and the
@@ -460,7 +460,7 @@ left panel): the \naive{} model actually corresponds quite well to
 the true angle of rotation for $R<\frac{\pi}{2}$ ($\rho=0.64$). This
 is unsurprising, because the closer the true angle is to zero, the
 less the model has to rotate, and the less likely it will get stuck on
-local maxima. Thus, it is more likely to locat the global maximum,
+local maxima. Thus, it is more likely to locate the global maximum,
 which generally corresponds to the true angle of rotation. For
 $R>\frac{\pi}{2}$, we see an increasing tendency to under-rotate
 ($\rho=-0.42$); this is likely because it finds a local maxima and
@@ -515,7 +515,7 @@ and parametric models, it mostly errs on $h_1$ stimuli
 ($\ME{}=0.1$). This appears to mostly be the result of choosing the
 incorrect initial direction of rotation.
 
-Similarly, because the nonparametric model actively attemps to obtain
+Similarly, because the nonparametric model actively attempts to obtain
 an accurate estimate of $Z$, its estimate of $Z$ is indeed fairly
 accurate ($\MSE{}=0.10$). This is slightly higher than the
 nonparametric model, but is due to a few outliers. If we again exclude
@@ -533,7 +533,7 @@ nonparametric model's error decreases significantly ($\MSE{}=0.03$).
     $h_1$ stimuli. The \naive{} model (left panel) tends to either
     greatly overestimate, or underestimate. The parametric model
     (center panel) is very accurate for about half the $h_1$ stimuli,
-    and severly underestimates the rest. The nonparametric model
+    and severely underestimates the rest. The nonparametric model
     (right panel) maintains a decent correspondence with the true $Z$,
     with the exception of a handful of outliers.}
   \label{fig:accuracy}
