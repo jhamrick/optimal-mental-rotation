@@ -39,5 +39,5 @@ class GoldStandardModel(Model):
 if __name__ == "__main__":
     import util
     opt = util.load_opt()
-    stims = util.find_stims()[:5]
+    stims = util.find_stims()[:opt['nstim']]
     util.run_model(stims, GoldStandardModel, opt)
