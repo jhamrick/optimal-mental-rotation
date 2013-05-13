@@ -239,7 +239,7 @@ a ``gold standard''\footnote{This only gives an accurate estimate of
 evaluating $S(X_b, X_R)$ at 360 values of $R$ spaced evenly between
 $0$ and $2\pi$.
 
-\subsubsection{Linear Interpolation}
+\subsection{Na\"ive model}
 
 \begin{figure}[t]
   \centering
@@ -257,21 +257,24 @@ $0$ and $2\pi$.
   \end{subfigure}
 \end{figure}
 
-Na\"ively, we can simply use linear interpolation to estimate $S$ and
-the trapezoidal rule to estimate $Z$.
+As a baseline, we defined a \textit{na\"ive} model which performs a
+hill-climbing search over the similarity function until it reaches a
+(possibly local) maximum. Once a maximum as been found, the model
+computes an estimate of $Z$ by linearly interpolating between sampled
+rotations.
 
-\paragraph{Choosing the sequence of mental images}
+When $h_1$ is correct and as the true angle of rotation approaches 0,
+the \textit{na\"ive} model should increase in both response and
+rotation accuracy, because local maxima will be less likely (and
+therefore, it is more likely that the global maxima will be
+discovered). For larger angles of rotation, this model should have a
+tendency to under-rotate, because it will find local maxima and end
+prematurely. Its estimates of $Z$ will usually be overestimates (if it
+finds the global maxima, and then terminates) or underestimates (the
+rest of the time). This model should almost always be accurate when
+$h_0$ is correct.
 
-In this naïve strategy, we perform a hill-climbing search to find a
-local maxima. In other words, we rotate in the direction for which
-there is a local increase in similarity.
-
-\paragraph{Stopping criterion}
-
-Because we are using hill-climbing, we choose to stop when we hit a
-local maxima.
-
-\subsubsection{Parametric Regression}
+\subsection{Parametric (Von Mises) model}
 
 Another strategy is to assume a parametric shape for $S$ and fit the
 appropriate parameters. Here, we assume the likelihood follows a
