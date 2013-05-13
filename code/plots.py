@@ -11,11 +11,11 @@ def stimuli_shapes(**kwargs):
     """
     nstim = len(kwargs)
 
-    plt.clf()
-    fig = plt.gcf()
-    fig.set_figwidth(nstim*2.25)
-    fig.set_figheight(2)
-    plt.subplots_adjust(top=0.8, bottom=0)
+    plt.figure()
+    sg.set_figsize(nstim*2, 2)
+    plt.subplots_adjust(
+        top=0.8, bottom=0, left=0, right=1,
+        wspace=0)
 
     Xs = sorted(kwargs.keys())
     for i, X in enumerate(Xs):
@@ -27,11 +27,11 @@ def stimuli_shapes(**kwargs):
 def stimuli_images(**kwargs):
     nimg = len(kwargs)
 
-    plt.clf()
-    fig = plt.gcf()
-    fig.set_figwidth(nimg*2.25)
-    fig.set_figheight(2)
-    plt.subplots_adjust(top=0.8, bottom=0)
+    plt.figure()
+    sg.set_figsize(nimg*2, 2)
+    plt.subplots_adjust(
+        top=0.8, bottom=0, left=0, right=1,
+        wspace=0)
 
     Is = sorted(kwargs.keys())
     for i, I in enumerate(Is):
@@ -57,8 +57,10 @@ def regression(x, y, xi, yi, xo, yo_mean, yo_var, **kwargs):
     opt.update(kwargs)
 
     # overall figure settings
-    sg.set_figsize(4.5, 2)
-    plt.subplots_adjust(wspace=0.2, hspace=0.3, left=0.1, bottom=0.1)
+    sg.set_figsize(5, 3)
+    plt.subplots_adjust(
+        wspace=0.2, hspace=0.3,
+        left=0.15, bottom=0.2, right=0.95)
 
     if x is not None:
         plt.plot(x, y, 'k-', label="actual", linewidth=2)
@@ -111,7 +113,13 @@ def bq_regression(model):
         model.R, model.mu_S, np.diag(model.cov_S),
         title="GPR for $S$",
         xlabel=None,
-        legend=True)
+        legend=False)
+    ax_S.legend(
+        loc='upper center',
+        bbox_to_anchor=(1.08, 1.48),
+        frameon=False,
+        fontsize=12,
+        ncol=3)
     sg.no_xticklabels()
 
     # plot the regression for log S
@@ -151,14 +159,15 @@ def bq_regression(model):
     sg.sync_ylims(ax_S, ax_final)
 
     # overall figure settings
-    sg.set_figsize(9, 4)
+    sg.set_figsize(9, 5)
     plt.subplots_adjust(
-        wspace=0.3, hspace=0.3, left=0.05,
-        bottom=0.05, top=0.85)
+        wspace=0.3, hspace=0.4, left=0.1,
+        right=0.95, bottom=0.15, top=0.83)
     plt.suptitle("Bayesian Quadrature Regression", fontsize=16)
 
 
 def vm_regression(model):
+    plt.figure()
     regression(
         model.R, model.S, model.Ri, model.Si,
         model.R, model.S_mean, model.S_var,
@@ -166,6 +175,7 @@ def vm_regression(model):
 
 
 def li_regression(model):
+    plt.figure()
     regression(
         model.R, model.S, model.Ri, model.Si,
         model.R, model.S_mean, model.S_var,
@@ -173,6 +183,7 @@ def li_regression(model):
 
 
 def likelihood(model):
+    plt.figure()
     regression(
         model.R, model.S, None, None, None, None, None,
         title="Likelihood function",
@@ -206,9 +217,11 @@ def model_rotations():
     ax1.set_ylim(0, 105)
     sg.align_xlabels(-0.2, ax0, ax1)
 
-    sg.set_figsize(8, 2.5)
+    sg.set_figsize(7, 3)
     plt.suptitle("Model Rotations", fontsize=14)
-    plt.subplots_adjust(wspace=0.1, top=0.8)
+    plt.subplots_adjust(
+        wspace=0.1, top=0.8, bottom=0.2,
+        left=0.1, right=0.95)
 
     return fig, axes
 
@@ -234,8 +247,10 @@ def model_z_accuracy(models):
         sg.clear_right(ax=ax)
         sg.clear_top(ax=ax)
 
-    sg.set_figsize(8, 2.5)
+    sg.set_figsize(8, 3)
     plt.suptitle("Accuracy of $Z$ estimates", fontsize=14)
-    plt.subplots_adjust(wspace=0.1, top=0.8)
+    plt.subplots_adjust(
+        wspace=0.1, top=0.8, bottom=0.2,
+        left=0.1, right=0.95)
 
     return fig, axes
