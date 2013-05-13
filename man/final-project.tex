@@ -277,31 +277,29 @@ $h_0$ is correct.
 \subsection{Parametric (Von Mises) model}
 
 Another strategy is to assume a parametric shape for $S$ and fit the
-appropriate parameters. Here, we assume the likelihood follows a
-\emph{Von Mises} distribution:
+appropriate parameters. When $h_1$ is correct, it is likely that the
+function will be approximately unimodal (shapes with rotational
+symmetry would be multimodal). A reasonable assumption, then, is that
+the likelihood follows a ``wrapped Gaussian'', or Von Mises,
+distribution:
 \begin{equation}
-  S(X_b, X_R) \approx \hat{S}_{VM}=\frac{h}{2\pi X_0(\kappa)}e^{\kappa\cos(R-\hat{\theta})}
+  S(X_b, X_R) \approx h\cdot{}p(R\ \vert\ \hat{\theta}, \kappa)=\frac{h}{2\pi X_0(\kappa)}e^{\kappa\cos(R-\hat{\theta})}
 \end{equation}
-
-Where $\kappa$ is the concentration parameter, $\hat{\theta}$ is the
-preferred direction, and $h$ is a scale parameter. We can fit these
+where $\kappa$ is the concentration parameter, $\hat{\theta}$ is the
+preferred direction, and $h$ is a scale parameter. We fit these
 parameters by minimizing the mean squared error between this PDF and
-the observed values of $S$ which we are given. Then:
-\begin{equation}
-E[Z\ \vert \ S]\approx \int_R \hat{S}_{VM}p(R)\ \mathrm{d}R
-\end{equation}
+the computed values of $S$. To choose the sequence of rotations, we
+use the same hill-climbing strategy as in the \textit{na\"ive}
+model.\TODO{a better strategy would have been to compute the variance
+  in parameter estimates, or something...} Figure \ref{fig:vm} shows
+an example of this parametric model, prior to estimating $Z$.
 
-\paragraph{Choosing the sequence of mental images}
-
-As above, we use hill-climbing, with the stopping criteria being when
-we find a local maxima.
-
-\subsubsection{Bayesian Quadrature}
+\subsection{Nonparametric (Bayesian Quadrature) model}
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{../figures/bq_regression.pdf}
-  \caption{Bayesian Quadrature}
+  \caption{Nonparametric model}
   \label{fig:bq}
 \end{figure}
 
