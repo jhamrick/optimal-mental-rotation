@@ -193,45 +193,42 @@ We define the prior probabilities over stimuli based on how they are
 generated. For shapes with $n$ vertices, each vertex is at a random
 angle with a radius random chosen between 0 and 1, in polar
 coordinates, and could be chosen in any of $n!$ different ways. Thus,
-the prior over shapes is:
+the prior over a shape $X$ is:
 \begin{equation}
-\subsection{Likelihood when the configurations are distinct}
-
   p(X)=n!\left(\frac{1}{2\pi}\right)^n
+  \label{eq:prior}
 \end{equation} 
-And so the joint likelihood is just:
+which gives us the denominator in Equation \ref{eq:lh-ratio}. 
+
+Computing the numerator of Equation \ref{eq:lh-ratio} is more
+difficult, as we do know $p(X_b\vert X_R)$. We approximate it with a
+similarity function $S(X_b, X_R)$, which also takes into account the
+different possible mappings of vertices:
 \begin{equation}
-  p(X_a, X_b\ \vert \ h_0)=\left[n!\left(\frac{1}{2\pi}\right)^n\right]^2
+  Z=\int_R S(X_b, X_R)p(R)\ \mathrm{d}R\ \approx\int_Rp(X_b\ \vert\ X_R)p(R)\ \mathrm{d}R
+  \label{eq:Z}
 \end{equation}
 
-\subsection{Likelihood when the configurations are equivalent}
-
-We cannot know the quantity $p(X_b\vert X_R)$ exactly, so we
-approximate it with a similarity function $S(X_b, X_R)$, which also
-takes into account the different possible mappings of vertices. There
-are $n$ mappings $M$ of the $n$ vertices: because some vertices are
-connected to form a closed loop, we assume the uncertainty is only in
-which is the ``first'' vertex. So, the possible orderings are of the
-form $M=\lbrace{}0, 1, \ldots{}, n\rbrace{}$, $M=\lbrace{}n, 0,
-\ldots{}, n-1\rbrace{}$, and so on. This gives us the final form of
-the similarity function:
+Because the vertices are connected in a way which forms a closed loop,
+we need only consider $n$ mappings, $M$, of the $n$ vertices (we
+assume the uncertainty is only in which is the ``first''
+vertex). Thus, the possible orderings are of the form $M=\lbrace{}0,
+1, \ldots{}, n\rbrace{}$, $M=\lbrace{}n, 0, \ldots{}, n-1\rbrace{}$,
+and so on. This gives us an explicit form for the similarity function:
 \begin{equation}
   S(X_b, X_R)=\frac{1}{n}\sum_{M\in\mathbb{M}}\prod_{i=1}^n\mathcal{N}(X_b[i]\ \vert \ (MX_R)[i], \Sigma)
+  \label{eq:similarity}
 \end{equation}
-Where $i$ denotes the $i^{th}$ vertex. We do not know the closed,
-analytic form of this function, but we can evaluate it for any $X_b$
-and $X_R$. Given this, the desired quantity for $h_1$ becomes:
-\begin{equation}
-  Z = p(X_a,X_b\ \vert \ h_1)\approx \int_R S(X_b, X_R)p(X_a)p(R)\ \mathrm{d}R
-\end{equation}
-Note that for brevity, from here on we will refer to $p(X_a, X_b\
-\vert \ h_1)$ as $Z$.
+where $i$ denotes the $i^{th}$ vertex. An example of $S$ for the
+stimuli shown in Figure \ref{fig:stimuli} is illustrated in Figure
+\ref{fig:likelihood}.
 
-Finally, computing any single $X_R$ is a costly operation in that it
-is both a lengthy operation and memory-intensive, so we want to
-minimize the number of $X_R$ that are computed. With this in mind, we
-now examine several different approaches to estimating $S$ and,
-ultimately, $Z$.
+This process of mental rotation (i.e., generating a single $X_R$ (as
+in Equation \ref{eq:tau}) and then computing $S(X_b, X_R)$) is a
+computationally demanding cognitive process. Thus, our goal is to
+minimize the number of rotations while still obtaining an estimate of
+$Z$ that is accurate enough to choose the correct hypothesis. With
+this in mind, we now examine several approaches to estimating $Z$.
 
 \subsubsection{Gold standard}
 
