@@ -10,3 +10,4 @@ done
 # now run analyses and generate figures from them
 cd "code"
 python ../run_nb.py notes.ipynb
+python ../run_nb.py analysis.ipynb
