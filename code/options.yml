@@ -1,16 +1,29 @@
 {
+    # how many stimuli to run
+    nstim: 100,
     # the amount we rotate by
     dr: 22.5, 
     # prior over angles
     prior_R: 0.15915494309189535, 
-    # save images
-    save: true, 
     # data scale, to avoid underflow
     scale: 1, 
     # standard deviation in similarity function
     sigma: 0.2, 
+
+    # save images
+    save: true, 
     # print extra information
     verbose: 0,
-    # how many stimuli to run
-    nstim: 100
+
+    # number of tries to fit parameters in von mises
+    ntry_vm: 50,
+
+    # observation noise for bayesian quadrature
+    s: 0,
+    # output scale for bayesian quadrature
+    h: 0.125,
+    # type of kernel to use for bayesian quadrature
+    kernel: periodic,
+    # number of tries to fit parameters in bayesian quadrature
+    ntry_bq: 10
 }

@@ -31,8 +31,10 @@ class BayesianQuadratureModel(Model):
             Type of kernel to use, either 'gaussian' or 'periodic'
         ntry : int (default=10)
             Number of optimizations to run
-        obs_noise : bool (default=False)
-            Whether to fit parameter for observation noise
+        s : float (default=0)
+            Observation noise parameter value (if None, will be fit)
+        h : float (default=None)
+            Output scale parameter (if None, will be fit)
 
         """
 
@@ -40,6 +42,7 @@ class BayesianQuadratureModel(Model):
         self.opt = {
             'ntry': 10,
             'kernel': 'periodic',
+            'h': None,
             's': 0,
         }
 
@@ -48,16 +51,15 @@ class BayesianQuadratureModel(Model):
         self._ilast = None
 
         # marginal log likelihood objects
-        h = self.opt['scale'] / 8.
         self._mll_S = KernelMLL(
             kernel=self.opt['kernel'],
-            h=h,
+            h=self.opt['h'],
             w=None,
             s=self.opt['s']
         )
         self._mll_logS = KernelMLL(
             kernel=self.opt['kernel'],
-            h=np.log(h + 1),
+            h=np.log(self.opt['h'] + 1),
             w=None,
             s=self.opt['s']
         )
