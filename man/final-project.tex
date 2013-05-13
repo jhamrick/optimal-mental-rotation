@@ -73,10 +73,6 @@ predict the people's behavior on the task?
 
 \section{Background}
 
-
-\subsection{Mental rotation}
-
-\subsection{Optimal experiment design}
 % We do not know the form of $S$, and so cannot compute this integral
 % analytically. We cannot rely on a simple Monte Carlo simulation to
 % estimate it, either: because mental rotation is costly in terms of
@@ -142,15 +138,12 @@ To compare the hypotheses, we need to compute the likelihood of each
 hypothesis, i.e. $p(X_a,\ X_b\ \vert \ h_0)$ and $p(X_a,\ X_b\ \vert \
 h_1)$.
 
-\subsection{Likelihood when the configurations are distinct}
-
 The likelihood is easy to compute under $h_0$, because we assume that
 $X_a$ and $X_b$ are independent. Thus:
 \begin{equation}
   p(X_a,\ X_b\ \vert \ h_0)=p(X_a)p(X_b)
+  \label{eq:lh-h0}
 \end{equation}
-
-\subsection{Likelihood when the configurations are equivalent}
 
 When the configurations are the same, the likelihood becomes more
 complicated:
@@ -169,33 +162,32 @@ However, we cannot compute $p(X_b\vert X_a, R)$ directly. Instead, we
 introduce a new variable $X_R$ denoting a mental image, which
 approximates $RX_a$. The $X_R$ are generated sequentially by repeated
 application of a function $\tau$:
-\begin{align*}
-  X_R&=RX_a\\
-  &=\tau(X_{R-r}, r)\\
-  &=\tau(\tau(X_{R-2r}, r), r)\\
-  &\ldots{}\\
+\begin{align}
+  X_R&=RX_a\nonumber \\
+  &=\tau(X_{R-r}, r)\nonumber \\
+  &=\tau(\tau(X_{R-2r}, r), r)\nonumber \\
+  &\ldots{}\nonumber \\
   &=\tau^{(\frac{R}{r})}(X_a, r)
-\end{align*} 
+  \label{eq:tau}
+\end{align} 
 Where $r$ is a small angle, and $\tau^{(i)}$ indicates $i$ recursive
 applications of $\tau$. Using this sequential function, we get:
 \begin{align}
   p(X_a, X_b\ \vert \ h_1)&=\int_R \int_{X} p(X_b\vert X) p(X\vert X_a, R)p(X_a)p(R)\ \mathrm{d}X\ \mathrm{d}R \nonumber \\
   x&= \int_R \int_X p(X_b\vert X)\delta(\tau^{(\frac{R}{r})}(X_a, r)-X)p(X_a)p(R)\ \mathrm{d}X\ \mathrm{d}R \nonumber \\
   &= \int_R p(X_b\vert X_R)p(X_a)p(R)\ \mathrm{d}R
+  \label{eq:lh-h1}
 \end{align}
-
-\subsection{Likelihood ratio}
 
 Once we have computed both likelihoods, we compute their ratio:
 \begin{equation}
-  \ell=\frac{p(X_a, X_b\ \vert \ h_1)}{p(X_a, X_b\ \vert \ h_0)}
-\end{equation} 
+  \ell=\frac{p(X_a, X_b\ \vert \ h_1)}{p(X_a, X_b\ \vert \ h_0)}=\frac{\int_R p(X_b\ \vert\ X_R)p(R)\ \mathrm{d}R}{p(X_b)}
+  \label{eq:lh-ratio}
+\end{equation}
 If $\ell<1$, then $h_0$ is the more likely hypothesis. If $\ell>1$,
 then $h_1$ is the more likely hypothesis.
 
 \section{Implementation}
-
-\subsection{Likelihood when the configurations are distinct}
 
 We define the prior probabilities over stimuli based on how they are
 generated. For shapes with $n$ vertices, each vertex is at a random
@@ -203,6 +195,8 @@ angle with a radius random chosen between 0 and 1, in polar
 coordinates, and could be chosen in any of $n!$ different ways. Thus,
 the prior over shapes is:
 \begin{equation}
+\subsection{Likelihood when the configurations are distinct}
+
   p(X)=n!\left(\frac{1}{2\pi}\right)^n
 \end{equation} 
 And so the joint likelihood is just:
