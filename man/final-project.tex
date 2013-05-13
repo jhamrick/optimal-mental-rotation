@@ -246,13 +246,13 @@ $0$ and $2\pi$.
   \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{../figures/li_regression.pdf}
-    \caption{Linear interpolation}
+    \caption{Na\"ive model}
     \label{fig:li}
   \end{subfigure}
   \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=\textwidth]{../figures/vm_regression.pdf}
-    \caption{Parametric regression}
+    \caption{Parametric model}
     \label{fig:vm}
   \end{subfigure}
 \end{figure}
@@ -261,7 +261,8 @@ As a baseline, we defined a \textit{na\"ive} model which performs a
 hill-climbing search over the similarity function until it reaches a
 (possibly local) maximum. Once a maximum as been found, the model
 computes an estimate of $Z$ by linearly interpolating between sampled
-rotations.
+rotations. Figure \ref{fig:li} shows an example of the
+\textit{na\"ive} model prior to estimating $Z$.
 
 When $h_1$ is correct and as the true angle of rotation approaches 0,
 the \textit{na\"ive} model should increase in both response and
