@@ -205,15 +205,7 @@ class BayesianQuadratureModel(Model):
             self.theta_Dc = None
 
         # the final regression for S
-        #
-        # According to the Osborne paper, it should be this:
-        #   self.S_mean = ((self.mu_S + 1) * (1 + self.mu_Dc)) - 1
-        #
-        # But then if self.mu_S < 0, self.S_mean will also have
-        # negative parts. To get around this, I am replacing
-        # (self.mu_S + 1) with exp(self.mu_logS - self.mu_Dc)
-        mu_S_plus_one = np.exp(self.mu_logS - self.mu_Dc)
-        self.S_mean = (mu_S_plus_one * (1 + self.mu_Dc)) - 1
+        self.S_mean = ((self.mu_S + 1) * (1 + self.mu_Dc)) - 1
         self.S_var = np.diag(self.cov_logS)
 
     def integrate(self):
