@@ -193,37 +193,35 @@ def likelihood(model):
         legend=False)
 
 
-def model_rotations():
-    fig, axes = plt.subplots(1, 2, sharey=True)
-    ax0, ax1 = axes
+def model_rotations(models):
+    fig, axes = plt.subplots(1, len(models), sharex=True, sharey=True)
+    ax0 = axes[0]
 
-    for ax in axes:
-        sg.outward_ticks(ax=ax)
-        sg.clear_right(ax=ax)
-        sg.clear_top(ax=ax)
-
-    ax0.set_xlabel("Number of stimuli")
-    ax0.set_ylabel("Percent rotated")
-    ax0.set_title(r"$h_0$ rotations")
-
-    ax1.set_xlabel(r"True rotation ($R$)")
-    ax1.set_title("$h_1$ rotations")
-    ax1.set_xticks([0, np.pi / 4., np.pi / 2., 3 * np.pi / 4., np.pi])
-    ax1.set_xticklabels([
+    ax0.set_xticks([0, np.pi / 4., np.pi / 2., 3 * np.pi / 4., np.pi])
+    ax0.set_xticklabels([
         "0",
         r"$\frac{\pi}{4}$",
         r"$\frac{\pi}{2}$",
         r"$\frac{3\pi}{4}$",
         "$\pi$"
     ])
-    ax1.set_xlim(0, np.pi)
-    ax1.set_ylim(0, 105)
-    sg.align_xlabels(-0.2, ax0, ax1)
+    ax0.set_xlim(-np.pi/16, np.pi+(np.pi/16))
+    ax0.set_ylim(-5, 105)
+    ax0.set_ylabel("Percent rotated")
 
-    sg.set_figsize(7, 3)
-    plt.suptitle("Model Rotations", fontsize=14)
+    for i in xrange(len(axes)):
+        ax = axes[i]
+        model = models[i]
+        ax.set_title(model, fontsize=12)
+        ax.set_xlabel(r"True rotation ($R$)")
+
+        sg.outward_ticks(ax=ax)
+        sg.clear_right(ax=ax)
+        sg.clear_top(ax=ax)
+
+    sg.set_figsize(8, 2.7)
     plt.subplots_adjust(
-        wspace=0.1, top=0.8, bottom=0.2,
+        wspace=0.1, top=0.9, bottom=0.2,
         left=0.1, right=0.95)
 
     return fig, axes
@@ -234,7 +232,7 @@ def model_z_accuracy(models):
     ax0 = axes[0]
 
     ax0.set_ylabel(r"Estimated $Z$")
-    ax0.set_ylim(0, 1)
+    ax0.set_ylim(0, 0.7)
     ticks = [0.05, 0.15, 0.25]
     ticklabels = ["%.2f" % x for x in ticks]
     ax0.set_xlim(0, 0.3)
@@ -250,10 +248,9 @@ def model_z_accuracy(models):
         sg.clear_right(ax=ax)
         sg.clear_top(ax=ax)
 
-    sg.set_figsize(8, 3)
-    plt.suptitle("Accuracy of $Z$ estimates", fontsize=14)
+    sg.set_figsize(8, 2.7)
     plt.subplots_adjust(
-        wspace=0.1, top=0.8, bottom=0.2,
+        wspace=0.1, top=0.9, bottom=0.2,
         left=0.1, right=0.95)
 
     return fig, axes
