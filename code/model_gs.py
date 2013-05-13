@@ -6,11 +6,12 @@ class GoldStandardModel(Model):
 
     def __init__(self, *args, **kwargs):
         super(GoldStandardModel, self).__init__(*args, **kwargs)
+        self._rotations = np.arange(self.R.size, dtype='i8')
 
     def next(self):
         """Sample the next point."""
 
-        self.ix = range(self.R.size)
+        self.ix = range(self._rotations.size)
         raise StopIteration
 
     def fit(self):

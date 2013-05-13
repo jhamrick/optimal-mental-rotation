@@ -153,8 +153,8 @@ def run_model(stims, model, opt):
     # number of stims
     nstim = len(stims)
 
-    # which points were sampled
-    samps = np.zeros((nstim, 360), dtype='bool')
+    # how many points were sampled
+    samps = np.zeros(nstim)
     # the estimate of Z
     Z = np.empty((nstim, 2))
     # the likelihood ratio
@@ -174,7 +174,7 @@ def run_model(stims, model, opt):
         m.run()
 
         # fill in the data arrays
-        samps[sidx, m.ix] = True
+        samps[sidx] = len(m.ix) / float(m._rotations.size)
         Z[sidx] = (m.Z_mean, m.Z_var)
         ratio[sidx] = m.likelihood_ratio()
         hyp[sidx] = m.ratio_test(level=10)
