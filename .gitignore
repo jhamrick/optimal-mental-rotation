@@ -4,3 +4,5 @@ man/proposal_files
 cache
 .DS_Store
 stimuli/
+data/
+code/scrap.py
