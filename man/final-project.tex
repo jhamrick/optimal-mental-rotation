@@ -525,13 +525,33 @@ nonparametric model's error decreases significantly ($\MSE{}=0.03$).
 
 \section{Discussion}
 
-\TODO{for von mises, a better strategy would have been to compute the
-  variance in parameter estimates, or something...}
+We investigated strategies for performing the mental rotation task
+\cite{Shepard1971} in two dimensions, and found that a nonparametric
+model that enforces a positivity constraint on the likelihood function
+performs best, as it is able to actively monitor the confidence of its
+estimate. The simpler models performed much worse: they did not
+maintain the linear relationship with the true angle of rotation due
+to lack of robustness against local maxima, and they were inaccurate
+at identifying whether the two shapes were the same or not.
 
-\TODO{talk about marginalising hyperparameters}
+One option for improving the performance of the simple models would be
+to fit a threshold value, below which local maxima would be
+ignored. However, this strategy would be rather brittle, for if the
+distribution of shapes changed, the threshold would have to be
+re-learned. It is possible that people exhibit this behavior, but we
+cannot make any assumptions one way or the other without empirical
+data.
 
-\TODO{generalize to 3d case, more interesting -- can actually do
-  active sampling, whereas it's sort limited in the 2d case}
+A further strength of the nonparametric model over the other models,
+however, is that it is likely to generalize well to three
+dimensions. One aspect of \cite{Osborne:2012tm} which we have not yet
+explored is their main contribution of \textit{active sampling}, in
+which samples are iteratively selected to maximally decrease the
+expected variance of $Z$. Due to the sequential constraint of mental
+rotation, this strategy is not particularly useful in two dimensions,
+as there are only every two directions in which to rotate. In three
+dimensions, however, there are an infinite number of directions that
+could be chosen after every step.
 
 % \renewcommand\bibsection{\subsubsection*{\refname}}
 \renewcommand\refname{\normalsize{References}}
