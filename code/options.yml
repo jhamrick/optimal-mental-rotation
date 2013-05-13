@@ -4,7 +4,7 @@
     # prior over angles
     prior_R: 0.15915494309189535, 
     # save images
-    save: false, 
+    save: true, 
     # data scale, to avoid underflow
     scale: 1, 
     # standard deviation in similarity function
