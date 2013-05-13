@@ -103,32 +103,6 @@ predict the people's behavior on the task?
 
 \section{Computational model}
 
-\begin{figure}[t]
-  \centering
-  \begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{../figures/stimuli_shapes.pdf}
-    \vspace{0pt}
-    \caption{Example stimuli}
-    \label{fig:stimuli}
-  \end{subfigure}
-  \begin{subfigure}[b]{0.45\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{../figures/likelihood_function.pdf}
-    \caption{Likelihood function}
-    \label{fig:likelihood}
-  \end{subfigure}
-  \caption{\textbf{Rotated shapes and their similarity.}  \textbf{(a)}
-    An example stimulus in which the shapes differ only by a
-    rotation. All stimuli consist of five vertices centered around the
-    origin, and four edges which create a closed loop from the
-    vertices. \textbf{(b)} The approximate likelihood (similarity) of
-    $X_b$ given $X_R$, where $X_R$ is a rotation of $X_a$ by the angle
-    $R$. The true angle of rotation between $X_a$ and $X_b$ is
-    approximately $\frac{\pi}{4}$, corresponding to the global maximum
-    in the likelihood function.}
-\end{figure}
-
 People are presented with two images, $X_a$ and $X_b$, which are the
 coordinates of the vertices of two shapes (e.g., see Figure
 \ref{fig:stimuli}). Participants must determine whether $X_a$ and
@@ -202,6 +176,33 @@ If $\ell<1$, then $h_0$ is the more likely hypothesis. If $\ell>1$,
 then $h_1$ is the more likely hypothesis.
 
 \section{Implementation}
+
+
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{../figures/stimuli_shapes.pdf}
+    \vspace{0pt}
+    \caption{Example stimuli}
+    \label{fig:stimuli}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{../figures/likelihood_function.pdf}
+    \caption{Likelihood function}
+    \label{fig:likelihood}
+  \end{subfigure}
+  \caption{\textbf{Rotated shapes and their similarity.}  \textbf{(a)}
+    An example stimulus in which the shapes differ only by a
+    rotation. All stimuli consist of five vertices centered around the
+    origin, and four edges which create a closed loop from the
+    vertices. \textbf{(b)} The approximate likelihood (similarity) of
+    $X_b$ given $X_R$, where $X_R$ is a rotation of $X_a$ by the angle
+    $R$. The true angle of rotation between $X_a$ and $X_b$ is
+    approximately $\frac{\pi}{4}$, corresponding to the global maximum
+    in the likelihood function.}
+\end{figure}
 
 We define the prior probabilities over stimuli based on how they are
 generated. For shapes with $n$ vertices, each vertex is at a random
