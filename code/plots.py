@@ -113,7 +113,13 @@ def bq_regression(model):
         model.R, model.mu_S, np.diag(model.cov_S),
         title="GPR for $S$",
         xlabel=None,
-        legend=True)
+        legend=False)
+    ax_S.legend(
+        loc='upper center',
+        bbox_to_anchor=(1.08, 1.48),
+        frameon=False,
+        fontsize=12,
+        ncol=3)
     sg.no_xticklabels()
 
     # plot the regression for log S
@@ -156,7 +162,7 @@ def bq_regression(model):
     sg.set_figsize(9, 5)
     plt.subplots_adjust(
         wspace=0.3, hspace=0.4, left=0.1,
-        right=0.95, bottom=0.15, top=0.85)
+        right=0.95, bottom=0.15, top=0.83)
     plt.suptitle("Bayesian Quadrature Regression", fontsize=16)
 
 
