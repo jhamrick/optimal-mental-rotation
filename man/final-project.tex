@@ -361,7 +361,7 @@ covariance, respectively, of the GP regression over $\log S$ given
 $\mathbf{R}$. We approximate this according to the method given in
 \cite{Osborne:2012tm}:
 \begin{equation}
-  \mu_Z=E[Z\ \vert \ S, \log S, \Delta_c] \approx \int_R \mu_{S}(1 + \mu_\Delta) p(R)\ \mathrm{d}R 
+  \mu_Z=E[Z\ \vert \ S, \log S, \Delta_c] \approx \int_R \mu_{S}(1 + \mu_{\Delta_c}) p(R)\ \mathrm{d}R 
   \label{eq:bq-Z-mean}
 \end{equation}
 where $\mu_S$ is the mean of a GP regression over $S$ given
@@ -479,7 +479,7 @@ the same. This is because it never overestimates (see Figure
 \ref{fig:accuracy}, center panel). So, it accurately estimates $Z$ for
 stimuli which the na\"ive model would overestimate
 ($\mathrm{MSE}=0.07$), but still has poor performance when $Z$ is
-underestimated. Indeed, if we exclude stimuli for which the nai\"ive
+underestimated. Indeed, if we exclude stimuli for which the na\"ive
 model overestimates ($Z\geq 3$), the error for the na\"ive model
 lowers to match that of the parametric model.
 
