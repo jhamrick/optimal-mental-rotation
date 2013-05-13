@@ -153,10 +153,10 @@ def bq_regression(model):
     sg.sync_ylims(ax_S, ax_final)
 
     # overall figure settings
-    sg.set_figsize(9, 4)
+    sg.set_figsize(9, 5)
     plt.subplots_adjust(
-        wspace=0.3, hspace=0.3, left=0.05,
-        bottom=0.05, top=0.85)
+        wspace=0.3, hspace=0.4, left=0.1,
+        right=0.95, bottom=0.15, top=0.85)
     plt.suptitle("Bayesian Quadrature Regression", fontsize=16)
 
 
