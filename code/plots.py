@@ -57,8 +57,10 @@ def regression(x, y, xi, yi, xo, yo_mean, yo_var, **kwargs):
     opt.update(kwargs)
 
     # overall figure settings
-    sg.set_figsize(4.5, 2)
-    plt.subplots_adjust(wspace=0.2, hspace=0.3, left=0.1, bottom=0.1)
+    sg.set_figsize(5, 3)
+    plt.subplots_adjust(
+        wspace=0.2, hspace=0.3,
+        left=0.15, bottom=0.2, right=0.95)
 
     if x is not None:
         plt.plot(x, y, 'k-', label="actual", linewidth=2)
@@ -159,6 +161,7 @@ def bq_regression(model):
 
 
 def vm_regression(model):
+    plt.figure()
     regression(
         model.R, model.S, model.Ri, model.Si,
         model.R, model.S_mean, model.S_var,
@@ -166,6 +169,7 @@ def vm_regression(model):
 
 
 def li_regression(model):
+    plt.figure()
     regression(
         model.R, model.S, model.Ri, model.Si,
         model.R, model.S_mean, model.S_var,
@@ -173,6 +177,7 @@ def li_regression(model):
 
 
 def likelihood(model):
+    plt.figure()
     regression(
         model.R, model.S, None, None, None, None, None,
         title="Likelihood function",
