@@ -6,6 +6,7 @@
 % \usepackage{natbib}
 \usepackage{graphicx}
 \usepackage{wrapfig}
+\usepackage{subcaption}
 
 \pagestyle{empty}
 
@@ -40,16 +41,6 @@
 \begin{document}
 
 \maketitle
-
-% \begin{wrapfigure}{r}{0.4\textwidth}
-\begin{figure}[h]
-  \begin{center}
-    \includegraphics[width=0.95\textwidth]{../figures/shepard-rotation.png}
-  \end{center}
-  \caption{Classic mental rotation task from \cite{Shepard1971}.}
-  \label{fig:mental-rotation}
-% \end{wrapfigure}
-\end{figure}
 
 \section{Introduction}
 
@@ -106,7 +97,32 @@ predict the people's behavior on the task?
 % statistics and machine learning has examined how to optimally select
 % these samples \cite{Osborne:2012tm}.
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\textwidth]{../figures/shepard-rotation.png}
+  \caption{Classic mental rotation task from \cite{Shepard1971}.}
+  \label{fig:mental-rotation}
+\end{figure}
+
 \section{Computational model}
+
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{../figures/stimuli_shapes.pdf}
+    \vspace{0pt}
+    \caption{Example stimuli}
+    \label{fig:stimuli}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{../figures/likelihood_function.pdf}
+    \caption{Likelihood function}
+    \label{fig:likelihood}
+  \end{subfigure}
+  \caption{Rotated shapes and corresponding similarities.}
+\end{figure}
 
 People are presented with two images, $X_a$ and $X_b$, which are the
 coordinates of the vertices of two shapes. Participants must determine
@@ -234,6 +250,22 @@ X_R)$ at 360 values spaced evenly between $0$ and $2\pi$.
 
 \subsubsection{Linear Interpolation}
 
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{../figures/li_regression.pdf}
+    \caption{Linear interpolation}
+    \label{fig:li}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{../figures/vm_regression.pdf}
+    \caption{Parametric regression}
+    \label{fig:vm}
+  \end{subfigure}
+\end{figure}
+
 Na\"ively, we can simply use linear interpolation to estimate $S$ and
 the trapezoidal rule to estimate $Z$.
 
@@ -271,6 +303,13 @@ As above, we use hill-climbing, with the stopping criteria being when
 we find a local maxima.
 
 \subsubsection{Bayesian Quadrature}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{../figures/bq_regression.pdf}
+  \caption{Bayesian Quadrature}
+  \label{fig:bq}
+\end{figure}
 
 A more flexible strategy uses what is known as \emph{Bayesian
   quadrature} \cite{Diaconis:1988uo,OHagan:1991tx} to estimate $Z$.
@@ -314,9 +353,21 @@ estimate of $S$).
 
 \section{Results}
 
-\section{Discussion}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{../figures/model_rotations.pdf}
+  \caption{Model rotations}
+  \label{fig:rotations}
+\end{figure}
 
-\section{Method}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{../figures/Z_accuracy.pdf}
+  \caption{Accuracy in estimating $Z$.}
+  \label{fig:accuracy}
+\end{figure}
+
+\section{Discussion}
 
 
 % \renewcommand\bibsection{\subsubsection*{\refname}}
