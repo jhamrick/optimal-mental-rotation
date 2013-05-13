@@ -97,7 +97,7 @@ predict the people's behavior on the task?
     each pair of shapes was the same shape in two different
     orientations, or two different shapes. \textbf{A} shows a ``plane
     rotation'', \textbf{B} shows a ``depth rotation'', and \textbf{C}
-    shows two distinct objects. \TODO{include Shepard results, too?}}
+    shows two distinct objects.}
   \label{fig:mental-rotation}
 \end{figure}
 
@@ -310,10 +310,8 @@ preferred direction, $h$ is a scale parameter, and $I_0$ is the
 modified Bessel function of order zero. We fit these parameters by
 minimizing the mean squared error between this PDF and the computed
 values of $S$. To choose the sequence of rotations, we use the same
-hill-climbing strategy as in the na\"ive model.\TODO{a better strategy
-  would have been to compute the variance in parameter estimates, or
-  something...} Figure \ref{fig:vm} shows an example of this
-parametric model, prior to estimating $Z$.
+hill-climbing strategy as in the na\"ive model. Figure \ref{fig:vm}
+shows an example of this parametric model, prior to estimating $Z$.
 
 \subsection{Nonparametric (Bayesian Quadrature) model}
 
@@ -464,7 +462,7 @@ shows individual estimates for each stimulus, color-coded by true
 hypothesis. The model underestimates $Z$ for significant portion of
 the $h_1$ stimuli. On the other $h_1$ stimuli, the na\"ive model
 actually tends to overestimate because linear interpolation does not
-account for symmetry of global maxima (\TODO{figure?}).
+account for symmetry of global maxima (e.g., Figure \ref{fig:li}).
 
 \paragraph{Parametric (Von Mises) model}
 
@@ -510,6 +508,13 @@ significant portion of the rotations have been sampled.
 
 \section{Discussion}
 
+\TODO{for von mises, a better strategy would have been to compute the
+  variance in parameter estimates, or something...}
+
+\TODO{talk about marginalising hyperparameters}
+
+\TODO{generalize to 3d case, more interesting -- can actually do
+  active sampling, whereas it's sort limited in the 2d case}
 
 % \renewcommand\bibsection{\subsubsection*{\refname}}
 \renewcommand\refname{\normalsize{References}}
