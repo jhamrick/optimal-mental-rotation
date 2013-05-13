@@ -31,8 +31,10 @@ class BayesianQuadratureModel(Model):
             Type of kernel to use, either 'gaussian' or 'periodic'
         ntry : int (default=10)
             Number of optimizations to run
-        obs_noise : bool (default=False)
-            Whether to fit parameter for observation noise
+        s : float (default=0)
+            Observation noise parameter value (if None, will be fit)
+        h : float (default=None)
+            Output scale parameter (if None, will be fit)
 
         """
 
@@ -40,6 +42,7 @@ class BayesianQuadratureModel(Model):
         self.opt = {
             'ntry': 10,
             'kernel': 'periodic',
+            'h': None,
             's': 0,
         }
 
@@ -50,13 +53,13 @@ class BayesianQuadratureModel(Model):
         # marginal log likelihood objects
         self._mll_S = KernelMLL(
             kernel=self.opt['kernel'],
-            h=self.opt['scale'],
+            h=self.opt['h'],
             w=None,
             s=self.opt['s']
         )
         self._mll_logS = KernelMLL(
             kernel=self.opt['kernel'],
-            h=np.log(self.opt['scale']+1),
+            h=np.log(self.opt['h'] + 1),
             w=None,
             s=self.opt['s']
         )
@@ -204,15 +207,7 @@ class BayesianQuadratureModel(Model):
             self.theta_Dc = None
 
         # the final regression for S
-        #
-        # According to the Osborne paper, it should be this:
-        #   self.S_mean = ((self.mu_S + 1) * (1 + self.mu_Dc)) - 1
-        #
-        # But then if self.mu_S < 0, self.S_mean will also have
-        # negative parts. To get around this, I am replacing
-        # (self.mu_S + 1) with exp(self.mu_logS - self.mu_Dc)
-        mu_S_plus_one = np.exp(self.mu_logS - self.mu_Dc)
-        self.S_mean = (mu_S_plus_one * (1 + self.mu_Dc)) - 1
+        self.S_mean = ((self.mu_S + 1) * (1 + self.mu_Dc)) - 1
         self.S_var = np.diag(self.cov_logS)
 
     def integrate(self):
