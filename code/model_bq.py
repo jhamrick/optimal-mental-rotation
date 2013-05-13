@@ -131,6 +131,7 @@ class BayesianQuadratureModel(Model):
         # fit parameters
         theta = mll.maximize(
             Ri, Si,
+            wmin=np.radians(self.opt['dr']) / 2.,
             wmax=np.pi/2.,
             ntry=self.opt['ntry'],
             verbose=self.opt['verbose'] > 3)
@@ -241,3 +242,10 @@ class BayesianQuadratureModel(Model):
         self.Z_var = np.trapz(np.trapz(C, self.R, axis=0), self.R)
 
         self.print_Z(level=0)
+
+
+if __name__ == "__main__":
+    import util
+    opt = util.load_opt()
+    stims = util.find_stims()[:opt['nstim']]
+    util.run_model(stims, BayesianQuadratureModel, opt)

@@ -3,10 +3,12 @@ import matplotlib.pyplot as plt
 import scipy.ndimage as nd
 import PIL
 import os
+import yaml
 
 from snippets.graphing import plot_to_array
 
 STIM_DIR = "../stimuli"
+DATA_DIR = "../data"
 
 
 def make_stimulus(npoints, rso):
@@ -144,3 +146,74 @@ def load_stimulus(stimname):
 def print_line(char='-', verbose=True):
     if verbose:
         print "\n" + char*70
+
+
+def run_model(stims, model, opt):
+
+    # number of stims
+    nstim = len(stims)
+
+    # how many points were sampled
+    samps = np.zeros(nstim)
+    # the estimate of Z
+    Z = np.empty((nstim, 2))
+    # the likelihood ratio
+    ratio = np.empty((nstim, 3))
+    # which hypothesis was accepted
+    hyp = np.empty(nstim)
+
+    for sidx, stim in enumerate(stims):
+        print_line(char='#')
+        print stim
+
+        # load the stimulus
+        theta, Xa, Xb, Xm, R = load_stimulus(stim)
+
+        # run the naive model
+        m = model(Xa, Xb, Xm, R, **opt)
+        m.run()
+
+        # fill in the data arrays
+        samps[sidx] = len(m.ix) / float(m._rotations.size)
+        Z[sidx] = (m.Z_mean, m.Z_var)
+        ratio[sidx] = m.likelihood_ratio()
+        hyp[sidx] = m.ratio_test(level=10)
+
+    if not os.path.exists(DATA_DIR):
+        os.makedirs(DATA_DIR)
+
+    name = type(m).__name__
+    if name.endswith("Model"):
+        name = name[:-len("Model")]
+    path = os.path.join(DATA_DIR, name)
+    np.savez(
+        path,
+        stims=stims,
+        samps=samps,
+        Z=Z,
+        ratio=ratio,
+        hyp=hyp
+    )
+
+
+def load_opt():
+    with open('options.yml', 'r') as fh:
+        opt = yaml.load(fh)
+    return opt
+
+
+def find_stims():
+    stims = sorted([os.path.splitext(x)[0] for x in os.listdir(STIM_DIR)])
+    return stims
+
+
+def load_sims(name):
+    path = os.path.join(DATA_DIR, name + '.npz')
+    data = np.load(path)
+    stims = data['stims']
+    samps = data['samps']
+    Z = data['Z']
+    ratio = data['ratio']
+    hyp = data['hyp']
+    data.close()
+    return stims, samps, Z, ratio, hyp

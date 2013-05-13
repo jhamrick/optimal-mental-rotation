@@ -1,0 +1,16 @@
+{
+    # the amount we rotate by
+    dr: 22.5, 
+    # prior over angles
+    prior_R: 0.15915494309189535, 
+    # save images
+    save: false, 
+    # data scale, to avoid underflow
+    scale: 1, 
+    # standard deviation in similarity function
+    sigma: 0.2, 
+    # print extra information
+    verbose: 0,
+    # how many stimuli to run
+    nstim: 100
+}

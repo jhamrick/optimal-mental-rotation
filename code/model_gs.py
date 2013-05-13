@@ -6,11 +6,12 @@ class GoldStandardModel(Model):
 
     def __init__(self, *args, **kwargs):
         super(GoldStandardModel, self).__init__(*args, **kwargs)
+        self._rotations = np.arange(self.R.size, dtype='i8')
 
     def next(self):
         """Sample the next point."""
 
-        self.ix = np.arange(self.R.size)
+        self.ix = range(self._rotations.size)
         raise StopIteration
 
     def fit(self):
@@ -34,3 +35,10 @@ class GoldStandardModel(Model):
 
         self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
         self.Z_var = 0
+
+
+if __name__ == "__main__":
+    import util
+    opt = util.load_opt()
+    stims = util.find_stims()[:opt['nstim']]
+    util.run_model(stims, GoldStandardModel, opt)

@@ -27,7 +27,7 @@ def make_stimulus(stimnum, npoints, R, rso):
     r = R[1] - R[0]
 
     for Xb, hyp in [(Xb0, 'h0'), (Xb1, 'h1')]:
-        stimname = "%s_%s" % (hyp, stimnum)
+        stimname = "%s_%s" % (stimnum, hyp)
 
         # array to store all the rotated shapes
         Xm = np.zeros(R.shape + Xa.shape)

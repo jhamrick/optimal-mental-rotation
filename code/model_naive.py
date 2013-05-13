@@ -28,10 +28,10 @@ class NaiveModel(Model):
 
         self.debug("Fitting likelihood")
 
-        self.ix = sorted(self.ix) + [0]
-        self.Ri = self.R[self.ix]
+        self.ix = sorted(self.ix)
+        self.Ri = self.R[self.ix + [0]]
         self.Ri[-1] = 2*np.pi
-        self.Si = self.S[self.ix]
+        self.Si = self.S[self.ix + [0]]
         self.S_mean = np.interp(self.R, self.Ri, self.Si)
         self.S_var = np.zeros(self.S_mean.shape)
 
@@ -49,3 +49,10 @@ class NaiveModel(Model):
         self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
         self.Z_var = 0
         self.print_Z(level=0)
+
+
+if __name__ == "__main__":
+    import util
+    opt = util.load_opt()
+    stims = util.find_stims()[:opt['nstim']]
+    util.run_model(stims, NaiveModel, opt)
