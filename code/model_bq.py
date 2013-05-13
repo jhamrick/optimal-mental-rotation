@@ -48,15 +48,16 @@ class BayesianQuadratureModel(Model):
         self._ilast = None
 
         # marginal log likelihood objects
+        h = self.opt['scale'] / 8.
         self._mll_S = KernelMLL(
             kernel=self.opt['kernel'],
-            h=self.opt['scale'],
+            h=h,
             w=None,
             s=self.opt['s']
         )
         self._mll_logS = KernelMLL(
             kernel=self.opt['kernel'],
-            h=np.log(self.opt['scale']+1),
+            h=np.log(h + 1),
             w=None,
             s=self.opt['s']
         )
