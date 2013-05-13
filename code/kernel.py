@@ -258,8 +258,8 @@ class KernelMLL(object):
 
         """
 
-        args = np.empty((ntry, len(self.dK_dtheta)))
-        fval = np.empty(ntry)
+        args = None
+        fval = None
 
         for i in xrange(ntry):
             # randomize starting parameter values
@@ -302,25 +302,21 @@ class KernelMLL(object):
                 message = popt['message']
 
             if not success:
-                args[i] = np.nan
-                fval[i] = np.inf
                 if verbose:
                     print "      Failed: %s" % message
             else:
-                args[i] = abs(popt['x'])
-                fval[i] = popt['fun']
+                args = list(abs(popt['x']))
+                fval = popt['fun']
                 if verbose:
-                    print "      -MLL(%s) = %f" % (args[i], fval[i])
+                    print "      -MLL(%s) = %f" % (args, fval)
+                break
 
         # choose the parameters that give the best MLL
-        best = np.argmin(fval)
-        if np.isinf(fval[best]) and np.sign(fval[best]) > 0:
-            print args[best], fval[best]
+        if args is None or fval is None:
             raise RuntimeError("Could not find MLII parameter estimates")
 
-        th = list(args[best])
-        h = th.pop(0) if self.h is None else self.h
-        w = th.pop(0) if self.w is None else self.w
-        s = th.pop(0) if self.s is None else self.s
+        h = args.pop(0) if self.h is None else self.h
+        w = args.pop(0) if self.w is None else self.w
+        s = args.pop(0) if self.s is None else self.s
 
         return (h, w, s)
