@@ -247,7 +247,7 @@ this in mind, we now examine several approaches to estimating $Z$.
 In each of these models, we denote the computed rotations to be a set
 $\mathbf{R}=\{R_1, R_2, \ldots{}\}$.
 
-\subsection{Gold standard model}
+\subsection{Gold standard}
 
 To compare the accuracy of other models' estimates of $Z$, we computed
 a ``gold standard''\footnote{This only gives an accurate estimate of
@@ -275,23 +275,12 @@ $0$ and $2\pi$.
   \caption{\TODO{}}
 \end{figure}
 
-As a baseline, we defined a \textit{na\"ive} model which performs a
+As a baseline, we defined a na\"ive model which performs a
 hill-climbing search over the similarity function until it reaches a
 (possibly local) maximum. Once a maximum as been found, the model
 computes an estimate of $Z$ by linearly interpolating between sampled
-rotations. Figure \ref{fig:li} shows an example of the
-\textit{na\"ive} model prior to estimating $Z$.
-
-When $h_1$ is correct and as the true angle of rotation approaches 0,
-the \textit{na\"ive} model should increase in both response and
-rotation accuracy, because local maxima will be less likely (and
-therefore, it is more likely that the global maxima will be
-discovered). For larger angles of rotation, this model should have a
-tendency to under-rotate, because it will find local maxima and end
-prematurely. Its estimates of $Z$ will usually be overestimates (if it
-finds the global maxima, and then terminates) or underestimates (the
-rest of the time). This model should almost always be accurate when
-$h_0$ is correct.
+rotations. Figure \ref{fig:li} shows an example of the na\"ive model
+prior to estimating $Z$.
 
 \subsection{Parametric (Von Mises) model}
 
@@ -308,10 +297,10 @@ where $\kappa$ is the concentration parameter, $\hat{\theta}$ is the
 preferred direction, and $h$ is a scale parameter. We fit these
 parameters by minimizing the mean squared error between this PDF and
 the computed values of $S$. To choose the sequence of rotations, we
-use the same hill-climbing strategy as in the \textit{na\"ive}
-model.\TODO{a better strategy would have been to compute the variance
-  in parameter estimates, or something...} Figure \ref{fig:vm} shows
-an example of this parametric model, prior to estimating $Z$.
+use the same hill-climbing strategy as in the na\"ive model.\TODO{a
+  better strategy would have been to compute the variance in parameter
+  estimates, or something...} Figure \ref{fig:vm} shows an example of
+this parametric model, prior to estimating $Z$.
 
 \subsection{Nonparametric (Bayesian Quadrature) model}
 
@@ -344,7 +333,7 @@ covariance, respectively, of the GP regression over $\log S$ given
 $\mathbf{R}$. We approximate this according to the method given in
 \cite{Osborne:2012tm}:
 \begin{equation}
-  \mu_Z=E[Z\ \vert \ \log S] \approx \int_R \mu_{S}(1 + \mu_\Delta) p(R)\ \mathrm{d}R 
+  \mu_Z=E[Z\ \vert \ S, \log S, \Delta_c] \approx \int_R \mu_{S}(1 + \mu_\Delta) p(R)\ \mathrm{d}R 
   \label{eq:bq-Z-mean}
 \end{equation}
 where $\mu_S$ is the mean of a GP regression over $S$ given
@@ -356,7 +345,7 @@ consists of $\mathbf{R}$ and a set of intermediate \emph{candidate
 described in \cite{Osborne:2012tm}. The variance of the estimate of
 $Z$ is given by:
 \begin{equation}
-  \sigma_Z=\mathrm{Var}(Z\ \vert \ S, \log S) = \int_R\int_{R^\prime} \mu_S(R)\mu_S(R^\prime) \Sigma_{\log S}(R, R^\prime)p(R)p(R^\prime)\ \mathrm{d}R\ \mathrm{d}R^\prime
+  \sigma_Z=\mathrm{Var}(Z\ \vert \ S, \log S, \Delta_c) = \int_R\int_{R^\prime} \mu_S(R)\mu_S(R^\prime) \Sigma_{\log S}(R, R^\prime)p(R)p(R^\prime)\ \mathrm{d}R\ \mathrm{d}R^\prime
   \label{eq:bq-Z-var}
 \end{equation}
 
