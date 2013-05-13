@@ -230,10 +230,14 @@ minimize the number of rotations while still obtaining an estimate of
 $Z$ that is accurate enough to choose the correct hypothesis. With
 this in mind, we now examine several approaches to estimating $Z$.
 
-\subsubsection{Gold standard}
+\subsection{Gold standard model}
 
-For comparison, we compute a ``gold standard'' by evaluating $S(X_b,
-X_R)$ at 360 values spaced evenly between $0$ and $2\pi$.
+To compare the accuracy of other models' estimates of $Z$, we computed
+a ``gold standard''\footnote{This only gives an accurate estimate of
+  $Z$, which is itself an approximation, and is thus not necessarily
+  the true value of the numerator in Equation \ref{eq:lh-ratio}.} by
+evaluating $S(X_b, X_R)$ at 360 values of $R$ spaced evenly between
+$0$ and $2\pi$.
 
 \subsubsection{Linear Interpolation}
 
