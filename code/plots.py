@@ -172,3 +172,65 @@ def likelihood(model):
         model.R, model.S, None, None, None, None, None,
         title="Likelihood function",
         legend=False)
+
+
+def model_rotations():
+    fig, axes = plt.subplots(1, 2, sharey=True)
+    ax0, ax1 = axes
+
+    for ax in axes:
+        sg.outward_ticks(ax=ax)
+        sg.clear_right(ax=ax)
+        sg.clear_top(ax=ax)
+
+    ax0.set_xlabel("Number of stimuli")
+    ax0.set_ylabel("Percent rotated")
+    ax0.set_title(r"$h_0$ rotations")
+
+    ax1.set_xlabel(r"True rotation ($R$)")
+    ax1.set_title("$h_1$ rotations")
+    ax1.set_xticks([0, np.pi / 4., np.pi / 2., 3 * np.pi / 4., np.pi])
+    ax1.set_xticklabels([
+        "0",
+        r"$\frac{\pi}{4}$",
+        r"$\frac{\pi}{2}$",
+        r"$\frac{3\pi}{4}$",
+        "$\pi$"
+    ])
+    ax1.set_xlim(0, np.pi)
+    ax1.set_ylim(0, 105)
+    sg.align_xlabels(-0.2, ax0, ax1)
+
+    sg.set_figsize(8, 2.5)
+    plt.suptitle("Model Rotations", fontsize=14)
+    plt.subplots_adjust(wspace=0.1, top=0.8)
+
+    return fig, axes
+
+
+def model_z_accuracy(models):
+    fig, axes = plt.subplots(1, len(models), sharex=True, sharey=True)
+    ax0 = axes[0]
+
+    ax0.set_ylabel(r"Estimated $Z$")
+    ax0.set_ylim(0, 1)
+    ticks = [0.05, 0.15, 0.25]
+    ticklabels = ["%.2f" % x for x in ticks]
+    ax0.set_xlim(0, 0.3)
+    ax0.set_xticks(ticks)
+    ax0.set_xticklabels(ticklabels)
+    for i in xrange(len(axes)):
+        ax = axes[i]
+        model = models[i]
+        ax.set_title(model, fontsize=12)
+        ax.set_xlabel("True $Z$")
+
+        sg.outward_ticks(ax=ax)
+        sg.clear_right(ax=ax)
+        sg.clear_top(ax=ax)
+
+    sg.set_figsize(8, 2.5)
+    plt.suptitle("Accuracy of $Z$ estimates", fontsize=14)
+    plt.subplots_adjust(wspace=0.1, top=0.8)
+
+    return fig, axes
