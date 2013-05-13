@@ -1,0 +1,332 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{nips12submit_e,times}
+%\documentstyle[nips12submit_09,times,art10]{article} % For LaTeX 2.09
+
+\usepackage{amsmath, amsthm, amssymb}
+% \usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+
+\pagestyle{empty}
+
+% \usepackage{etoolbox}
+% \makeatletter
+% \patchcmd{\thebibliography}{%
+%   \chapter*{\bibname}\@mkboth{\MakeUppercase\bibname}{\MakeUppercase\bibname}}{%
+%   \subsubsection*{References}}{}{}
+% \makeatother
+
+\title{Optimal strategies in mental rotation tasks}
+\author{Jessica B.~Hamrick\\
+  Department of Psychology\\
+  University of California, Berkeley\\
+  Berkeley, CA 94720\\
+  \texttt{jhamrick@berkeley.edu}}
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to \LaTeX{} to determine where to break
+% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
+% puts 3 of 4 authors names on the first line, and the last on the second
+% line, try using \AND instead of \And before the third author name.
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+\newcommand{\TODO}[1]{\textcolor{red}{[TODO: #1]}}
+
+\nipsfinalcopy % Uncomment for camera-ready version
+
+\begin{document}
+
+\maketitle
+
+% \begin{wrapfigure}{r}{0.4\textwidth}
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[width=0.95\textwidth]{../figures/shepard-rotation.png}
+  \end{center}
+  \caption{Classic mental rotation task from \cite{Shepard1971}.}
+  \label{fig:mental-rotation}
+% \end{wrapfigure}
+\end{figure}
+
+\section{Introduction}
+
+% 1. The big picture
+% 2. Our contribution
+% 3. How we do it
+% 4. What's in the paper
+
+Consider the objects in Figure \ref{fig:mental-rotation}. In each
+panel, are the two depicted objects identical (except for a rotation),
+or distinct? When presented with this mental rotation task, people
+default to a strategy in which they visualize one object rotating
+until it is congruent with the other \cite{Shepard1971}. There is
+strong evidence for such \textit{mental imagery} or \textit{mental
+  simulation}: we can imagine three-dimensional objects in our minds
+and manipulate them, to a certain extent, as if they were real
+\cite{Kosslyn:2009tj}.
+
+However, the use of mental simulation is predicated on determining
+appropriate parameters to give the simulation, and people's cognitive
+constraints may furthermore place limitations on the duration or
+precision of simulation. One hypothesis for how these issues are
+handled argues that people use a ``rational'' solution, meaning that
+it is optimal under the given constraints
+\cite{Lieder:2012wg,Vul:2009wy,Griffiths2012a}.
+
+qIn the case of the classic mental rotation task, we might ask: in what
+direction should the object be rotated?  What are the requirements for
+``congruency''? When should one stop rotating and accept the
+hypothesis that the objects are different? In this project, I will
+investigate the optimal computational solution to this task. Thus, the
+specific question this project aims to answer is: what is the rational
+computational solution to the mental rotation task, and does it
+predict the people's behavior on the task?
+
+\section{Background}
+
+\subsection{Mental rotation}
+
+\subsection{Optimal experiment design}
+% We do not know the form of $S$, and so cannot compute this integral
+% analytically. We cannot rely on a simple Monte Carlo simulation to
+% estimate it, either: because mental rotation is costly in terms of
+% cognitive resources and must be performed in a sequence, we cannot
+% evaluate $S(I_b|I_M)$ at arbitrary $I_M$. Instead, we must choose a
+% relatively small, sequential set of $I_M$ to estimate the
+% integral. 
+
+% Bayesian quadrature \cite{Diaconis:1988uo} provides an alternate
+% method for evaluating the integral by placing a prior distribution on
+% functions and then computing a posterior over values of the
+% integral. While Bayesian quadrature itself does not address the issue
+% of choosing points to evaluate the function at, recent work in
+% statistics and machine learning has examined how to optimally select
+% these samples \cite{Osborne:2012tm}.
+
+\section{Computational model}
+
+People are presented with two images, $X_a$ and $X_b$, which are the
+coordinates of the vertices of two shapes. Participants must determine
+whether $X_a$ and $X_b$ were generated from the same (albeit possibly
+transformed and permuted) original shape, i.e., whether $\exists
+R,M\textrm{ s.t. } X_b=MRX_a$, where $M$ is a permutation matrix and
+$R$ is a rotation matrix. \TODO{Figure with some example shapes}
+
+We can formulate the judgment of whether $X_a$ and $X_b$ have the same
+origins by deciding about two hypotheses:
+
+\begin{itemize}
+\itemsep1pt\parskip0pt\parsep0pt
+\item
+  $h_0$: $\forall M,R\ X_b\neq MRX_a$
+\item
+  $h_1$: $\exists M,R\textrm{ s.t. } X_b=MRX_a$
+\end{itemize}
+
+To compare the hypotheses, we need to compute the likelihood of each
+hypothesis, i.e. $p(X_a,\ X_b\ \vert \ h_0)$ and $p(X_a,\ X_b\ \vert \
+h_1)$.
+
+\subsection{Likelihood when the configurations are distinct}
+
+The likelihood is easy to compute under $h_0$, because we assume that
+$X_a$ and $X_b$ are independent. Thus:
+\begin{equation}
+  p(X_a,\ X_b\ \vert \ h_0)=p(X_a)p(X_b)
+\end{equation}
+
+\subsection{Likelihood when the configurations are equivalent}
+
+When the configurations are the same, the likelihood becomes more
+complicated:
+\begin{equation} 
+  p(X_a,\ X_b\ \vert \ h_1)=\int_R\int_M p(X_a) p(X_b\vert X_a,R,M) p(R) p(M)\ \mathrm{d}M\ \mathrm{d}R
+\end{equation}
+
+For a small number of vertices, we can compute the integral over $M$
+by enumerating every possible mapping between $X_a$ and $X_b$. After
+doing so, we obtain:
+\begin{equation} 
+  p(X_a,\ X_b\ \vert \ h_1)=\int_R p(X_a) p(X_b\vert X_a,R) p(R)\ \mathrm{d}R
+\end{equation}
+
+However, we cannot compute $p(X_b\vert X_a, R)$ directly. Instead, we
+introduce a new variable $X_R$ denoting a mental image, which
+approximates $RX_a$. The $X_R$ are generated sequentially by repeated
+application of a function $\tau$:
+\begin{align*}
+  X_R&=RX_a\\
+  &=\tau(X_{R-r}, r)\\
+  &=\tau(\tau(X_{R-2r}, r), r)\\
+  &\ldots{}\\
+  &=\tau^{(\frac{R}{r})}(X_a, r)
+\end{align*} 
+Where $r$ is a small angle, and $\tau^{(i)}$ indicates $i$ recursive
+applications of $\tau$. Using this sequential function, we get:
+\begin{align}
+  p(X_a, X_b\ \vert \ h_1)&=\int_R \int_{X} p(X_b\vert X) p(X\vert X_a, R)p(X_a)p(R)\ \mathrm{d}X\ \mathrm{d}R \nonumber \\
+  x&= \int_R \int_X p(X_b\vert X)\delta(\tau^{(\frac{R}{r})}(X_a, r)-X)p(X_a)p(R)\ \mathrm{d}X\ \mathrm{d}R \nonumber \\
+  &= \int_R p(X_b\vert X_R)p(X_a)p(R)\ \mathrm{d}R
+\end{align}
+
+\subsection{Likelihood ratio}
+
+Once we have computed both likelihoods, we compute their ratio:
+\begin{equation}
+  \ell=\frac{p(X_a, X_b\ \vert \ h_1)}{p(X_a, X_b\ \vert \ h_0)}
+\end{equation} 
+If $\ell<1$, then $h_0$ is the more likely hypothesis. If $\ell>1$,
+then $h_1$ is the more likely hypothesis.
+
+\section{Implementation}
+
+\subsection{Likelihood when the configurations are distinct}
+
+We define the prior probabilities over stimuli based on how they are
+generated. For shapes with $n$ vertices, each vertex is at a random
+angle with a radius random chosen between 0 and 1, in polar
+coordinates, and could be chosen in any of $n!$ different ways. Thus,
+the prior over shapes is:
+\begin{equation}
+  p(X)=n!\left(\frac{1}{2\pi}\right)^n
+\end{equation} 
+And so the joint likelihood is just:
+\begin{equation}
+  p(X_a, X_b\ \vert \ h_0)=\left[n!\left(\frac{1}{2\pi}\right)^n\right]^2
+\end{equation}
+
+\subsection{Likelihood when the configurations are equivalent}
+
+We cannot know the quantity $p(X_b\vert X_R)$ exactly, so we
+approximate it with a similarity function $S(X_b, X_R)$, which also
+takes into account the different possible mappings of vertices. There
+are $n$ mappings $M$ of the $n$ vertices: because some vertices are
+connected to form a closed loop, we assume the uncertainty is only in
+which is the ``first'' vertex. So, the possible orderings are of the
+form $M=\lbrace{}0, 1, \ldots{}, n\rbrace{}$, $M=\lbrace{}n, 0,
+\ldots{}, n-1\rbrace{}$, and so on. This gives us the final form of
+the similarity function:
+\begin{equation}
+  S(X_b, X_R)=\frac{1}{n}\sum_{M\in\mathbb{M}}\prod_{i=1}^n\mathcal{N}(X_b[i]\ \vert \ (MX_R)[i], \Sigma)
+\end{equation}
+Where $i$ denotes the $i^{th}$ vertex. We do not know the closed,
+analytic form of this function, but we can evaluate it for any $X_b$
+and $X_R$. Given this, the desired quantity for $h_1$ becomes:
+\begin{equation}
+  Z = p(X_a,X_b\ \vert \ h_1)\approx \int_R S(X_b, X_R)p(X_a)p(R)\ \mathrm{d}R
+\end{equation}
+Note that for brevity, from here on we will refer to $p(X_a, X_b\
+\vert \ h_1)$ as $Z$.
+
+Finally, computing any single $X_R$ is a costly operation in that it
+is both a lengthy operation and memory-intensive, so we want to
+minimize the number of $X_R$ that are computed. With this in mind, we
+now examine several different approaches to estimating $S$ and,
+ultimately, $Z$.
+
+\subsubsection{Gold standard}
+
+For comparison, we compute a ``gold standard'' by evaluating $S(X_b,
+X_R)$ at 360 values spaced evenly between $0$ and $2\pi$.
+
+\subsubsection{Linear Interpolation}
+
+Na\"ively, we can simply use linear interpolation to estimate $S$ and
+the trapezoidal rule to estimate $Z$.
+
+\paragraph{Choosing the sequence of mental images}
+
+In this naïve strategy, we perform a hill-climbing search to find a
+local maxima. In other words, we rotate in the direction for which
+there is a local increase in similarity.
+
+\paragraph{Stopping criterion}
+
+Because we are using hill-climbing, we choose to stop when we hit a
+local maxima.
+
+\subsubsection{Parametric Regression}
+
+Another strategy is to assume a parametric shape for $S$ and fit the
+appropriate parameters. Here, we assume the likelihood follows a
+\emph{Von Mises} distribution:
+\begin{equation}
+  S(X_b, X_R) \approx \hat{S}_{VM}=\frac{h}{2\pi X_0(\kappa)}e^{\kappa\cos(R-\hat{\theta})}
+\end{equation}
+
+Where $\kappa$ is the concentration parameter, $\hat{\theta}$ is the
+preferred direction, and $h$ is a scale parameter. We can fit these
+parameters by minimizing the mean squared error between this PDF and
+the observed values of $S$ which we are given. Then:
+\begin{equation}
+E[Z\ \vert \ S]\approx \int_R \hat{S}_{VM}p(R)\ \mathrm{d}R
+\end{equation}
+
+\paragraph{Choosing the sequence of mental images}
+
+As above, we use hill-climbing, with the stopping criteria being when
+we find a local maxima.
+
+\subsubsection{Bayesian Quadrature}
+
+A more flexible strategy uses what is known as \emph{Bayesian
+  quadrature} \cite{Diaconis:1988uo,OHagan:1991tx} to estimate $Z$.
+Bayesian quadrature allows us to compute a posterior distrbution over
+$Z$ by placing a Gaussian Process (GP) \cite{Rasmussen:2006vz} prior
+on the log likelihood function $\log S$ and evaluating $\log S$ at a
+particular set of points. For our purposes, we choose these points to
+be a sequence of $N$ consecutive mental rotations be
+$\mathbf{R}=\{R_1, \ldots{}, R_N\}$. To obtain a single estimate of
+$Z$, we want compute the posterior mean:
+\begin{equation}
+  E[Z\ \vert \ \log S]=\int_{\log S}\left(\int_R \exp(\log{S(X_b,X_R)})p(R)\ \mathrm{d}R\right)\mathcal{N}\left(\log{S}\ \vert \ \mu_{\log S}, \Sigma_{\log S}\right)\ \mathrm{d}\log S
+\end{equation}
+As in \cite{Osborne:2012tm}, we can approximate this with:
+\begin{equation}
+  E[Z\ \vert \ \log S] \approx \int_R \mu_{S}(1 + \mu_\Delta) p(R)\ \mathrm{d}R
+\end{equation} 
+Where $\mu_x$ is the mean of a GP, as follows:
+
+\begin{itemize}
+\itemsep1pt\parskip0pt\parsep0pt
+\item $\mu_\Delta$ is a regression over $\Delta=\mu_{\log S} - \log
+  \mu_S$ given $\mathbf{R}_\Delta$, which consists of $\mathbf{R}$ and
+  a set of intermediate \emph{candidate points}, as described in
+  \cite{Osborne:2012tm}.
+\item $\mu_S$ is the mean of a GP regression over $S$ given
+  $\mathbf{R}$.
+\item $\mu_{\log S}$ is the mean of a GP regression over $\log S$
+  given $\mathbf{R}$.
+\end{itemize}
+
+\paragraph{Choosing the sequence of mental images}
+
+Because we can only evaluate $S(X_a, X_R)$ at a small number $k$ of
+rotations, we must make an explicit decision about which
+$\mathbf{R}=\{R_1, \ldots{}, R_k\}$ to use. Ideally, we should choose
+$\mathbf{R}$ such that it will give us the best approximation of
+$p(X_a, X_b\vert h_1)$. One option is to choose each $R_i$ in a greedy
+manner to minimize the variance of $Z$ (i.e.~give a more accurate
+estimate of $S$).
+
+\section{Results}
+
+\section{Discussion}
+
+\section{Method}
+
+
+% \renewcommand\bibsection{\subsubsection*{\refname}}
+\renewcommand\refname{\normalsize{References}}
+\bibliographystyle{ieeetr}
+\bibliography{references}
+% - References. Give at least three references cited in describing the
+% background to your project.
+
+\end{document}
+
+
+
