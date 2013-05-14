@@ -89,27 +89,55 @@ future work.
 
 \section{Background}
 
-% We do not know the form of $S$, and so cannot compute this integral
-% analytically. We cannot rely on a simple Monte Carlo simulation to
-% estimate it, either: because mental rotation is costly in terms of
-% cognitive resources and must be performed in a sequence, we cannot
-% evaluate $S(I_b|I_M)$ at arbitrary $I_M$. Instead, we must choose a
-% relatively small, sequential set of $I_M$ to estimate the
-% integral. 
+There is a long and rich history of work on mental rotation beginning
+with \cite{Shepard1971}, who presented participants with pairs of
+images such as those shown in Figure \ref{fig:mental-rotation}. These
+pairs three-dimensional objects could either be: the same object
+rotated in plane (Figure \ref{fig:mental-rotation}A), the same object
+rotated in depth (Figure \ref{fig:mental-rotation}B), or two different
+objects (Figure \ref{fig:mental-rotation}C; in this case, the
+``different'' objects had reflective symmetry, but no rotational
+symmetry). Participants had to determine whether the two images were
+of the same object or not, and \cite{Shepard1971} famously found that
+response times for plane and depth rotations had a strong linear
+relationship with the minimum angle of rotation between the two
+objects. The conclusion was that participants were visually
+``rotating'' the objects in their minds.
 
-% Bayesian quadrature \cite{Diaconis:1988uo} provides an alternate
-% method for evaluating the integral by placing a prior distribution on
-% functions and then computing a posterior over values of the
-% integral. While Bayesian quadrature itself does not address the issue
-% of choosing points to evaluate the function at, recent work in
-% statistics and machine learning has examined how to optimally select
-% these samples \cite{Osborne:2012tm}.
+For many years, this idea was contested, with some researchers arguing
+the underlying cognitive processes were not visual in nature
+(e.g. \cite{Pylyshyn1981}). In particular, \cite{Anderson1978} proved
+that the mental imagery debate could not be resolved on the basis of
+response time data alone. In recent years, however, a significant
+amount of work has investigated the neural underpinnings of the mental
+rotation phenomena, arguing that the results of brain imaging studies
+support the existence of visual mental rotation \cite{Kosslyn1988,
+  Kosslyn:2009tj}.
 
+We assume that mental imagery is indeed a visual process, and turn to
+the question of how, and when, it is used. Previous work has examined
+how people might use imagery \cite{Hegarty2004, Schwartz1999} to solve
+reasoning problems, and when they might use imagery as opposed to a
+symbolic rule \cite{Schwartz:1996uy}. People seem to use imagery
+methodically, which begs the question: what is the method? 
 
-\section{Computational model}
+Others studying people's pattern of behavior when engaged in
+self-directed learning have found that they tend to use a strategy of
+\textit{active learning} \cite{Gureckis:2012gu, Markant:2012uu}. When
+given a choice as to the information they can obtain, people will not
+choose the information randomly (as is the case with a \naive{} Monte
+Carlo sampler), but according to some utility function such as
+information gain \cite{Nelson2007, Markant:2012uu}. We propose that
+such a strategy can be combined with the notion of mental imagery as a
+tool: an optimal model of mental rotation may, perhaps, rely on an
+active strategy. In the next sections, we investigate this idea with
+several different approaches.
+
+\section{Computational-level model}
 
 People are presented with two images, $X_a$ and $X_b$, which are the
-coordinates of the vertices of two shapes (e.g., see Figure
+coordinates of the vertices of two-dimensional shapes similar to those
+used by \cite{Cooper:1975wp} (e.g., see Figure
 \ref{fig:stimuli}). Participants must determine whether $X_a$ and
 $X_b$ were generated from the same (albeit possibly transformed and
 permuted) original shape, i.e., whether $\exists R,M\textrm{ s.t. }
