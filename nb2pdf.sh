@@ -21,8 +21,8 @@ cd $HOME/project/nbconvert
 
 cd "$curpath"
 rm "$base.tex"
+cp "references.bib" "$filedir"
 
 cd "$filedir"
-pdflatex "$base.tex"
-pdflatex "$base.tex"
+pdflatex "$base" && bibtex "$base" && pdflatex "$base" && pdflatex "$base"
 cp "$base.pdf" ../
