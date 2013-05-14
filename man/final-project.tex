@@ -167,26 +167,23 @@ origins by deciding about two hypotheses:
   $h_1$: $\exists M,R\textrm{ s.t. } X_b=MRX_a$
 \end{itemize}
 
-To compare the hypotheses, we need to compute the likelihood of each
-hypothesis, i.e. $p(X_a,\ X_b\ \vert \ h_0)$ and $p(X_a,\ X_b\ \vert \
-h_1)$.
-
-The likelihood is easy to compute under $h_0$, because we assume that
-$X_a$ and $X_b$ are independent. Thus:
+To compare the hypotheses, we need to compute the posterior:
 \begin{equation}
-  p(X_a,\ X_b\ \vert \ h_0)=p(X_a)p(X_b)
-  \label{eq:lh-h0}
+p(h_i\ \vert\ X_a, X_b)\propto p(X_a, X_b\ \vert\ h_i)p(h_i)
 \end{equation}
-
-When the configurations are the same, the likelihood becomes more
-complicated:
-\begin{equation} 
-  p(X_a,\ X_b\ \vert \ h_1)=\int_R\int_M p(X_a) p(X_b\vert X_a,R,M) p(R) p(M)\ \mathrm{d}M\ \mathrm{d}R
-\end{equation}
-
-For a small number of vertices, we can compute the integral over $M$
-by enumerating every possible mapping between $X_a$ and $X_b$. After
-doing so, we obtain:
+Assuming the hypotheses are equally likely \textit{a priori}, the
+prior term $p(h_i)$ will cancel out when comparing $h_0$ and $h_1$,
+thus allowing us to focus on the likelihoods: 
+\begin{align}
+  p(X_a,\ X_b\ \vert \ h_0)&=p(X_a)p(X_b) \label{eq:lh-h0}\\
+  p(X_a,\ X_b\ \vert \ h_1)&=\int_R\int_M p(X_a) p(X_b\vert X_a,R,M) p(R) p(M)\ \mathrm{d}M\ \mathrm{d}R \label{eq:lh-h1}
+\end{align}
+Under $h_0$, the likelihood is easy to compute because we assume that
+$X_a$ and $X_b$ are independent (Equation \ref{eq:lh-h0}). However,
+when the configurations are the same, the likelihood becomes more
+complicated (Equation \ref{eq:lh-h1}). For a small number of vertices,
+we can compute the integral over $M$ by enumerating every possible
+mapping between $X_a$ and $X_b$. After doing so, we obtain:
 \begin{equation} 
   p(X_a,\ X_b\ \vert \ h_1)=\int_R p(X_a) p(X_b\vert X_a,R) p(R)\ \mathrm{d}R
 \end{equation}
@@ -209,7 +206,6 @@ applications of $\tau$. Using this sequential function, we get:
   p(X_a, X_b\ \vert \ h_1)&=\int_R \int_{X} p(X_b\vert X) p(X\vert X_a, R)p(X_a)p(R)\ \mathrm{d}X\ \mathrm{d}R \nonumber \\
   x&= \int_R \int_X p(X_b\vert X)\delta(\tau^{(\frac{R}{r})}(X_a, r)-X)p(X_a)p(R)\ \mathrm{d}X\ \mathrm{d}R \nonumber \\
   &= \int_R p(X_b\vert X_R)p(X_a)p(R)\ \mathrm{d}R
-  \label{eq:lh-h1}
 \end{align}
 
 Once we have computed both likelihoods, we compute their ratio:
