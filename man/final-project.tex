@@ -133,6 +133,18 @@ tool: an optimal model of mental rotation may, perhaps, rely on an
 active strategy. In the next sections, we investigate this idea with
 several different approaches.
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\textwidth]{../figures/shepard-rotation.png}
+  \caption{\textbf{Classic mental rotation task}. Participants in
+    \cite{Shepard1971} saw stimuli such as these, and judged whether
+    each pair of shapes was the same shape in two different
+    orientations, or two different shapes. \textbf{A} shows a ``plane
+    rotation'', \textbf{B} shows a ``depth rotation'', and \textbf{C}
+    shows two distinct objects.}
+  \label{fig:mental-rotation}
+\end{figure}
+
 \section{Computational-level model}
 
 People are presented with two images, $X_a$ and $X_b$, which are the
@@ -178,18 +190,6 @@ doing so, we obtain:
 \begin{equation} 
   p(X_a,\ X_b\ \vert \ h_1)=\int_R p(X_a) p(X_b\vert X_a,R) p(R)\ \mathrm{d}R
 \end{equation}
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.95\textwidth]{../figures/shepard-rotation.png}
-  \caption{\textbf{Classic mental rotation task}. Participants in
-    \cite{Shepard1971} saw stimuli such as these, and judged whether
-    each pair of shapes was the same shape in two different
-    orientations, or two different shapes. \textbf{A} shows a ``plane
-    rotation'', \textbf{B} shows a ``depth rotation'', and \textbf{C}
-    shows two distinct objects.}
-  \label{fig:mental-rotation}
-\end{figure}
 
 However, we cannot compute $p(X_b\vert X_a, R)$ directly. Instead, we
 introduce a new variable $X_R$ denoting a mental image, which
