@@ -62,15 +62,27 @@ class KernelMLL(object):
         k2 = (s ** 2) * delta(d)
         self.sym_K = k1 + k2
 
-        # compute partial derivatives adn turn them into functions, so
-        # we can evaluate them (to compute the Jacobian)
+        # compute 1st and 2nd partial derivatives adn turn them into
+        # functions, so we can evaluate them (to compute the Jacobian
+        # and Hessian)
         self.sym_dK_dtheta = []
         self.dK_dtheta = []
-        for p in free_params:
+        self.sym_d2K_dtheta2 = [[]]*len(free_params)
+        self.d2K_dtheta2 = [[]]*len(free_params)
+
+        for i, p in enumerate(free_params):
+            # first partial derivatives
             sym_f = sym.diff(self.sym_K, p)
             f = lambdify((tuple(free_params), d), sym_f)
             self.sym_dK_dtheta.append(sym_f)
             self.dK_dtheta.append(f)
+
+            for p in free_params:
+                # second partial derivatives
+                sym_df = sym.diff(sym_f, p)
+                df = lambdify((tuple(free_params), d), sym_df)
+                self.sym_d2K_dtheta2[i].append(sym_df)
+                self.d2K_dtheta2[i].append(df)
 
         self.h = None if type(h) is sym.Symbol else h
         self.w = None if type(w) is sym.Symbol else w
@@ -124,6 +136,78 @@ class KernelMLL(object):
         k = np.dot(Ki, dj)
         t0 = 0.5 * np.dot(y.T, np.dot(k, np.dot(Ki, y)))
         t1 = -0.5 * np.trace(k)
+        dd = t0 + t1
+
+        return dd
+
+    @staticmethod
+    def _d2_dthetajdthetai(Ki, dK_dthetaj, dK_dthetai, d2K_dthetaji,
+                           theta, x, y):
+        """Compute the second partial derivative of the marginal log
+        likelihood with respect to two of its parameters, `\theta_j`
+        and `\theta_i`.
+
+        This is computing the derviative of Eq. 5.9 of Rasmussen &
+        Williams (2006):
+
+        $$\frac{\partial}{\partial\theta_j}\log{p(\mathbf{y} | X, \mathbf{\theta})}=\frac{1}{2}\mathbf{y}^\top K^{-1}\frac{\partial K}{\partial\theta_j}K^{-1}\mathbf{y}-frac{1}{2}\mathrm{tr}(K^{-1}\frac{\partial K}{\partial\theta_j})$$
+
+        Parameters
+        ----------
+        Ki : numpy.ndarray with shape (n, n)
+            Inverse of the kernel matrix `K`
+        dK_dthetaj : function((h, w, s), d)
+            Computes the partial derivative of `K` with respect to
+            `theta_j`, where `theta_j` is `h`, `w`, or `s`. Takes as
+            arguments the kernel parameters and the difference
+            `x_1-x_2`.
+        dK_dthetai : function((h, w, s), d)
+            Computes the partial derivative of `K` with respect to
+            `theta_i`, where `theta_i` is `h`, `w`, or `s`. Takes as
+            arguments the kernel parameters and the difference
+            `x_1-x_2`.
+        dK_dthetaji : function((h, w, s), d)
+            Computes the second partial derivative of `K` with respect
+            to `theta_j`, and `theta_i` where `theta_i` and `theta_j`
+            `h`, `w`, or `s`. Takes as arguments the kernel parameters
+            and the difference `x_1-x_2`.
+        theta : 3-tuple
+            The kernel parameters `h`, `w`, and `s`.
+        x : numpy.ndarray with shape (n,)
+            Given input values
+        y : numpy.ndarray with shape (n,)
+            Given output values
+
+        Returns
+        -------
+        out : float
+            Partial derivative of the marginal log likelihood.
+
+        References
+        ----------
+        Rasmussen, C. E., & Williams, C. K. I. (2006). Gaussian processes
+            for machine learning. MIT Press.
+
+        """
+
+        # compute dK/dtheta_j, dK/dtheta_i, d2K/(dtheta_j dtheta_i)
+        dj = np.empty((x.size, x.size))
+        di = np.empty((x.size, x.size))
+        dji = np.empty((x.size, x.size))
+        for i in xrange(x.size):
+            for j in xrange(x.size):
+                diff = x[i] - x[j]
+                dj[i, j] = dK_dthetaj(theta, diff)
+                di[i, j] = dK_dthetai(theta, diff)
+                dji[i, j] = d2K_dthetaji(theta, diff)
+
+        dKidi = np.dot(-Ki, np.dot(di, Ki))
+        dKidj = np.dot(-Ki, np.dot(dj, Ki))
+        d2Kidji = np.dot(-Ki, np.dot(dji, Ki))
+
+        k = np.dot(dKidi, dKidj) + d2Kidji + np.dot(dKidj, dKidi)
+        t0 = 0.5 * np.dot(y.T, np.dot(k, y))
+        t1 = -0.5 * np.trace(np.dot(dKidi, dj) + np.dot(Ki, dji))
         dd = t0 + t1
 
         return dd
@@ -230,6 +314,57 @@ class KernelMLL(object):
                 for dK_dthetaj in self.dK_dtheta]
 
         return -np.array(dmll)
+
+    def hessian(self, theta, x, y):
+        """Computes the Hessian of the marginal log likelihood of the
+        kernel.
+
+        See Eq. 5.9 of Rasmussen & Williams (2006).
+
+        Parameters
+        ----------
+        theta : 3-tuple
+            The kernel parameters `h`, `w`, and `s`
+        x : numpy.ndarray with shape (n,)
+            The given input values
+        y : numpy.ndarray with shape (n,)
+            The given output values
+
+        Returns
+        -------
+        out : 3-tuple
+            The Hessian of the marginal negative log likelihood of the
+            data given the parameters
+
+        References
+        ----------
+        Rasmussen, C. E., & Williams, C. K. I. (2006). Gaussian processes
+            for machine learning. MIT Press.
+
+        """
+
+        th = list(theta)
+        h = th.pop(0) if self.h is None else self.h
+        w = th.pop(0) if self.w is None else self.w
+        s = th.pop(0) if self.s is None else self.s
+
+        # the overhead of JIT compiling isn't it worth it here because
+        # this is just a temporary kernel function
+        K = self.kernel(h, w, jit=False)(x, x)
+        if s > 0:
+            K += np.eye(x.size) * (s ** 2)
+
+        # invert K
+        Li = np.linalg.inv(np.linalg.cholesky(K))
+        Ki = np.dot(Li.T, Li)
+
+        ddmll = [[self._d2_dthetajdthetai(
+            Ki, dK_dthetaj, dK_dthetai, self.d2K_dtheta2[j][i],
+            theta, x, y)
+            for i, dK_dthetai in enumerate(self.dK_dtheta)]
+            for j, dK_dthetaj in enumerate(self.dK_dtheta)]
+
+        return np.array(ddmll)
 
     def maximize(self, x, y,
                  hmin=1e-8, hmax=None,
@@ -363,18 +498,18 @@ class KernelMLL(object):
         for i in xrange(x.size):
             for j in xrange(x.size):
                 diff = x[i] - x[j]
-                dKxx[i, j] = dK_dw((h, w, s), diff)
+                dKxx[i, j] = dK_dw(theta, diff)
 
         # compute dK/dw matrix for xo, x
         dKxox = np.empty((xo.size, x.size))
         for i in xrange(xo.size):
             for j in xrange(x.size):
                 diff = xo[i] - x[j]
-                dKxox[i, j] = dK_dw((h, w, s), diff)
+                dKxox[i, j] = dK_dw(theta, diff)
 
         # compute the two terms of the derivative and combine them
         v = np.dot(inv_Kxx, y)
-        d0 = np.dot(dKxox, v)
-        d1 = np.dot(Kxox, np.dot(-inv_Kxx, np.dot(dKxx, v)))
-        dm = d0 + d1
+        t0 = np.dot(dKxox, v)
+        t1 = np.dot(Kxox, np.dot(-inv_Kxx, np.dot(dKxx, v)))
+        dm = t0 + t1
         return dm
