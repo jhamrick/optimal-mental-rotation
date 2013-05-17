@@ -1,9 +1,11 @@
 import numpy as np
+from functools import wraps
 from model_base import Model
 
 
 class GoldStandardModel(Model):
 
+    @wraps(Model.__init__)
     def __init__(self, *args, **kwargs):
         super(GoldStandardModel, self).__init__(*args, **kwargs)
         self._rotations = np.arange(self.R.size, dtype='i8')

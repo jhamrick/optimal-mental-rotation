@@ -6,7 +6,7 @@ import util
 class Model(object):
 
     def __init__(self, Xa, Xb, Xm, R, **opt):
-        """Initialize the linear interpolation object.
+        """Initialize the mental rotation model.
 
         Parameters
         ----------

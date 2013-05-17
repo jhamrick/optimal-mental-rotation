@@ -1,4 +1,5 @@
 import numpy as np
+from functools import wraps
 
 from model_base import Model
 from search import hill_climbing
@@ -6,6 +7,7 @@ from search import hill_climbing
 
 class NaiveModel(Model):
 
+    @wraps(Model.__init__)
     def __init__(self, *args, **kwargs):
         super(NaiveModel, self).__init__(*args, **kwargs)
         self._icurr = 0
