@@ -320,3 +320,61 @@ class KernelMLL(object):
         s = args.pop(0) if self.s is None else self.s
 
         return (h, w, s)
+
+    def dm_dw(self, theta, x, y, xo):
+        """Compute the partial derivative of a GP mean with respect to
+        w, the input scale parameter.
+
+        The analytic form is:
+        $\frac{\partial K(x_*, x)}{\partial w}K_y^{-1}\mathbf{y} - K(x_*, x)K_y^{-1}\frac{\partial K(x, x)}{\partial w}K_y^{-1}\mathbf{y}$
+
+        Where $K_y=K(x, x) + s^2I$
+
+        """
+
+        if self.w is not None:
+            raise ValueError("w is not a free parameter")
+
+        th = list(theta)
+        h = th.pop(0) if self.h is None else self.h
+        w = th.pop(0)
+        s = th.pop(0) if self.s is None else self.s
+
+        # the overhead of JIT compiling isn't it worth it here because
+        # this is just a temporary kernel function
+        Kxx = self.kernel(h, w, jit=False)(x, x)
+        if s > 0:
+            Kxx += np.eye(x.size) * (s ** 2)
+        Kxox = self.kernel(h, w, jit=False)(xo, x)
+
+        # invert K
+        L = np.linalg.cholesky(Kxx)
+        Li = np.linalg.inv(L)
+        inv_Kxx = np.dot(Li.T, Li)
+
+        # get the partial derivative function
+        if self.h is None:
+            dK_dw = self.dK_dtheta[1]
+        else:
+            dK_dw = self.dK_dtheta[0]
+
+        # compute dK/dw matrix for x, x
+        dKxx = np.empty((x.size, x.size))
+        for i in xrange(x.size):
+            for j in xrange(x.size):
+                diff = x[i] - x[j]
+                dKxx[i, j] = dK_dw((h, w, s), diff)
+
+        # compute dK/dw matrix for xo, x
+        dKxox = np.empty((xo.size, x.size))
+        for i in xrange(xo.size):
+            for j in xrange(x.size):
+                diff = xo[i] - x[j]
+                dKxox[i, j] = dK_dw((h, w, s), diff)
+
+        # compute the two terms of the derivative and combine them
+        v = np.dot(inv_Kxx, y)
+        d0 = np.dot(dKxox, v)
+        d1 = np.dot(Kxox, np.dot(-inv_Kxx, np.dot(dKxx, v)))
+        dm = d0 + d1
+        return dm
