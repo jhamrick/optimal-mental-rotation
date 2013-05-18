@@ -138,8 +138,6 @@ class BayesianQuadratureModel(Model):
         # fit parameters
         theta = mll.maximize(
             Ri, Si,
-            wmin=np.radians(self.opt['dr']) / 2.,
-            wmax=np.pi/2.,
             ntry=self.opt['ntry'],
             verbose=self.opt['verbose'] > 3)
 
@@ -179,6 +177,7 @@ class BayesianQuadratureModel(Model):
         self.ix = sorted(self.ix)
         self.Ri = self.R[self.ix].copy()
         self.Si = self.S[self.ix].copy()
+        lSi = np.log(self.Si + 1)
 
         # compute GP regressions for S and log(S)
         self.mu_S, self.cov_S, self.theta_S = self._fit_gp(
@@ -186,7 +185,7 @@ class BayesianQuadratureModel(Model):
         if ((self.mu_S + 1) <= 0).any():
             print "Warning: regression for mu_S returned negative values"
         self.mu_logS, self.cov_logS, self.theta_logS = self._fit_gp(
-            self.Ri, np.log(self.Si + 1), self._mll_logS, "log(S)")
+            self.Ri, lSi, self._mll_logS, "log(S)")
 
         # choose "candidate" points, halfway between given points
         self.delta = self.mu_logS - np.log(self.mu_S + 1)
@@ -210,9 +209,27 @@ class BayesianQuadratureModel(Model):
             self.cov_Dc = np.zeros((self.mu_Dc.size, self.mu_Dc.size))
             self.theta_Dc = None
 
-        # the final regression for S
+        # the final estimated mean of S
         self.S_mean = ((self.mu_S + 1) * (1 + self.mu_Dc)) - 1
-        self.S_var = np.diag(self.cov_logS)
+
+        # marginalize out w
+        params = []
+        ii = 0
+        if self._mll_logS.h is None:
+            params.append(self.theta_logS[0])
+            ii = 1
+        if self._mll_logS.w is None:
+            params.append(self.theta_logS[1])
+        if self._mll_logS.s is None:
+            params.append(self.theta_logS[2])
+        # estimate the variance
+        Hw = np.exp(self._mll_logS.hessian(params, self.Ri, lSi))
+        Cw = np.matrix(np.diag(-1. / Hw)[ii])
+        dm_dw = np.matrix(
+            self._mll_logS.dm_dw(params, self.Ri, lSi, self.R))
+        self.S_cov = np.array(
+            self.cov_logS + np.dot(dm_dw.T, np.dot(Cw, dm_dw)))
+        self.S_var = np.diag(self.S_cov)
 
     def integrate(self):
         """Compute the mean and variance of Z:
@@ -237,7 +254,7 @@ class BayesianQuadratureModel(Model):
 
         # variance
         pm = self.opt['prior_R'] * (self.mu_S + 1)
-        C = self.cov_logS * pm[:, None] * pm[None, :]
+        C = self.S_cov * pm[:, None] * pm[None, :]
         self.Z_var = np.trapz(np.trapz(C, self.R, axis=0), self.R)
 
         self.print_Z(level=0)
