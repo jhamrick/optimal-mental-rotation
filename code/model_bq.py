@@ -44,6 +44,7 @@ class BayesianQuadratureModel(Model):
             'kernel': 'periodic',
             'h': None,
             's': 0,
+            'p': 1,
         }
 
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
@@ -53,25 +54,25 @@ class BayesianQuadratureModel(Model):
         # marginal log likelihood objects
         self._mll_S = KernelMLL(
             kernel=self.opt['kernel'],
-            h=self.opt['h'],
+            h=None,#self.opt['h'],
             w=None,
-            s=self.opt['s']
+            s=self.opt['s'],
+            p=self.opt['p'],
         )
         self._mll_logS = KernelMLL(
             kernel=self.opt['kernel'],
-            h=np.log(self.opt['h'] + 1),
+            h=None,#np.log(self.opt['h'] + 1),
             w=None,
-            s=self.opt['s']
+            s=self.opt['s'],
+            p=self.opt['p'],
         )
         self._mll_Dc = KernelMLL(
-            kernel=self.opt['kernel'],
+            kernel='gaussian',#self.opt['kernel'],
             h=None,
             w=None,
-            s=self.opt['s']
+            s=self.opt['s'],
+            p=self.opt['p'],
         )
-
-        self.fit()
-        self.integrate()
 
     def next(self):
         """Sample the next point."""
@@ -79,6 +80,9 @@ class BayesianQuadratureModel(Model):
         self.debug("Performing ratio test")
 
         # check if we can accept a hypothesis
+        if self.S_mean is None:
+            self.fit()
+            self.integrate()
         hyp = self.ratio_test(level=1)
         if hyp != -1:
             raise StopIteration

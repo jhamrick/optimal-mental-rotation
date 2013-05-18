@@ -48,11 +48,18 @@ class KernelMLL(object):
         else:
             s = sym.Symbol('s')
             free_params.append(s)
+        # period
+        if params.get('p', None) or kernel != 'periodic':
+            p = params.get('p', 1)
+        else:
+            p = sym.Symbol('p')
+            free_params.append(p)
 
         # symbolic version of the kernel function
+        self.kernel_type = kernel
         if kernel == 'periodic':
             self.kernel = periodic_kernel
-            k1 = (h ** 2) * sym.exp(-2. * (sym.sin(d / 2.) ** 2) / (w ** 2))
+            k1 = (h ** 2) * sym.exp(-2.*(sym.sin(d / (2.*p)) ** 2) / (w ** 2))
         elif kernel == 'gaussian':
             self.kernel = gaussian_kernel
             k1 = (h ** 2) * sym.exp(-0.5 * (d ** 2) / (w ** 2))
@@ -70,16 +77,16 @@ class KernelMLL(object):
         self.sym_d2K_dtheta2 = [[]]*len(free_params)
         self.d2K_dtheta2 = [[]]*len(free_params)
 
-        for i, p in enumerate(free_params):
+        for i, p1 in enumerate(free_params):
             # first partial derivatives
-            sym_f = sym.diff(self.sym_K, p)
+            sym_f = sym.diff(self.sym_K, p1)
             f = lambdify((tuple(free_params), d), sym_f)
             self.sym_dK_dtheta.append(sym_f)
             self.dK_dtheta.append(f)
 
-            for p in free_params:
+            for p2 in free_params:
                 # second partial derivatives
-                sym_df = sym.diff(sym_f, p)
+                sym_df = sym.diff(sym_f, p2)
                 df = lambdify((tuple(free_params), d), sym_df)
                 self.sym_d2K_dtheta2[i].append(sym_df)
                 self.d2K_dtheta2[i].append(df)
@@ -87,6 +94,39 @@ class KernelMLL(object):
         self.h = None if type(h) is sym.Symbol else h
         self.w = None if type(w) is sym.Symbol else w
         self.s = None if type(s) is sym.Symbol else s
+        self.p = None if type(p) is sym.Symbol else p
+
+    def kernel_params(self, theta):
+        th = list(theta)
+        h = th.pop(0) if self.h is None else self.h
+        w = th.pop(0) if self.w is None else self.w
+        p = th.pop(0) if self.p is None else self.p
+        s = th.pop(0) if self.s is None else self.s
+        return h, w, p, s
+
+    def make_kernel(self, theta=None, params=None, jit=True):
+        if not params:
+            h, w, p, s = self.kernel_params(theta)
+        else:
+            h, w, p, s = params
+
+        if self.kernel_type == 'periodic':
+            k = self.kernel(h, w, p, jit=jit)
+        else:
+            k = self.kernel(h, w, jit=jit)
+
+        return k
+
+    def Kxx(self, theta, x):
+        params = self.kernel_params(theta)
+        h, w, p, s = params
+
+        # the overhead of JIT compiling isn't it worth it here because
+        # this is just a temporary kernel function
+        K = self.make_kernel(params=params, jit=False)(x, x)
+        if s > 0:
+            K += np.eye(x.size) * (s ** 2)
+        return K
 
     @staticmethod
     def _d_dthetaj(Ki, dK_dthetaj, theta, x, y):
@@ -101,13 +141,12 @@ class KernelMLL(object):
         ----------
         Ki : numpy.ndarray with shape (n, n)
             Inverse of the kernel matrix `K`
-        dK_dthetaj : function((h, w, s), d)
+        dK_dthetaj : function(theta, d)
             Computes the partial derivative of `K` with respect to
-            `theta_j`, where `theta_j` is `h`, `w`, or `s`. Takes as
-            arguments the kernel parameters and the difference
-            `x_1-x_2`.
-        theta : 3-tuple
-            The kernel parameters `h`, `w`, and `s`.
+            `theta_j`. Takes as arguments the kernel parameters and the
+            difference `x_1-x_2`.
+        theta : tuple
+            The kernel parameters.
         x : numpy.ndarray with shape (n,)
             Given input values
         y : numpy.ndarray with shape (n,)
@@ -156,23 +195,17 @@ class KernelMLL(object):
         ----------
         Ki : numpy.ndarray with shape (n, n)
             Inverse of the kernel matrix `K`
-        dK_dthetaj : function((h, w, s), d)
+        dK_dthetaj : function(theta, d)
             Computes the partial derivative of `K` with respect to
-            `theta_j`, where `theta_j` is `h`, `w`, or `s`. Takes as
-            arguments the kernel parameters and the difference
-            `x_1-x_2`.
-        dK_dthetai : function((h, w, s), d)
+            `theta_j`.
+        dK_dthetai : function(theta, d)
             Computes the partial derivative of `K` with respect to
-            `theta_i`, where `theta_i` is `h`, `w`, or `s`. Takes as
-            arguments the kernel parameters and the difference
-            `x_1-x_2`.
-        dK_dthetaji : function((h, w, s), d)
+            `theta_i`.
+        dK_dthetaji : function(theta, d)
             Computes the second partial derivative of `K` with respect
-            to `theta_j`, and `theta_i` where `theta_i` and `theta_j`
-            `h`, `w`, or `s`. Takes as arguments the kernel parameters
-            and the difference `x_1-x_2`.
-        theta : 3-tuple
-            The kernel parameters `h`, `w`, and `s`.
+            to `theta_j`, and `theta_i`.
+        theta : tuple
+            The kernel parameters.
         x : numpy.ndarray with shape (n,)
             Given input values
         y : numpy.ndarray with shape (n,)
@@ -221,8 +254,8 @@ class KernelMLL(object):
 
         Parameters
         ----------
-        theta : 3-tuple
-            The kernel parameters `h`, `w`, and `s`
+        theta : tuple
+            The kernel parameters.
         x : numpy.ndarray with shape (n,)
             The given input values
         y : numpy.ndarray with shape (n,)
@@ -241,18 +274,8 @@ class KernelMLL(object):
 
         """
 
-        th = list(theta)
-        h = th.pop(0) if self.h is None else self.h
-        w = th.pop(0) if self.w is None else self.w
-        s = th.pop(0) if self.s is None else self.s
-
-        # the overhead of JIT compiling isn't it worth it here because
-        # this is just a temporary kernel function
-        K = self.kernel(h, w, jit=False)(x, x)
-        if s > 0:
-            K += np.eye(x.size) * (s ** 2)
-
         # invert K and compute determinant
+        K = self.Kxx(theta, x)
         L = np.linalg.cholesky(K)
         Li = np.linalg.inv(L)
         Ki = np.dot(Li.T, Li)
@@ -295,18 +318,8 @@ class KernelMLL(object):
 
         """
 
-        th = list(theta)
-        h = th.pop(0) if self.h is None else self.h
-        w = th.pop(0) if self.w is None else self.w
-        s = th.pop(0) if self.s is None else self.s
-
-        # the overhead of JIT compiling isn't it worth it here because
-        # this is just a temporary kernel function
-        K = self.kernel(h, w, jit=False)(x, x)
-        if s > 0:
-            K += np.eye(x.size) * (s ** 2)
-
         # invert K
+        K = self.Kxx(theta, x)
         Li = np.linalg.inv(np.linalg.cholesky(K))
         Ki = np.dot(Li.T, Li)
 
@@ -343,18 +356,8 @@ class KernelMLL(object):
 
         """
 
-        th = list(theta)
-        h = th.pop(0) if self.h is None else self.h
-        w = th.pop(0) if self.w is None else self.w
-        s = th.pop(0) if self.s is None else self.s
-
-        # the overhead of JIT compiling isn't it worth it here because
-        # this is just a temporary kernel function
-        K = self.kernel(h, w, jit=False)(x, x)
-        if s > 0:
-            K += np.eye(x.size) * (s ** 2)
-
         # invert K
+        K = self.Kxx(theta, x)
         Li = np.linalg.inv(np.linalg.cholesky(K))
         Ki = np.dot(Li.T, Li)
 
@@ -450,11 +453,8 @@ class KernelMLL(object):
         if args is None or fval is None:
             raise RuntimeError("Could not find MLII parameter estimates")
 
-        h = args.pop(0) if self.h is None else self.h
-        w = args.pop(0) if self.w is None else self.w
-        s = args.pop(0) if self.s is None else self.s
-
-        return (h, w, s)
+        params = self.kernel_params(args)
+        return params
 
     def dm_dw(self, theta, x, y, xo):
         """Compute the partial derivative of a GP mean with respect to
@@ -470,17 +470,9 @@ class KernelMLL(object):
         if self.w is not None:
             raise ValueError("w is not a free parameter")
 
-        th = list(theta)
-        h = th.pop(0) if self.h is None else self.h
-        w = th.pop(0)
-        s = th.pop(0) if self.s is None else self.s
-
-        # the overhead of JIT compiling isn't it worth it here because
-        # this is just a temporary kernel function
-        Kxx = self.kernel(h, w, jit=False)(x, x)
-        if s > 0:
-            Kxx += np.eye(x.size) * (s ** 2)
-        Kxox = self.kernel(h, w, jit=False)(xo, x)
+        # compute Kxx and Kxox
+        Kxx = self.Kxx(theta, x)
+        Kxox = self.make_kernel(theta=theta, jit=False)(xo, x)
 
         # invert K
         L = np.linalg.cholesky(Kxx)
