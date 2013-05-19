@@ -135,11 +135,18 @@ class BayesianQuadratureModel(Model):
     def _fit_gp(self, Ri, Si, mll, name):
         self.debug("Fitting parameters for GP over %s ..." % name, level=2)
 
+        if Ri.size > 1:
+            width = np.min(np.abs(Ri[1:] - Ri[:-1]))
+        else:
+            width = 1e-8
+        height = max(np.min(np.abs(Si)), np.max(np.abs(Si)) / 1000.)
+
         # fit parameters
         theta = mll.maximize(
             Ri, Si,
             ntry=self.opt['ntry'],
-            verbose=self.opt['verbose'] > 3)
+            verbose=self.opt['verbose'] > 3,
+            wmin=width, hmin=height)
 
         self.debug("Best parameters: %s" % (theta,), level=2)
         self.debug("Computing GP over %s..." % name, level=2)
