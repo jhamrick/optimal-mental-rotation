@@ -372,6 +372,8 @@ class KernelMLL(object):
     def maximize(self, x, y,
                  hmin=1e-8, hmax=None,
                  wmin=1e-8, wmax=None,
+                 smin=0, smax=None,
+                 pmin=0, pmax=None,
                  ntry=10, verbose=False):
         """Find kernel parameter values which maximize the marginal log
         likelihood of the data.
@@ -396,27 +398,32 @@ class KernelMLL(object):
 
         """
 
-        args = None
-        fval = None
+        bounds = []
+        if self.h is None:
+            bounds.append((hmin, hmax))
+        if self.w is None:
+            bounds.append((wmin, wmax))
+        if self.s is None:
+            bounds.append((smin, smax))
+        if self.p is None:
+            bounds.append((pmin, pmax))
+
+        args = np.empty((ntry, len(bounds)))
+        fval = np.empty(ntry)
 
         for i in xrange(ntry):
             # randomize starting parameter values
             p0 = []
-            bounds = []
             if self.h is None:
-                p0.append(np.random.uniform(0, np.max(np.abs(y))*2))
-                bounds.append((hmin, hmax))
+                p0.append(np.random.uniform(hmin, np.max(np.abs(y))*2))
             if self.w is None:
-                p0.append(np.random.uniform(0, 2*np.pi))
-                bounds.append((wmin, wmax))
+                p0.append(np.random.uniform(wmin, 2*np.pi))
             if self.s is None:
-                p0.append(np.random.uniform(0, np.sqrt(np.var(y))))
-                bounds.append((0, None))
+                p0.append(np.random.uniform(smin, np.sqrt(np.var(y))))
+            if self.p is None:
+                p0.append(np.random.uniform(pmin, 2*np.pi))
 
-            p0 = tuple(p0)
-            bounds = tuple(bounds)
             method = "L-BFGS-B"
-
             if verbose:
                 print "      p0 = %s" % (p0,)
 
@@ -440,20 +447,23 @@ class KernelMLL(object):
                 message = popt['message']
 
             if not success:
+                args[i] = np.nan
+                fval[i] = np.inf
                 if verbose:
                     print "      Failed: %s" % message
             else:
-                args = list(abs(popt['x']))
-                fval = popt['fun']
-                if verbose:
-                    print "      -MLL(%s) = %f" % (args, fval)
-                break
+                args[i] = np.abs(popt['x'])
+                fval[i] = popt['fun']
+
+            if verbose:
+                print "      -MLL(%s) = %f" % (args[i], fval[i])
 
         # choose the parameters that give the best MLL
         if args is None or fval is None:
             raise RuntimeError("Could not find MLII parameter estimates")
+        best = np.argmin(fval)
+        params = self.kernel_params(args[best])
 
-        params = self.kernel_params(args)
         return params
 
     def dm_dw(self, theta, x, y, xo):
