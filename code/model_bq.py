@@ -54,20 +54,20 @@ class BayesianQuadratureModel(Model):
         # marginal log likelihood objects
         self._mll_S = KernelMLL(
             kernel=self.opt['kernel'],
-            h=None,#self.opt['h'],
+            h=self.opt['h'],
             w=None,
             s=self.opt['s'],
             p=self.opt['p'],
         )
         self._mll_logS = KernelMLL(
             kernel=self.opt['kernel'],
-            h=None,#np.log(self.opt['h'] + 1),
+            h=np.log(self.opt['h'] + 1) if self.opt.get('h', None) else None,
             w=None,
             s=self.opt['s'],
             p=self.opt['p'],
         )
         self._mll_Dc = KernelMLL(
-            kernel='gaussian',#self.opt['kernel'],
+            kernel=self.opt['kernel'],
             h=None,
             w=None,
             s=self.opt['s'],
