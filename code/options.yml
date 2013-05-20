@@ -21,7 +21,7 @@
     # observation noise for bayesian quadrature
     s: 0,
     # output scale for bayesian quadrature
-    h: 0.125,
+    h: null,
     # type of kernel to use for bayesian quadrature
     kernel: periodic,
     # number of tries to fit parameters in bayesian quadrature
