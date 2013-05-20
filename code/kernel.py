@@ -252,8 +252,8 @@ class KernelMLL(object):
 
         return dd
 
-    def __call__(self, theta, x, y):
-        """Computes the marginal negative log likelihood of the kernel.
+    def lh(self, theta, x, y):
+        """Computes the marginal  log likelihood of the kernel.
 
         This is computing Eq. 5.8 of Rasmussen & Williams (2006):
 
@@ -271,8 +271,7 @@ class KernelMLL(object):
         Returns
         -------
         out : float
-            The marginal negative log likelihood of the data given the
-            parameters
+            The marginal log likelihood of the data given the parameters
 
         References
         ----------
@@ -293,12 +292,15 @@ class KernelMLL(object):
         t2 = -0.5 * logdetK
         t3 = -0.5 * x.size * np.log(2 * np.pi)
         mll = (t1 + t2 + t3)
-        out = -mll
 
-        return out
+        return mll
+
+    def neg_lh(self, *args, **kwargs):
+        llh = self.lh(*args, **kwargs)
+        return -llh
 
     def jacobian(self, theta, x, y):
-        """Computes the negative Jacobian of the marginal log likelihood of
+        """Computes the Jacobian of the marginal log likelihood of
         the kernel.
 
         See Eq. 5.9 of Rasmussen & Williams (2006).
@@ -315,8 +317,8 @@ class KernelMLL(object):
         Returns
         -------
         out : 3-tuple
-            The negative Jacobian of the marginal negative log
-            likelihood of the data given the parameters
+            The Jacobian of the marginal negative log likelihood of the
+            data given the parameters
 
         References
         ----------
@@ -333,7 +335,11 @@ class KernelMLL(object):
         dmll = [self._d_dthetaj(Ki, dK_dthetaj, theta, x, y)
                 for dK_dthetaj in self.dK_dtheta]
 
-        return -np.array(dmll)
+        return np.array(dmll)
+
+    def neg_jacobian(self, *args, **kwargs):
+        lj = self.jacobian(*args, **kwargs)
+        return -lj
 
     def hessian(self, theta, x, y):
         """Computes the Hessian of the marginal log likelihood of the
@@ -437,10 +443,10 @@ class KernelMLL(object):
             # run mimization function
             try:
                 popt = opt.minimize(
-                    fun=self,
+                    fun=self.neg_lh,
                     x0=p0,
                     args=(x, y),
-                    jac=self.jacobian,
+                    jac=self.neg_jacobian,
                     method=method,
                     bounds=bounds
                 )
