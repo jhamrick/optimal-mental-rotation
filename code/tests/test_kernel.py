@@ -2,7 +2,7 @@ import numpy as np
 np.seterr(all='raise')
 
 from kernel import KernelMLL
-from snippets.stats import gaussian_kernel
+from snippets.stats import gaussian_kernel, periodic_kernel
 
 ######################################################################
 
@@ -44,4 +44,15 @@ def test_gaussian_K():
         w = rand_w()
         kernel = gaussian_kernel(h, w, jit=False)
         mll = KernelMLL('gaussian', h=h, w=w, s=0)
+        yield (check_K, x, kernel, mll)
+
+
+def test_periodic_K():
+    x = np.linspace(-2*np.pi, 2*np.pi, 16)
+    for i in xrange(N_big):
+        h = rand_h()
+        w = rand_w()
+        p = rand_p()
+        kernel = periodic_kernel(h, w, p, jit=False)
+        mll = KernelMLL('periodic', h=h, w=w, p=p, s=0)
         yield (check_K, x, kernel, mll)
