@@ -89,3 +89,39 @@ def test_periodic_K2():
         kernel = periodic_kernel(h, w, p, jit=False)
         mll = KernelMLL('periodic', h=None, w=None, p=None, s=0)
         yield (check_K2, x, kernel, mll, (h, w, p))
+
+
+def test_kernel_params_h():
+    h = None
+    w = rand_w()
+    p = rand_p()
+    s = 0
+    mll = KernelMLL('periodic', h=h, w=w, p=p, s=s)
+    assert mll.kernel_params((1,)) == (1, w, p, s)
+
+
+def test_kernel_params_w():
+    h = rand_h()
+    w = None
+    p = rand_p()
+    s = 0
+    mll = KernelMLL('periodic', h=h, w=w, p=p, s=s)
+    assert mll.kernel_params((1,)) == (h, 1, p, s)
+
+
+def test_kernel_params_p():
+    h = rand_h()
+    w = rand_w()
+    p = None
+    s = 0
+    mll = KernelMLL('periodic', h=h, w=w, p=p, s=s)
+    assert mll.kernel_params((1,)) == (h, w, 1, s)
+
+
+def test_kernel_params_s():
+    h = rand_h()
+    w = rand_w()
+    p = rand_p()
+    s = None
+    mll = KernelMLL('periodic', h=h, w=w, p=p, s=s)
+    assert mll.kernel_params((1,)) == (h, w, p, 1)
