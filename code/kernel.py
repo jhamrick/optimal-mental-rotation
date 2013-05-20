@@ -55,6 +55,12 @@ class KernelMLL(object):
             p = sym.Symbol('p')
             free_params.append(p)
 
+        # parameters for lambdify
+        if len(free_params) == 0:
+            lparams = (d,)
+        else:
+            lparams = (tuple(free_params), d)
+
         # symbolic version of the kernel function
         self.kernel_type = kernel
         if kernel == 'periodic':
@@ -68,6 +74,7 @@ class KernelMLL(object):
 
         k2 = (s ** 2) * delta(d)
         self.sym_K = k1 + k2
+        self.K = lambdify(lparams, self.sym_K)
 
         # compute 1st and 2nd partial derivatives adn turn them into
         # functions, so we can evaluate them (to compute the Jacobian
@@ -80,14 +87,14 @@ class KernelMLL(object):
         for i, p1 in enumerate(free_params):
             # first partial derivatives
             sym_f = sym.diff(self.sym_K, p1)
-            f = lambdify((tuple(free_params), d), sym_f)
+            f = lambdify(lparams, sym_f)
             self.sym_dK_dtheta.append(sym_f)
             self.dK_dtheta.append(f)
 
             for p2 in free_params:
                 # second partial derivatives
                 sym_df = sym.diff(sym_f, p2)
-                df = lambdify((tuple(free_params), d), sym_df)
+                df = lambdify(lparams, sym_df)
                 self.sym_d2K_dtheta2[i].append(sym_df)
                 self.d2K_dtheta2[i].append(df)
 
