@@ -37,6 +37,18 @@ def check_K(x, kernel, mll):
         raise AssertionError("incorrect kernel function outputs")
 
 
+def check_K2(x, kernel, mll, params):
+    kK = kernel(x, x)
+    mK = np.array([[mll.K(params, x1-x2) for x2 in x] for x1 in x])
+    diff = np.abs(kK - mK)
+    if not (diff < thresh).all():
+        print diff
+        raise AssertionError("incorrect kernel function outputs")
+
+
+######################################################################
+
+
 def test_gaussian_K():
     x = np.linspace(-2*np.pi, 2*np.pi, 16)
     for i in xrange(N_big):
@@ -45,6 +57,16 @@ def test_gaussian_K():
         kernel = gaussian_kernel(h, w, jit=False)
         mll = KernelMLL('gaussian', h=h, w=w, s=0)
         yield (check_K, x, kernel, mll)
+
+
+def test_gaussian_K2():
+    x = np.linspace(-2*np.pi, 2*np.pi, 16)
+    for i in xrange(N_big):
+        h = rand_h()
+        w = rand_w()
+        kernel = gaussian_kernel(h, w, jit=False)
+        mll = KernelMLL('gaussian', h=None, w=None, s=0)
+        yield (check_K2, x, kernel, mll, (h, w))
 
 
 def test_periodic_K():
@@ -56,3 +78,14 @@ def test_periodic_K():
         kernel = periodic_kernel(h, w, p, jit=False)
         mll = KernelMLL('periodic', h=h, w=w, p=p, s=0)
         yield (check_K, x, kernel, mll)
+
+
+def test_periodic_K2():
+    x = np.linspace(-2*np.pi, 2*np.pi, 16)
+    for i in xrange(N_big):
+        h = rand_h()
+        w = rand_w()
+        p = rand_p()
+        kernel = periodic_kernel(h, w, p, jit=False)
+        mll = KernelMLL('periodic', h=None, w=None, p=None, s=0)
+        yield (check_K2, x, kernel, mll, (h, w, p))
