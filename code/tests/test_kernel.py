@@ -69,6 +69,16 @@ def test_gaussian_K2():
         yield (check_K2, x, kernel, mll, (h, w))
 
 
+def test_gaussian_make_kernel():
+    x = np.linspace(-2*np.pi, 2*np.pi, 16)
+    for i in xrange(N_big):
+        h = rand_h()
+        w = rand_w()
+        mll = KernelMLL('gaussian', h=h, w=w, s=0)
+        kernel = mll.make_kernel(params=(h, w, 1, 0), jit=False)
+        yield (check_K, x, kernel, mll)
+
+
 def test_periodic_K():
     x = np.linspace(-2*np.pi, 2*np.pi, 16)
     for i in xrange(N_big):
@@ -89,6 +99,17 @@ def test_periodic_K2():
         kernel = periodic_kernel(h, w, p, jit=False)
         mll = KernelMLL('periodic', h=None, w=None, p=None, s=0)
         yield (check_K2, x, kernel, mll, (h, w, p))
+
+
+def test_periodic_make_kernel():
+    x = np.linspace(-2*np.pi, 2*np.pi, 16)
+    for i in xrange(N_big):
+        h = rand_h()
+        w = rand_w()
+        p = rand_p()
+        mll = KernelMLL('periodic', h=h, w=w, p=p, s=0)
+        kernel = mll.make_kernel(params=(h, w, p, 0), jit=False)
+        yield (check_K, x, kernel, mll)
 
 
 def test_kernel_params_h():
