@@ -230,8 +230,8 @@ class BayesianQuadratureModel(Model):
         if self._mll_logS.s is None:
             params.append(self.theta_logS[2])
         # estimate the variance
-        Hw = np.exp(self._mll_logS.hessian(params, self.Ri, lSi))
-        Cw = np.matrix(np.diag(-1. / Hw)[ii])
+        Hw = self._mll_logS.hessian(params, self.Ri, lSi)
+        Cw = np.matrix(np.exp(-np.diag(Hw)[ii]))
         dm_dw = np.matrix(
             self._mll_logS.dm_dw(params, self.Ri, lSi, self.R))
         self.S_cov = np.array(
