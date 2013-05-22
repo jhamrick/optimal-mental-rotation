@@ -10,7 +10,7 @@ from snippets.stats import periodic_kernel
 from snippets.stats import gaussian_kernel
 
 
-def compute_L(mat):
+def cholesky(mat):
     m = np.mean(np.abs(mat))
     try:
         L = np.linalg.cholesky(mat)
@@ -301,7 +301,7 @@ class KernelMLL(object):
         # invert K and compute determinant
         K = self.Kxx(theta, x)
         try:
-            L = compute_L(K)
+            L = cholesky(K)
         except np.linalg.LinAlgError:
             return -np.inf
         Li = np.linalg.inv(L)
@@ -351,7 +351,7 @@ class KernelMLL(object):
         # invert K
         K = self.Kxx(theta, x)
         try:
-            Li = np.linalg.inv(compute_L(K))
+            Li = np.linalg.inv(cholesky(K))
         except np.linalg.LinAlgError:
             return np.zeros(len(self.dK_dtheta)) - np.inf
         Ki = np.dot(Li.T, Li)
@@ -396,7 +396,7 @@ class KernelMLL(object):
         # invert K
         K = self.Kxx(theta, x)
         try:
-            Li = np.linalg.inv(compute_L(K))
+            Li = np.linalg.inv(cholesky(K))
         except np.linalg.LinAlgError:
             return -np.inf
         Ki = np.dot(Li.T, Li)
@@ -527,7 +527,7 @@ class KernelMLL(object):
 
         # invert K
         try:
-            L = compute_L(Kxx)
+            L = cholesky(Kxx)
         except np.linalg.LinAlgError:
             return np.nan
         Li = np.linalg.inv(L)
