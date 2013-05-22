@@ -1,12 +1,30 @@
 import numpy as np
 import scipy.optimize as opt
 import sympy as sym
+from numpy.linalg import inv
 
 from sympy.utilities.lambdify import lambdify
 from sympy.functions.special.delta_functions import DiracDelta as delta
 
 from snippets.stats import periodic_kernel
 from snippets.stats import gaussian_kernel
+
+
+def compute_L(mat):
+    m = np.mean(np.abs(mat))
+    try:
+        L = np.linalg.cholesky(mat)
+    except np.linalg.LinAlgError:
+        # matrix is singular, let's try adding some noise and see if
+        # we can invert it then
+        noise = np.random.normal(0, m * 1e-4, mat.shape)
+        try:
+            L = np.linalg.cholesky(mat + noise)
+        except np.linalg.LinAlgError:
+            raise np.linalg.LinAlgError(
+                "Could not compute Cholesky decomposition of "
+                "kernel matrix, even with jitter")
+    return L
 
 
 class KernelMLL(object):
@@ -282,7 +300,10 @@ class KernelMLL(object):
 
         # invert K and compute determinant
         K = self.Kxx(theta, x)
-        L = np.linalg.cholesky(K)
+        try:
+            L = compute_L(K)
+        except np.linalg.LinAlgError:
+            return -np.inf
         Li = np.linalg.inv(L)
         Ki = np.dot(Li.T, Li)
         logdetK = 2 * np.log(np.diag(L)).sum()
@@ -329,7 +350,10 @@ class KernelMLL(object):
 
         # invert K
         K = self.Kxx(theta, x)
-        Li = np.linalg.inv(np.linalg.cholesky(K))
+        try:
+            Li = np.linalg.inv(compute_L(K))
+        except np.linalg.LinAlgError:
+            return np.zeros(len(self.dK_dtheta)) - np.inf
         Ki = np.dot(Li.T, Li)
 
         dmll = [self._d_dthetaj(Ki, dK_dthetaj, theta, x, y)
@@ -371,7 +395,10 @@ class KernelMLL(object):
 
         # invert K
         K = self.Kxx(theta, x)
-        Li = np.linalg.inv(np.linalg.cholesky(K))
+        try:
+            Li = np.linalg.inv(compute_L(K))
+        except np.linalg.LinAlgError:
+            return -np.inf
         Ki = np.dot(Li.T, Li)
 
         ddmll = [[self._d2_dthetajdthetai(
@@ -450,8 +477,9 @@ class KernelMLL(object):
                     method=method,
                     bounds=bounds
                 )
-            except np.linalg.LinAlgError as e:
-                # kernel matrix is not positive definite, probably
+            except ArithmeticError as e:
+                # kernel matrix is not positive definite, or we got
+                # overflow/underflow
                 success = False
                 message = str(e)
             else:
@@ -498,7 +526,10 @@ class KernelMLL(object):
         Kxox = self.make_kernel(theta=theta, jit=False)(xo, x)
 
         # invert K
-        L = np.linalg.cholesky(Kxx)
+        try:
+            L = compute_L(Kxx)
+        except np.linalg.LinAlgError:
+            return np.nan
         Li = np.linalg.inv(L)
         inv_Kxx = np.dot(Li.T, Li)
 
