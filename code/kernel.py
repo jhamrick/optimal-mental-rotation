@@ -7,6 +7,24 @@ from sympy.functions.special.delta_functions import DiracDelta as delta
 
 from snippets.stats import periodic_kernel
 from snippets.stats import gaussian_kernel
+from snippets.stats import MIN_LOG, MAX_LOG
+
+
+def cholesky(mat):
+    m = np.mean(np.abs(mat))
+    try:
+        L = np.linalg.cholesky(mat)
+    except np.linalg.LinAlgError:
+        # matrix is singular, let's try adding some noise and see if
+        # we can invert it then
+        noise = np.random.normal(0, m * 1e-4, mat.shape)
+        try:
+            L = np.linalg.cholesky(mat + noise)
+        except np.linalg.LinAlgError:
+            raise np.linalg.LinAlgError(
+                "Could not compute Cholesky decomposition of "
+                "kernel matrix, even with jitter")
+    return L
 
 
 class KernelMLL(object):
@@ -34,26 +52,32 @@ class KernelMLL(object):
         if params.get('h', None):
             h = params['h']
         else:
-            h = sym.Symbol('h')
+            h = sym.Symbol('h', positive=True)
             free_params.append(h)
         # input scale (width)
         if params.get('w', None):
             w = params['w']
         else:
-            w = sym.Symbol('w')
+            w = sym.Symbol('w', positive=True)
             free_params.append(w)
         # observation noise
         if params.get('s', None) is not None:
             s = params['s']
         else:
-            s = sym.Symbol('s')
+            s = sym.Symbol('s', positive=True)
             free_params.append(s)
         # period
         if params.get('p', None) or kernel != 'periodic':
             p = params.get('p', 1)
         else:
-            p = sym.Symbol('p')
+            p = sym.Symbol('p', positive=True)
             free_params.append(p)
+
+        # parameters for lambdify
+        if len(free_params) == 0:
+            lparams = (d,)
+        else:
+            lparams = (tuple(free_params), d)
 
         # symbolic version of the kernel function
         self.kernel_type = kernel
@@ -68,6 +92,7 @@ class KernelMLL(object):
 
         k2 = (s ** 2) * delta(d)
         self.sym_K = k1 + k2
+        self.K = lambdify(lparams, self.sym_K)
 
         # compute 1st and 2nd partial derivatives adn turn them into
         # functions, so we can evaluate them (to compute the Jacobian
@@ -80,14 +105,14 @@ class KernelMLL(object):
         for i, p1 in enumerate(free_params):
             # first partial derivatives
             sym_f = sym.diff(self.sym_K, p1)
-            f = lambdify((tuple(free_params), d), sym_f)
+            f = lambdify(lparams, sym_f)
             self.sym_dK_dtheta.append(sym_f)
             self.dK_dtheta.append(f)
 
             for p2 in free_params:
                 # second partial derivatives
                 sym_df = sym.diff(sym_f, p2)
-                df = lambdify((tuple(free_params), d), sym_df)
+                df = lambdify(lparams, sym_df)
                 self.sym_d2K_dtheta2[i].append(sym_df)
                 self.d2K_dtheta2[i].append(df)
 
@@ -169,7 +194,10 @@ class KernelMLL(object):
         for i in xrange(x.size):
             for j in xrange(x.size):
                 diff = x[i] - x[j]
-                dj[i, j] = dK_dthetaj(theta, diff)
+                try:
+                    dj[i, j] = dK_dthetaj(theta, diff)
+                except ArithmeticError:
+                    dj[i, j] = np.nan
 
         # compute the partial derivative of the marginal log likelihood
         k = np.dot(Ki, dj)
@@ -245,8 +273,8 @@ class KernelMLL(object):
 
         return dd
 
-    def __call__(self, theta, x, y):
-        """Computes the marginal negative log likelihood of the kernel.
+    def lh(self, theta, x, y):
+        """Computes the marginal log likelihood of the kernel.
 
         This is computing Eq. 5.8 of Rasmussen & Williams (2006):
 
@@ -264,8 +292,7 @@ class KernelMLL(object):
         Returns
         -------
         out : float
-            The marginal negative log likelihood of the data given the
-            parameters
+            The marginal log likelihood of the data given the parameters
 
         References
         ----------
@@ -276,7 +303,10 @@ class KernelMLL(object):
 
         # invert K and compute determinant
         K = self.Kxx(theta, x)
-        L = np.linalg.cholesky(K)
+        try:
+            L = cholesky(K)
+        except np.linalg.LinAlgError:
+            return -np.inf
         Li = np.linalg.inv(L)
         Ki = np.dot(Li.T, Li)
         logdetK = 2 * np.log(np.diag(L)).sum()
@@ -285,13 +315,16 @@ class KernelMLL(object):
         t1 = -0.5 * np.dot(np.dot(y.T, Ki), y)
         t2 = -0.5 * logdetK
         t3 = -0.5 * x.size * np.log(2 * np.pi)
-        mll = (t1 + t2 + t3)
-        out = -mll
+        mll = np.clip(t1 + t2 + t3, MIN_LOG, MAX_LOG)
 
-        return out
+        return mll
+
+    def neg_lh(self, *args, **kwargs):
+        llh = self.lh(*args, **kwargs)
+        return -llh
 
     def jacobian(self, theta, x, y):
-        """Computes the negative Jacobian of the marginal log likelihood of
+        """Computes the Jacobian of the marginal log likelihood of
         the kernel.
 
         See Eq. 5.9 of Rasmussen & Williams (2006).
@@ -308,8 +341,8 @@ class KernelMLL(object):
         Returns
         -------
         out : 3-tuple
-            The negative Jacobian of the marginal negative log
-            likelihood of the data given the parameters
+            The Jacobian of the marginal negative log likelihood of the
+            data given the parameters
 
         References
         ----------
@@ -320,13 +353,23 @@ class KernelMLL(object):
 
         # invert K
         K = self.Kxx(theta, x)
-        Li = np.linalg.inv(np.linalg.cholesky(K))
+        try:
+            Li = np.linalg.inv(cholesky(K))
+        except np.linalg.LinAlgError:
+            return np.zeros(len(self.dK_dtheta)) - np.inf
         Ki = np.dot(Li.T, Li)
 
-        dmll = [self._d_dthetaj(Ki, dK_dthetaj, theta, x, y)
-                for dK_dthetaj in self.dK_dtheta]
+        dmll = np.empty(len(self.dK_dtheta))
+        for i in xrange(dmll.size):
+            dK_dthetaj = self.dK_dtheta[i]
+            dmll[i] = self._d_dthetaj(Ki, dK_dthetaj, theta, x, y)
 
-        return -np.array(dmll)
+        dmll = np.clip(dmll, MIN_LOG, MAX_LOG)
+        return dmll
+
+    def neg_jacobian(self, *args, **kwargs):
+        lj = self.jacobian(*args, **kwargs)
+        return -lj
 
     def hessian(self, theta, x, y):
         """Computes the Hessian of the marginal log likelihood of the
@@ -358,22 +401,30 @@ class KernelMLL(object):
 
         # invert K
         K = self.Kxx(theta, x)
-        Li = np.linalg.inv(np.linalg.cholesky(K))
+        try:
+            Li = np.linalg.inv(cholesky(K))
+        except np.linalg.LinAlgError:
+            return -np.inf
         Ki = np.dot(Li.T, Li)
 
-        ddmll = [[self._d2_dthetajdthetai(
-            Ki, dK_dthetaj, dK_dthetai, self.d2K_dtheta2[j][i],
-            theta, x, y)
-            for i, dK_dthetai in enumerate(self.dK_dtheta)]
-            for j, dK_dthetaj in enumerate(self.dK_dtheta)]
+        n = len(self.dK_dtheta)
+        ddmll = np.empty((n, n))
+        for i in xrange(n):
+            dK_dthetai = self.dK_dtheta[i]
+            for j in xrange(n):
+                dK_dthetaj = self.dK_dtheta[j]
+                d2K = self.d2K_dtheta2[j][i]
+                ddmll[j, i] = self._d2_dthetajdthetai(
+                    Ki, dK_dthetaj, dK_dthetai, d2K, theta, x, y)
 
-        return np.array(ddmll)
+        ddmll = np.clip(ddmll, MIN_LOG, MAX_LOG)
+        return ddmll
 
     def maximize(self, x, y,
                  hmin=1e-8, hmax=None,
                  wmin=1e-8, wmax=None,
                  smin=0, smax=None,
-                 pmin=0, pmax=None,
+                 pmin=1e-8, pmax=None,
                  ntry=10, verbose=False):
         """Find kernel parameter values which maximize the marginal log
         likelihood of the data.
@@ -417,7 +468,7 @@ class KernelMLL(object):
             if self.h is None:
                 p0.append(np.random.uniform(hmin, np.max(np.abs(y))*2))
             if self.w is None:
-                p0.append(np.random.uniform(wmin, 2*np.pi))
+                p0.append(np.random.uniform(np.ptp(x) / 100., np.ptp(x) / 10.))
             if self.s is None:
                 p0.append(np.random.uniform(smin, np.sqrt(np.var(y))))
             if self.p is None:
@@ -428,32 +479,19 @@ class KernelMLL(object):
                 print "      p0 = %s" % (p0,)
 
             # run mimization function
-            try:
-                popt = opt.minimize(
-                    fun=self,
-                    x0=p0,
-                    args=(x, y),
-                    jac=self.jacobian,
-                    method=method,
-                    bounds=bounds
-                )
-            except np.linalg.LinAlgError as e:
-                # kernel matrix is not positive definite, probably
-                success = False
-                message = str(e)
-            else:
-                # get results of the optimization
-                success = popt['success']
-                message = popt['message']
+            # try:
+            popt = opt.minimize(
+                fun=self.neg_lh,
+                x0=p0,
+                args=(x, y),
+                jac=self.neg_jacobian,
+                method=method,
+                bounds=bounds
+            )
 
-            if not success:
-                args[i] = np.nan
-                fval[i] = np.inf
-                if verbose:
-                    print "      Failed: %s" % message
-            else:
-                args[i] = np.abs(popt['x'])
-                fval[i] = popt['fun']
+            # get results of the optimization
+            args[i] = popt['x']
+            fval[i] = popt['fun']
 
             if verbose:
                 print "      -MLL(%s) = %f" % (args[i], fval[i])
@@ -485,7 +523,10 @@ class KernelMLL(object):
         Kxox = self.make_kernel(theta=theta, jit=False)(xo, x)
 
         # invert K
-        L = np.linalg.cholesky(Kxx)
+        try:
+            L = cholesky(Kxx)
+        except np.linalg.LinAlgError:
+            return np.nan
         Li = np.linalg.inv(L)
         inv_Kxx = np.dot(Li.T, Li)
 
