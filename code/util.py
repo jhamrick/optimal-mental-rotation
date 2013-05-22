@@ -6,6 +6,7 @@ import os
 import yaml
 
 from snippets.graphing import plot_to_array
+from snippets.stats import MIN_LOG, MAX_LOG
 
 STIM_DIR = "../stimuli"
 DATA_DIR = "../data"
@@ -217,3 +218,8 @@ def load_sims(name):
     hyp = data['hyp']
     data.close()
     return stims, samps, Z, ratio, hyp
+
+
+def log_clip(arr):
+    carr = np.clip(arr, MIN_LOG, MAX_LOG)
+    return carr
