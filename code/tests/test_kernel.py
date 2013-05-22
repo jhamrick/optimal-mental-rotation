@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 np.seterr(all='raise')
 
-from kernel import KernelMLL, compute_L
+from kernel import KernelMLL, cholesky
 from snippets.stats import GP, gaussian_kernel, periodic_kernel
 
 ######################################################################
@@ -46,6 +46,25 @@ def check_K2(x, kernel, mll, params):
     if not (diff < thresh).all():
         print diff
         raise AssertionError("incorrect kernel function outputs")
+
+
+def check_L(mat0):
+    L = cholesky(mat0)
+    mat = np.dot(L, L.T)
+    diff = np.abs(mat0 - mat)
+    if not (diff < thresh).all():
+        print mat0
+        print mat
+        assert False
+
+
+def check_K_inv(K):
+    L = cholesky(K)
+    Li = np.linalg.inv(L)
+    Ki = np.dot(Li.T, Li)
+    I = np.dot(K, Ki)
+    diff = np.abs(I - np.eye(I.shape[0]))
+    assert (diff < thresh).all()
 
 
 ######################################################################
@@ -178,20 +197,21 @@ def test_maximize():
         yield check_params, (1, 1, p0, s0), mll, x, y
 
 
-def check_L(mat0):
-    L = compute_L(mat0)
-    mat = np.dot(L, L.T)
-    diff = np.abs(mat0 - mat)
-    if not (diff < thresh).all():
-        print mat0
-        print mat
-        assert False
-
-
-def test_compute_L():
+def test_cholesky():
     n = 10
     for i in xrange(N_big):
         x = np.random.rand(n) * 10
         d = x[:, None] - x[None, :]
         mat0 = scipy.stats.norm.pdf(d)
         yield check_L, mat0
+
+
+def test_K_inv():
+    x = np.linspace(-2*np.pi, 2*np.pi, 16)
+    for i in xrange(N_big):
+        h = rand_h()
+        w = rand_w()
+        mll = KernelMLL('gaussian', h=h, w=w, s=0)
+        kernel = mll.make_kernel(params=(h, w, 1, 0), jit=False)
+        K = kernel(x, x)
+        yield (check_K_inv, K)
