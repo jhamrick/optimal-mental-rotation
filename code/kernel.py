@@ -424,7 +424,7 @@ class KernelMLL(object):
                  hmin=1e-8, hmax=None,
                  wmin=1e-8, wmax=None,
                  smin=0, smax=None,
-                 pmin=0, pmax=None,
+                 pmin=1e-8, pmax=None,
                  ntry=10, verbose=False):
         """Find kernel parameter values which maximize the marginal log
         likelihood of the data.

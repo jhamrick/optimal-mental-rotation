@@ -213,7 +213,7 @@ def test_maximize_periodic():
     for i in xrange(N_small):
         params = (rand_h(), rand_w(), 2, 0)
         h, w, p, s = params
-        mll = KernelMLL('periodic', h=None, w=None, p=p, s=s)
+        mll = KernelMLL('periodic', h=None, w=None, p=None, s=s)
         yield check_params, mll, params, x, y, xx, xxx
 
 
