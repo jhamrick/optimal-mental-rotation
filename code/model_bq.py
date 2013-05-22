@@ -3,6 +3,7 @@ import numpy as np
 from snippets.stats import GP
 from model_base import Model
 from kernel import KernelMLL
+from util import log_clip
 
 
 class BayesianQuadratureModel(Model):
@@ -231,7 +232,7 @@ class BayesianQuadratureModel(Model):
             params.append(self.theta_logS[2])
         # estimate the variance
         Hw = self._mll_logS.hessian(params, self.Ri, lSi)
-        Cw = np.matrix(np.exp(-np.diag(Hw)[ii]))
+        Cw = np.matrix(np.exp(log_clip(-np.diag(Hw))[ii]))
         dm_dw = np.matrix(
             self._mll_logS.dm_dw(params, self.Ri, lSi, self.R))
         self.S_cov = np.array(
