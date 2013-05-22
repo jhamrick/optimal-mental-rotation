@@ -84,7 +84,7 @@ class BayesianQuadratureModel(Model):
             self.fit()
             self.integrate()
         hyp = self.ratio_test(level=1)
-        if hyp != -1:
+        if hyp != -1 and len(self.ix) > 2:
             raise StopIteration
 
         self.debug("Finding next sample")
