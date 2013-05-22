@@ -1,13 +1,13 @@
 import numpy as np
 import scipy.optimize as opt
 import sympy as sym
-from numpy.linalg import inv
 
 from sympy.utilities.lambdify import lambdify
 from sympy.functions.special.delta_functions import DiracDelta as delta
 
 from snippets.stats import periodic_kernel
 from snippets.stats import gaussian_kernel
+from snippets.stats import MIN_LOG, MAX_LOG
 
 
 def cholesky(mat):
@@ -52,25 +52,25 @@ class KernelMLL(object):
         if params.get('h', None):
             h = params['h']
         else:
-            h = sym.Symbol('h')
+            h = sym.Symbol('h', positive=True)
             free_params.append(h)
         # input scale (width)
         if params.get('w', None):
             w = params['w']
         else:
-            w = sym.Symbol('w')
+            w = sym.Symbol('w', positive=True)
             free_params.append(w)
         # observation noise
         if params.get('s', None) is not None:
             s = params['s']
         else:
-            s = sym.Symbol('s')
+            s = sym.Symbol('s', positive=True)
             free_params.append(s)
         # period
         if params.get('p', None) or kernel != 'periodic':
             p = params.get('p', 1)
         else:
-            p = sym.Symbol('p')
+            p = sym.Symbol('p', positive=True)
             free_params.append(p)
 
         # parameters for lambdify
@@ -194,7 +194,10 @@ class KernelMLL(object):
         for i in xrange(x.size):
             for j in xrange(x.size):
                 diff = x[i] - x[j]
-                dj[i, j] = dK_dthetaj(theta, diff)
+                try:
+                    dj[i, j] = dK_dthetaj(theta, diff)
+                except ArithmeticError:
+                    dj[i, j] = np.nan
 
         # compute the partial derivative of the marginal log likelihood
         k = np.dot(Ki, dj)
@@ -271,7 +274,7 @@ class KernelMLL(object):
         return dd
 
     def lh(self, theta, x, y):
-        """Computes the marginal  log likelihood of the kernel.
+        """Computes the marginal log likelihood of the kernel.
 
         This is computing Eq. 5.8 of Rasmussen & Williams (2006):
 
@@ -312,7 +315,7 @@ class KernelMLL(object):
         t1 = -0.5 * np.dot(np.dot(y.T, Ki), y)
         t2 = -0.5 * logdetK
         t3 = -0.5 * x.size * np.log(2 * np.pi)
-        mll = (t1 + t2 + t3)
+        mll = np.clip(t1 + t2 + t3, MIN_LOG, MAX_LOG)
 
         return mll
 
@@ -356,10 +359,13 @@ class KernelMLL(object):
             return np.zeros(len(self.dK_dtheta)) - np.inf
         Ki = np.dot(Li.T, Li)
 
-        dmll = [self._d_dthetaj(Ki, dK_dthetaj, theta, x, y)
-                for dK_dthetaj in self.dK_dtheta]
+        dmll = np.empty(len(self.dK_dtheta))
+        for i in xrange(dmll.size):
+            dK_dthetaj = self.dK_dtheta[i]
+            dmll[i] = self._d_dthetaj(Ki, dK_dthetaj, theta, x, y)
 
-        return np.array(dmll)
+        dmll = np.clip(dmll, MIN_LOG, MAX_LOG)
+        return dmll
 
     def neg_jacobian(self, *args, **kwargs):
         lj = self.jacobian(*args, **kwargs)
@@ -401,13 +407,18 @@ class KernelMLL(object):
             return -np.inf
         Ki = np.dot(Li.T, Li)
 
-        ddmll = [[self._d2_dthetajdthetai(
-            Ki, dK_dthetaj, dK_dthetai, self.d2K_dtheta2[j][i],
-            theta, x, y)
-            for i, dK_dthetai in enumerate(self.dK_dtheta)]
-            for j, dK_dthetaj in enumerate(self.dK_dtheta)]
+        n = len(self.dK_dtheta)
+        ddmll = np.empty((n, n))
+        for i in xrange(n):
+            dK_dthetai = self.dK_dtheta[i]
+            for j in xrange(n):
+                dK_dthetaj = self.dK_dtheta[j]
+                d2K = self.d2K_dtheta2[j][i]
+                ddmll[j, i] = self._d2_dthetajdthetai(
+                    Ki, dK_dthetaj, dK_dthetai, d2K, theta, x, y)
 
-        return np.array(ddmll)
+        ddmll = np.clip(ddmll, MIN_LOG, MAX_LOG)
+        return ddmll
 
     def maximize(self, x, y,
                  hmin=1e-8, hmax=None,
@@ -468,33 +479,19 @@ class KernelMLL(object):
                 print "      p0 = %s" % (p0,)
 
             # run mimization function
-            try:
-                popt = opt.minimize(
-                    fun=self.neg_lh,
-                    x0=p0,
-                    args=(x, y),
-                    jac=self.neg_jacobian,
-                    method=method,
-                    bounds=bounds
-                )
-            except ArithmeticError as e:
-                # kernel matrix is not positive definite, or we got
-                # overflow/underflow
-                success = False
-                message = str(e)
-            else:
-                # get results of the optimization
-                success = popt['success']
-                message = popt['message']
+            # try:
+            popt = opt.minimize(
+                fun=self.neg_lh,
+                x0=p0,
+                args=(x, y),
+                jac=self.neg_jacobian,
+                method=method,
+                bounds=bounds
+            )
 
-            if not success:
-                args[i] = np.nan
-                fval[i] = np.inf
-                if verbose:
-                    print "      Failed: %s" % message
-            else:
-                args[i] = np.abs(popt['x'])
-                fval[i] = popt['fun']
+            # get results of the optimization
+            args[i] = popt['x']
+            fval[i] = popt['fun']
 
             if verbose:
                 print "      -MLL(%s) = %f" % (args[i], fval[i])
