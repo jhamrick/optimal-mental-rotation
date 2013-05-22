@@ -170,10 +170,10 @@ def test_kernel_params_s():
 
 
 def check_params(p0, mll, x, y):
-    p = mll.maximize(x, y, verbose=True, ntry=20)
+    p = mll.maximize(x, y, verbose=True, ntry=5)
     xx = np.linspace(-2*np.pi, 2*np.pi, 100)
     yy = np.sin(xx)
-    mu, cov = GP(mll.kernel(*p[:-1]), x, y, xx)
+    mu, cov = GP(mll.make_kernel(params=p, jit=False), x, y, xx)
     plt.plot(x, y, 'ro')
     plt.plot(xx, mu, 'r-')
     plt.plot(xx, yy, 'k-')
