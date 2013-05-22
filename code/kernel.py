@@ -468,7 +468,7 @@ class KernelMLL(object):
             if self.h is None:
                 p0.append(np.random.uniform(hmin, np.max(np.abs(y))*2))
             if self.w is None:
-                p0.append(np.random.uniform(wmin, 2*np.pi))
+                p0.append(np.random.uniform(np.ptp(x) / 100., np.ptp(x) / 10.))
             if self.s is None:
                 p0.append(np.random.uniform(smin, np.sqrt(np.var(y))))
             if self.p is None:

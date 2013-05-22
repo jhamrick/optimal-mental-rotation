@@ -1,6 +1,5 @@
 import scipy.stats
 import numpy as np
-import matplotlib.pyplot as plt
 np.seterr(all='raise')
 
 from kernel import KernelMLL, cholesky
@@ -169,32 +168,44 @@ def test_kernel_params_s():
     assert mll.kernel_params((1,)) == (h, w, p, 1)
 
 
-def check_params(p0, mll, x, y):
-    p = mll.maximize(x, y, verbose=True, ntry=5)
-    xx = np.linspace(-2*np.pi, 2*np.pi, 100)
-    yy = np.sin(xx)
-    mu, cov = GP(mll.make_kernel(params=p, jit=False), x, y, xx)
-    plt.plot(x, y, 'ro')
-    plt.plot(xx, mu, 'r-')
-    plt.plot(xx, yy, 'k-')
-    plt.show()
-    diff = np.abs(np.array(p) - np.array(p0))
-    if not (diff < thresh).all():
-        print p
-        print p0
-        raise ValueError("bad parameters")
+def check_params(params0, x, y, xx, xxx):
+    h, w, p, s = params0
+
+    # make the mll object
+    mll = KernelMLL('gaussian', h=None, w=None, p=p, s=s)
+
+    # kernel with true parameters
+    kern0 = mll.make_kernel(params=params0, jit=False)
+
+    # generate some fake data
+    yy0 = GP(kern0, x, y, xx)[0]
+    # the full regression
+    yyy0 = GP(kern0, xx, yy0, xxx)[0]
+
+    # find the parameters that best fit the generated data
+    params = mll.maximize(xx, yy0, verbose=True, ntry=10)
+
+    # kernel with best fit parameters
+    kern = mll.make_kernel(params=params, jit=False)
+
+    # the full regression
+    yyy = GP(kern, xx, yy0, xxx)[0]
+    scale = float(max(yyy0.max(), yyy.max()))
+
+    diff = np.mean((np.abs(yyy0 - yyy) / scale) ** 2)
+    if not diff < 0.01:
+        print diff
+        raise ValueError
 
 
 def test_maximize():
-    x = np.linspace(-2*np.pi, 2*np.pi, 16)
+    x = np.linspace(-2*np.pi, 2*np.pi, 8)
     y = np.sin(x)
+    xx = np.linspace(-2*np.pi, 2*np.pi, 25)
+    xxx = np.linspace(-2*np.pi, 2*np.pi, 100)
     for i in xrange(N_small):
-        h0 = None
-        w0 = None
-        p0 = 1
-        s0 = 0
-        mll = KernelMLL('gaussian', h=h0, w=w0, p=p0, s=s0)
-        yield check_params, (1, 1, p0, s0), mll, x, y
+        params = (rand_h(), rand_w(), 1, 0)
+        yield check_params, params, x, y, xx, xxx
 
 
 def test_cholesky():
@@ -207,7 +218,7 @@ def test_cholesky():
 
 
 def test_K_inv():
-    x = np.linspace(-2*np.pi, 2*np.pi, 16)
+    x = np.linspace(-2*np.pi, 2*np.pi, 8)
     for i in xrange(N_big):
         h = rand_h()
         w = rand_w()
