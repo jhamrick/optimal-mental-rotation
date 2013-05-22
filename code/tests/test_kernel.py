@@ -168,12 +168,7 @@ def test_kernel_params_s():
     assert mll.kernel_params((1,)) == (h, w, p, 1)
 
 
-def check_params(params0, x, y, xx, xxx):
-    h, w, p, s = params0
-
-    # make the mll object
-    mll = KernelMLL('gaussian', h=None, w=None, p=p, s=s)
-
+def check_params(mll, params0, x, y, xx, xxx):
     # kernel with true parameters
     kern0 = mll.make_kernel(params=params0, jit=False)
 
@@ -198,14 +193,28 @@ def check_params(params0, x, y, xx, xxx):
         raise ValueError
 
 
-def test_maximize():
-    x = np.linspace(-2*np.pi, 2*np.pi, 8)
+def test_maximize_gaussian():
+    x = np.linspace(-2*np.pi, 2*np.pi, 8)[:-1]
     y = np.sin(x)
-    xx = np.linspace(-2*np.pi, 2*np.pi, 25)
-    xxx = np.linspace(-2*np.pi, 2*np.pi, 100)
+    xx = np.linspace(-2*np.pi, 2*np.pi, 25)[:-1]
+    xxx = np.linspace(-2*np.pi, 2*np.pi, 100)[:-1]
     for i in xrange(N_small):
         params = (rand_h(), rand_w(), 1, 0)
-        yield check_params, params, x, y, xx, xxx
+        h, w, p, s = params
+        mll = KernelMLL('gaussian', h=None, w=None, p=p, s=s)
+        yield check_params, mll, params, x, y, xx, xxx
+
+
+def test_maximize_periodic():
+    x = np.linspace(-2*np.pi, 2*np.pi, 8)[:-1]
+    y = np.sin(x)
+    xx = np.linspace(-2*np.pi, 2*np.pi, 25)[:-1]
+    xxx = np.linspace(-2*np.pi, 2*np.pi, 100)[:-1]
+    for i in xrange(N_small):
+        params = (rand_h(), rand_w(), 2, 0)
+        h, w, p, s = params
+        mll = KernelMLL('periodic', h=None, w=None, p=p, s=s)
+        yield check_params, mll, params, x, y, xx, xxx
 
 
 def test_cholesky():
