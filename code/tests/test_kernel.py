@@ -1,13 +1,15 @@
+import scipy.stats
 import numpy as np
+import matplotlib.pyplot as plt
 np.seterr(all='raise')
 
-from kernel import KernelMLL
-from snippets.stats import gaussian_kernel, periodic_kernel
+from kernel import KernelMLL, compute_L
+from snippets.stats import GP, gaussian_kernel, periodic_kernel
 
 ######################################################################
 
 N_big = 20
-N_small = 5
+N_small = 1
 thresh = 1e-6
 
 ######################################################################
@@ -146,3 +148,50 @@ def test_kernel_params_s():
     s = None
     mll = KernelMLL('periodic', h=h, w=w, p=p, s=s)
     assert mll.kernel_params((1,)) == (h, w, p, 1)
+
+
+def check_params(p0, mll, x, y):
+    p = mll.maximize(x, y, verbose=True, ntry=20)
+    xx = np.linspace(-2*np.pi, 2*np.pi, 100)
+    yy = np.sin(xx)
+    mu, cov = GP(mll.kernel(*p[:-1]), x, y, xx)
+    plt.plot(x, y, 'ro')
+    plt.plot(xx, mu, 'r-')
+    plt.plot(xx, yy, 'k-')
+    plt.show()
+    diff = np.abs(np.array(p) - np.array(p0))
+    if not (diff < thresh).all():
+        print p
+        print p0
+        raise ValueError("bad parameters")
+
+
+def test_maximize():
+    x = np.linspace(-2*np.pi, 2*np.pi, 16)
+    y = np.sin(x)
+    for i in xrange(N_small):
+        h0 = None
+        w0 = None
+        p0 = 1
+        s0 = 0
+        mll = KernelMLL('gaussian', h=h0, w=w0, p=p0, s=s0)
+        yield check_params, (1, 1, p0, s0), mll, x, y
+
+
+def check_L(mat0):
+    L = compute_L(mat0)
+    mat = np.dot(L, L.T)
+    diff = np.abs(mat0 - mat)
+    if not (diff < thresh).all():
+        print mat0
+        print mat
+        assert False
+
+
+def test_compute_L():
+    n = 10
+    for i in xrange(N_big):
+        x = np.random.rand(n) * 10
+        d = x[:, None] - x[None, :]
+        mat0 = scipy.stats.norm.pdf(d)
+        yield check_L, mat0
