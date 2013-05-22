@@ -139,7 +139,7 @@ class BayesianQuadratureModel(Model):
             width = np.min(np.abs(Ri[1:] - Ri[:-1]))
         else:
             width = 1e-8
-        height = max(np.min(np.abs(Si)), np.max(np.abs(Si)) / 1000.)
+        height = max(np.min(np.abs(Si)), np.max(np.abs(Si)) / 1000., 1e-8)
 
         # fit parameters
         theta = mll.maximize(
