@@ -58,7 +58,7 @@ class Model(object):
 
         # all possible rotations
         self.R = R.copy()
-        rot = np.round(np.arange(0, self.R.size, self.opt['dr']))
+        rot = np.round(np.arange(0, self.R.size - 1, self.opt['dr']))
         self._rotations = np.round(rot).astype('i8')
         # compute similarities
         self._S_scale = self.Xa.shape[0] - 1
@@ -90,6 +90,7 @@ class Model(object):
         # we get the first (and last, because it's circular data)
         # observation for free
         self.sample(0)
+        self.sample(self.R.size - 1)
 
     def sample(self, r):
         assert isinstance(r, int)
