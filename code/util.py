@@ -223,3 +223,18 @@ def load_sims(name):
 def log_clip(arr):
     carr = np.clip(arr, MIN_LOG, MAX_LOG)
     return carr
+
+
+def safe_multiply(*arrs):
+    sign = np.prod([np.sign(arr) for arr in arrs], axis=0)
+    log_arr = np.sum([safe_log(np.abs(arr)) for arr in arrs], axis=0)
+    clipped = np.exp(log_clip(log_arr))
+    return clipped * sign
+
+
+def safe_log(arr):
+    log_arr = np.empty(arr.shape)
+    mask = arr != 0
+    log_arr[~mask] = -np.inf
+    log_arr[mask] = np.log(arr[mask])
+    return log_arr
