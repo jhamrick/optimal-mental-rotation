@@ -3,7 +3,7 @@ import numpy as np
 from snippets.stats import GP
 from model_base import Model
 from kernel import KernelMLL
-from util import log_clip
+from util import log_clip, safe_multiply
 
 
 class BayesianQuadratureModel(Model):
@@ -250,8 +250,9 @@ class BayesianQuadratureModel(Model):
         self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
 
         # variance
-        pm = self.opt['prior_R'] * self.mu_S
-        C = self.S_cov * pm[:, None] * pm[None, :]
+        pm = self.opt['prior_R'] * (self.mu_S + 1)
+        C = safe_multiply(self.S_cov, pm[:, None], pm[None, :])
+        C[np.abs(C) < 1e-100] = 0
         self.Z_var = np.trapz(np.trapz(C, self.R, axis=0), self.R)
 
         self.print_Z(level=0)
