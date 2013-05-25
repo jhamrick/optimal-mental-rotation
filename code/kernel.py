@@ -129,6 +129,18 @@ class KernelMLL(object):
         s = th.pop(0) if self.s is None else self.s
         return h, w, p, s
 
+    def free_params(self, params):
+        theta = []
+        if self.h is None:
+            theta.append(params[0])
+        if self.w is None:
+            theta.append(params[1])
+        if self.p is None:
+            theta.append(params[2])
+        if self.s is None:
+            theta.append(params[3])
+        return theta
+
     def make_kernel(self, theta=None, params=None, jit=True):
         if not params:
             h, w, p, s = self.kernel_params(theta)
