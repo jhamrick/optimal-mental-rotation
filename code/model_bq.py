@@ -136,18 +136,11 @@ class BayesianQuadratureModel(Model):
     def _fit_gp(self, Ri, Si, mll, name):
         self.debug("Fitting parameters for GP over %s ..." % name, level=2)
 
-        if Ri.size > 1:
-            width = np.min(np.abs(Ri[1:] - Ri[:-1]))
-        else:
-            width = 1e-8
-        height = max(np.min(np.abs(Si)), np.max(np.abs(Si)) / 1000., 1e-8)
-
         # fit parameters
         theta = mll.maximize(
             Ri, Si,
             ntry=self.opt['ntry'],
-            verbose=self.opt['verbose'] > 3,
-            wmin=width, hmin=height)
+            verbose=self.opt['verbose'] > 3)
 
         self.debug("Best parameters: %s" % (theta,), level=2)
         self.debug("Computing GP over %s..." % name, level=2)
@@ -221,15 +214,11 @@ class BayesianQuadratureModel(Model):
         self.S_mean = ((self.mu_S + 1) * (1 + self.mu_Dc)) - 1
 
         # marginalize out w
-        params = []
-        ii = 0
+        params = self._mll_logS.free_params(self.theta_logS)
         if self._mll_logS.h is None:
-            params.append(self.theta_logS[0])
             ii = 1
-        if self._mll_logS.w is None:
-            params.append(self.theta_logS[1])
-        if self._mll_logS.s is None:
-            params.append(self.theta_logS[2])
+        else:
+            ii = 0
         # estimate the variance
         Hw = self._mll_logS.hessian(params, self.Ri, lSi)
         Cw = np.matrix(np.exp(log_clip(-np.diag(Hw))[ii]))
@@ -261,7 +250,7 @@ class BayesianQuadratureModel(Model):
         self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
 
         # variance
-        pm = self.opt['prior_R'] * (self.mu_S + 1)
+        pm = self.opt['prior_R'] * self.mu_S
         C = self.S_cov * pm[:, None] * pm[None, :]
         self.Z_var = np.trapz(np.trapz(C, self.R, axis=0), self.R)
 

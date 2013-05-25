@@ -90,7 +90,8 @@ class Model(object):
         # we get the first (and last, because it's circular data)
         # observation for free
         self.sample(0)
-        self.sample(self.R.size - 1)
+        if self.opt.get('kernel', None) == 'gaussian':
+            self.sample(self.R.size - 1)
 
     def sample(self, r):
         assert isinstance(r, int)
