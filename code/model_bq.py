@@ -36,6 +36,8 @@ class BayesianQuadratureModel(Model):
             Observation noise parameter value (if None, will be fit)
         h : float (default=None)
             Output scale parameter (if None, will be fit)
+        p : float (default=1)
+            Periodic scale/wavelength (if None, will be fit)
 
         """
 
