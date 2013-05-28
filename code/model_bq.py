@@ -142,7 +142,9 @@ class BayesianQuadratureModel(Model):
         theta = mll.maximize(
             Ri, Si,
             ntry=self.opt['ntry'],
-            verbose=self.opt['verbose'] > 3)
+            verbose=self.opt['verbose'] > 3,
+            wmin=np.radians(self.opt['dr']) / 2.,
+            wmax=np.pi / 2.)
 
         self.debug("Best parameters: %s" % (theta,), level=2)
         self.debug("Computing GP over %s..." % name, level=2)
