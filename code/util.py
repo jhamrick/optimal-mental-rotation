@@ -6,7 +6,8 @@ import os
 import yaml
 
 from snippets.graphing import plot_to_array
-from snippets.stats import MIN_LOG, MAX_LOG
+from snippets.safemath import MIN_LOG, MAX_LOG
+from snippets.safemath import log_clip, safe_multiply, safe_log
 
 STIM_DIR = "../stimuli"
 DATA_DIR = "../data"
@@ -218,23 +219,3 @@ def load_sims(name):
     hyp = data['hyp']
     data.close()
     return stims, samps, Z, ratio, hyp
-
-
-def log_clip(arr):
-    carr = np.clip(arr, MIN_LOG, MAX_LOG)
-    return carr
-
-
-def safe_multiply(*arrs):
-    sign = np.prod([np.sign(arr) for arr in arrs], axis=0)
-    log_arr = np.sum([safe_log(np.abs(arr)) for arr in arrs], axis=0)
-    clipped = np.exp(log_clip(log_arr))
-    return clipped * sign
-
-
-def safe_log(arr):
-    log_arr = np.empty(arr.shape)
-    mask = arr != 0
-    log_arr[~mask] = -np.inf
-    log_arr[mask] = np.log(arr[mask])
-    return log_arr
