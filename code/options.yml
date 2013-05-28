@@ -1,14 +1,22 @@
 {
+    # number of vertices for each stimulus
+    npoints: 5,
     # how many stimuli to run
     nstim: 100,
+    # number of samples of each stimulus
+    nsamps: 20,
+
+    # standard deviation in similarity function
+    sigma_s: 0.2, 
+    # standard deviation of perceptual uncertainty
+    sigma_p: 0.05,
+
     # the amount we rotate by
     dr: 22.5, 
     # prior over angles
     prior_R: 0.15915494309189535, 
     # data scale, to avoid underflow
-    scale: 1, 
-    # standard deviation in similarity function
-    sigma: 0.2, 
+    scale: 1,
 
     # save images
     save: true, 

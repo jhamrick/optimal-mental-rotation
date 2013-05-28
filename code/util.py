@@ -29,10 +29,11 @@ def make_stimulus(npoints, rso):
     return X
 
 
-def draw_stimulus(X):
+def draw_stimulus(X, **kwargs):
     plt.plot(X[:, 0], X[:, 1],
              color='k',
-             linewidth=2)
+             linewidth=2,
+             **kwargs)
     plt.xticks([], [])
     plt.yticks([], [])
     plt.axis([-1, 1, -1, 1])
@@ -64,9 +65,21 @@ def render(X):
     return grayscale
 
 
-def make_image(X, sigma, rso):
+def observe(X, sigma, rso):
     """Jitter the vertices of the shape using Gaussian noise with variance
     `sigma`.
+
+    """
+    if sigma == 0:
+        I = X.copy()
+    else:
+        I = X + rso.normal(0, sigma, X.shape)
+    return I
+
+
+def make_image(X, sigma, rso):
+    """Jitter the vertices of the shape using Gaussian noise with variance
+    `sigma` and render the resulting shape.
 
     """
     if sigma == 0:
@@ -140,9 +153,13 @@ def load_stimulus(stimname):
     Xm = stimf['Xm']
     Xa = Xm[0]
     Xb = stimf['Xb']
+    # observations
+    Im = stimf['Im']
+    Ia = Im[0]
+    Ib = stimf['Ib']
 
     stimf.close()
-    return theta, Xa, Xb, Xm, R
+    return theta, Xa, Xb, Xm, Ia, Ib, Im, R
 
 
 def print_line(char='-', verbose=True):
