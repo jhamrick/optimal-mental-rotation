@@ -170,33 +170,36 @@ def print_line(char='-', verbose=True):
 def run_model(stims, model, opt):
 
     # number of stims
-    nstim = len(stims)
+    nstim = opt['nstim']
+    # number of samples
+    nsamp = opt['nsamps']
 
     # how many points were sampled
-    samps = np.zeros(nstim)
+    samps = np.zeros((nstim, nsamp))
     # the estimate of Z
-    Z = np.empty((nstim, 2))
+    Z = np.empty((nstim, nsamp, 2))
     # the likelihood ratio
-    ratio = np.empty((nstim, 3))
+    ratio = np.empty((nstim, nsamp, 3))
     # which hypothesis was accepted
-    hyp = np.empty(nstim)
+    hyp = np.empty((nstim, nsamp))
 
     for sidx, stim in enumerate(stims):
         print_line(char='#')
         print stim
 
         # load the stimulus
-        theta, Xa, Xb, Xm, R = load_stimulus(stim)
+        theta, Xa, Xb, Xm, Ia, Ib, Im, R = load_stimulus(stim)
 
-        # run the naive model
-        m = model(Xa, Xb, Xm, R, **opt)
-        m.run()
+        for i in xrange(nsamp):
+            # run the model
+            m = model(Ia[i], Ib[i], Im[:, i], R, **opt)
+            m.run()
 
-        # fill in the data arrays
-        samps[sidx] = len(m.ix) / float(m._rotations.size)
-        Z[sidx] = (m.Z_mean, m.Z_var)
-        ratio[sidx] = m.likelihood_ratio()
-        hyp[sidx] = m.ratio_test(level=10)
+            # fill in the data arrays
+            samps[sidx, i] = len(m.ix) / float(m._rotations.size)
+            Z[sidx, i] = (m.Z_mean, m.Z_var)
+            ratio[sidx, i] = m.likelihood_ratio()
+            hyp[sidx, i] = m.ratio_test(level=10)
 
     if not os.path.exists(DATA_DIR):
         os.makedirs(DATA_DIR)
