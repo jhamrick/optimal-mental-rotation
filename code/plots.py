@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.stats
 
 from util import draw_stimulus
 import snippets.graphing as sg
@@ -191,26 +192,107 @@ def bq_regression(model):
 
 def vm_regression(model):
     plt.figure()
+
+    if isinstance(model, list):
+        R = np.mean([m.R for m in model], axis=0)
+        S = [m.S for m in model]
+        Sm = np.mean(S, axis=0)
+        Ss = scipy.stats.sem(S, axis=0)
+        Sl = Sm - Ss
+        Su = Sm + Ss
+        S = Sm
+        plt.fill_between(R, Sl, Su, color='k', alpha=0.2)
+
+        # Ri = np.mean([m.Ri for m in model], axis=0)
+        # Si = np.mean([m.Si for m in model], axis=0)
+        Ri = None
+        Si = None
+
+        S_mean = [m.S_mean for m in model]
+        Sm = np.mean(S_mean, axis=0)
+        Ss = scipy.stats.sem(S_mean, axis=0)
+        S_mean = Sm
+        S_var = Ss
+
+    else:
+        R = model.R
+        S = model.S
+        Ri = model.Ri
+        Si = model.Si
+        S_mean = model.S_mean
+        S_var = model.S_var
+
     regression(
-        model.R, model.S, model.Ri, model.Si,
-        model.R, model.S_mean, model.S_var,
+        R, S, Ri, Si,
+        R, S_mean, S_var,
         title="Von Mises regression for $S$")
+
+    plt.ylim(0, 1)
 
 
 def li_regression(model):
     plt.figure()
+
+    if isinstance(model, list):
+        R = np.mean([m.R for m in model], axis=0)
+        S = [m.S for m in model]
+        Sm = np.mean(S, axis=0)
+        Ss = scipy.stats.sem(S, axis=0)
+        Sl = Sm - Ss
+        Su = Sm + Ss
+        S = Sm
+        plt.fill_between(R, Sl, Su, color='k', alpha=0.2)
+
+        # Ri = np.mean([m.Ri for m in model], axis=0)
+        # Si = np.mean([m.Si for m in model], axis=0)
+        Ri = None
+        Si = None
+
+        S_mean = [m.S_mean for m in model]
+        Sm = np.mean(S_mean, axis=0)
+        Ss = scipy.stats.sem(S_mean, axis=0)
+        S_mean = Sm
+        S_var = Ss
+
+    else:
+        R = model.R
+        S = model.S
+        Ri = model.Ri
+        Si = model.Si
+        S_mean = model.S_mean
+        S_var = model.S_var
+
     regression(
-        model.R, model.S, model.Ri, model.Si,
-        model.R, model.S_mean, model.S_var,
+        R, S, Ri, Si,
+        R, S_mean, S_var,
         title="Linear interpolation for $S$")
+
+    plt.ylim(0, 1)
 
 
 def likelihood(model):
     plt.figure()
+
+    if isinstance(model, list):
+        R = np.mean([m.R for m in model], axis=0)
+        S = [m.S for m in model]
+        Sm = np.mean(S, axis=0)
+        Ss = scipy.stats.sem(S, axis=0)
+        Sl = Sm - Ss
+        Su = Sm + Ss
+        S = Sm
+        plt.fill_between(R, Sl, Su, color='k', alpha=0.2)
+
+    else:
+        R = model.R
+        S = model.S
+
     regression(
-        model.R, model.S, None, None, None, None, None,
+        R, S, None, None, None, None, None,
         title="Likelihood function",
         legend=False)
+
+    plt.ylim(0, 1)
 
 
 def model_rotations(models):
