@@ -190,37 +190,70 @@ def bq_regression(model):
     plt.suptitle("Bayesian Quadrature Regression", fontsize=16)
 
 
-def vm_regression(model):
+def bq_regression_all(model):
     plt.figure()
 
-    if isinstance(model, list):
-        R = np.mean([m.R for m in model], axis=0)
-        S = [m.S for m in model]
-        Sm = np.mean(S, axis=0)
-        Ss = scipy.stats.sem(S, axis=0)
-        Sl = Sm - Ss
-        Su = Sm + Ss
-        S = Sm
-        plt.fill_between(R, Sl, Su, color='k', alpha=0.2)
+    R = np.mean([m.R for m in model], axis=0)
+    S = [m.S for m in model]
+    Sm = np.mean(S, axis=0)
+    Ss = scipy.stats.sem(S, axis=0)
+    Sl = Sm - Ss
+    Su = Sm + Ss
+    S = Sm
+    plt.fill_between(R, Sl, Su, color='k', alpha=0.2)
 
-        # Ri = np.mean([m.Ri for m in model], axis=0)
-        # Si = np.mean([m.Si for m in model], axis=0)
-        Ri = None
-        Si = None
+    Ri = None
+    Si = None
 
-        S_mean = [m.S_mean for m in model]
-        Sm = np.mean(S_mean, axis=0)
-        Ss = scipy.stats.sem(S_mean, axis=0)
-        S_mean = Sm
-        S_var = Ss
+    S_mean = [m.S_mean for m in model]
+    Sm = np.mean(S_mean, axis=0)
+    Ss = scipy.stats.sem(S_mean, axis=0)
+    S_mean = Sm
+    S_var = Ss
 
-    else:
-        R = model.R
-        S = model.S
-        Ri = model.Ri
-        Si = model.Si
-        S_mean = model.S_mean
-        S_var = model.S_var
+    regression(
+        R, S, Ri, Si,
+        R, S_mean, S_var,
+        title="Bayesian Quadrature regression for $S$")
+
+    plt.ylim(0, 1)
+
+
+def vm_regression(model):
+    plt.figure()
+    R = model.R
+    S = model.S
+    Ri = model.Ri
+    Si = model.Si
+    S_mean = model.S_mean
+    S_var = model.S_var
+    regression(
+        R, S, Ri, Si,
+        R, S_mean, S_var,
+        title="Von Mises regression for $S$")
+    plt.ylim(0, 1)
+
+
+def vm_regression_all(models):
+    plt.figure()
+
+    R = np.mean([m.R for m in models], axis=0)
+    S = [m.S for m in models]
+    Sm = np.mean(S, axis=0)
+    Ss = scipy.stats.sem(S, axis=0)
+    Sl = Sm - Ss
+    Su = Sm + Ss
+    S = Sm
+    plt.fill_between(R, Sl, Su, color='k', alpha=0.2)
+
+    Ri = None
+    Si = None
+
+    S_mean = [m.S_mean for m in models]
+    Sm = np.mean(S_mean, axis=0)
+    Ss = scipy.stats.sem(S_mean, axis=0)
+    S_mean = Sm
+    S_var = Ss
 
     regression(
         R, S, Ri, Si,
@@ -232,35 +265,39 @@ def vm_regression(model):
 
 def li_regression(model):
     plt.figure()
+    R = model.R
+    S = model.S
+    Ri = model.Ri
+    Si = model.Si
+    S_mean = model.S_mean
+    S_var = model.S_var
+    regression(
+        R, S, Ri, Si,
+        R, S_mean, S_var,
+        title="Linear interpolation for $S$")
+    plt.ylim(0, 1)
 
-    if isinstance(model, list):
-        R = np.mean([m.R for m in model], axis=0)
-        S = [m.S for m in model]
-        Sm = np.mean(S, axis=0)
-        Ss = scipy.stats.sem(S, axis=0)
-        Sl = Sm - Ss
-        Su = Sm + Ss
-        S = Sm
-        plt.fill_between(R, Sl, Su, color='k', alpha=0.2)
 
-        # Ri = np.mean([m.Ri for m in model], axis=0)
-        # Si = np.mean([m.Si for m in model], axis=0)
-        Ri = None
-        Si = None
+def li_regression_all(models):
+    plt.figure()
 
-        S_mean = [m.S_mean for m in model]
-        Sm = np.mean(S_mean, axis=0)
-        Ss = scipy.stats.sem(S_mean, axis=0)
-        S_mean = Sm
-        S_var = Ss
+    R = np.mean([m.R for m in models], axis=0)
+    S = [m.S for m in models]
+    Sm = np.mean(S, axis=0)
+    Ss = scipy.stats.sem(S, axis=0)
+    Sl = Sm - Ss
+    Su = Sm + Ss
+    S = Sm
+    plt.fill_between(R, Sl, Su, color='k', alpha=0.2)
 
-    else:
-        R = model.R
-        S = model.S
-        Ri = model.Ri
-        Si = model.Si
-        S_mean = model.S_mean
-        S_var = model.S_var
+    Ri = None
+    Si = None
+
+    S_mean = [m.S_mean for m in models]
+    Sm = np.mean(S_mean, axis=0)
+    Ss = scipy.stats.sem(S_mean, axis=0)
+    S_mean = Sm
+    S_var = Ss
 
     regression(
         R, S, Ri, Si,
@@ -272,20 +309,26 @@ def li_regression(model):
 
 def likelihood(model):
     plt.figure()
+    R = model.R
+    S = model.S
+    regression(
+        R, S, None, None, None, None, None,
+        title="Likelihood function",
+        legend=False)
+    plt.ylim(0, 1)
 
-    if isinstance(model, list):
-        R = np.mean([m.R for m in model], axis=0)
-        S = [m.S for m in model]
-        Sm = np.mean(S, axis=0)
-        Ss = scipy.stats.sem(S, axis=0)
-        Sl = Sm - Ss
-        Su = Sm + Ss
-        S = Sm
-        plt.fill_between(R, Sl, Su, color='k', alpha=0.2)
 
-    else:
-        R = model.R
-        S = model.S
+def likelihood_all(models):
+    plt.figure()
+
+    R = np.mean([m.R for m in models], axis=0)
+    S = [m.S for m in models]
+    Sm = np.mean(S, axis=0)
+    Ss = scipy.stats.sem(S, axis=0)
+    Sl = Sm - Ss
+    Su = Sm + Ss
+    S = Sm
+    plt.fill_between(R, Sl, Su, color='k', alpha=0.2)
 
     regression(
         R, S, None, None, None, None, None,
