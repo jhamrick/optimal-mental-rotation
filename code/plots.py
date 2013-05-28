@@ -24,6 +24,26 @@ def stimuli_shapes(**kwargs):
         plt.title("$%s$" % X)
 
 
+def stimuli_samples(**kwargs):
+    """Plot the observed stimulus and it's rotated counterpart.
+
+    """
+    nstim = len(kwargs)
+
+    plt.figure()
+    sg.set_figsize(nstim*2, 2)
+    plt.subplots_adjust(
+        top=0.8, bottom=0, left=0, right=1,
+        wspace=0)
+
+    Xs = sorted(kwargs.keys())
+    for i, X in enumerate(Xs):
+        plt.subplot(1, nstim, i+1)
+        plt.title("$%s$" % X)
+        for j in xrange(kwargs[X].shape[0]):
+            draw_stimulus(kwargs[X][j], alpha=0.2)
+
+
 def stimuli_images(**kwargs):
     nimg = len(kwargs)
 
