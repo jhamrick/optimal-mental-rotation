@@ -340,7 +340,10 @@ def likelihood_all(models):
 
 def model_rotations(models):
     fig, axes = plt.subplots(1, len(models), sharex=True, sharey=True)
-    ax0 = axes[0]
+    if len(models) == 1:
+        ax0 = axes
+    else:
+        ax0 = axes[0]
 
     ax0.set_xticks([0, np.pi / 4., np.pi / 2., 3 * np.pi / 4., np.pi])
     ax0.set_xticklabels([
@@ -354,8 +357,11 @@ def model_rotations(models):
     ax0.set_ylim(-5, 105)
     ax0.set_ylabel("Percent rotated")
 
-    for i in xrange(len(axes)):
-        ax = axes[i]
+    for i in xrange(len(models)):
+        if len(models) == 1:
+            ax = axes
+        else:
+            ax = axes[i]
         model = models[i]
         ax.set_title(model, fontsize=12)
         ax.set_xlabel(r"True rotation ($R$)")
@@ -374,7 +380,10 @@ def model_rotations(models):
 
 def model_z_accuracy(models):
     fig, axes = plt.subplots(1, len(models), sharex=True, sharey=True)
-    ax0 = axes[0]
+    if len(models) == 1:
+        ax0 = axes
+    else:
+        ax0 = axes[0]
 
     ax0.set_ylabel(r"Estimated $Z$")
     ax0.set_ylim(0, 0.7)
@@ -383,8 +392,11 @@ def model_z_accuracy(models):
     ax0.set_xlim(0, 0.3)
     ax0.set_xticks(ticks)
     ax0.set_xticklabels(ticklabels)
-    for i in xrange(len(axes)):
-        ax = axes[i]
+    for i in xrange(len(models)):
+        if len(models) == 1:
+            ax = axes
+        else:
+            ax = axes[i]
         model = models[i]
         ax.set_title(model, fontsize=12)
         ax.set_xlabel("True $Z$")
