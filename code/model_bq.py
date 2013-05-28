@@ -3,6 +3,7 @@ import numpy as np
 from snippets.stats import GP
 from model_base import Model
 from kernel import KernelMLL
+from util import log_clip, safe_multiply
 
 
 class BayesianQuadratureModel(Model):
@@ -35,6 +36,8 @@ class BayesianQuadratureModel(Model):
             Observation noise parameter value (if None, will be fit)
         h : float (default=None)
             Output scale parameter (if None, will be fit)
+        p : float (default=1)
+            Periodic scale/wavelength (if None, will be fit)
 
         """
 
@@ -84,7 +87,7 @@ class BayesianQuadratureModel(Model):
             self.fit()
             self.integrate()
         hyp = self.ratio_test(level=1)
-        if hyp != -1:
+        if hyp != -1 and len(self.ix) > 2:
             raise StopIteration
 
         self.debug("Finding next sample")
@@ -135,18 +138,11 @@ class BayesianQuadratureModel(Model):
     def _fit_gp(self, Ri, Si, mll, name):
         self.debug("Fitting parameters for GP over %s ..." % name, level=2)
 
-        if Ri.size > 1:
-            width = np.min(np.abs(Ri[1:] - Ri[:-1]))
-        else:
-            width = 1e-8
-        height = max(np.min(np.abs(Si)), np.max(np.abs(Si)) / 1000.)
-
         # fit parameters
         theta = mll.maximize(
             Ri, Si,
             ntry=self.opt['ntry'],
-            verbose=self.opt['verbose'] > 3,
-            wmin=width, hmin=height)
+            verbose=self.opt['verbose'] > 3)
 
         self.debug("Best parameters: %s" % (theta,), level=2)
         self.debug("Computing GP over %s..." % name, level=2)
@@ -220,18 +216,14 @@ class BayesianQuadratureModel(Model):
         self.S_mean = ((self.mu_S + 1) * (1 + self.mu_Dc)) - 1
 
         # marginalize out w
-        params = []
-        ii = 0
+        params = self._mll_logS.free_params(self.theta_logS)
         if self._mll_logS.h is None:
-            params.append(self.theta_logS[0])
             ii = 1
-        if self._mll_logS.w is None:
-            params.append(self.theta_logS[1])
-        if self._mll_logS.s is None:
-            params.append(self.theta_logS[2])
+        else:
+            ii = 0
         # estimate the variance
         Hw = self._mll_logS.hessian(params, self.Ri, lSi)
-        Cw = np.matrix(np.exp(-np.diag(Hw)[ii]))
+        Cw = np.matrix(np.exp(log_clip(-np.diag(Hw))[ii]))
         dm_dw = np.matrix(
             self._mll_logS.dm_dw(params, self.Ri, lSi, self.R))
         self.S_cov = np.array(
@@ -261,7 +253,8 @@ class BayesianQuadratureModel(Model):
 
         # variance
         pm = self.opt['prior_R'] * (self.mu_S + 1)
-        C = self.S_cov * pm[:, None] * pm[None, :]
+        C = safe_multiply(self.S_cov, pm[:, None], pm[None, :])
+        C[np.abs(C) < 1e-100] = 0
         self.Z_var = np.trapz(np.trapz(C, self.R, axis=0), self.R)
 
         self.print_Z(level=0)
