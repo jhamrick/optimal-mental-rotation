@@ -21,7 +21,7 @@
     # observation noise for bayesian quadrature
     s: 0,
     # output scale for bayesian quadrature (sqrt(1. / 10))
-    h: 0.31622776601683794,
+    h: 0.125,
     # periodic scale
     p: 1,
     # type of kernel to use for bayesian quadrature
