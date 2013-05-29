@@ -29,10 +29,11 @@ def make_stimulus(npoints, rso):
     return X
 
 
-def draw_stimulus(X):
+def draw_stimulus(X, **kwargs):
     plt.plot(X[:, 0], X[:, 1],
              color='k',
-             linewidth=2)
+             linewidth=2,
+             **kwargs)
     plt.xticks([], [])
     plt.yticks([], [])
     plt.axis([-1, 1, -1, 1])
@@ -64,9 +65,21 @@ def render(X):
     return grayscale
 
 
-def make_image(X, sigma, rso):
+def observe(X, sigma, rso):
     """Jitter the vertices of the shape using Gaussian noise with variance
     `sigma`.
+
+    """
+    if sigma == 0:
+        I = X.copy()
+    else:
+        I = X + rso.normal(0, sigma, X.shape)
+    return I
+
+
+def make_image(X, sigma, rso):
+    """Jitter the vertices of the shape using Gaussian noise with variance
+    `sigma` and render the resulting shape.
 
     """
     if sigma == 0:
@@ -140,9 +153,13 @@ def load_stimulus(stimname):
     Xm = stimf['Xm']
     Xa = Xm[0]
     Xb = stimf['Xb']
+    # observations
+    Im = stimf['Im']
+    Ia = Im[0]
+    Ib = stimf['Ib']
 
     stimf.close()
-    return theta, Xa, Xb, Xm, R
+    return theta, Xa, Xb, Xm, Ia, Ib, Im, R
 
 
 def print_line(char='-', verbose=True):
@@ -150,52 +167,75 @@ def print_line(char='-', verbose=True):
         print "\n" + char*70
 
 
-def run_model(stims, model, opt):
+def run_model(stim, model, opt):
 
-    # number of stims
-    nstim = len(stims)
+    modelname = model.__name__
+    name = "%s-%s.npz" % (modelname, stim)
+    datadir = os.path.join(DATA_DIR, modelname)
+    path = os.path.abspath(os.path.join(datadir, name))
+    lockfile = path + ".lock"
+
+    print_line(char='#')
+
+    # skip this simulation, if it already exists
+    if os.path.exists(path) or os.path.exists(lockfile):
+        print "'%s' exists, skipping" % path
+        return
+    else:
+        print "%s (%s)" % (stim, path)
+        # create a lockfile
+        with open(lockfile, 'w') as fh:
+            fh.write("%s\n" % path)
+
+    # make the data directories if they don't exist
+    if not os.path.exists(datadir):
+        os.makedirs(datadir)
+
+    # number of samples
+    nsamp = opt['nsamps']
 
     # how many points were sampled
-    samps = np.zeros(nstim)
+    samps = np.zeros(nsamp)
     # the estimate of Z
-    Z = np.empty((nstim, 2))
+    Z = np.empty((nsamp, 2))
     # the likelihood ratio
-    ratio = np.empty((nstim, 3))
+    ratio = np.empty((nsamp, 3))
     # which hypothesis was accepted
-    hyp = np.empty(nstim)
+    hyp = np.empty(nsamp)
 
-    for sidx, stim in enumerate(stims):
-        print_line(char='#')
-        print stim
+    # load the stimulus
+    theta, Xa, Xb, Xm, Ia, Ib, Im, R = load_stimulus(stim)
 
-        # load the stimulus
-        theta, Xa, Xb, Xm, R = load_stimulus(stim)
-
-        # run the naive model
-        m = model(Xa, Xb, Xm, R, **opt)
+    for i in xrange(nsamp):
+        # run the model
+        m = model(Ia[i], Ib[i], Im[:, i], R, **opt)
         m.run()
 
         # fill in the data arrays
-        samps[sidx] = len(m.ix) / float(m._rotations.size)
-        Z[sidx] = (m.Z_mean, m.Z_var)
-        ratio[sidx] = m.likelihood_ratio()
-        hyp[sidx] = m.ratio_test(level=10)
+        samps[i] = len(m.ix) / float(m._rotations.size)
+        Z[i] = (m.Z_mean, m.Z_var)
+        ratio[i] = m.likelihood_ratio()
+        hyp[i] = m.ratio_test(level=10)
 
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR)
-
-    name = type(m).__name__
-    if name.endswith("Model"):
-        name = name[:-len("Model")]
-    path = os.path.join(DATA_DIR, name)
     np.savez(
         path,
-        stims=stims,
         samps=samps,
         Z=Z,
         ratio=ratio,
         hyp=hyp
     )
+
+    # remove lockfile
+    os.remove(lockfile)
+
+
+def run_all(stims, model, opt):
+    # get stimuli -- if none passed, then run all of them
+    if len(stims) == 0:
+        stims = find_stims()
+    # run each stim
+    for stim in stims:
+        run_model(stim, model, opt)
 
 
 def load_opt():
@@ -207,6 +247,53 @@ def load_opt():
 def find_stims():
     stims = sorted([os.path.splitext(x)[0] for x in os.listdir(STIM_DIR)])
     return stims
+
+
+def compress_sims(name):
+    path = os.path.join(DATA_DIR, name)
+    print "Compressing '%s'..." % path
+    sims = sorted(os.listdir(path))
+    nsim = len(sims)
+
+    # arrays to hold data
+    stims = []
+    samps = None
+    Z = None
+    ratio = None
+    hyp = None
+
+    for sidx, sim in enumerate(sims):
+        data = np.load(os.path.join(path, sim))
+
+        # create arrays
+        if sidx == 0:
+            samps = np.empty((nsim,) + data['samps'].shape)
+            Z = np.empty((nsim,) + data['Z'].shape)
+            ratio = np.empty((nsim,) + data['ratio'].shape)
+            hyp = np.empty((nsim,) + data['hyp'].shape)
+
+        # stims
+        stim = os.path.splitext(sim)[0].split("-")[1]
+        stims.append(stim)
+        # samps
+        samps[sidx] = data['samps']
+        # Z
+        Z[sidx] = data['Z']
+        # ratio
+        ratio[sidx] = data['ratio']
+        # hyp
+        hyp[sidx] = data['hyp']
+        data.close()
+
+    newpath = os.path.join(DATA_DIR, name + ".npz")
+    np.savez(
+        newpath,
+        stims=stims,
+        samps=samps,
+        Z=Z,
+        ratio=ratio,
+        hyp=hyp)
+    print "-> Saved to '%s'" % newpath
 
 
 def load_sims(name):

@@ -10,7 +10,7 @@ import util
 stim_dir = "../stimuli/"
 
 
-def make_stimulus(stimnum, npoints, R, rso):
+def make_stimulus(stimnum, npoints, nsamps, sigma, R, rso):
 
     # randomly generate the angle of rotation
     theta = rso.uniform(0, 2*np.pi)
@@ -29,10 +29,6 @@ def make_stimulus(stimnum, npoints, R, rso):
     for Xb, hyp in [(Xb0, 'h0'), (Xb1, 'h1')]:
         stimname = "%s_%s" % (stimnum, hyp)
 
-        # array to store all the rotated shapes
-        Xm = np.zeros(R.shape + Xa.shape)
-        Xm[0] = Xa.copy()
-
         # create stimuli directory, if it does not exist
         if not os.path.exists(stim_dir):
             os.makedirs(stim_dir)
@@ -43,10 +39,24 @@ def make_stimulus(stimnum, npoints, R, rso):
             print "Exists: %s" % path
             return
 
-        # generate mental images and then compare them
-        for i in xrange(1, R.size):
-            Xm[i] = util.rotate(Xm[i-1], r)
-            print "[%d / %d]" % (i+1, R.size)
+        # array to store the observed shapes
+        Ib = np.zeros((nsamps,) + Xa.shape)
+        Im = np.zeros(R.shape + (nsamps,) + Xa.shape)
+
+        for sampnum in xrange(nsamps):
+            Ia = util.observe(Xa, sigma, rso)
+            Ib[sampnum] = util.observe(Xb, sigma, rso)
+
+            # array to store all the rotated shapes
+            Xm = np.zeros(R.shape + Xa.shape)
+            Xm[0] = Xa.copy()
+            Im[0, sampnum] = Ia.copy()
+
+            # generate mental images and then compare them
+            for i in xrange(1, R.size):
+                Xm[i] = util.rotate(Xm[i-1], r)
+                Im[i] = util.rotate(Im[i-1], r)
+                # print "[%d / %d]" % (i+1, R.size)
 
         # save data to numpy arrays
         print "Saving: %s" % path
@@ -58,19 +68,25 @@ def make_stimulus(stimnum, npoints, R, rso):
             # shapes
             Xm=Xm,
             Xb=Xb,
+            # observations
+            Im=Im,
+            Ib=Ib
         )
 
 if __name__ == "__main__":
+    # config variables
+    opt = util.load_opt()
+    npoints = opt['npoints']
+    nstim = opt['nstim'] / 2
+    nsamps = opt['nsamps']
+    sigma = opt['sigma_p']
+
     # random state, for reproducibility
     rso = np.random.RandomState(0)
-
-    # config variables
-    npoints = 5
-    nstim = 100
 
     # all the angles we want to try
     R = np.linspace(0, 2*np.pi, 361)
 
     for i in xrange(nstim):
         stimnum = "%03d" % i
-        make_stimulus(stimnum, npoints, R, rso)
+        make_stimulus(stimnum, npoints, nsamps, sigma, R, rso)

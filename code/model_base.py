@@ -29,7 +29,7 @@ class Model(object):
             Scale of the data
         dr : int (default=10)
             Angle of rotation, in degrees, between sequential mental images
-        sigma : float (default=0.2)
+        sigma_s : float (default=0.2)
             Standard deviation in similarity function
         prior_R : float or numpy.ndarray (default=1/2pi)
             Prior over rotations
@@ -41,7 +41,7 @@ class Model(object):
             'verbose': False,
             'scale': 1,
             'dr': 10,
-            'sigma': 0.2,
+            'sigma_s': 0.2,
             'prior_R': np.ones_like(R) / (2*np.pi),
         }
         # self.opt was defined by a subclass
@@ -62,7 +62,7 @@ class Model(object):
         self._rotations = np.round(rot).astype('i8')
         # compute similarities
         self._S_scale = self.Xa.shape[0] - 1
-        self._S_scale /= (2 * np.pi * self.opt['sigma']) * self.opt['scale']
+        self._S_scale /= (2 * np.pi * self.opt['sigma_s']) * self.opt['scale']
         self.S = np.array([self.similarity(X) for X in self.Xm])
         self.S *= self._S_scale
 
@@ -179,8 +179,8 @@ class Model(object):
         # number of points and number of dimensions
         n, D = x0.shape
         # covariance matrix
-        Sigma = np.eye(D) * self.opt['sigma']
-        invSigma = np.eye(D) * (1. / self.opt['sigma'])
+        Sigma = np.eye(D) * self.opt['sigma_s']
+        invSigma = np.eye(D) * (1. / self.opt['sigma_s'])
         # iterate through all permutations of the vertices -- but if two
         # vertices are connected, they are next to each other in the list
         # (or on the ends), so we really only need to cycle through n
