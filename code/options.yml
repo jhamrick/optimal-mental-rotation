@@ -2,17 +2,17 @@
     # number of vertices for each stimulus
     npoints: 5,
     # how many stimuli to run
-    nstim: 80,
+    nstim: 10,
     # number of samples of each stimulus
-    nsamps: 5,
+    nsamps: 1,
 
     # standard deviation in similarity function
     sigma_s: 0.2, 
     # standard deviation of perceptual uncertainty
-    sigma_p: 0.05,
+    sigma_p: 0.0,
 
     # the amount we rotate by
-    dr: 22.5, 
+    dr: 11.25,
     # prior over angles
     prior_R: 0.15915494309189535, 
     # data scale, to avoid underflow
