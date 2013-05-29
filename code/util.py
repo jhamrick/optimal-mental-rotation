@@ -172,16 +172,20 @@ def run_model(stim, model, opt):
     modelname = model.__name__
     name = "%s-%s.npz" % (modelname, stim)
     datadir = os.path.join(DATA_DIR, modelname)
-    path = os.path.join(datadir, name)
+    path = os.path.abspath(os.path.join(datadir, name))
+    lockfile = path + ".lock"
 
     print_line(char='#')
 
     # skip this simulation, if it already exists
-    if os.path.exists(path):
+    if os.path.exists(path) or os.path.exists(lockfile):
         print "'%s' exists, skipping" % path
         return
     else:
         print "%s (%s)" % (stim, path)
+        # create a lockfile
+        with open(lockfile, 'w') as fh:
+            fh.write("%s\n" % path)
 
     # make the data directories if they don't exist
     if not os.path.exists(datadir):
@@ -220,6 +224,9 @@ def run_model(stim, model, opt):
         ratio=ratio,
         hyp=hyp
     )
+
+    # remove lockfile
+    os.remove(lockfile)
 
 
 def run_all(stims, model, opt):
