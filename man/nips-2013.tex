@@ -10,7 +10,7 @@
 
 \pagestyle{empty}
 
-\title{Optimal strategies in mental rotation tasks}
+\title{Mental simulation as Bayesian Quadrature}
 \author{Jessica B.~Hamrick and Thomas L.~Griffiths\\
   Department of Psychology\\
   University of California, Berkeley\\
@@ -41,12 +41,24 @@
 % \TODO{}
 % \end{abstract}
 
+% I think the main thing would be doing something more sophisticated
+% in the search, rather than using the gradient. A less sophisticated
+% adaptive sampling method seems like it would be best, and using von
+% Mises makes sense.
+
 \section{Introduction}
 
 % 1. The big picture
 % 2. Our contribution
 % 3. How we do it
 % 4. What's in the paper
+
+% The introduction could be made more general -- start with the
+% question of how a rational agent should use her computational
+% resources, and then get onto mental simulation/rotation as a special
+% case of that, rather than starting with the phenomena. I would make
+% the big picture goals clear at the start, and then segue into the
+% mystery of mental rotation -- how do we know which way to rotate?
 
 Consider the objects in Figure \ref{fig:mental-rotation}. In each
 panel, are the two depicted objects identical (except for a rotation),
@@ -92,7 +104,7 @@ future work.
 There is a long and rich history of work on mental rotation beginning
 with \cite{Shepard1971}, who presented participants with pairs of
 images such as those shown in Figure \ref{fig:mental-rotation}. These
-pairs three-dimensional objects could either be: the same object
+pairs of three-dimensional objects could either be: the same object
 rotated in plane (Figure \ref{fig:mental-rotation}A), the same object
 rotated in depth (Figure \ref{fig:mental-rotation}B), or two different
 objects (Figure \ref{fig:mental-rotation}C; in this case, the
@@ -119,7 +131,7 @@ the question of how, and when, it is used. Previous work has examined
 how people might use imagery \cite{Hegarty2004, Schwartz1999} to solve
 reasoning problems, and when they might use imagery as opposed to a
 symbolic rule \cite{Schwartz:1996uy}. People seem to use imagery
-methodically, which begs the question: what is the method? 
+methodically, which raises the question: what is the method?
 
 Others studying people's pattern of behavior when engaged in
 self-directed learning have found that they tend to use a strategy of
@@ -141,7 +153,7 @@ several different approaches.
     each pair of shapes was the same shape in two different
     orientations, or two different shapes. \textbf{A} shows a ``plane
     rotation'', \textbf{B} shows a ``depth rotation'', and \textbf{C}
-    shows two distinct objects.}
+    shows two distinct objects. \TODO{update this caption}}
   \label{fig:mental-rotation}
 \end{figure}
 
@@ -200,6 +212,10 @@ application of a function $\tau$:
   &=\tau^{(\frac{R}{r})}(X_a, r)
   \label{eq:tau}
 \end{align} 
+% I wasn't clear whether the step that happens in Equation 6 should be
+% in the model, or in the algorithm. I would probably be inclined to
+% define the model in full generality, and then bring up the
+% increments as part of the algorithm.
 Where $r$ is a small angle, and $\tau^{(i)}$ indicates $i$ recursive
 applications of $\tau$. Using this sequential function, we get:
 \begin{align}
@@ -280,11 +296,11 @@ stimuli shown in Figure \ref{fig:stimuli} is illustrated in Figure
 \ref{fig:likelihood}.
 
 This process of mental rotation (i.e., generating a single $X_R$ (as
-in Equation \ref{eq:tau}) and then computing $S(X_b, X_R)$) is a
-computationally demanding cognitive process. Thus, our goal is to
-minimize the number of rotations while still obtaining an estimate of
-$Z$ that is accurate enough to choose the correct hypothesis. With
-this in mind, we now examine several approaches to estimating $Z$.
+in Equation \ref{eq:tau}) and then computing $S(X_b, X_R)$) is
+computationally demanding. Thus, our goal is to minimize the number of
+rotations while still obtaining an estimate of $Z$ that is accurate
+enough to choose the correct hypothesis. With this in mind, we now
+examine several approaches to estimating $Z$.
 
 In each of these models, we denote the computed rotations to be a set
 $\mathbf{R}=\{R_1, R_2, \ldots{}\}$.
@@ -435,6 +451,12 @@ conditions are met (or the shape has been fully rotated), the model
 will continue to compute rotations and update its estimate of $Z$.
 
 \section{Results}
+
+% I think it would be compelling to add a second row to Equation 5
+% where you show the averages and s.e. at each rotation for many noisy
+% runs of the algorithm (possibly on different stimuli). If you can
+% show that the average is a linear function, in a way that looks like
+% the classic behavioral data, that will be compelling.
 
 \begin{figure}[t]
   \centering
