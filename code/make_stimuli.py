@@ -27,7 +27,7 @@ def make_stimulus(stimnum, npoints, nsamps, sigma, R, rso):
         r = R[1] - R[0]
 
         for Xb, hyp in [(Xb0, 'h0'), (Xb1, 'h1')]:
-            stimname = "%s_%s_%s" % (stimnum, theta_deg, hyp)
+            stimname = "%s_%03d_%s" % (stimnum, theta_deg, hyp)
 
             # create stimuli directory, if it does not exist
             if not os.path.exists(stim_dir):
