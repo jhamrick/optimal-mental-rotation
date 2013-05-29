@@ -3,8 +3,8 @@ man/notes_files
 man/proposal_files
 cache
 .DS_Store
-stimuli/
-data/
+stimuli*/
+data*/
 code/scrap.py
 man/final-project_files
 man/nips-2013_files/
