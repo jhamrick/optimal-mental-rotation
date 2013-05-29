@@ -55,6 +55,10 @@ class NaiveModel(Model):
 
 if __name__ == "__main__":
     import util
+    import sys
+
+    # load options
     opt = util.load_opt()
-    stims = util.find_stims()[:opt['nstim']]
-    util.run_model(stims, NaiveModel, opt)
+
+    # run each stim
+    util.run_all(sys.argv[1:], NaiveModel, opt)
