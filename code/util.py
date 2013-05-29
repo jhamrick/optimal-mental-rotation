@@ -177,6 +177,10 @@ def run_model(stim, model, opt):
 
     print_line(char='#')
 
+    # make the data directories if they don't exist
+    if not os.path.exists(datadir):
+        os.makedirs(datadir)
+
     # skip this simulation, if it already exists
     if os.path.exists(path) or os.path.exists(lockfile):
         print "'%s' exists, skipping" % path
@@ -186,10 +190,6 @@ def run_model(stim, model, opt):
         # create a lockfile
         with open(lockfile, 'w') as fh:
             fh.write("%s\n" % path)
-
-    # make the data directories if they don't exist
-    if not os.path.exists(datadir):
-        os.makedirs(datadir)
 
     # number of samples
     nsamp = opt['nsamps']
