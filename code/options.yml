@@ -2,9 +2,9 @@
     # number of vertices for each stimulus
     npoints: 5,
     # how many stimuli to run
-    nstim: 100,
+    nstim: 80,
     # number of samples of each stimulus
-    nsamps: 20,
+    nsamps: 5,
 
     # standard deviation in similarity function
     sigma_s: 0.2, 
