@@ -249,6 +249,53 @@ def find_stims():
     return stims
 
 
+def compress_sims(name):
+    path = os.path.join(DATA_DIR, name)
+    print "Compressing '%s'..." % path
+    sims = sorted(os.listdir(path))
+    nsim = len(sims)
+
+    # arrays to hold data
+    stims = []
+    samps = None
+    Z = None
+    ratio = None
+    hyp = None
+
+    for sidx, sim in enumerate(sims):
+        data = np.load(os.path.join(path, sim))
+
+        # create arrays
+        if sidx == 0:
+            samps = np.empty((nsim,) + data['samps'].shape)
+            Z = np.empty((nsim,) + data['Z'].shape)
+            ratio = np.empty((nsim,) + data['ratio'].shape)
+            hyp = np.empty((nsim,) + data['hyp'].shape)
+
+        # stims
+        stim = os.path.splitext(sim)[0].split("-")[1]
+        stims.append(stim)
+        # samps
+        samps[sidx] = data['samps']
+        # Z
+        Z[sidx] = data['Z']
+        # ratio
+        ratio[sidx] = data['ratio']
+        # hyp
+        hyp[sidx] = data['hyp']
+        data.close()
+
+    newpath = os.path.join(DATA_DIR, name + ".npz")
+    np.savez(
+        newpath,
+        stims=stims,
+        samps=samps,
+        Z=Z,
+        ratio=ratio,
+        hyp=hyp)
+    print "-> Saved to '%s'" % newpath
+
+
 def load_sims(name):
     path = os.path.join(DATA_DIR, name + '.npz')
     data = np.load(path)
