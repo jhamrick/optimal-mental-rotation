@@ -167,55 +167,68 @@ def print_line(char='-', verbose=True):
         print "\n" + char*70
 
 
-def run_model(stims, model, opt):
+def run_model(stim, model, opt):
 
-    # number of stims
-    nstim = opt['nstim']
+    modelname = model.__name__
+    name = "%s-%s.npz" % (modelname, stim)
+    datadir = os.path.join(DATA_DIR, modelname)
+    path = os.path.join(datadir, name)
+
+    print_line(char='#')
+
+    # skip this simulation, if it already exists
+    if os.path.exists(path):
+        print "'%s' exists, skipping" % path
+        return
+    else:
+        print "%s (%s)" % (stim, path)
+
+    # make the data directories if they don't exist
+    if not os.path.exists(datadir):
+        os.makedirs(datadir)
+
     # number of samples
     nsamp = opt['nsamps']
 
     # how many points were sampled
-    samps = np.zeros((nstim, nsamp))
+    samps = np.zeros(nsamp)
     # the estimate of Z
-    Z = np.empty((nstim, nsamp, 2))
+    Z = np.empty((nsamp, 2))
     # the likelihood ratio
-    ratio = np.empty((nstim, nsamp, 3))
+    ratio = np.empty((nsamp, 3))
     # which hypothesis was accepted
-    hyp = np.empty((nstim, nsamp))
+    hyp = np.empty(nsamp)
 
-    for sidx, stim in enumerate(stims):
-        print_line(char='#')
-        print stim
+    # load the stimulus
+    theta, Xa, Xb, Xm, Ia, Ib, Im, R = load_stimulus(stim)
 
-        # load the stimulus
-        theta, Xa, Xb, Xm, Ia, Ib, Im, R = load_stimulus(stim)
+    for i in xrange(nsamp):
+        # run the model
+        m = model(Ia[i], Ib[i], Im[:, i], R, **opt)
+        m.run()
 
-        for i in xrange(nsamp):
-            # run the model
-            m = model(Ia[i], Ib[i], Im[:, i], R, **opt)
-            m.run()
+        # fill in the data arrays
+        samps[i] = len(m.ix) / float(m._rotations.size)
+        Z[i] = (m.Z_mean, m.Z_var)
+        ratio[i] = m.likelihood_ratio()
+        hyp[i] = m.ratio_test(level=10)
 
-            # fill in the data arrays
-            samps[sidx, i] = len(m.ix) / float(m._rotations.size)
-            Z[sidx, i] = (m.Z_mean, m.Z_var)
-            ratio[sidx, i] = m.likelihood_ratio()
-            hyp[sidx, i] = m.ratio_test(level=10)
-
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR)
-
-    name = type(m).__name__
-    if name.endswith("Model"):
-        name = name[:-len("Model")]
-    path = os.path.join(DATA_DIR, name)
     np.savez(
         path,
-        stims=stims,
         samps=samps,
         Z=Z,
         ratio=ratio,
         hyp=hyp
     )
+
+
+def run_all(stims, model, opt):
+    # get stimuli -- if none passed, then run all of them
+    if len(stims) == 0:
+        stims = find_stims()
+    # run each stim
+    for stim in stims:
+        run_model(stim, model, opt)
 
 
 def load_opt():
