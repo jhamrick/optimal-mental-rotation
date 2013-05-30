@@ -16,7 +16,7 @@ def K(x1, x2, h, w, p, s):
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def dK_dh(x1, x2, h, w, p, s):
     dj = np.empty((x1.size, x2.size))
     for i in xrange(x1.size):
@@ -26,7 +26,7 @@ def dK_dh(x1, x2, h, w, p, s):
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def dK_dw(x1, x2, h, w, p, s):
     dj = np.empty((x1.size, x2.size))
     for i in xrange(x1.size):
@@ -36,7 +36,7 @@ def dK_dw(x1, x2, h, w, p, s):
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def dK_ds(x1, x2, h, w, p, s):
     dj = np.empty((x1.size, x2.size))
     for i in xrange(x1.size):
@@ -50,7 +50,7 @@ def dK_ds(x1, x2, h, w, p, s):
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def dK_dp(x1, x2, h, w, p, s):
     dj = np.empty((x1.size, x2.size))
     for i in xrange(x1.size):
@@ -60,7 +60,7 @@ def dK_dp(x1, x2, h, w, p, s):
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dhdh(x1, x2, h, w, p, s):
     dj = np.empty((x1.size, x2.size))
     for i in xrange(x1.size):
@@ -70,7 +70,7 @@ def d2K_dhdh(x1, x2, h, w, p, s):
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dhdw(x1, x2, h, w, p, s):
     dj = np.empty((x1.size, x2.size))
     for i in xrange(x1.size):
@@ -80,13 +80,13 @@ def d2K_dhdw(x1, x2, h, w, p, s):
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dhds(x1, x2, h, w, p, s):
     dj = np.zeros((x1.size, x2.size))
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dhdp(x1, x2, h, w, p, s):
     dj = np.empty((x1.size, x2.size))
     for i in xrange(x1.size):
@@ -96,7 +96,7 @@ def d2K_dhdp(x1, x2, h, w, p, s):
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dwdh(x1, x2, h, w, p, s):
     dj = np.empty((x1.size, x2.size))
     for i in xrange(x1.size):
@@ -106,7 +106,7 @@ def d2K_dwdh(x1, x2, h, w, p, s):
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dwdw(x1, x2, h, w, p, s):
     dj = np.empty((x1.size, x2.size))
     for i in xrange(x1.size):
@@ -116,13 +116,13 @@ def d2K_dwdw(x1, x2, h, w, p, s):
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dwds(x1, x2, h, w, p, s):
     dj = np.zeros((x1.size, x2.size))
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dwdp(x1, x2, h, w, p, s):
     dj = np.empty((x1.size, x2.size))
     for i in xrange(x1.size):
@@ -132,19 +132,19 @@ def d2K_dwdp(x1, x2, h, w, p, s):
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dsdh(x1, x2, h, w, p, s):
     dj = np.zeros((x1.size, x2.size))
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dsdw(x1, x2, h, w, p, s):
     dj = np.zeros((x1.size, x2.size))
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dsds(x1, x2, h, w, p, s):
     dj = np.empty((x1.size, x2.size))
     for i in xrange(x1.size):
@@ -158,13 +158,13 @@ def d2K_dsds(x1, x2, h, w, p, s):
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dsdp(x1, x2, h, w, p, s):
     dj = np.zeros((x1.size, x2.size))
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dpdh(x1, x2, h, w, p, s):
     dj = np.empty((x1.size, x2.size))
     for i in xrange(x1.size):
@@ -174,7 +174,7 @@ def d2K_dpdh(x1, x2, h, w, p, s):
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dpdw(x1, x2, h, w, p, s):
     dj = np.empty((x1.size, x2.size))
     for i in xrange(x1.size):
@@ -184,13 +184,13 @@ def d2K_dpdw(x1, x2, h, w, p, s):
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dpds(x1, x2, h, w, p, s):
     dj = np.zeros((x1.size, x2.size))
     return dj
 
 
-@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)', warn=False)
 def d2K_dpdp(x1, x2, h, w, p, s):
     dj = np.empty((x1.size, x2.size))
     for i in xrange(x1.size):
