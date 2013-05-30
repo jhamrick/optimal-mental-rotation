@@ -1,15 +1,17 @@
 {
     # number of vertices for each stimulus
-    npoints: 5,
+    # if a tuple, it is the inclusive range of then number of 
+    # possible vertices
+    npoints: [3, 6],
     # how many stimuli to run
-    nstim: 20,
+    nstim: 10,
     # number of samples of each stimulus
-    nsamps: 5,
+    nsamps: 1,
 
     # standard deviation in similarity function
     sigma_s: 0.2, 
     # standard deviation of perceptual uncertainty
-    sigma_p: 0.05,
+    sigma_p: 0.0,
 
     # the amount we rotate by
     dr: 22.5,
@@ -24,7 +26,7 @@
     verbose: 0,
 
     # number of tries to fit parameters in von mises
-    ntry_vm: 50,
+    ntry_vm: 20,
 
     # observation noise for bayesian quadrature
     s: 0,
