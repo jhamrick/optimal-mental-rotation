@@ -150,8 +150,8 @@ class BayesianQuadratureModel(Model):
         self.debug("Computing GP over %s..." % name, level=2)
 
         # GP regression
-        mu, cov = GP(
-            mll.kernel(*theta[:-1]), Ri, Si, self.R)
+        kernel = mll.make_kernel(theta=theta)
+        mu, cov = GP(kernel, Ri, Si, self.R)
 
         return mu, cov, theta
 
