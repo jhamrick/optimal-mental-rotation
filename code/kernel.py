@@ -1,6 +1,9 @@
 import numpy as np
 import scipy.optimize as opt
 import sympy as sym
+import numba
+
+from numpy import exp, sin, cos
 
 from sympy.utilities.lambdify import lambdify
 from sympy.functions.special.delta_functions import DiracDelta as delta
@@ -27,6 +30,50 @@ def cholesky(mat):
     return L
 
 
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+def dK_dh(x1, x2, h, w, p, s):
+    dj = np.empty((x1.size, x2.size))
+    for i in xrange(x1.size):
+        for j in xrange(x2.size):
+            d = x1[i] - x2[j]
+            dj[i, j] = 2*h*exp(-2.0*sin(0.5*d/p)**2/w**2)
+    return dj
+
+
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+def dK_dw(x1, x2, h, w, p, s):
+    dj = np.empty((x1.size, x2.size))
+    for i in xrange(x1.size):
+        for j in xrange(x2.size):
+            d = x1[i] - x2[j]
+            dj[i, j] = 4.0*h**2*exp(-2.0*sin(0.5*d/p)**2/w**2)*sin(0.5*d/p)**2/w**3
+    return dj
+
+
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+def dK_ds(x1, x2, h, w, p, s):
+    dj = np.empty((x1.size, x2.size))
+    for i in xrange(x1.size):
+        for j in xrange(x2.size):
+            d = x1[i] - x2[j]
+            if d == 0:
+                dd = 1
+            else:
+                dd = 0
+            dj[i, j] = 2*s*dd
+    return dj
+
+
+@numba.jit('f8[:,:](f8[:], f8[:], f8, f8, f8, f8)')
+def dK_dp(x1, x2, h, w, p, s):
+    dj = np.empty((x1.size, x2.size))
+    for i in xrange(x1.size):
+        for j in xrange(x2.size):
+            d = x1[i] - x2[j]
+            dj[i, j] = 2.0*d*h**2*exp(-2.0*sin(0.5*d/p)**2/w**2)*sin(0.5*d/p)*cos(0.5*d/p)/(p**2*w**2)
+    return dj
+
+
 class KernelMLL(object):
     """Object representing the marginal log likelihood (MLL) of a
     kernel function.
@@ -48,30 +95,36 @@ class KernelMLL(object):
         d = sym.Symbol('d')
 
         free_params = []
+        self.dK_dtheta = []
+
         # output scale (height)
         if params.get('h', None):
             h = params['h']
         else:
             h = sym.Symbol('h', positive=True)
             free_params.append(h)
+            self.dK_dtheta.append(dK_dh)
         # input scale (width)
         if params.get('w', None):
             w = params['w']
         else:
             w = sym.Symbol('w', positive=True)
             free_params.append(w)
+            self.dK_dtheta.append(dK_dw)
         # observation noise
         if params.get('s', None) is not None:
             s = params['s']
         else:
             s = sym.Symbol('s', positive=True)
             free_params.append(s)
+            self.dK_dtheta.append(dK_ds)
         # period
-        if params.get('p', None) or kernel != 'periodic':
+        if params.get('p', None):
             p = params.get('p', 1)
         else:
             p = sym.Symbol('p', positive=True)
             free_params.append(p)
+            self.dK_dtheta.append(dK_dp)
 
         # parameters for lambdify
         if len(free_params) == 0:
@@ -85,6 +138,7 @@ class KernelMLL(object):
             self.kernel = periodic_kernel
             k1 = (h ** 2) * sym.exp(-2.*(sym.sin(d / (2.*p)) ** 2) / (w ** 2))
         elif kernel == 'gaussian':
+            raise NotImplementedError
             self.kernel = gaussian_kernel
             k1 = (h ** 2) * sym.exp(-0.5 * (d ** 2) / (w ** 2))
         else:
@@ -98,16 +152,13 @@ class KernelMLL(object):
         # functions, so we can evaluate them (to compute the Jacobian
         # and Hessian)
         self.sym_dK_dtheta = []
-        self.dK_dtheta = []
         self.sym_d2K_dtheta2 = [[]]*len(free_params)
         self.d2K_dtheta2 = [[]]*len(free_params)
 
         for i, p1 in enumerate(free_params):
             # first partial derivatives
             sym_f = sym.diff(self.sym_K, p1)
-            f = lambdify(lparams, sym_f)
             self.sym_dK_dtheta.append(sym_f)
-            self.dK_dtheta.append(f)
 
             for p2 in free_params:
                 # second partial derivatives
@@ -201,15 +252,8 @@ class KernelMLL(object):
 
         """
 
-        # compute dK/dtheta_j matrix
-        dj = np.empty((x.size, x.size))
-        for i in xrange(x.size):
-            for j in xrange(x.size):
-                diff = x[i] - x[j]
-                try:
-                    dj[i, j] = dK_dthetaj(theta, diff)
-                except ArithmeticError:
-                    dj[i, j] = np.nan
+        # compute kernel matrix derivative
+        dj = dK_dthetaj(x, x, *theta)
 
         # compute the partial derivative of the marginal log likelihood
         k = np.dot(Ki, dj)
@@ -219,8 +263,7 @@ class KernelMLL(object):
 
         return dd
 
-    @staticmethod
-    def _d2_dthetajdthetai(Ki, dK_dthetaj, dK_dthetai, d2K_dthetaji,
+    def _d2_dthetajdthetai(self, Ki, dK_dthetaj, dK_dthetai, d2K_dthetaji,
                            theta, x, y):
         """Compute the second partial derivative of the marginal log
         likelihood with respect to two of its parameters, `\theta_j`
@@ -263,15 +306,15 @@ class KernelMLL(object):
 
         """
 
+        params = self.kernel_params(theta)
+
         # compute dK/dtheta_j, dK/dtheta_i, d2K/(dtheta_j dtheta_i)
-        dj = np.empty((x.size, x.size))
-        di = np.empty((x.size, x.size))
+        dj = dK_dthetaj(x, x, *params)
+        di = dK_dthetai(x, x, *params)
         dji = np.empty((x.size, x.size))
         for i in xrange(x.size):
             for j in xrange(x.size):
                 diff = x[i] - x[j]
-                dj[i, j] = dK_dthetaj(theta, diff)
-                di[i, j] = dK_dthetai(theta, diff)
                 dji[i, j] = d2K_dthetaji(theta, diff)
 
         dKidi = np.dot(-Ki, np.dot(di, Ki))
@@ -371,10 +414,12 @@ class KernelMLL(object):
             return np.zeros(len(self.dK_dtheta)) - np.inf
         Ki = np.dot(Li.T, Li)
 
+        params = self.kernel_params(theta)
+
         dmll = np.empty(len(self.dK_dtheta))
         for i in xrange(dmll.size):
             dK_dthetaj = self.dK_dtheta[i]
-            dmll[i] = self._d_dthetaj(Ki, dK_dthetaj, theta, x, y)
+            dmll[i] = self._d_dthetaj(Ki, dK_dthetaj, params, x, y)
 
         dmll = np.clip(dmll, MIN_LOG, MAX_LOG)
         return dmll
@@ -542,25 +587,11 @@ class KernelMLL(object):
         Li = np.linalg.inv(L)
         inv_Kxx = np.dot(Li.T, Li)
 
-        # get the partial derivative function
-        if self.h is None:
-            dK_dw = self.dK_dtheta[1]
-        else:
-            dK_dw = self.dK_dtheta[0]
-
+        params = self.kernel_params(theta)
         # compute dK/dw matrix for x, x
-        dKxx = np.empty((x.size, x.size))
-        for i in xrange(x.size):
-            for j in xrange(x.size):
-                diff = x[i] - x[j]
-                dKxx[i, j] = dK_dw(theta, diff)
-
+        dKxx = dK_dw(x, x, *params)
         # compute dK/dw matrix for xo, x
-        dKxox = np.empty((xo.size, x.size))
-        for i in xrange(xo.size):
-            for j in xrange(x.size):
-                diff = xo[i] - x[j]
-                dKxox[i, j] = dK_dw(theta, diff)
+        dKxox = dK_dw(xo, x, *params)
 
         # compute the two terms of the derivative and combine them
         v = np.dot(inv_Kxx, y)
