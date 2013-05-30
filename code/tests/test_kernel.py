@@ -29,9 +29,9 @@ def rand_p():
     return p
 
 
-def check_K(x, kernel, mll):
+def check_K(x, kernel, mll, params):
     kK = kernel(x, x)
-    mK = np.array([[mll.K(x1-x2) for x2 in x] for x1 in x])
+    mK = mll.K(x, x, *params)
     diff = np.abs(kK - mK)
     if not (diff < thresh).all():
         print diff
@@ -40,7 +40,7 @@ def check_K(x, kernel, mll):
 
 def check_K2(x, kernel, mll, params):
     kK = kernel(x, x)
-    mK = np.array([[mll.K(params, x1-x2) for x2 in x] for x1 in x])
+    mK = mll.K(x, x, *params)
     diff = np.abs(kK - mK)
     if not (diff < thresh).all():
         print diff
@@ -63,40 +63,44 @@ def check_K_inv(K):
     Ki = np.dot(Li.T, Li)
     I = np.dot(K, Ki)
     diff = np.abs(I - np.eye(I.shape[0]))
-    assert (diff < thresh).all()
+    if not (diff < thresh).all():
+        print diff
+        raise AssertionError("bad inverse of kernel matrix")
 
 
 ######################################################################
 
 
-def test_gaussian_K():
-    x = np.linspace(-2*np.pi, 2*np.pi, 16)
-    for i in xrange(N_big):
-        h = rand_h()
-        w = rand_w()
-        kernel = gaussian_kernel(h, w, jit=False)
-        mll = KernelMLL('gaussian', h=h, w=w, s=0)
-        yield (check_K, x, kernel, mll)
+# def test_gaussian_K():
+#     x = np.linspace(-2*np.pi, 2*np.pi, 16)
+#     for i in xrange(N_big):
+#         h = rand_h()
+#         w = rand_w()
+#         kernel = gaussian_kernel(h, w)
+#         mll = KernelMLL('gaussian', h=h, w=w, s=0)
+#         params = (h, w, 0)
+#         yield (check_K, x, kernel, mll, params)
 
 
-def test_gaussian_K2():
-    x = np.linspace(-2*np.pi, 2*np.pi, 16)
-    for i in xrange(N_big):
-        h = rand_h()
-        w = rand_w()
-        kernel = gaussian_kernel(h, w, jit=False)
-        mll = KernelMLL('gaussian', h=None, w=None, s=0)
-        yield (check_K2, x, kernel, mll, (h, w))
+# def test_gaussian_K2():
+#     x = np.linspace(-2*np.pi, 2*np.pi, 16)
+#     for i in xrange(N_big):
+#         h = rand_h()
+#         w = rand_w()
+#         kernel = gaussian_kernel(h, w)
+#         mll = KernelMLL('gaussian', h=None, w=None, s=0)
+#         yield (check_K2, x, kernel, mll, (h, w, 0))
 
 
-def test_gaussian_make_kernel():
-    x = np.linspace(-2*np.pi, 2*np.pi, 16)
-    for i in xrange(N_big):
-        h = rand_h()
-        w = rand_w()
-        mll = KernelMLL('gaussian', h=h, w=w, s=0)
-        kernel = mll.make_kernel(params=(h, w, 1, 0), jit=False)
-        yield (check_K, x, kernel, mll)
+# def test_gaussian_make_kernel():
+#     x = np.linspace(-2*np.pi, 2*np.pi, 16)
+#     for i in xrange(N_big):
+#         h = rand_h()
+#         w = rand_w()
+#         mll = KernelMLL('gaussian', h=h, w=w, s=0)
+#         kernel = mll.make_kernel(params=(h, w, 1, 0))
+#         params = (h, w, 1, 0)
+#         yield (check_K, x, kernel, mll, params)
 
 
 def test_periodic_K():
@@ -105,9 +109,10 @@ def test_periodic_K():
         h = rand_h()
         w = rand_w()
         p = rand_p()
-        kernel = periodic_kernel(h, w, p, jit=False)
+        kernel = periodic_kernel(h, w, p)
         mll = KernelMLL('periodic', h=h, w=w, p=p, s=0)
-        yield (check_K, x, kernel, mll)
+        params = (h, w, p, 0)
+        yield (check_K, x, kernel, mll, params)
 
 
 def test_periodic_K2():
@@ -116,9 +121,9 @@ def test_periodic_K2():
         h = rand_h()
         w = rand_w()
         p = rand_p()
-        kernel = periodic_kernel(h, w, p, jit=False)
+        kernel = periodic_kernel(h, w, p)
         mll = KernelMLL('periodic', h=None, w=None, p=None, s=0)
-        yield (check_K2, x, kernel, mll, (h, w, p))
+        yield (check_K2, x, kernel, mll, (h, w, p, 0))
 
 
 def test_periodic_make_kernel():
@@ -128,8 +133,9 @@ def test_periodic_make_kernel():
         w = rand_w()
         p = rand_p()
         mll = KernelMLL('periodic', h=h, w=w, p=p, s=0)
-        kernel = mll.make_kernel(params=(h, w, p, 0), jit=False)
-        yield (check_K, x, kernel, mll)
+        kernel = mll.make_kernel(params=(h, w, p, 0))
+        params = (h, w, p, 0)
+        yield (check_K, x, kernel, mll, params)
 
 
 def test_kernel_params_h():
@@ -170,7 +176,7 @@ def test_kernel_params_s():
 
 def check_params(mll, params0, x, y, xx, xxx):
     # kernel with true parameters
-    kern0 = mll.make_kernel(params=params0, jit=False)
+    kern0 = mll.make_kernel(params=params0)
 
     # generate some fake data
     yy0 = GP(kern0, x, y, xx)[0]
@@ -181,7 +187,7 @@ def check_params(mll, params0, x, y, xx, xxx):
     params = mll.maximize(xx, yy0, verbose=True, ntry=10)
 
     # kernel with best fit parameters
-    kern = mll.make_kernel(params=params, jit=False)
+    kern = mll.make_kernel(params=params)
 
     # the full regression
     yyy = GP(kern, xx, yy0, xxx)[0]
@@ -193,16 +199,16 @@ def check_params(mll, params0, x, y, xx, xxx):
         raise ValueError
 
 
-def test_maximize_gaussian():
-    x = np.linspace(-2*np.pi, 2*np.pi, 8)[:-1]
-    y = np.sin(x)
-    xx = np.linspace(-2*np.pi, 2*np.pi, 25)[:-1]
-    xxx = np.linspace(-2*np.pi, 2*np.pi, 100)[:-1]
-    for i in xrange(N_small):
-        params = (rand_h(), rand_w(), 1, 0)
-        h, w, p, s = params
-        mll = KernelMLL('gaussian', h=None, w=None, p=p, s=s)
-        yield check_params, mll, params, x, y, xx, xxx
+# def test_maximize_gaussian():
+#     x = np.linspace(-2*np.pi, 2*np.pi, 8)[:-1]
+#     y = np.sin(x)
+#     xx = np.linspace(-2*np.pi, 2*np.pi, 25)[:-1]
+#     xxx = np.linspace(-2*np.pi, 2*np.pi, 100)[:-1]
+#     for i in xrange(N_small):
+#         params = (rand_h(), rand_w(), 1, 0)
+#         h, w, p, s = params
+#         mll = KernelMLL('gaussian', h=None, w=None, p=p, s=s)
+#         yield check_params, mll, params, x, y, xx, xxx
 
 
 def test_maximize_periodic():
@@ -227,11 +233,11 @@ def test_cholesky():
 
 
 def test_K_inv():
-    x = np.linspace(-2*np.pi, 2*np.pi, 8)
+    x = np.linspace(-2*np.pi, 2*np.pi, 8)[:-1]
     for i in xrange(N_big):
         h = rand_h()
         w = rand_w()
-        mll = KernelMLL('gaussian', h=h, w=w, s=0)
-        kernel = mll.make_kernel(params=(h, w, 1, 0), jit=False)
+        mll = KernelMLL('periodic', h=h, w=w, p=1, s=0)
+        kernel = mll.make_kernel(params=(h, w, 1, 0))
         K = kernel(x, x)
         yield (check_K_inv, K)
