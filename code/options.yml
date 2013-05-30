@@ -19,6 +19,8 @@
     prior_R: 0.15915494309189535, 
     # data scale, to avoid underflow
     scale: 1,
+    # stopping factor, in number of std. devs.
+    stop_factor: 1.96,
 
     # save images
     save: true, 
