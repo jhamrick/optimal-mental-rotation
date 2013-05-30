@@ -7,7 +7,7 @@ figures:
 	./makefigs.sh
 
 
-pdf: notes proposal project
+pdf: notes nips
 notes:
 	./nb2pdf.sh notes
 proposal:
