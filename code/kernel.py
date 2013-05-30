@@ -141,16 +141,16 @@ class KernelMLL(object):
             theta.append(params[3])
         return theta
 
-    def make_kernel(self, theta=None, params=None, jit=True):
+    def make_kernel(self, theta=None, params=None):
         if not params:
             h, w, p, s = self.kernel_params(theta)
         else:
             h, w, p, s = params
 
         if self.kernel_type == 'periodic':
-            k = self.kernel(h, w, p, jit=jit)
+            k = self.kernel(h, w, p)
         else:
-            k = self.kernel(h, w, jit=jit)
+            k = self.kernel(h, w)
 
         return k
 
@@ -160,7 +160,7 @@ class KernelMLL(object):
 
         # the overhead of JIT compiling isn't it worth it here because
         # this is just a temporary kernel function
-        K = self.make_kernel(params=params, jit=False)(x, x)
+        K = self.make_kernel(params=params)(x, x)
         if s > 0:
             K += np.eye(x.size) * (s ** 2)
         return K
@@ -532,7 +532,7 @@ class KernelMLL(object):
 
         # compute Kxx and Kxox
         Kxx = self.Kxx(theta, x)
-        Kxox = self.make_kernel(theta=theta, jit=False)(xo, x)
+        Kxox = self.make_kernel(theta=theta)(xo, x)
 
         # invert K
         try:
