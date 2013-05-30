@@ -175,21 +175,22 @@ def run_model(stim, model, opt):
     path = os.path.abspath(os.path.join(datadir, name))
     lockfile = path + ".lock"
 
+    # skip this simulation, if it already exists
+    if os.path.exists(path) or os.path.exists(lockfile):
+        print_line(char='#')
+        print "'%s' exists, skipping" % path
+        return
+
     print_line(char='#')
+    print "%s (%s)" % (stim, path)
 
     # make the data directories if they don't exist
     if not os.path.exists(datadir):
         os.makedirs(datadir)
 
-    # skip this simulation, if it already exists
-    if os.path.exists(path) or os.path.exists(lockfile):
-        print "'%s' exists, skipping" % path
-        return
-    else:
-        print "%s (%s)" % (stim, path)
-        # create a lockfile
-        with open(lockfile, 'w') as fh:
-            fh.write("%s\n" % path)
+    # create a lockfile
+    with open(lockfile, 'w') as fh:
+        fh.write("%s\n" % path)
 
     # number of samples
     nsamp = opt['nsamps']
@@ -217,16 +218,20 @@ def run_model(stim, model, opt):
         ratio[i] = m.likelihood_ratio()
         hyp[i] = m.ratio_test(level=10)
 
-    np.savez(
-        path,
-        samps=samps,
-        Z=Z,
-        ratio=ratio,
-        hyp=hyp
-    )
+    if os.path.exists(lockfile):
+        np.savez(
+            path,
+            samps=samps,
+            Z=Z,
+            ratio=ratio,
+            hyp=hyp
+        )
 
-    # remove lockfile
-    os.remove(lockfile)
+        try:
+            # remove lockfile
+            os.remove(lockfile)
+        except OSError:
+            pass
 
 
 def run_all(stims, model, opt):
