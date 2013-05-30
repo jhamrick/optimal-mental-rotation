@@ -64,19 +64,19 @@ class KernelMLL(object):
             w = sym.Symbol('w', positive=True)
             free_params.append(w)
 
-        # observation noise
-        if params.get('s', None) is not None:
-            s = params['s']
-        else:
-            s = sym.Symbol('s', positive=True)
-            free_params.append(s)
-
         # period
         if params.get('p', None):
             p = params.get('p', 1)
         else:
             p = sym.Symbol('p', positive=True)
             free_params.append(p)
+
+        # observation noise
+        if params.get('s', None) is not None:
+            s = params['s']
+        else:
+            s = sym.Symbol('s', positive=True)
+            free_params.append(s)
 
         # symbolic version of the kernel function
         self.kernel_type = kernel
@@ -116,8 +116,8 @@ class KernelMLL(object):
 
         self.h = None if type(h) is sym.Symbol else h
         self.w = None if type(w) is sym.Symbol else w
-        self.s = None if type(s) is sym.Symbol else s
         self.p = None if type(p) is sym.Symbol else p
+        self.s = None if type(s) is sym.Symbol else s
 
     def kernel_params(self, theta):
         th = list(theta)
@@ -455,10 +455,10 @@ class KernelMLL(object):
             bounds.append((hmin, hmax))
         if self.w is None:
             bounds.append((wmin, wmax))
-        if self.s is None:
-            bounds.append((smin, smax))
         if self.p is None:
             bounds.append((pmin, pmax))
+        if self.s is None:
+            bounds.append((smin, smax))
 
         args = np.empty((ntry, len(bounds)))
         fval = np.empty(ntry)
@@ -470,10 +470,10 @@ class KernelMLL(object):
                 p0.append(np.random.uniform(hmin, np.max(np.abs(y))*2))
             if self.w is None:
                 p0.append(np.random.uniform(np.ptp(x) / 100., np.ptp(x) / 10.))
-            if self.s is None:
-                p0.append(np.random.uniform(smin, np.sqrt(np.var(y))))
             if self.p is None:
                 p0.append(np.random.uniform(pmin, 2*np.pi))
+            if self.s is None:
+                p0.append(np.random.uniform(smin, np.sqrt(np.var(y))))
 
             method = "L-BFGS-B"
             if verbose:
@@ -501,7 +501,7 @@ class KernelMLL(object):
         if args is None or fval is None:
             raise RuntimeError("Could not find MLII parameter estimates")
         best = np.argmin(fval)
-        params = self.kernel_params(args[best])
+        params = self.kernel_params(theta=args[best])
 
         return params
 

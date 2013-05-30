@@ -216,7 +216,7 @@ def bq_regression_all(model):
         R, S_mean, S_var,
         title="Bayesian Quadrature regression for $S$")
 
-    plt.ylim(0, 1)
+    plt.ylim(0, 1.05)
 
 
 def vm_regression(model):
@@ -231,7 +231,7 @@ def vm_regression(model):
         R, S, Ri, Si,
         R, S_mean, S_var,
         title="Von Mises regression for $S$")
-    plt.ylim(0, 1)
+    plt.ylim(0, 1.05)
 
 
 def vm_regression_all(models):
@@ -260,7 +260,7 @@ def vm_regression_all(models):
         R, S_mean, S_var,
         title="Von Mises regression for $S$")
 
-    plt.ylim(0, 1)
+    plt.ylim(0, 1.05)
 
 
 def li_regression(model):
@@ -275,7 +275,7 @@ def li_regression(model):
         R, S, Ri, Si,
         R, S_mean, S_var,
         title="Linear interpolation for $S$")
-    plt.ylim(0, 1)
+    plt.ylim(0, 1.05)
 
 
 def li_regression_all(models):
@@ -304,7 +304,7 @@ def li_regression_all(models):
         R, S_mean, S_var,
         title="Linear interpolation for $S$")
 
-    plt.ylim(0, 1)
+    plt.ylim(0, 1.05)
 
 
 def likelihood(model):
@@ -315,7 +315,8 @@ def likelihood(model):
         R, S, None, None, None, None, None,
         title="Likelihood function",
         legend=False)
-    plt.ylim(0, 1)
+
+    plt.ylim(0, 1.05)
 
 
 def likelihood_all(models):
@@ -335,7 +336,7 @@ def likelihood_all(models):
         title="Likelihood function",
         legend=False)
 
-    plt.ylim(0, 1)
+    plt.ylim(0, 1.05)
 
 
 def model_rotations(models):

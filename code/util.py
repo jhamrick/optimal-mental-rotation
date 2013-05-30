@@ -15,6 +15,8 @@ DATA_DIR = "../data"
 
 def make_stimulus(npoints, rso):
     """Make a shape with `npoints` vertices."""
+    if hasattr(npoints, '__iter__'):
+        npoints = rso.randint(npoints[0], npoints[1]+1)
     # pick random points
     X = rso.rand(npoints, 2)
     # subtract off the mean
