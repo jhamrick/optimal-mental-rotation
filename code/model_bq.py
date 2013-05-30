@@ -143,14 +143,14 @@ class BayesianQuadratureModel(Model):
             Ri, Si,
             ntry=self.opt['ntry'],
             verbose=self.opt['verbose'] > 3,
-            wmin=np.radians(self.opt['dr']) / 2.,
-            wmax=np.pi / 2.)
+            wmin=np.radians(self.opt['dr']),
+            wmax=2*np.pi)
 
         self.debug("Best parameters: %s" % (theta,), level=2)
         self.debug("Computing GP over %s..." % name, level=2)
 
         # GP regression
-        kernel = mll.make_kernel(theta=theta)
+        kernel = mll.make_kernel(params=theta)
         mu, cov = GP(kernel, Ri, Si, self.R)
 
         return mu, cov, theta
