@@ -14,7 +14,7 @@
     sigma_p: 0.0,
 
     # the amount we rotate by
-    dr: 22.5,
+    dr: 11.25,
     # prior over angles
     prior_R: 0.15915494309189535, 
     # data scale, to avoid underflow
