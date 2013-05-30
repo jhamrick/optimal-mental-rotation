@@ -43,6 +43,6 @@
 
     # example for 'notes' notebook
     example_hyp: 1,
-    example_num: '002',
-    example_rot: '180'
+    example_num: '000',
+    example_rot: '140'
 }
