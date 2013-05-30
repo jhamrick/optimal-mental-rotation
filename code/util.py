@@ -9,8 +9,8 @@ from snippets.graphing import plot_to_array
 from snippets.safemath import MIN_LOG, MAX_LOG
 from snippets.safemath import log_clip, safe_multiply, safe_log
 
-STIM_DIR = "../stimuli"
-DATA_DIR = "../data"
+STIM_DIR = "../stimuli-nips-2013"
+DATA_DIR = "../data-nips-2013"
 
 
 def make_stimulus(npoints, rso):
