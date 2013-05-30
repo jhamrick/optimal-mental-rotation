@@ -77,7 +77,7 @@ if __name__ == "__main__":
     # config variables
     opt = util.load_opt()
     npoints = opt['npoints']
-    nstim = opt['nstim'] / 2
+    nstim = opt['nstim']
     nsamps = opt['nsamps']
     sigma = opt['sigma_p']
 
