@@ -113,7 +113,6 @@ class BayesianQuadratureModel(Model):
         nextvars = []
         nexti = []
         nextr = []
-        # print "old var: %s" % self.Z_var[1]
 
         for r, i in zip(rnext, inext):
             if r in self.ix:
@@ -128,9 +127,6 @@ class BayesianQuadratureModel(Model):
 
             logSK = self._mll_logS.make_kernel(params=self.theta_logS)
             logSmu, logScov = GP(logSK, Ri, lSi, self.R)
-
-            if (Smu <= -1).any():
-                continue
 
             delta = logSmu - np.log(Smu + 1)
             cix = sorted(set(self._candidate() + [r]))
@@ -165,7 +161,6 @@ class BayesianQuadratureModel(Model):
             C[np.abs(C) < 1e-100] = 0
             Zvar = np.trapz(np.trapz(C, self.R, axis=0), self.R)
 
-            # print "%s new: %s" % (r, Zvar)
             nexti.append(i)
             nextr.append(r)
             nextvars.append(Zvar)
@@ -173,8 +168,6 @@ class BayesianQuadratureModel(Model):
         nextvars = np.array(nextvars)
         nexti = np.array(nexti)
         nextr = np.array(nextr)
-
-        print "direction:", self._dir
 
         assert nextvars.size <= 2
         if nextvars.size == 0:
@@ -184,25 +177,6 @@ class BayesianQuadratureModel(Model):
             idx = 0
             assert self._dir == np.sign(nexti[idx] - self._icurr)
         else:
-            
-            # a, b = nextvars
-            # c = self.Z_var[1]
-            # diff = np.abs((a - b) / c)
-            # print "diff is %s" % diff
-            # if diff < 0.0001:
-            #     if self._dir == 0:
-            #         idx = np.random.randint(2)
-            #         self._dir = 1 if nextr[idx] < 180 else -1
-            #     elif self._dir == 1:
-            #         idx = list(nexti).index(
-            #             (self._icurr + 1) % (self._rotations.size))
-            #         self._dir = 1
-            #     elif self._dir == -1:
-            #         idx = list(nexti).index(
-            #             (self._icurr - 1) % (self._rotations.size))
-            #         self._dir = -1
-
-            # else:
             idx = np.argmin(nextvars)
             if np.abs(nexti[idx] - self._icurr) == 1:
                 self._dir = np.sign(nexti[idx] - self._icurr)
@@ -211,7 +185,6 @@ class BayesianQuadratureModel(Model):
                 self._dir = -self._dir
 
         self.debug("Choosing next: %d" % nextr[idx], level=2)
-        print "choosing %s" % nextr[idx]
         self.sample(nextr[idx])
         self._icurr = nexti[idx]
 
@@ -278,15 +251,7 @@ class BayesianQuadratureModel(Model):
             self.Ri, lSi, self._mll_logS, "log(S)")
 
         # choose "candidate" points, halfway between given points
-        if (self.mu_S <= -1).any():
-            print "Warning: regression for mu_S returned negative values"
-            sm = -np.min(self.mu_S)
-            t = sm + 0.001
-            mls = np.log(np.exp(self.mu_logS) - 1 + t)
-            lms = np.log(self.mu_S + t)
-            self.delta = mls - lms
-        else:
-            self.delta = self.mu_logS - np.log(self.mu_S + 1)
+        self.delta = self.mu_logS - np.log(self.mu_S + 1)
         cix = self._candidate()
         self.Rc = self.R[cix].copy()
         self.Dc = self.delta[cix].copy()
