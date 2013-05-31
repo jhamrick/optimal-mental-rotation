@@ -123,9 +123,10 @@ class Model(object):
             self.debug("Z = %f" % (self.Z_mean), level=level)
         else:
             std = np.sqrt(self.Z_var)
+            sf = self.opt['stop_factor']
             mean = self.Z_mean
-            lower = mean - 2*std
-            upper = mean + 2*std
+            lower = mean - sf*std
+            upper = mean + sf*std
             self.debug("Z = %f  [%f, %f]" % (mean, lower, upper),
                        level=level)
 
@@ -135,7 +136,8 @@ class Model(object):
 
     def likelihood_ratio(self):
         std = 0 if self.Z_var == 0 else np.sqrt(self.Z_var)
-        vals = [self.Z_mean, self.Z_mean - 2*std, self.Z_mean + 2*std]
+        sf = self.opt['stop_factor']
+        vals = [self.Z_mean, self.Z_mean - sf*std, self.Z_mean + sf*std]
         ratios = []
         for val in vals:
             p_XaXb_h1 = self.p_Xa * val / self._S_scale

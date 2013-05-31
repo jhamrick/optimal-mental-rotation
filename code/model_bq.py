@@ -87,7 +87,7 @@ class BayesianQuadratureModel(Model):
             self.fit()
             self.integrate()
         hyp = self.ratio_test(level=1)
-        if hyp != -1 and len(self.ix) > 2:
+        if hyp != -1:
             raise StopIteration
 
         self.debug("Finding next sample")
@@ -143,7 +143,7 @@ class BayesianQuadratureModel(Model):
             Ri, Si,
             ntry=self.opt['ntry'],
             verbose=self.opt['verbose'] > 3,
-            wmin=np.radians(self.opt['dr']),
+            wmin=np.pi / 8.,
             wmax=2*np.pi)
 
         self.debug("Best parameters: %s" % (theta,), level=2)
