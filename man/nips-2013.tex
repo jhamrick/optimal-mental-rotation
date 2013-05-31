@@ -121,6 +121,7 @@ classic mental rotation results. We end with a discussion of the
 strengths and weaknesses of each model, as well as directions for
 future work.
 
+
 \section{Background}
 
 There is a long and rich history of work on mental rotation beginning
@@ -478,131 +479,103 @@ will continue to compute rotations and update its estimate of $Z$.
 
 \section{Results}
 
-% I think it would be compelling to add a second row to Equation 5
-% where you show the averages and s.e. at each rotation for many noisy
-% runs of the algorithm (possibly on different stimuli). If you can
-% show that the average is a linear function, in a way that looks like
-% the classic behavioral data, that will be compelling.
-
 \begin{figure}[t]
   \centering
   \includegraphics[width=\textwidth]{../figures/model_rotations.pdf}
-  \caption{\textbf{Model rotations.} Each subplot shows the
-    correspondence between the true angle of rotation ($R$) for $h_1$
-    stimuli and the amount of rotation performed by the model. Dotted
-    lines indicate a perfect 1:1 relationship. The \naive{} and
-    parametric models (left and center panels, respectively) are
-    identical; they show modest agreement until roughly
-    $\frac{\pi}{2}$, after which agreement decreases as they tend to
-    encounter local maxima. The nonparametric model (right panel)
-    exhibits a significant correlation between the true angle and the
-    amount the model rotates.}
+  \caption{\textbf{Model rotations.} Top: each subplot shows the
+    correspondence between the true angle of rotation ($R$) for
+    ``same'' pairs and the amount of rotation performed by the
+    model. Bottom: each subplot shows the models' mean rotations over
+    stimuli pairs that were judged correctly. Black dots correspond to
+    ``same'' pairs, and blue lines correspond to ``different'' pairs
+    (for which the mean rotation is constant across true rotations, as
+    the true rotation is undefined). Error bars/shaded regions
+    indicate one standard deviation, and the dotted lines indicate the
+    least-squares fit to the ``same'' pairs.}
   \label{fig:rotations}
 \end{figure}
 
-We evaluated each model's performance on 20 randomly generated shapes
-which had between 3 and 6 vertices, inclusive, (e.g. $X_a$ in Figure
-\ref{fig:stimuli}). For each shape, we computed 18 ``different'' and
-18 ``same'' stimuli pairs, with $R$ spaced at $20^\prime$ increments
-between 0 and 360. ``Different'' pairs were created by reflecting
-$X_a$ across the $y$-axis and rotating it by $R$; for ``same'' pairs,
-$X_a$ was rotated by $R$. \TODO{need to mention that shapes were
-  chosen to be discriminable by the gold standard}
+We evaluated each model's performance on 20 shapes which had between 3
+and 6 vertices, inclusive, (e.g. $X_a$ in Figure
+\ref{fig:stimuli}). For each shape, we computed 18 ``same'' and 18
+``different'' stimuli pairs, with $R$ spaced at $20^\prime$ increments
+between 0 and 360, as in \cite{Shepard1971}. ``Same'' pairs were
+created by rotating $X_a$ by $R$; the same was true for ``different'',
+except that $X_a$ was also reflected across the $y$-axis. Each shape
+was generated randomly, but under the constraint that the
+``same''/``different'' pairs created from the shape could both be
+judged according to the ``gold standard''.
 
 We considered three metrics of performance in particular:
 \begin{itemize}
-\item \textit{Responses}: how accurate is the model at choosing the
-  correct hypothesis? This is defined to be the mean error ($\ME{}$),
+\item \textit{Responses}: How accurate was the model at choosing the
+  correct hypothesis? This was defined to be the mean error ($\ME{}$),
   or fraction of times the model picks the incorrect hypothesis.
-\item \textit{Rotations}: for those ``same'' pairs which the model
-  gets correct, how correlated are the true angles of rotation with
-  the rotations performed by the model?  This is defined to be the
-  Pearson's correlation coefficient $\rho$ between $R$ and $\vert
-  \mathbf{R}\vert$. Figure \ref{fig:rotations} shows individual points
-  corresponding to true rotation vs. rotation by the model, for each
-  model.
-\item \textit{Estimates of $Z$}: how accurate is the model's estimate
-  of $Z$? This is defined to be the mean squared error ($\MSE{}$)
-  between the model's estimate of $Z$ and the ``gold standard'' value,
-  where the error has scale such that $\MSE{}=0$ indicates no error,
-  and $\MSE{}=1$ indicates maximum error. Figure \ref{fig:accuracy}
-  shows plots of the true (gold standard) value of $Z$ vs. the model's
-  estimate, for each model.
+\item \textit{Rotations}: For those ``same'' pairs which the model
+  judged correct, how correlated were the model's rotations with the
+  true angles of rotation?  We quantified this using the Pearson's
+  correlation coefficient $\rho$ for $R$ vs. $\vert
+  \mathbf{R}\vert$. The top row in Figure \ref{fig:rotations} shows
+  individual points corresponding to true rotations vs. rotations by
+  the models for all stimuli, including those judged incorrectly. The
+  bottom row shows mean model rotations, across only those stimuli
+  which were judged correctly. We structured the analysis in this way
+  to better compare to the results of \cite{Shepard1971}, which also
+  excluded incorrectly judged stimuli.
+\item \textit{Estimates of $Z$}: How accurate was the model's estimate
+  of $Z$? We defined this quantity as the mean squared error
+  ($\MSE{}$) between the model's estimate of $Z$ and the ``gold
+  standard'' value, where the error has scale such that $\MSE{}=0$
+  indicates no error and $\MSE{}=1$ indicates maximum error. Figure
+  \ref{fig:accuracy} shows plots of the true (``gold standard'') value
+  of $Z$ vs. the model's estimate, for each model.
 \end{itemize}
-
-\paragraph{Gold standard} 
-
-The mean error of the gold standard model was $\GSME{}$, indicating
-that $Z$ is a sufficient approximation of $\int_R p(X_b\ \vert\
-X_R)p(R)\ \mathrm{d}R$ for these particular stimuli.
 
 \paragraph{\Naive{}} 
 
-The \naive{} model's response error rate was better than chance with
+The \naive{} model's response error rate was better than chance, with
 $\NaiveME{}$. Closer inspection reveals that much of this comes from
-$h_0$ stimuli ($\NaiveMEdiff{}$), where the asymmetric linear
-interpolation gives an overestimate of $Z$ (e.g., in Figure
-\ref{fig:li}). There is some error from $h_1$ stimuli as well
-($\NaiveMEsame{}$), which happens when the hill climbing search finds
-a local maxima and terminates prematurely, thus resulting in a low
-estimate of $Z$.
+``different'' pairs ($\NaiveMEdiff{}$), where the asymmetric linear
+interpolation may give an overestimate of $Z$ (e.g. Figure
+\ref{fig:li}).  This intuition is confirmed by the model's accuracy
+($\NaiveMSE{}$) in estimating $Z$: as shown in the left panel of
+Figure \ref{fig:accuracy}, it overestimated for nearly all stimuli
+pairs.
 
-The correlation between the average number of rotations computed by
-the \naive{} model and the true angle of rotation was
-$\Naivecorr{}$. The shape of the data is more interesting (see Figure
-\ref{fig:rotations}, top left panel): the \naive{} model actually
-corresponds extremeley well to the true angle of rotation for
-$R<\frac{\pi}{2}$ ($\Naivecorrsm{}$). This is unsurprising, because
-the closer the true angle is to zero, the less the model has to
-rotate, and the less likely it will get stuck on local maxima. Thus,
-it is more likely to locate the global maximum, which corresponds to
-the true angle of rotation. For $R>\frac{\pi}{2}$, we see an
-increasing tendency to under-rotate due to getting stuck on local
-maxima, as well as a tendency to over-rotate if the wrong rotation
-direction was chosen.
+The correlation between the \naive{} model's average rotation and the
+true angle of rotation was $\Naivecorr{}$ (Figure \ref{fig:rotations},
+bottom left). More complex patterns are revealed by examining the
+shape of the raw data in Figure \ref{fig:rotations}, top left: the
+\naive{} model corresponds extremeley well to the true angle of
+rotation for approximately $R<\frac{\pi}{2}$. This is unsurprising,
+because the closer the true angle is to zero, the less the model has
+to rotate, and the less likely it will get stuck on local
+maxima. Thus, it is more likely to locate the global maximum, which
+corresponds to the true angle of rotation. For $R>\frac{\pi}{2}$, we
+see an increasing tendency to under-rotate due to getting stuck on
+local maxima, as well as a tendency to over-rotate if the wrong
+direction was initially chosen.
 
-The \naive{} model's error on $h_0$ stimuli is reflected in its
-accuracy in estimating $Z$ ($\NaiveMSE{}$). Figure \ref{fig:accuracy}
-(left panel) shows individual estimates for each stimulus, color-coded
-by true hypothesis. The model overestimates $Z$ for most of the $h_0$
-and $h_1$ stimuli, and underestimates several of the $h_1$ stimuli as
-well.
 
 \paragraph{Parametric (Von Mises)}
 
-The parametric model is also fairly inaccurate ($\VMME{}$), making
-more errors on $h_1$ stimuli ($\VMMEsame{}$) than $h_0$ stimuli
-($\VMMEdiff{}$). This is because the Von Mises distribution only has a
-single peak and thus will underestimate $Z$ for multimodal similarity
-functions. However, it does more accurately estimate $Z$ for stimuli
-that the \naive{} model would overestimate ($\VMMSE{}$). This
-underestimation is severe enough that in most cases where it gets
-stuck on a local maxima, it produces the incorrect judgment. So, the
-correlation for \textit{correct} responses is actually improved
-($\VMcorr{}$) and would be near perfect if the correct diretion of
-rotation was initially chosen (see Figure \ref{fig:rotations}, top
-center).
+The parametric model's error in determining whether the objects were
+identical was $\VMME{}$, making more errors on ``same'' pairs
+($\VMMEsame{}$) than ``different'' pairs ($\VMMEdiff{}$). Rather than
+overestimating as with the \naive{} model, however, the parametric
+model largely underestimated $Z$. This is unsurprising: because the
+Von Mises distribution only has a single peak, it necessarily
+underestimates $Z$ for multimodal similarity functions. Overall, the
+parametric model had an error rate of $\VMMSE{}$ in estimating $Z$,
+which was significantly more accurate than that of the \naive{} model.
 
-
-\paragraph{Nonparametric (Bayesian Quadrature)}
-
-The nonparametric model is much more accurate in choosing the correct
-hypothesis ($\BQME{}$), erring approximately equally for both types of
-stimuli. We note that this is very close to the 3.2\% error rate
-reported by \cite{Shepard1971}, though further experimentation is
-necessary to determine whether the types of errors people make align
-with those of the model.
-
-The average rotations computed by the nonparametric model were
-strongly correlated with the true rotations ($\BQcorr$, see Figure
-\ref{fig:rotations}, bottom right). This is because the nonparametric
-model does not get stuck as easily on local optima: it will continue
-rotating until it is confident that its estimate of $Z$ is
-accurate. Indeed, its active attempts to obtain an accurate estimate
-of $Z$ are largely succeessful ($\BQMSE{}$). Moreover, it has the
-capacity to ``restart'' and can recover from initially rotating in the
-incorrect direction, as illustrated by the fewer number of extreme
-over-rotations in Figure \ref{fig:rotations} (top right).
+The correlation between the parametric model's average rotation and
+the true angle of rotation was also higher ($\VMcorr{}$), though this
+is because more of the underestimated stimuli pairs were excluded from
+the analysis. The individual rotations performed by the parametric and
+\naive{} models were actually identical (see Figure
+\ref{fig:rotations}, upper left and center) because both models use
+the same hill-climbing stopping strategy.
 
 
 \begin{figure}[t]
@@ -611,16 +584,35 @@ over-rotations in Figure \ref{fig:rotations} (top right).
   \caption{\textbf{Accuracy in estimating $Z$.} Each subplot shows the
     true (``gold standard'') value of $Z$ vs. the value estimated by
     the model. Black dotted lines indicate a perfect 1:1
-    correspondence between the true and estimated values. All models
-    perform well for $h_0$ stimuli, but exhibit different behavior for
-    $h_1$ stimuli. The \naive{} model (left panel) tends to either
-    greatly overestimate, or underestimate. The parametric model
-    (center panel) is very accurate for about half the $h_1$ stimuli,
+    correspondence between the true and estimated values. The \naive{}
+    model (left panel) tends to overestimate. The parametric model
+    (center panel) is very accurate for about half the ``same'' pairs,
     and severely underestimates the rest. The nonparametric model
-    (right panel) maintains a decent correspondence with the true $Z$,
-    with the exception of a handful of outliers.}
+    (right panel) maintains a decent correspondence with the true
+    $Z$.}
   \label{fig:accuracy}
 \end{figure}
+
+
+\paragraph{Nonparametric (Bayesian Quadrature)}
+
+The nonparametric model was much more accurate in choosing the correct
+hypothesis than the other two models ($\BQME{}$). We note that this is
+very close to the 3.2\% error rate reported by \cite{Shepard1971},
+though further experimentation is necessary to determine whether the
+types of errors people make align with those of the model.  
+
+The average rotations computed by the nonparametric model were
+strongly correlated with the true rotations ($\BQcorr$, see Figure
+\ref{fig:rotations}, bottom right). Because the nonparametric model
+has the capacity to ``restart'', it could recover from rotating in the
+incorrect direction (e.g. Figure \ref{fig:bq}) and thus did not
+over-rotate as frequently.  It also under-rotated less frequently:
+because the model continues to rotate until it is confident that its
+estimate of $Z$ is accurate, it does not get stuck as easily on local
+optima.  Indeed, its active attempts to obtain an accurate estimate of
+$Z$ were largely succeessful, with $\BQMSE{}$.
+
 
 \section{Discussion}
 
