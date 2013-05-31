@@ -6,7 +6,7 @@ import util
 class Model(object):
 
     def __init__(self, Xa, Xb, Xm, R, **opt):
-        """Initialize the linear interpolation object.
+        """Initialize the mental rotation model.
 
         Parameters
         ----------
@@ -29,7 +29,7 @@ class Model(object):
             Scale of the data
         dr : int (default=10)
             Angle of rotation, in degrees, between sequential mental images
-        sigma : float (default=0.2)
+        sigma_s : float (default=0.2)
             Standard deviation in similarity function
         prior_R : float or numpy.ndarray (default=1/2pi)
             Prior over rotations
@@ -41,7 +41,7 @@ class Model(object):
             'verbose': False,
             'scale': 1,
             'dr': 10,
-            'sigma': 0.2,
+            'sigma_s': 0.2,
             'prior_R': np.ones_like(R) / (2*np.pi),
         }
         # self.opt was defined by a subclass
@@ -58,11 +58,11 @@ class Model(object):
 
         # all possible rotations
         self.R = R.copy()
-        rot = np.round(np.arange(0, self.R.size, self.opt['dr']))
+        rot = np.round(np.arange(0, self.R.size - 1, self.opt['dr']))
         self._rotations = np.round(rot).astype('i8')
         # compute similarities
         self._S_scale = self.Xa.shape[0] - 1
-        self._S_scale /= (2 * np.pi * self.opt['sigma']) * self.opt['scale']
+        self._S_scale /= (2 * np.pi * self.opt['sigma_s']) * self.opt['scale']
         self.S = np.array([self.similarity(X) for X in self.Xm])
         self.S *= self._S_scale
 
@@ -90,6 +90,8 @@ class Model(object):
         # we get the first (and last, because it's circular data)
         # observation for free
         self.sample(0)
+        if self.opt.get('kernel', None) == 'gaussian':
+            self.sample(self.R.size - 1)
 
     def sample(self, r):
         assert isinstance(r, int)
@@ -117,13 +119,13 @@ class Model(object):
         self.ratio_test()
 
     def print_Z(self, level=-1):
-        if self.Z_var == 0:
+        if not self.Z_var:
             self.debug("Z = %f" % (self.Z_mean), level=level)
         else:
-            std = np.sqrt(self.Z_var)
+            sf = self.opt['stop_factor']
             mean = self.Z_mean
-            lower = mean - 2*std
-            upper = mean + 2*std
+            lower = mean - sf*np.sqrt(self.Z_var[0])
+            upper = mean + sf*np.sqrt(self.Z_var[1])
             self.debug("Z = %f  [%f, %f]" % (mean, lower, upper),
                        level=level)
 
@@ -132,8 +134,10 @@ class Model(object):
             print ("  "*level) + msg
 
     def likelihood_ratio(self):
-        std = 0 if self.Z_var == 0 else np.sqrt(self.Z_var)
-        vals = [self.Z_mean, self.Z_mean - 2*std, self.Z_mean + 2*std]
+        std_lo = 0 if not self.Z_var else np.sqrt(self.Z_var[0])
+        std_hi = 0 if not self.Z_var else np.sqrt(self.Z_var[1])
+        sf = self.opt['stop_factor']
+        vals = [self.Z_mean, self.Z_mean - sf*std_lo, self.Z_mean + sf*std_hi]
         ratios = []
         for val in vals:
             p_XaXb_h1 = self.p_Xa * val / self._S_scale
@@ -177,17 +181,22 @@ class Model(object):
         # number of points and number of dimensions
         n, D = x0.shape
         # covariance matrix
-        Sigma = np.eye(D) * self.opt['sigma']
-        invSigma = np.eye(D) * (1. / self.opt['sigma'])
-        # iterate through all permutations of the vertices -- but if two
-        # vertices are connected, they are next to each other in the list
-        # (or on the ends), so we really only need to cycle through n
-        # orderings
-        e = np.empty(n)
+        Sigma = np.eye(D) * self.opt['sigma_s']
+        invSigma = np.eye(D) * (1. / self.opt['sigma_s'])
+        # iterate through all permutations of the vertices -- but if
+        # two vertices are connected, they are next to each other in
+        # the list (or on the ends), so we really only need to cycle
+        # through 2n orderings (once for the original ordering, and
+        # once for the reverse)
+        e = np.empty(2*n)
         for i in xrange(n):
             idx = np.arange(i, i+n) % n
             d = x0 - x1[idx]
             e[i] = -0.5 * np.sum(np.dot(d, invSigma) * d)
+        for i in xrange(n):
+            idx = np.arange(i, i+n)[::-1] % n
+            d = x0 - x1[idx]
+            e[i+n] = -0.5 * np.sum(np.dot(d, invSigma) * d)
         # constants
         Z0 = (D / 2.) * np.log(2 * np.pi)
         Z1 = 0.5 * np.linalg.slogdet(Sigma)[1]

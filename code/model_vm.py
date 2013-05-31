@@ -4,6 +4,7 @@ import scipy.optimize as sopt
 
 from model_base import Model
 from search import hill_climbing
+from util import log_clip
 
 
 class VonMisesModel(Model):
@@ -48,7 +49,7 @@ class VonMisesModel(Model):
         """
 
         thetahat, kappa, z = theta
-        pdf = np.log(z) + circ.vmlogpdf(x, thetahat, kappa)
+        pdf = log_clip(np.log(z) + circ.vmlogpdf(x, thetahat, kappa))
         err = np.sum((y - np.exp(pdf)) ** 2)
         return err
 
@@ -135,6 +136,10 @@ class VonMisesModel(Model):
 
 if __name__ == "__main__":
     import util
+    import sys
+
+    # load options
     opt = util.load_opt()
-    stims = util.find_stims()[:opt['nstim']]
-    util.run_model(stims, VonMisesModel, opt)
+
+    # run each stim
+    util.run_all(sys.argv[1:], VonMisesModel, opt)

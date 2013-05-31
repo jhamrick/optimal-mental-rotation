@@ -1,9 +1,11 @@
 import numpy as np
+from functools import wraps
 from model_base import Model
 
 
 class GoldStandardModel(Model):
 
+    @wraps(Model.__init__)
     def __init__(self, *args, **kwargs):
         super(GoldStandardModel, self).__init__(*args, **kwargs)
         self._rotations = np.arange(self.R.size, dtype='i8')
@@ -39,6 +41,10 @@ class GoldStandardModel(Model):
 
 if __name__ == "__main__":
     import util
+    import sys
+
+    # load options
     opt = util.load_opt()
-    stims = util.find_stims()[:opt['nstim']]
-    util.run_model(stims, GoldStandardModel, opt)
+
+    # run each stim
+    util.run_all(sys.argv[1:], GoldStandardModel, opt)

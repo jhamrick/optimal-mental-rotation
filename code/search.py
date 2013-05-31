@@ -26,7 +26,8 @@ def hill_climbing(model):
 
     # we're at a super small scale, so we want to ignore
     # minima/maxima here
-    if scurr <= (model.opt['scale'] / 1000.):
+    thresh = model.opt.get('h', np.sqrt(model.opt['scale'] / 100.)) ** 2
+    if scurr <= thresh:
         model.debug("Below threshold, ignoring maxima/minima!", level=2)
         if (snext > sprev) and (inext != model._ilast):
             choose_next = True

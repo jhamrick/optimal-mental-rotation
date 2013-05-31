@@ -7,6 +7,25 @@ from sympy.functions.special.delta_functions import DiracDelta as delta
 
 from snippets.stats import periodic_kernel
 from snippets.stats import gaussian_kernel
+from snippets.stats import MIN_LOG, MAX_LOG
+import periodic_mll as mll
+
+
+def cholesky(mat):
+    m = np.mean(np.abs(mat))
+    try:
+        L = np.linalg.cholesky(mat)
+    except np.linalg.LinAlgError:
+        # matrix is singular, let's try adding some noise and see if
+        # we can invert it then
+        noise = np.random.normal(0, m * 1e-4, mat.shape)
+        try:
+            L = np.linalg.cholesky(mat + noise)
+        except np.linalg.LinAlgError:
+            raise np.linalg.LinAlgError(
+                "Could not compute Cholesky decomposition of "
+                "kernel matrix, even with jitter")
+    return L
 
 
 class KernelMLL(object):
@@ -30,30 +49,42 @@ class KernelMLL(object):
         d = sym.Symbol('d')
 
         free_params = []
+
         # output scale (height)
         if params.get('h', None):
             h = params['h']
         else:
-            h = sym.Symbol('h')
+            h = sym.Symbol('h', positive=True)
             free_params.append(h)
+
         # input scale (width)
         if params.get('w', None):
             w = params['w']
         else:
-            w = sym.Symbol('w')
+            w = sym.Symbol('w', positive=True)
             free_params.append(w)
+
+        # period
+        if params.get('p', None):
+            p = params.get('p', 1)
+        else:
+            p = sym.Symbol('p', positive=True)
+            free_params.append(p)
+
         # observation noise
         if params.get('s', None) is not None:
             s = params['s']
         else:
-            s = sym.Symbol('s')
+            s = sym.Symbol('s', positive=True)
             free_params.append(s)
 
         # symbolic version of the kernel function
+        self.kernel_type = kernel
         if kernel == 'periodic':
             self.kernel = periodic_kernel
-            k1 = (h ** 2) * sym.exp(-2. * (sym.sin(d / 2.) ** 2) / (w ** 2))
+            k1 = (h ** 2) * sym.exp(-2.*(sym.sin(d / (2.*p)) ** 2) / (w ** 2))
         elif kernel == 'gaussian':
+            raise NotImplementedError
             self.kernel = gaussian_kernel
             k1 = (h ** 2) * sym.exp(-0.5 * (d ** 2) / (w ** 2))
         else:
@@ -61,20 +92,76 @@ class KernelMLL(object):
 
         k2 = (s ** 2) * delta(d)
         self.sym_K = k1 + k2
+        self.K = mll.K
 
-        # compute partial derivatives adn turn them into functions, so
-        # we can evaluate them (to compute the Jacobian)
+        # compute 1st and 2nd partial derivatives adn turn them into
+        # functions, so we can evaluate them (to compute the Jacobian
+        # and Hessian)
         self.sym_dK_dtheta = []
         self.dK_dtheta = []
-        for p in free_params:
-            sym_f = sym.diff(self.sym_K, p)
-            f = lambdify((tuple(free_params), d), sym_f)
+        self.sym_d2K_dtheta2 = [[] for i in xrange(len(free_params))]
+        self.d2K_dtheta2 = [[] for i in xrange(len(free_params))]
+
+        for i, p1 in enumerate(free_params):
+            # first partial derivatives
+            sym_f = sym.diff(self.sym_K, p1)
             self.sym_dK_dtheta.append(sym_f)
-            self.dK_dtheta.append(f)
+            self.dK_dtheta.append(mll.jacobian[i])
+
+            for j, p2 in enumerate(free_params):
+                # second partial derivatives
+                sym_df = sym.diff(sym_f, p2)
+                self.sym_d2K_dtheta2[i].append(sym_df)
+                self.d2K_dtheta2[i].append(mll.hessian[i][j])
 
         self.h = None if type(h) is sym.Symbol else h
         self.w = None if type(w) is sym.Symbol else w
+        self.p = None if type(p) is sym.Symbol else p
         self.s = None if type(s) is sym.Symbol else s
+
+    def kernel_params(self, theta):
+        th = list(theta)
+        h = th.pop(0) if self.h is None else self.h
+        w = th.pop(0) if self.w is None else self.w
+        p = th.pop(0) if self.p is None else self.p
+        s = th.pop(0) if self.s is None else self.s
+        return h, w, p, s
+
+    def free_params(self, params):
+        theta = []
+        if self.h is None:
+            theta.append(params[0])
+        if self.w is None:
+            theta.append(params[1])
+        if self.p is None:
+            theta.append(params[2])
+        if self.s is None:
+            theta.append(params[3])
+        return theta
+
+    def make_kernel(self, theta=None, params=None):
+        if not params:
+            h, w, p, s = self.kernel_params(theta)
+        else:
+            h, w, p, s = params
+
+        if self.kernel_type == 'periodic':
+            k = self.kernel(h, w, p)
+        else:
+            k = self.kernel(h, w)
+
+        return k
+
+    def Kxx(self, theta, x):
+        params = self.kernel_params(theta)
+        h, w, p, s = params
+
+        # the overhead of JIT compiling isn't it worth it here because
+        # this is just a temporary kernel function
+        K = self.make_kernel(params=params)(x, x)
+        if s > 0:
+            K += np.eye(x.size) * (s ** 2)
+        return K
 
     @staticmethod
     def _d_dthetaj(Ki, dK_dthetaj, theta, x, y):
@@ -89,13 +176,12 @@ class KernelMLL(object):
         ----------
         Ki : numpy.ndarray with shape (n, n)
             Inverse of the kernel matrix `K`
-        dK_dthetaj : function((h, w, s), d)
+        dK_dthetaj : function(theta, d)
             Computes the partial derivative of `K` with respect to
-            `theta_j`, where `theta_j` is `h`, `w`, or `s`. Takes as
-            arguments the kernel parameters and the difference
-            `x_1-x_2`.
-        theta : 3-tuple
-            The kernel parameters `h`, `w`, and `s`.
+            `theta_j`. Takes as arguments the kernel parameters and the
+            difference `x_1-x_2`.
+        theta : tuple
+            The kernel parameters.
         x : numpy.ndarray with shape (n,)
             Given input values
         y : numpy.ndarray with shape (n,)
@@ -113,12 +199,8 @@ class KernelMLL(object):
 
         """
 
-        # compute dK/dtheta_j matrix
-        dj = np.empty((x.size, x.size))
-        for i in xrange(x.size):
-            for j in xrange(x.size):
-                diff = x[i] - x[j]
-                dj[i, j] = dK_dthetaj(theta, diff)
+        # compute kernel matrix derivative
+        dj = dK_dthetaj(x, x, *theta)
 
         # compute the partial derivative of the marginal log likelihood
         k = np.dot(Ki, dj)
@@ -128,27 +210,42 @@ class KernelMLL(object):
 
         return dd
 
-    def __call__(self, theta, x, y):
-        """Computes the marginal negative log likelihood of the kernel.
+    @staticmethod
+    def _d2_dthetajdthetai(Ki, dK_dthetaj, dK_dthetai, d2K_dthetaji,
+                           theta, x, y):
+        """Compute the second partial derivative of the marginal log
+        likelihood with respect to two of its parameters, `\theta_j`
+        and `\theta_i`.
 
-        This is computing Eq. 5.8 of Rasmussen & Williams (2006):
+        This is computing the derviative of Eq. 5.9 of Rasmussen &
+        Williams (2006):
 
-        $$\log{p(\mathbf{y} | X,\mathbf{\theta})} = -\frac{1}{2}\mathbf{y}^\top K_y^{-1}\mathbf{y} - \frac{1}{2}\log{|K_y|} - \frac{n}{2}\log{2\pi}
+        $$\frac{\partial}{\partial\theta_j}\log{p(\mathbf{y} | X, \mathbf{\theta})}=\frac{1}{2}\mathbf{y}^\top K^{-1}\frac{\partial K}{\partial\theta_j}K^{-1}\mathbf{y}-frac{1}{2}\mathrm{tr}(K^{-1}\frac{\partial K}{\partial\theta_j})$$
 
         Parameters
         ----------
-        theta : 3-tuple
-            The kernel parameters `h`, `w`, and `s`
+        Ki : numpy.ndarray with shape (n, n)
+            Inverse of the kernel matrix `K`
+        dK_dthetaj : function(theta, d)
+            Computes the partial derivative of `K` with respect to
+            `theta_j`.
+        dK_dthetai : function(theta, d)
+            Computes the partial derivative of `K` with respect to
+            `theta_i`.
+        dK_dthetaji : function(theta, d)
+            Computes the second partial derivative of `K` with respect
+            to `theta_j`, and `theta_i`.
+        theta : tuple
+            The kernel parameters.
         x : numpy.ndarray with shape (n,)
-            The given input values
+            Given input values
         y : numpy.ndarray with shape (n,)
-            The given output values
+            Given output values
 
         Returns
         -------
         out : float
-            The marginal negative log likelihood of the data given the
-            parameters
+            Partial derivative of the marginal log likelihood.
 
         References
         ----------
@@ -157,19 +254,56 @@ class KernelMLL(object):
 
         """
 
-        th = list(theta)
-        h = th.pop(0) if self.h is None else self.h
-        w = th.pop(0) if self.w is None else self.w
-        s = th.pop(0) if self.s is None else self.s
+        # compute dK/dtheta_j, dK/dtheta_i, d2K/(dtheta_j dtheta_i)
+        dj = dK_dthetaj(x, x, *theta)
+        di = dK_dthetai(x, x, *theta)
+        dji = d2K_dthetaji(x, x, *theta)
 
-        # the overhead of JIT compiling isn't it worth it here because
-        # this is just a temporary kernel function
-        K = self.kernel(h, w, jit=False)(x, x)
-        if s > 0:
-            K += np.eye(x.size) * (s ** 2)
+        dKidi = np.dot(-Ki, np.dot(di, Ki))
+        dKidj = np.dot(-Ki, np.dot(dj, Ki))
+        d2Kidji = np.dot(-Ki, np.dot(dji, Ki))
+
+        k = np.dot(dKidi, dKidj) + d2Kidji + np.dot(dKidj, dKidi)
+        t0 = 0.5 * np.dot(y.T, np.dot(k, y))
+        t1 = -0.5 * np.trace(np.dot(dKidi, dj) + np.dot(Ki, dji))
+        dd = t0 + t1
+
+        return dd
+
+    def lh(self, theta, x, y):
+        """Computes the marginal log likelihood of the kernel.
+
+        This is computing Eq. 5.8 of Rasmussen & Williams (2006):
+
+        $$\log{p(\mathbf{y} | X,\mathbf{\theta})} = -\frac{1}{2}\mathbf{y}^\top K_y^{-1}\mathbf{y} - \frac{1}{2}\log{|K_y|} - \frac{n}{2}\log{2\pi}
+
+        Parameters
+        ----------
+        theta : tuple
+            The kernel parameters.
+        x : numpy.ndarray with shape (n,)
+            The given input values
+        y : numpy.ndarray with shape (n,)
+            The given output values
+
+        Returns
+        -------
+        out : float
+            The marginal log likelihood of the data given the parameters
+
+        References
+        ----------
+        Rasmussen, C. E., & Williams, C. K. I. (2006). Gaussian processes
+            for machine learning. MIT Press.
+
+        """
 
         # invert K and compute determinant
-        L = np.linalg.cholesky(K)
+        K = self.Kxx(theta, x)
+        try:
+            L = cholesky(K)
+        except np.linalg.LinAlgError:
+            return -np.inf
         Li = np.linalg.inv(L)
         Ki = np.dot(Li.T, Li)
         logdetK = 2 * np.log(np.diag(L)).sum()
@@ -178,13 +312,16 @@ class KernelMLL(object):
         t1 = -0.5 * np.dot(np.dot(y.T, Ki), y)
         t2 = -0.5 * logdetK
         t3 = -0.5 * x.size * np.log(2 * np.pi)
-        mll = (t1 + t2 + t3)
-        out = -mll
+        mll = np.clip(t1 + t2 + t3, MIN_LOG, MAX_LOG)
 
-        return out
+        return mll
+
+    def neg_lh(self, *args, **kwargs):
+        llh = self.lh(*args, **kwargs)
+        return -llh
 
     def jacobian(self, theta, x, y):
-        """Computes the negative Jacobian of the marginal log likelihood of
+        """Computes the Jacobian of the marginal log likelihood of
         the kernel.
 
         See Eq. 5.9 of Rasmussen & Williams (2006).
@@ -201,8 +338,8 @@ class KernelMLL(object):
         Returns
         -------
         out : 3-tuple
-            The negative Jacobian of the marginal negative log
-            likelihood of the data given the parameters
+            The Jacobian of the marginal negative log likelihood of the
+            data given the parameters
 
         References
         ----------
@@ -211,29 +348,84 @@ class KernelMLL(object):
 
         """
 
-        th = list(theta)
-        h = th.pop(0) if self.h is None else self.h
-        w = th.pop(0) if self.w is None else self.w
-        s = th.pop(0) if self.s is None else self.s
-
-        # the overhead of JIT compiling isn't it worth it here because
-        # this is just a temporary kernel function
-        K = self.kernel(h, w, jit=False)(x, x)
-        if s > 0:
-            K += np.eye(x.size) * (s ** 2)
-
         # invert K
-        Li = np.linalg.inv(np.linalg.cholesky(K))
+        K = self.Kxx(theta, x)
+        try:
+            Li = np.linalg.inv(cholesky(K))
+        except np.linalg.LinAlgError:
+            return np.zeros(len(self.dK_dtheta)) - np.inf
         Ki = np.dot(Li.T, Li)
 
-        dmll = [self._d_dthetaj(Ki, dK_dthetaj, theta, x, y)
-                for dK_dthetaj in self.dK_dtheta]
+        params = self.kernel_params(theta)
 
-        return -np.array(dmll)
+        dmll = np.empty(len(self.dK_dtheta))
+        for i in xrange(dmll.size):
+            dK_dthetaj = self.dK_dtheta[i]
+            dmll[i] = self._d_dthetaj(Ki, dK_dthetaj, params, x, y)
+
+        dmll = np.clip(dmll, MIN_LOG, MAX_LOG)
+        return dmll
+
+    def neg_jacobian(self, *args, **kwargs):
+        lj = self.jacobian(*args, **kwargs)
+        return -lj
+
+    def hessian(self, theta, x, y):
+        """Computes the Hessian of the marginal log likelihood of the
+        kernel.
+
+        See Eq. 5.9 of Rasmussen & Williams (2006).
+
+        Parameters
+        ----------
+        theta : 3-tuple
+            The kernel parameters `h`, `w`, and `s`
+        x : numpy.ndarray with shape (n,)
+            The given input values
+        y : numpy.ndarray with shape (n,)
+            The given output values
+
+        Returns
+        -------
+        out : 3-tuple
+            The Hessian of the marginal negative log likelihood of the
+            data given the parameters
+
+        References
+        ----------
+        Rasmussen, C. E., & Williams, C. K. I. (2006). Gaussian processes
+            for machine learning. MIT Press.
+
+        """
+
+        # invert K
+        K = self.Kxx(theta, x)
+        try:
+            Li = np.linalg.inv(cholesky(K))
+        except np.linalg.LinAlgError:
+            return -np.inf
+        Ki = np.dot(Li.T, Li)
+
+        params = self.kernel_params(theta)
+
+        n = len(self.dK_dtheta)
+        ddmll = np.empty((n, n))
+        for i in xrange(n):
+            dK_dthetai = self.dK_dtheta[i]
+            for j in xrange(n):
+                dK_dthetaj = self.dK_dtheta[j]
+                d2K = self.d2K_dtheta2[j][i]
+                ddmll[j, i] = self._d2_dthetajdthetai(
+                    Ki, dK_dthetaj, dK_dthetai, d2K, params, x, y)
+
+        ddmll = np.clip(ddmll, MIN_LOG, MAX_LOG)
+        return ddmll
 
     def maximize(self, x, y,
                  hmin=1e-8, hmax=None,
                  wmin=1e-8, wmax=None,
+                 smin=0, smax=None,
+                 pmin=1e-8, pmax=None,
                  ntry=10, verbose=False):
         """Find kernel parameter values which maximize the marginal log
         likelihood of the data.
@@ -258,65 +450,96 @@ class KernelMLL(object):
 
         """
 
-        args = None
-        fval = None
+        bounds = []
+        if self.h is None:
+            bounds.append((hmin, hmax))
+        if self.w is None:
+            bounds.append((wmin, wmax))
+        if self.p is None:
+            bounds.append((pmin, pmax))
+        if self.s is None:
+            bounds.append((smin, smax))
+
+        args = np.empty((ntry, len(bounds)))
+        fval = np.empty(ntry)
 
         for i in xrange(ntry):
             # randomize starting parameter values
             p0 = []
-            bounds = []
             if self.h is None:
-                p0.append(np.random.uniform(0, np.max(np.abs(y))*2))
-                bounds.append((hmin, hmax))
+                p0.append(np.random.uniform(hmin, np.max(np.abs(y))*2))
             if self.w is None:
-                p0.append(np.random.uniform(0, 2*np.pi))
-                bounds.append((wmin, wmax))
+                p0.append(np.random.uniform(np.ptp(x) / 100., np.ptp(x) / 10.))
+            if self.p is None:
+                p0.append(np.random.uniform(pmin, 2*np.pi))
             if self.s is None:
-                p0.append(np.random.uniform(0, np.sqrt(np.var(y))))
-                bounds.append((0, None))
+                p0.append(np.random.uniform(smin, np.sqrt(np.var(y))))
 
-            p0 = tuple(p0)
-            bounds = tuple(bounds)
             method = "L-BFGS-B"
-
             if verbose:
                 print "      p0 = %s" % (p0,)
 
             # run mimization function
-            try:
-                popt = opt.minimize(
-                    fun=self,
-                    x0=p0,
-                    args=(x, y),
-                    jac=self.jacobian,
-                    method=method,
-                    bounds=bounds
-                )
-            except np.linalg.LinAlgError as e:
-                # kernel matrix is not positive definite, probably
-                success = False
-                message = str(e)
-            else:
-                # get results of the optimization
-                success = popt['success']
-                message = popt['message']
+            # try:
+            popt = opt.minimize(
+                fun=self.neg_lh,
+                x0=p0,
+                args=(x, y),
+                jac=self.neg_jacobian,
+                method=method,
+                bounds=bounds
+            )
 
-            if not success:
-                if verbose:
-                    print "      Failed: %s" % message
-            else:
-                args = list(abs(popt['x']))
-                fval = popt['fun']
-                if verbose:
-                    print "      -MLL(%s) = %f" % (args, fval)
-                break
+            # get results of the optimization
+            args[i] = popt['x']
+            fval[i] = popt['fun']
+
+            if verbose:
+                print "      -MLL(%s) = %f" % (args[i], fval[i])
 
         # choose the parameters that give the best MLL
         if args is None or fval is None:
             raise RuntimeError("Could not find MLII parameter estimates")
+        best = np.argmin(fval)
+        params = self.kernel_params(theta=args[best])
 
-        h = args.pop(0) if self.h is None else self.h
-        w = args.pop(0) if self.w is None else self.w
-        s = args.pop(0) if self.s is None else self.s
+        return params
 
-        return (h, w, s)
+    def dm_dw(self, theta, x, y, xo):
+        """Compute the partial derivative of a GP mean with respect to
+        w, the input scale parameter.
+
+        The analytic form is:
+        $\frac{\partial K(x_*, x)}{\partial w}K_y^{-1}\mathbf{y} - K(x_*, x)K_y^{-1}\frac{\partial K(x, x)}{\partial w}K_y^{-1}\mathbf{y}$
+
+        Where $K_y=K(x, x) + s^2I$
+
+        """
+
+        if self.w is not None:
+            raise ValueError("w is not a free parameter")
+
+        # compute Kxx and Kxox
+        Kxx = self.Kxx(theta, x)
+        Kxox = self.make_kernel(theta=theta)(xo, x)
+
+        # invert K
+        try:
+            L = cholesky(Kxx)
+        except np.linalg.LinAlgError:
+            return np.nan
+        Li = np.linalg.inv(L)
+        inv_Kxx = np.dot(Li.T, Li)
+
+        params = self.kernel_params(theta)
+        # compute dK/dw matrix for x, x
+        dKxx = mll.dK_dw(x, x, *params)
+        # compute dK/dw matrix for xo, x
+        dKxox = mll.dK_dw(xo, x, *params)
+
+        # compute the two terms of the derivative and combine them
+        v = np.dot(inv_Kxx, y)
+        t0 = np.dot(dKxox, v)
+        t1 = np.dot(Kxox, np.dot(-inv_Kxx, np.dot(dKxx, v)))
+        dm = t0 + t1
+        return dm
