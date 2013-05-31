@@ -4,7 +4,7 @@
     # possible vertices
     npoints: [3, 6],
     # how many stimuli to run
-    nstim: 10,
+    nstim: 20,
     # number of samples of each stimulus
     nsamps: 1,
 
@@ -48,5 +48,5 @@
     # example for 'notes' notebook
     example_hyp: 1,
     example_num: '001',
-    example_rot: '140'
+    example_rot: '120'
 }
