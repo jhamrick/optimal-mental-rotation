@@ -2,7 +2,7 @@
     # number of vertices for each stimulus
     # if a tuple, it is the inclusive range of then number of 
     # possible vertices
-    npoints: [3, 6],
+    npoints: [5, 8],
     # how many stimuli to run
     nstim: 10,
     # number of samples of each stimulus
@@ -32,7 +32,7 @@
 
     # observation noise for bayesian quadrature
     s: 0,
-    # output scale for bayesian quadrature (sqrt(1. / 10))
+    # output scale for bayesian quadrature
     h: 0.125,
     # periodic scale
     p: 1,
@@ -43,6 +43,6 @@
 
     # example for 'notes' notebook
     example_hyp: 1,
-    example_num: '000',
+    example_num: '004',
     example_rot: '140'
 }

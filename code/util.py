@@ -18,12 +18,14 @@ def make_stimulus(npoints, rso):
     if hasattr(npoints, '__iter__'):
         npoints = rso.randint(npoints[0], npoints[1]+1)
     # pick random points
-    X = rso.rand(npoints, 2)
-    # subtract off the mean
-    X = X - np.mean(X, axis=0)
+    X_ = rso.rand(npoints, 2)
+    # normalize points
+    X = X_ - np.mean(X_, axis=0)
+    u, s, v = np.linalg.svd(X)
+    X = np.dot(u, np.dot(np.eye(*X.shape), v))
     # normalize the shape's size, so the furthest point is distance 1
     # away from the origin
-    X = X / np.max(np.sqrt(np.sum(X ** 2, axis=1)))
+    X = 0.9 * X / np.max(np.sqrt(np.sum(X ** 2, axis=1)))
     # order them by angle, so they plot nicely
     r = np.arctan2(X[:, 1], X[:, 0])
     idx = np.argsort(r)
