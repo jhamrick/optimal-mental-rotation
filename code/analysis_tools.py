@@ -52,10 +52,7 @@ def process_Z(data):
     if Z.shape[1] > 1:
         raise AssertionError("more than one sample")
     Z_mean = Z[:, 0, 0]
-    if Z.shape[1] > 1:
-        Z_std = np.sqrt(Z[:, 0, 1:])
-    else:
-        Z_std = None
+    Z_std = np.sqrt(Z[:, 0, 1:])
     return Z_mean, Z_std
 
 
@@ -175,3 +172,43 @@ def Corr_table(models, Corr, shortnames):
         columns=("all", "< 90", ">= 90"))
     df.columns.name = "Correlation"
     return df
+
+
+def calc_MSE(models, data):
+    MSE = {}
+    gs_Z_mean, gs_Z_std = process_Z(data["GoldStandardModel"])
+    for model in models:
+        Z_mean, Z_std = process_Z(data[model])
+        normed_err = (gs_Z_mean - Z_mean) / np.ptp(gs_Z_mean)
+        MSE[model] = np.mean(normed_err ** 2)
+    return MSE
+
+
+def MSE_latex(models, MSE, shortnames):
+    latex = []
+    for model in models:
+        shortname = shortnames[model]
+        mse = MSE[model]
+        latex.append(new_cmd("%sMSE" % shortname, r"\MSE{}=%.2f" % mse))
+    return "".join(latex)
+
+
+def MSE_table(models, MSE, shortnames):
+    tbl = [[MSE[model]] for model in models]
+    index = [shortnames[model] for model in models]
+    df = pd.DataFrame(
+        tbl,
+        index=index,
+        columns=("MSE",))
+    return df
+
+
+def format_latex(latex):
+    texlist = []
+    texlist.append(latex['head'])
+    for section in sorted(latex):
+        if section == 'head':
+            continue
+        texlist.append("%%%% %s" % section)
+        texlist.append(latex[section])
+    return "\n".join(texlist)

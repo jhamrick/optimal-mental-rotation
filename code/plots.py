@@ -347,14 +347,11 @@ def model_rotations(models):
         ax0 = axes[0]
 
     ax0.set_xticks([0, np.pi / 4., np.pi / 2., 3 * np.pi / 4., np.pi])
-    ax0.set_xticklabels([
-        "0",
-        r"$\frac{\pi}{4}$",
-        r"$\frac{\pi}{2}$",
-        r"$\frac{3\pi}{4}$",
-        "$\pi$"
-    ])
+    ax0.set_xticklabels([0, 45, 90, 135, 180])
     ax0.set_xlim(-np.pi/16, np.pi+(np.pi/16))
+
+    ax0.set_yticks([0, 25, 50, 75, 100])
+    ax0.set_yticklabels([0, 25, 50, 75, 100])
     ax0.set_ylim(-5, 105)
     ax0.set_ylabel("Percent rotated")
 
@@ -502,7 +499,7 @@ def model_z_accuracy(models):
             xerr=xerr[ih0].T if xerr is not None else None,
             yerr=yerr[ih0].T if yerr is not None else None,
             fmt='o',
-            label=r"$h_0$ correct",
+            label='"different" pairs',
             alpha=0.5,
             color='c')
 
@@ -516,7 +513,7 @@ def model_z_accuracy(models):
             xerr=xerr[ih1].T if xerr is not None else None,
             yerr=yerr[ih1].T if yerr is not None else None,
             fmt='D',
-            label=r"$h_1$ correct",
+            label=r'"same" pairs',
             alpha=0.5,
             color='m')
 
@@ -533,4 +530,9 @@ def model_z_accuracy(models):
         leg.get_frame().set_edgecolor('white')
         leg.get_frame().set_color('#CCCCCC')
 
-    return fig, axes, (plot_h0, plot_h1, plot_legend)
+    funcs = {
+        'h0': plot_h0,
+        'h1': plot_h1,
+        'legend': plot_legend
+    }
+    return fig, axes, funcs
