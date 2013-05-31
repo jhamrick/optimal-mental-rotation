@@ -211,4 +211,5 @@ def format_latex(latex):
             continue
         texlist.append("%%%% %s" % section)
         texlist.append(latex[section])
+    texlist.append("")
     return "\n".join(texlist)
