@@ -115,13 +115,13 @@ def calc_Rot(models, data, sdata, only_correct=False):
         dd = samps[ih0[:, None] & (err == 0)] * 100
         diff_raw = dd
         diff_mean = np.mean(dd)
-        diff_sem = scipy.stats.sem(dd, ddof=1)
-        Rot_diff[model] = (diff_raw, diff_mean, diff_sem)
+        diff_std = np.std(dd, ddof=1)
+        Rot_diff[model] = (diff_raw, diff_mean, diff_std)
 
         # calculate for same pairs
         same_raw = []
         same_mean = np.empty(unique_ang.size)
-        same_sem = np.empty(unique_ang.size)
+        same_std = np.empty(unique_ang.size)
         for aidx, ang in enumerate(unique_ang):
             idx = (np.abs(min_ang - ang) < 1e-8).ravel()
             if only_correct:
@@ -131,8 +131,8 @@ def calc_Rot(models, data, sdata, only_correct=False):
             ss = samps[(idx & ih1)[:, None] & correct] * 100
             same_raw.append(ss.copy())
             same_mean[aidx] = np.mean(ss)
-            same_sem[aidx] = scipy.stats.sem(ss, ddof=1)
-        Rot_same[model] = (same_raw, same_mean, same_sem)
+            same_std[aidx] = np.std(ss, ddof=1)
+        Rot_same[model] = (same_raw, same_mean, same_std)
 
     return Rot_diff, Rot_same
 
@@ -142,7 +142,7 @@ def calc_Corr(models, sdata, Rot_same):
     sm = unique_ang < (np.pi / 2.)
     Corr = {}
     for model in models:
-        raw, mean, sem = Rot_same[model]
+        raw, mean, std = Rot_same[model]
         corr = float(xcorr(unique_ang, mean))
         corr_sm = xcorr(unique_ang[sm], mean[sm])
         corr_bg = xcorr(unique_ang[~sm], mean[~sm])
