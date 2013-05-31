@@ -51,8 +51,8 @@ class BayesianQuadratureModel(Model):
         }
 
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
+        self._dir = 0
         self._icurr = 0
-        self._ilast = None
 
         # marginal log likelihood objects
         self._mll_S = KernelMLL(
@@ -92,45 +92,128 @@ class BayesianQuadratureModel(Model):
 
         self.debug("Finding next sample")
 
-        inext = self._icurr + 1
-        iprev = self._icurr - 1
+        inext = []
+        rnext = []
+        rr = list(self._rotations)
+        for r in self.ix:
+            i = rr.index(r)
+            n = (i + 1) % self._rotations.size
+            rn = self._rotations[n]
+            p = (i - 1) % self._rotations.size
+            rp = self._rotations[p]
+            if (rn not in self.ix) and (rn not in inext):
+                inext.append(n)
+                rnext.append(rn)
+            if (rp not in self.ix) and (rp not in inext):
+                inext.append(p)
+                rnext.append(rp)
 
-        n = self._rotations.size
-        if inext >= n or np.abs(iprev) >= n:
+        m = self.mu_logS
+        C = self.S_cov
+        nextvars = []
+        nexti = []
+        nextr = []
+        # print "old var: %s" % self.Z_var[1]
+
+        for r, i in zip(rnext, inext):
+            if r in self.ix:
+                continue
+
+            Ri = np.concatenate([self.Ri, [self.R[r]]])
+            Si = np.concatenate([self.Si, [m[r]]])
+            lSi = np.log(Si + 1)
+
+            SK = self._mll_S.make_kernel(params=self.theta_S)
+            Smu, Scov = GP(SK, Ri, Si, self.R)
+
+            logSK = self._mll_logS.make_kernel(params=self.theta_logS)
+            logSmu, logScov = GP(logSK, Ri, lSi, self.R)
+
+            if (Smu <= -1).any():
+                continue
+
+            delta = logSmu - np.log(Smu + 1)
+            cix = sorted(set(self._candidate() + [r]))
+            Rc = self.R[cix]
+            Dc = delta[cix]
+            if self.theta_Dc:
+                DcK = self._mll_Dc.make_kernel(params=self.theta_Dc)
+                Dcmu = GP(DcK, Rc, Dc, self.R)[0]
+            else:
+                Rc = list(Rc) + [2*np.pi]
+                Dc = list(Dc) + [Rc[0]]
+                Dcmu = np.interp(self.R, Rc, Dc)
+
+            Samean = ((Smu + 1) * (1 + Dcmu)) - 1
+
+            params = self._mll_logS.free_params(self.theta_logS)
+            if self._mll_logS.h is None:
+                ii = 1
+            else:
+                ii = 0
+            Hw = self._mll_logS.hessian(params, Ri, lSi)
+            Cw = np.matrix(np.exp(log_clip(-np.diag(Hw))[ii]))
+            dm_dw = np.matrix(
+                self._mll_logS.dm_dw(params, Ri, lSi, self.R))
+            Sacov = np.array(
+                logScov + np.dot(dm_dw.T, np.dot(Cw, dm_dw)))
+
+            # Zmean = np.trapz(self.opt['prior_R'] * Samean, self.R)
+            # variance
+            pm = self.opt['prior_R'] * (Samean + 1)
+            C = safe_multiply(Sacov, pm[:, None], pm[None, :])
+            C[np.abs(C) < 1e-100] = 0
+            Zvar = np.trapz(np.trapz(C, self.R, axis=0), self.R)
+
+            # print "%s new: %s" % (r, Zvar)
+            nexti.append(i)
+            nextr.append(r)
+            nextvars.append(Zvar)
+
+        nextvars = np.array(nextvars)
+        nexti = np.array(nexti)
+        nextr = np.array(nextr)
+
+        print "direction:", self._dir
+
+        assert nextvars.size <= 2
+        if nextvars.size == 0:
             self.debug("Exhausted all samples", level=2)
             raise StopIteration
-
-        rcurr = self._rotations[self._icurr]
-        rnext = self._rotations[inext]
-        rprev = self._rotations[iprev]
-
-        scurr = self.sample(rcurr)
-        snext = self.sample(rnext)
-        sprev = self.sample(rprev)
-
-        self.debug("Current value: %f" % scurr, level=2)
-
-        choose_next = False
-        choose_prev = False
-
-        if (snext > sprev) and (inext != self._ilast):
-            choose_next = True
-        elif (sprev > snext) and (iprev != self._ilast):
-            choose_prev = True
-        elif (self._icurr - self._ilast) > 0:
-            choose_next = True
+        elif nextvars.size == 1:
+            idx = 0
+            assert self._dir == np.sign(nexti[idx] - self._icurr)
         else:
-            choose_prev = True
+            
+            # a, b = nextvars
+            # c = self.Z_var[1]
+            # diff = np.abs((a - b) / c)
+            # print "diff is %s" % diff
+            # if diff < 0.0001:
+            #     if self._dir == 0:
+            #         idx = np.random.randint(2)
+            #         self._dir = 1 if nextr[idx] < 180 else -1
+            #     elif self._dir == 1:
+            #         idx = list(nexti).index(
+            #             (self._icurr + 1) % (self._rotations.size))
+            #         self._dir = 1
+            #     elif self._dir == -1:
+            #         idx = list(nexti).index(
+            #             (self._icurr - 1) % (self._rotations.size))
+            #         self._dir = -1
 
-        if choose_next and not choose_prev:
-            self.debug("Choosing next: %d" % inext, level=2)
-            icurr = inext
-        else:
-            self.debug("Choosing prev: %d" % iprev, level=2)
-            icurr = iprev
+            # else:
+            idx = np.argmin(nextvars)
+            if np.abs(nexti[idx] - self._icurr) == 1:
+                self._dir = np.sign(nexti[idx] - self._icurr)
+            else:
+                assert self._dir != 0
+                self._dir = -self._dir
 
-        self._ilast = self._icurr
-        self._icurr = icurr
+        self.debug("Choosing next: %d" % nextr[idx], level=2)
+        print "choosing %s" % nextr[idx]
+        self.sample(nextr[idx])
+        self._icurr = nexti[idx]
 
         self.fit()
         self.integrate()
@@ -195,7 +278,15 @@ class BayesianQuadratureModel(Model):
             self.Ri, lSi, self._mll_logS, "log(S)")
 
         # choose "candidate" points, halfway between given points
-        self.delta = self.mu_logS - np.log(self.mu_S + 1)
+        if (self.mu_S <= -1).any():
+            print "Warning: regression for mu_S returned negative values"
+            sm = -np.min(self.mu_S)
+            t = sm + 0.001
+            mls = np.log(np.exp(self.mu_logS) - 1 + t)
+            lms = np.log(self.mu_S + t)
+            self.delta = mls - lms
+        else:
+            self.delta = self.mu_logS - np.log(self.mu_S + 1)
         cix = self._candidate()
         self.Rc = self.R[cix].copy()
         self.Dc = self.delta[cix].copy()
@@ -256,12 +347,12 @@ class BayesianQuadratureModel(Model):
         self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
 
         # variance
-        pm = self.opt['prior_R'] * (self.mu_S + 1)
+        pm = self.opt['prior_R'] * (self.S_mean + 1)
         C = safe_multiply(self.S_cov, pm[:, None], pm[None, :])
         C[np.abs(C) < 1e-100] = 0
         upper = np.trapz(np.trapz(C, self.R, axis=0), self.R)
 
-        m = self.mu_S
+        m = self.S_mean
         m[m < 0] = 0
         pm = self.opt['prior_R'] * m
         C = safe_multiply(self.S_cov, pm[:, None], pm[None, :])
