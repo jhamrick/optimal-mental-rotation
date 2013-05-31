@@ -10,7 +10,7 @@
 
 \pagestyle{empty}
 
-\title{Mental Simulation as Bayesian Quadrature}
+\title{Mental Rotation as Bayesian Quadrature}
 \author{Jessica B.~Hamrick and Thomas L.~Griffiths\\
   Department of Psychology\\
   University of California, Berkeley\\
@@ -40,7 +40,17 @@
 \maketitle
 
 \begin{abstract}
-\TODO{}
+  Given a computationl resource--for example, the ability to visualize
+  an object rotating--how do you best make use of it? We explored how
+  mental simulation should used in the classic psychological task of
+  determining if two images depict the same object in different
+  orientations. We compared three models on this mental rotation task,
+  and found that a model based on an optimal experiment design for
+  Bayesian quadrature is objectively more accurate and qualitatively
+  more consistent with classic behavioral data than the other models
+  we evaluated. We suggest that rational models which adaptively
+  exploit available resources are promising in their ability to
+  characterize metacognitive processes like mental simulation.
 \end{abstract}
 
 \section{Introduction}
@@ -57,7 +67,7 @@ human beings need to solve (e.g. \cite{Chater:1999wp,Griffiths2012a}),
 but leaves open the question of how people allocate their resources in
 solving those problems. In this paper, we take a step towards
 addressing this question, applying rational analysis (in the spirit of
-\cite{Marr:1983to,anderson90} \TODO{shepard?}) to one aspect of human
+\cite{Marr:1983to,anderson90,Shepard:1987tt}) to one aspect of human
 metacognition: the use of mental simulation.
 
 Consider the images on the left in Figure
@@ -85,7 +95,7 @@ investigate several computational solutions to this task and
 qualitatively compare them to human mental rotation performance. In
 particular, we argue that performing mental rotation can be framed as
 an integration problem, with the direction of rotation becoming a
-statistical design problem (or in machine learning parlance, a problem
+problem of optimal experiment design (or in machine learning parlance,
 of active learning). We show that recent work on methods for Bayesian
 quadrature \cite{Diaconis:1988uo,OHagan:1991tx,Osborne:2012tm}
 provides a way to solve this problem, outperforming several simpler
@@ -103,6 +113,21 @@ future work.
 
 
 \section{Background}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.8\textwidth]{../figures/shepard-rotation.png}
+  \caption{\textbf{Classic mental rotation task}. Participants in
+    \cite{Shepard1971} saw stimuli such as those on the left, and
+    judged whether each pair of shapes was the same shape in two
+    different orientations (``same'' pairs), or two different shapes
+    (``different'' pairs). \textbf{A} and \textbf{B} show ``same''
+    pairs, while \textbf{C} shows a ``different'' pair. The plots on
+    the right indicate mean response times on the mental rotation
+    task, exhibiting a strong linear relationship with increasing
+    variance as a function of true rotation.}
+  \label{fig:mental-rotation}
+\end{figure}
 
 There is a long and rich history of work on mental rotation beginning
 with Shepard and Metzler \cite{Shepard1971}, who presented
@@ -125,10 +150,10 @@ For many years, this idea was contested, with some researchers arguing
 the underlying cognitive processes were not visual in nature
 (e.g. \cite{Pylyshyn1981}). In particular, \cite{Anderson1978} proved
 that the mental imagery debate could not be resolved on the basis of
-response time data alone. In recent years, however, a significant
-amount of work has investigated the neural underpinnings of the mental
+response time data alone. In recent years, however, significant
+efforts have investigated the neural underpinnings of the mental
 rotation phenomena, arguing that the results of brain imaging studies
-support the existence of visual mental rotation \cite{Kosslyn1988,
+support the existence of visual imagery \cite{Kosslyn1988,
   Kosslyn:2009tj}.
 
 We assume that mental imagery is indeed a visual process, and turn to
@@ -152,21 +177,6 @@ such a strategy can be combined with the notion of mental imagery as a
 tool: an optimal model of mental rotation may, perhaps, rely on an
 active strategy. In the next sections, we investigate this idea with
 several different approaches.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.8\textwidth]{../figures/shepard-rotation.png}
-  \caption{\textbf{Classic mental rotation task}. Participants in
-    \cite{Shepard1971} saw stimuli such as those on the left, and
-    judged whether each pair of shapes was the same shape in two
-    different orientations (``same'' pairs), or two different shapes
-    (``different'' pairs). \textbf{A} and \textbf{B} show ``same''
-    pairs, while \textbf{C} shows a ``different'' pair. The plots on
-    the right indicate mean response times on the mental rotation
-    task, exhibiting a strong linear relationship with increasing
-    variance as a function of true rotation.}
-  \label{fig:mental-rotation}
-\end{figure}
 
 \section{Computational-level model}
 
@@ -218,14 +228,14 @@ then $h_1$ is the more likely hypothesis.
 
 \begin{figure}[t]
   \centering
-  \begin{subfigure}[b]{0.45\textwidth}
+  \begin{subfigure}[b]{0.4\textwidth}
     \centering
     \includegraphics[width=\textwidth]{../figures/stimuli_shapes.pdf}
     \vspace{0pt}
     \caption{Example stimuli}
     \label{fig:stimuli}
   \end{subfigure}
-  \begin{subfigure}[b]{0.45\textwidth}
+  \begin{subfigure}[b]{0.4\textwidth}
     \centering
     \includegraphics[width=\textwidth]{../figures/likelihood_function.pdf}
     \caption{Likelihood function}
@@ -311,13 +321,13 @@ the trapezoidal rule.
 
 \begin{figure}[t]
   \centering
-  \begin{subfigure}[b]{0.45\textwidth}
+  \begin{subfigure}[b]{0.4\textwidth}
     \centering
     \includegraphics[width=\textwidth]{../figures/li_regression.pdf}
     \caption{\Naive{} model}
     \label{fig:li}
   \end{subfigure}
-  \begin{subfigure}[b]{0.45\textwidth}
+  \begin{subfigure}[b]{0.4\textwidth}
     \centering
     \includegraphics[width=\textwidth]{../figures/vm_regression.pdf}
     \caption{Parametric model}
@@ -367,7 +377,7 @@ shows an example of the parametric model's estimate of $S$.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{../figures/bq_regression.pdf}
+  \includegraphics[width=0.9\textwidth]{../figures/bq_regression.pdf}
   \caption{\textbf{Nonparametric model.} Each panel shows one step of
     the Bayesian Quadrature regression. Upper left: the original
     Gaussian Process (GP) regression for $S$. Lower left: the GP
@@ -456,7 +466,7 @@ procedure.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{../figures/model_rotations.pdf}
+  \includegraphics[width=0.9\textwidth]{../figures/model_rotations.pdf}
   \caption{\textbf{Model rotations.} Top: each subplot shows the
     correspondence between the true angle of rotation ($R$) for
     ``same'' pairs and the amount of rotation performed by the
@@ -512,13 +522,13 @@ We considered three metrics of performance in particular:
 
 The \naive{} model's response error rate was $\NaiveME{}$, which is
 better than chance (equivalent to guessing randomly,
-i.e. $\ME{}=0.5$). \TODO{binomial test?} Closer inspection reveals
-that much of this comes from ``different'' pairs ($\NaiveMEdiff{}$),
-where the asymmetric linear interpolation may give an overestimate of
-$Z$ (e.g. Figure \ref{fig:li}).  This intuition is confirmed by the
-model's accuracy in estimating $Z$, which was $\NaiveMSE{}$. As shown
-in the left panel of Figure \ref{fig:accuracy}, it overestimated $Z$
-for nearly all stimuli pairs. \TODO{how many?}
+i.e. $\ME{}=0.5$). Closer inspection reveals that much of this comes
+from ``different'' pairs ($\NaiveMEdiff{}$), where the asymmetric
+linear interpolation may give an overestimate of $Z$ (e.g. Figure
+\ref{fig:li}).  This intuition is confirmed by the model's accuracy in
+estimating $Z$, which was $\NaiveMSE{}$. As shown in the left panel of
+Figure \ref{fig:accuracy}, it overestimated $Z$ for nearly all stimuli
+pairs.
 
 The correlation between the \naive{} model's average rotation and the
 true angle of rotation was $\Naivecorr{}$ (Figure \ref{fig:rotations},
@@ -539,14 +549,13 @@ direction was initially chosen.
 
 The parametric model's error in determining whether the objects were
 identical was $\VMME{}$, making more errors on ``same'' pairs
-($\VMMEsame{}$) than ``different'' pairs ($\VMMEdiff{}$). \TODO{is
-  this significant?} Rather than overestimating as with the \naive{}
-model, however, the parametric model largely underestimated $Z$. This
-is unsurprising: because the Von Mises distribution only has a single
-peak, it necessarily underestimates $Z$ for multimodal similarity
-functions. Overall, the parametric model had an error rate of
-$\VMMSE{}$ in estimating $Z$, which was significantly more accurate
-than that of the \naive{} model \TODO{test}.
+($\VMMEsame{}$) than ``different'' pairs ($\VMMEdiff{}$). Rather than
+overestimating as with the \naive{} model, however, the parametric
+model largely underestimated $Z$. This is unsurprising: because the
+Von Mises distribution only has a single peak, it necessarily
+underestimates $Z$ for multimodal similarity functions. Overall, the
+parametric model had an error rate of $\VMMSE{}$ in estimating $Z$,
+which was significantly more accurate than that of the \naive{} model.
 
 The correlation between the parametric model's average rotation and
 the true angle of rotation was also higher ($\VMcorr{}$), though this
@@ -559,7 +568,7 @@ the same hill-climbing stopping strategy.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{../figures/Z_accuracy.pdf}
+  \includegraphics[width=0.9\textwidth]{../figures/Z_accuracy.pdf}
   \caption{\textbf{Accuracy in estimating $Z$.} Each subplot shows the
     true (``gold standard'') value of $Z$ vs. the value estimated by
     the model. Black dotted lines indicate a perfect 1:1
@@ -576,11 +585,10 @@ the same hill-climbing stopping strategy.
 \paragraph{Nonparametric (Bayesian Quadrature)}
 
 The nonparametric model was much more accurate in choosing the correct
-hypothesis than the other two models ($\BQME{}$) \TODO{test}. We note
-that this is very close to the 3.2\% error rate reported by
-\cite{Shepard1971}, though further experimentation is necessary to
-determine whether the types of errors people make align with those of
-the model.
+hypothesis than the other two models ($\BQME{}$). We note that this is
+very close to the 3.2\% error rate reported by \cite{Shepard1971},
+though further experimentation is necessary to determine whether the
+types of errors people make align with those of the model.
 
 The average rotations computed by the nonparametric model were
 strongly correlated with the true rotations ($\BQcorr$, see Figure
@@ -615,25 +623,10 @@ which take an ``active'', directed approach seem well-suited to
 explaining human behavior in such metacognitive domains as mental
 simulation.
 
-
-% One option for improving the performance of the simple models would be
-% to fit a threshold value, below which local maxima would be
-% ignored. However, this strategy would be rather brittle, for if the
-% distribution of shapes changed, the threshold would have to be
-% re-learned. It is possible that people exhibit this behavior, but we
-% cannot make any assumptions one way or the other without empirical
-% data.
-
-% A further strength of the nonparametric model over the other models,
-% however, is that it is likely to generalize well to three
-% dimensions. One aspect of \cite{Osborne:2012tm} which we have not yet
-% explored is their main contribution of \textit{active sampling}, in
-% which samples are iteratively selected to maximally decrease the
-% expected variance of $Z$. Due to the sequential constraint of mental
-% rotation, this strategy is not particularly useful in two dimensions,
-% as there are only every two directions in which to rotate. In three
-% dimensions, however, there are an infinite number of directions that
-% could be chosen after every step.
+% two questions: which way to rotate, when to stop, giving formal answer
+% to these questions which produces answers consistent with human
+% behavior. instance of showing people are appropriately using
+% computationl resources
 
 
 % \textbf{Acknowledgments}
