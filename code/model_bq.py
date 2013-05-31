@@ -159,8 +159,10 @@ class BayesianQuadratureModel(Model):
         nc = len(self.ix) * 2
         ideal = list(np.linspace(0, self.R.size, nc+1).astype('i8')[:-1])
         for i in self.ix:
-            closest = np.argmin(np.abs(np.array(ideal) - i))
-            del ideal[closest]
+            diff = np.abs(np.array(ideal) - i)
+            closest = np.argmin(diff)
+            if diff[closest] <= self.opt['dr']:
+                del ideal[closest]
         c = sorted(ideal + self.ix)
         return c
 
