@@ -64,7 +64,7 @@ graphics processor. The same challenge arises in designing an
 intelligent agent: how should the agent make best use of its computing
 resources? Recent research on rational models of human cognition has
 provided insight into the nature of the computational problems that
-human beings need to solve (e.g. \cite{Chater:1999wp,Griffiths2012a}),
+human beings need to solve (e.g., \cite{Chater:1999wp,tenenbaumkgg11}),
 but leaves open the question of how people allocate their resources in
 solving those problems. In this paper, we take a step towards
 addressing this question, applying rational analysis (in the spirit of
@@ -95,12 +95,13 @@ metacognition'' approach to the problem of mental rotation. We
 investigate several computational solutions to this task and
 qualitatively compare them to human mental rotation performance. In
 particular, we argue that performing mental rotation can be framed as
-an integration problem, with the direction of rotation becoming a
-problem of optimal experiment design (or in machine learning parlance,
-of active learning). We show that recent work on methods for Bayesian
-quadrature \cite{Diaconis:1988uo,OHagan:1991tx,Osborne:2012tm}
-provides a way to solve this problem, outperforming several simpler
-heuristics for determining both the direction and extent of rotation.
+integration over a probability distribution, with the direction of
+rotation becoming an optimal experiment design problem (or in machine
+learning parlance, an active learning problem). We show that recent
+work on methods for Bayesian quadrature
+\cite{Diaconis:1988uo,OHagan:1991tx,Osborne:2012tm} provides a way to
+solve this problem, outperforming several simpler heuristics for
+determining both the direction and extent of rotation.
 
 The plan of the paper is as follows. First, we give a brief overview
 of the work on mental rotation and active learning. Next, we present
@@ -108,9 +109,8 @@ the problem domain and a computational-level analysis of how to solve
 it. We describe three different models which approximate this
 solution, evaluate their accuracy at approximating the computational
 solution, and qualitatively compare their behavior to that of the
-classic mental rotation results. We end with a discussion of the
-strengths and weaknesses of each model, as well as directions for
-future work.
+classic mental rotation results. We end with a brief summary and
+conclusion of our approach.
 
 
 \section{Background}
@@ -135,12 +135,12 @@ with Shepard and Metzler \cite{Shepard1971}, who presented
 participants with pairs of images such as those shown in Figure
 \ref{fig:mental-rotation} (left panel). These pairs of
 three-dimensional objects could either be: the same object rotated in
-plane (Figure \ref{fig:mental-rotation}A), the same object rotated in
-depth (Figure \ref{fig:mental-rotation}B), or two different objects
+the plane (Figure \ref{fig:mental-rotation}A), the same object rotated
+in depth (Figure \ref{fig:mental-rotation}B), or two different objects
 (Figure \ref{fig:mental-rotation}C; in this case, the ``different''
 objects had reflective symmetry, but no rotational
 symmetry). Participants had to determine whether the two images were
-of the same object or not, and \cite{Shepard1971} famously found that
+of the same object or not, and Shepard and Metzler famously found that
 response times for plane and depth rotations had a strong linear
 relationship with the minimum angle of rotation between the two
 objects (Figure \ref{fig:mental-rotation}, right panel). The
@@ -149,13 +149,13 @@ objects in their minds.
 
 For many years, this idea was contested, with some researchers arguing
 the underlying cognitive processes were not visual in nature
-(e.g. \cite{Pylyshyn1981}). In particular, \cite{Anderson1978} proved
-that the mental imagery debate could not be resolved on the basis of
-response time data alone. In recent years, however, significant
-efforts have investigated the neural underpinnings of the mental
-rotation phenomena, arguing that the results of brain imaging studies
-support the existence of visual imagery \cite{Kosslyn1988,
-  Kosslyn:2009tj}.
+(e.g., \cite{Pylyshyn1981}). In particular, Anderson
+\cite{Anderson1978} proved that the mental imagery debate could not be
+resolved on the basis of response time data alone. In recent years,
+however, significant efforts have investigated the neural
+underpinnings of the mental rotation phenomena, arguing that the
+results of brain imaging studies support the existence of visual
+imagery \cite{Kosslyn:2009tj,Kosslyn1988}.
 
 We assume that mental imagery is indeed a visual process, and turn to
 the question of how, and when, it is used. Previous work has examined
@@ -169,15 +169,15 @@ the question: what is the method?
 
 Others studying people's pattern of behavior when engaged in
 self-directed learning have found that they tend to use a strategy of
-\textit{active learning} \cite{Gureckis:2012gu, Markant:2012uu}. When
+\textit{active learning} \cite{Gureckis:2012gu,Markant:2012uu}. When
 given a choice as to the information they can obtain, people will not
 choose the information randomly (as is the case with a \naive{} Monte
 Carlo sampler), but according to some utility function such as
-information gain \cite{Nelson2007, Markant:2012uu}. We propose that
+information gain \cite{Markant:2012uu,Nelson2007}. We propose that
 such a strategy can be combined with the notion of mental imagery as a
 tool: an optimal model of mental rotation may, perhaps, rely on an
-active strategy. In the next sections, we investigate this idea with
-several different approaches.
+active learning strategy. In the next sections, we investigate this
+idea with several different approaches.
 
 \section{Computational-level model}
 
@@ -186,7 +186,7 @@ We begin by first analyzing mental rotation at Marr's
 to be solved, and what is the optimal way to do so?  Formally, people
 are presented with two images, $X_a$ and $X_b$, which are the
 coordinates of the vertices of two-dimensional shapes similar to those
-used by \cite{Cooper:1975wp} (e.g. Figure
+used by \cite{Cooper:1975wp} (e.g., Figure
 \ref{fig:stimuli}). Participants must determine whether $X_a$ and
 $X_b$ were generated from the same (albeit possibly transformed and
 permuted) original shape, i.e., whether $\exists R,M\textrm{ s.t. }
@@ -204,7 +204,7 @@ Assuming the hypotheses are equally likely \textit{a priori}, the
 prior term $p(h)$ will cancel out when comparing $h_0$ and $h_1$, thus
 allowing us to focus on the likelihoods:
 \begin{align}
-  p(X_a,\ X_b\ \vert \ h_0)&=p(X_a)p(X_b) \label{eq:lh-h0}\\
+  p(X_a,\ X_b\ \vert \ h_0)&=p(X_a)p(X_b), \label{eq:lh-h0}\\
   p(X_a,\ X_b\ \vert \ h_1)&=\int_R\int_M p(X_a) p(X_b\vert X_a,R,M) p(R) p(M)\ \mathrm{d}M\ \mathrm{d}R. \label{eq:lh-h1}
 \end{align}
 Under $h_0$, the likelihood is easy to compute because we assume that
@@ -341,7 +341,7 @@ the trapezoidal rule.
     lines are the true $S$, red lines are the estimate). \textbf{(a)}
     Linear interpolation. The overall estimate of $Z$ here will be too
     low, but certain angles will have a disproportionate contribution
-    (e.g. between $\frac{\pi}{4}$ and $\frac{3\pi}{4}$. \textbf{(b)}
+    (e.g., between $\frac{\pi}{4}$ and $\frac{3\pi}{4}$. \textbf{(b)}
     Best fit of scaled Von Mises PDF parameters. As in (a), $Z$ will
     be underestimated. However, the fit around the maximum near
     $\frac{\pi}{6}$ is much more accurate.}
@@ -360,7 +360,7 @@ model's estimate of $S$.
 Another strategy is to assume a parametric shape for $S$ and fit the
 appropriate parameters. If we assume that $S$ is approximately
 unimodal when $h_1$ is true\footnote{This is not always a reasonable
-  assumption, see e.g. Figure \ref{fig:vm}.}, then a reasonable form
+  assumption, see e.g., Figure \ref{fig:vm}.}, then a reasonable form
 for the similarity function is that of a ``circular Gaussian'' or Von
 Mises distribution:
 \begin{equation}
@@ -482,7 +482,7 @@ procedure.
 \end{figure}
 
 We evaluated each model's performance on 20 shapes which had between 3
-and 6 vertices, inclusive, (e.g. $X_a$ in Figure
+and 6 vertices, inclusive, (e.g., $X_a$ in Figure
 \ref{fig:stimuli}). For each shape, we computed 18 ``same'' and 18
 ``different'' stimuli pairs, with $R$ spaced at $20^\prime$ increments
 between 0 and 360, as in \cite{Shepard1971}. ``Same'' pairs were
@@ -524,7 +524,7 @@ The \naive{} model's response error rate was $\NaiveME{}$, which is
 better than chance (equivalent to guessing randomly,
 i.e. $\ME{}=0.5$). Closer inspection reveals that much of this comes
 from ``different'' pairs ($\NaiveMEdiff{}$), where the asymmetric
-linear interpolation may give an overestimate of $Z$ (e.g. Figure
+linear interpolation may give an overestimate of $Z$ (e.g., Figure
 \ref{fig:li}).  This intuition is confirmed by the model's accuracy in
 estimating $Z$, which was $\NaiveMSE{}$. As shown in the left panel of
 Figure \ref{fig:accuracy}, it overestimated $Z$ for nearly all
@@ -594,25 +594,25 @@ The average rotations computed by the nonparametric model were
 strongly correlated with the true rotations ($\BQcorr$, see Figure
 \ref{fig:rotations}, bottom right). Because the nonparametric model
 has the capacity to ``reset'', it could recover from rotating in the
-incorrect direction (e.g. Figure \ref{fig:bq}) and thus did not
+incorrect direction (e.g., Figure \ref{fig:bq}) and thus did not
 over-rotate as frequently.  It also under-rotated less frequently:
 because the model continues to rotate until it is confident that its
 estimate of $Z$ is accurate, it does not get stuck as easily on local
 optima.  Indeed, it was largely successful, with $\BQMSE{}$.
 
 
-\section{Discussion}
+\section{Conclusion}
 
 In this paper, we asked: how do people use mental simulation?  We
-investigated the specific case of mental rotation, taking a rational
-analysis approach to characterizing optimal strategies for performing
-mental rotation. We found that an adaptive, nonparametric model
-performs best at the classic rotation task \cite{Shepard1971}, as it
-is able to actively monitor the confidence of its estimate and
-intelligently choose the direction of rotation. Two simpler models
-based on heuristics performed much worse: they did not maintain the
-linear relationship with the true angle of rotation due to lack of
-robustness against local maxima or incorrect rotation direction. The
+investigated the specific case of mental rotation, using rational
+analysis to characterize optimal strategies for performing mental
+rotation. We found that an adaptive, nonparametric model performs best
+at the classic rotation task \cite{Shepard1971}, as it is able to
+actively monitor the confidence of its estimate and intelligently
+choose the direction of rotation. Two simpler models based on
+heuristics performed much worse: they did not maintain the linear
+relationship with the true angle of rotation due to lack of robustness
+against local maxima or incorrect rotation direction. The
 nonparametric model qualitatively approximates human behavioral
 judgments, both in linearity \cite{Shepard1971} and variability
 \cite{Just1976}. Future work will collect empirical data from
