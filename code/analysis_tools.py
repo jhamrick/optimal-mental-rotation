@@ -111,9 +111,14 @@ def calc_Rot(models, data, sdata, only_correct=False):
         hyp = data[model][4]
         err = np.abs(hyp - true_hyp[:, None])
 
+        if only_correct:
+            correct = err == 0
+        else:
+            correct = np.ones(err.shape).astype('bool')
+
         # calculate for different pairs
-        dd = samps[ih0[:, None] & (err == 0)] * 100
-        diff_raw = dd
+        dd = samps[ih0[:, None] & correct] * 100
+        diff_raw = samps[ih0[:, None]] * 100
         diff_mean = np.mean(dd)
         diff_std = np.std(dd, ddof=1)
         Rot_diff[model] = (diff_raw, diff_mean, diff_std)
@@ -124,12 +129,8 @@ def calc_Rot(models, data, sdata, only_correct=False):
         same_std = np.empty(unique_ang.size)
         for aidx, ang in enumerate(unique_ang):
             idx = (np.abs(min_ang - ang) < 1e-8).ravel()
-            if only_correct:
-                correct = err == 0
-            else:
-                correct = np.ones(err.shape).astype('bool')
             ss = samps[(idx & ih1)[:, None] & correct] * 100
-            same_raw.append(ss.copy())
+            same_raw.append(samps[(idx & ih1)[:, None]] * 100)
             same_mean[aidx] = np.mean(ss)
             same_std[aidx] = np.std(ss, ddof=1)
         Rot_same[model] = (same_raw, same_mean, same_std)
