@@ -40,17 +40,18 @@
 \maketitle
 
 \begin{abstract}
-  Given a computationl resource--for example, the ability to visualize
-  an object rotating--how do you best make use of it? We explored how
-  mental simulation should used in the classic psychological task of
-  determining if two images depict the same object in different
-  orientations. We compared three models on this mental rotation task,
-  and found that a model based on an optimal experiment design for
-  Bayesian quadrature is objectively more accurate and qualitatively
-  more consistent with classic behavioral data than the other models
-  we evaluated. We suggest that rational models which adaptively
-  exploit available resources are promising in their ability to
-  characterize metacognitive processes like mental simulation.
+  Given a computational resource--for example, the ability to
+  visualize an object rotating--how do you best make use of it? We
+  explored how mental simulation should used in the classic
+  psychological task of determining if two images depict the same
+  object in different orientations. We compared three models on this
+  mental rotation task, and found that a model based on an optimal
+  experiment design for Bayesian quadrature is objectively more
+  accurate and qualitatively more consistent with classic behavioral
+  data than the other models we evaluated. We suggest that rational
+  models which adaptively exploit available resources are promising in
+  their ability to characterize metacognitive processes like mental
+  simulation.
 \end{abstract}
 
 \section{Introduction}
@@ -116,7 +117,7 @@ future work.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.8\textwidth]{../figures/shepard-rotation.png}
+  \includegraphics[width=0.7\textwidth]{../figures/shepard-rotation.png}
   \caption{\textbf{Classic mental rotation task}. Participants in
     \cite{Shepard1971} saw stimuli such as those on the left, and
     judged whether each pair of shapes was the same shape in two
@@ -494,9 +495,8 @@ judged according to the ``gold standard''.
 We considered three metrics of performance in particular:
 \begin{itemize}
 \item \textit{Response error rates}: How accurate was the model at
-  choosing the correct hypothesis? This was defined to be the mean
-  error ($\ME{}$), or fraction of times the model picks the incorrect
-  hypothesis.
+  choosing the correct hypothesis? This was defined as the mean error
+  ($\ME{}$), or fraction of times the model chose incorrectly.
 \item \textit{Rotations}: For those ``same'' pairs which the model
   judged correct, how correlated were the model's rotations with the
   true angles of rotation?  We quantified this using the Pearson's
@@ -527,14 +527,14 @@ from ``different'' pairs ($\NaiveMEdiff{}$), where the asymmetric
 linear interpolation may give an overestimate of $Z$ (e.g. Figure
 \ref{fig:li}).  This intuition is confirmed by the model's accuracy in
 estimating $Z$, which was $\NaiveMSE{}$. As shown in the left panel of
-Figure \ref{fig:accuracy}, it overestimated $Z$ for nearly all stimuli
-pairs.
+Figure \ref{fig:accuracy}, it overestimated $Z$ for nearly all
+stimuli.
 
 The correlation between the \naive{} model's average rotation and the
 true angle of rotation was $\Naivecorr{}$ (Figure \ref{fig:rotations},
 bottom left). More complex patterns are revealed by examining the
 shape of the raw data in Figure \ref{fig:rotations}, top left: the
-\naive{} model corresponds extremeley well to the true angle of
+\naive{} model corresponds extremely well to the true angle of
 rotation for approximately $R<\frac{\pi}{2}$. This is unsurprising,
 because the closer the true angle is to zero, the less the model has
 to rotate, and the less likely it will get stuck on local
@@ -598,8 +598,7 @@ incorrect direction (e.g. Figure \ref{fig:bq}) and thus did not
 over-rotate as frequently.  It also under-rotated less frequently:
 because the model continues to rotate until it is confident that its
 estimate of $Z$ is accurate, it does not get stuck as easily on local
-optima.  Indeed, its active attempts to obtain an accurate estimate of
-$Z$ were largely succeessful, with $\BQMSE{}$.
+optima.  Indeed, it was largely successful, with $\BQMSE{}$.
 
 
 \section{Discussion}
@@ -618,9 +617,8 @@ nonparametric model qualitatively approximates human behavioral
 judgments, both in linearity \cite{Shepard1971} and variability
 \cite{Just1976}. Future work will collect empirical data from
 participants to perform a more thorough, quantitative analysis.  We
-conclude that from this initial survey, models of mental rotation
-which take an ``active'', directed approach seem well-suited to
-explaining human behavior in such metacognitive domains as mental
+conclude that from this initial survey, models which take an
+``active'', directed approach seem well-suited to explaining mental
 simulation.
 
 % two questions: which way to rotate, when to stop, giving formal answer
@@ -636,7 +634,7 @@ simulation.
 % \renewcommand\bibsection{\subsubsection*{\refname}}
 \renewcommand\refname{\normalsize{References}}
 \bibliographystyle{ieeetr}
-\bibliography{references}
+{\small \bibliography{references}}
 
 \end{document}
 
