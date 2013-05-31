@@ -200,7 +200,7 @@ def run_model(stim, model, opt):
     # how many points were sampled
     samps = np.zeros(nsamp)
     # the estimate of Z
-    Z = np.empty((nsamp, 2))
+    Z = np.empty((nsamp, 3))
     # the likelihood ratio
     ratio = np.empty((nsamp, 3))
     # which hypothesis was accepted
@@ -216,7 +216,8 @@ def run_model(stim, model, opt):
 
         # fill in the data arrays
         samps[i] = len(m.ix) / float(m._rotations.size)
-        Z[i] = (m.Z_mean, m.Z_var)
+        Z[i, 0] = m.Z_mean
+        Z[i, 1:] = m.Z_var
         ratio[i] = m.likelihood_ratio()
         hyp[i] = m.ratio_test(level=10)
 
