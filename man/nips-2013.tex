@@ -496,20 +496,22 @@ judged according to the ``gold standard''.
 
 We considered three metrics of performance in particular:
 \begin{itemize}
-\item \textit{Responses}: How accurate was the model at choosing the
-  correct hypothesis? This was defined to be the mean error ($\ME{}$),
-  or fraction of times the model picks the incorrect hypothesis.
+\item \textit{Response error rates}: How accurate was the model at
+  choosing the correct hypothesis? This was defined to be the mean
+  error ($\ME{}$), or fraction of times the model picks the incorrect
+  hypothesis.
 \item \textit{Rotations}: For those ``same'' pairs which the model
   judged correct, how correlated were the model's rotations with the
   true angles of rotation?  We quantified this using the Pearson's
-  correlation coefficient $\rho$ for $R$ vs. $\vert
-  \mathbf{R}\vert$. The top row in Figure \ref{fig:rotations} shows
-  individual points corresponding to true rotations vs. rotations by
-  the models for all stimuli, including those judged incorrectly. The
-  bottom row shows mean model rotations, across only those stimuli
-  which were judged correctly. We structured the analysis in this way
-  to better compare to the results of \cite{Shepard1971}, which also
-  excluded incorrectly judged stimuli.
+  correlation coefficient $\rho$ for the true rotation ($R$) versus
+  the extent of the model's rotations ($\vert \mathbf{R}\vert$). The
+  top row in Figure \ref{fig:rotations} shows individual points
+  corresponding to true rotations vs. rotations by the models for all
+  stimuli, including those judged incorrectly. The bottom row shows
+  mean model rotations, across only those stimuli which were judged
+  correctly. We structured the analysis in this way to better compare
+  to the results of \cite{Shepard1971}, which also excluded
+  incorrectly judged stimuli.
 \item \textit{Estimates of $Z$}: How accurate was the model's estimate
   of $Z$? We defined this quantity as the mean squared error
   ($\MSE{}$) between the model's estimate of $Z$ and the ``gold
@@ -521,14 +523,15 @@ We considered three metrics of performance in particular:
 
 \paragraph{\Naive{}} 
 
-The \naive{} model's response error rate was better than chance, with
-$\NaiveME{}$. Closer inspection reveals that much of this comes from
-``different'' pairs ($\NaiveMEdiff{}$), where the asymmetric linear
-interpolation may give an overestimate of $Z$ (e.g. Figure
-\ref{fig:li}).  This intuition is confirmed by the model's accuracy
-($\NaiveMSE{}$) in estimating $Z$: as shown in the left panel of
-Figure \ref{fig:accuracy}, it overestimated for nearly all stimuli
-pairs.
+The \naive{} model's response error rate was $\NaiveME{}$, which is
+better than chance (equivalent to guessing randomly,
+i.e. $\ME{}=0.5$). \TODO{binomial test?} Closer inspection reveals
+that much of this comes from ``different'' pairs ($\NaiveMEdiff{}$),
+where the asymmetric linear interpolation may give an overestimate of
+$Z$ (e.g. Figure \ref{fig:li}).  This intuition is confirmed by the
+model's accuracy in estimating $Z$, which was $\NaiveMSE{}$. As shown
+in the left panel of Figure \ref{fig:accuracy}, it overestimated $Z$
+for nearly all stimuli pairs. \TODO{how many?}
 
 The correlation between the \naive{} model's average rotation and the
 true angle of rotation was $\Naivecorr{}$ (Figure \ref{fig:rotations},
@@ -549,13 +552,14 @@ direction was initially chosen.
 
 The parametric model's error in determining whether the objects were
 identical was $\VMME{}$, making more errors on ``same'' pairs
-($\VMMEsame{}$) than ``different'' pairs ($\VMMEdiff{}$). Rather than
-overestimating as with the \naive{} model, however, the parametric
-model largely underestimated $Z$. This is unsurprising: because the
-Von Mises distribution only has a single peak, it necessarily
-underestimates $Z$ for multimodal similarity functions. Overall, the
-parametric model had an error rate of $\VMMSE{}$ in estimating $Z$,
-which was significantly more accurate than that of the \naive{} model.
+($\VMMEsame{}$) than ``different'' pairs ($\VMMEdiff{}$). \TODO{is
+  this significant?} Rather than overestimating as with the \naive{}
+model, however, the parametric model largely underestimated $Z$. This
+is unsurprising: because the Von Mises distribution only has a single
+peak, it necessarily underestimates $Z$ for multimodal similarity
+functions. Overall, the parametric model had an error rate of
+$\VMMSE{}$ in estimating $Z$, which was significantly more accurate
+than that of the \naive{} model \TODO{test}.
 
 The correlation between the parametric model's average rotation and
 the true angle of rotation was also higher ($\VMcorr{}$), though this
@@ -585,15 +589,16 @@ the same hill-climbing stopping strategy.
 \paragraph{Nonparametric (Bayesian Quadrature)}
 
 The nonparametric model was much more accurate in choosing the correct
-hypothesis than the other two models ($\BQME{}$). We note that this is
-very close to the 3.2\% error rate reported by \cite{Shepard1971},
-though further experimentation is necessary to determine whether the
-types of errors people make align with those of the model.  
+hypothesis than the other two models ($\BQME{}$) \TODO{test}. We note
+that this is very close to the 3.2\% error rate reported by
+\cite{Shepard1971}, though further experimentation is necessary to
+determine whether the types of errors people make align with those of
+the model.
 
 The average rotations computed by the nonparametric model were
 strongly correlated with the true rotations ($\BQcorr$, see Figure
 \ref{fig:rotations}, bottom right). Because the nonparametric model
-has the capacity to ``restart'', it could recover from rotating in the
+has the capacity to ``reset'', it could recover from rotating in the
 incorrect direction (e.g. Figure \ref{fig:bq}) and thus did not
 over-rotate as frequently.  It also under-rotated less frequently:
 because the model continues to rotate until it is confident that its
