@@ -386,13 +386,20 @@ def model_z_accuracy(models):
     else:
         ax0 = axes[0]
 
+    xmin = -0.01
+    xmax = 0.19
+    ymin = -0.02
+    ymax = 0.52
+
     ax0.set_ylabel(r"Estimated $Z$")
-    ax0.set_ylim(0, 0.7)
-    ticks = [0.05, 0.15, 0.25]
+    ax0.set_ylim(ymin, ymax)
+    ax0.set_xlim(xmin, xmax)
+
+    ticks = [0.0, 0.06, 0.12, 0.18]
     ticklabels = ["%.2f" % x for x in ticks]
-    ax0.set_xlim(0, 0.3)
     ax0.set_xticks(ticks)
     ax0.set_xticklabels(ticklabels)
+
     for i in xrange(len(models)):
         if len(models) == 1:
             ax = axes
@@ -406,9 +413,52 @@ def model_z_accuracy(models):
         sg.clear_right(ax=ax)
         sg.clear_top(ax=ax)
 
+        ax.plot([xmin, xmax], [xmin, xmax], 'k--', dashes=(2, 2))
+
     sg.set_figsize(8, 2.7)
     plt.subplots_adjust(
         wspace=0.1, top=0.9, bottom=0.2,
         left=0.1, right=0.95)
 
-    return fig, axes
+    def plot_h0(i, x, y, xerr, yerr, ih0):
+        if len(models) == 1:
+            ax = axes
+        else:
+            ax = axes[i]
+        ax.errorbar(
+            x[ih0], y[ih0],
+            xerr=xerr[ih0].T if xerr is not None else None,
+            yerr=yerr[ih0].T if yerr is not None else None,
+            fmt='o',
+            label=r"$h_0$ correct",
+            alpha=0.5,
+            color='c')
+
+    def plot_h1(i, x, y, xerr, yerr, ih1):
+        if len(models) == 1:
+            ax = axes
+        else:
+            ax = axes[i]
+        ax.errorbar(
+            x[ih1], y[ih1],
+            xerr=xerr[ih1].T if xerr is not None else None,
+            yerr=yerr[ih1].T if yerr is not None else None,
+            fmt='D',
+            label=r"$h_1$ correct",
+            alpha=0.5,
+            color='m')
+
+    def plot_legend():
+        if len(models) == 1:
+            ax = axes
+        else:
+            ax = axes[1]
+        leg = ax.legend(
+            loc='upper center',
+            frameon=True,
+            numpoints=1,
+            fontsize=12)
+        leg.get_frame().set_edgecolor('white')
+        leg.get_frame().set_color('#CCCCCC')
+
+    return fig, axes, (plot_h0, plot_h1, plot_legend)
