@@ -366,8 +366,8 @@ def model_rotations(models):
         tax.set_title(model, fontsize=12)
         bax.set_xlabel(r"True rotation ($R$)")
         if i == 0:
-            tax.set_ylabel(r"Raw rotation")
-            bax.set_ylabel(r"Mean rotation")
+            tax.set_ylabel(r"All rotations")
+            bax.set_ylabel(r"Mean correct rotations")
         for ax in (tax, bax):
             sg.outward_ticks(ax=ax)
             sg.clear_right(ax=ax)
