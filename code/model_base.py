@@ -119,14 +119,13 @@ class Model(object):
         self.ratio_test()
 
     def print_Z(self, level=-1):
-        if self.Z_var == 0:
+        if not self.Z_var:
             self.debug("Z = %f" % (self.Z_mean), level=level)
         else:
-            std = np.sqrt(self.Z_var)
             sf = self.opt['stop_factor']
             mean = self.Z_mean
-            lower = mean - sf*std
-            upper = mean + sf*std
+            lower = mean - sf*np.sqrt(self.Z_var[0])
+            upper = mean + sf*np.sqrt(self.Z_var[1])
             self.debug("Z = %f  [%f, %f]" % (mean, lower, upper),
                        level=level)
 
@@ -135,9 +134,10 @@ class Model(object):
             print ("  "*level) + msg
 
     def likelihood_ratio(self):
-        std = 0 if self.Z_var == 0 else np.sqrt(self.Z_var)
+        std_lo = 0 if not self.Z_var else np.sqrt(self.Z_var[0])
+        std_hi = 0 if not self.Z_var else np.sqrt(self.Z_var[1])
         sf = self.opt['stop_factor']
-        vals = [self.Z_mean, self.Z_mean - sf*std, self.Z_mean + sf*std]
+        vals = [self.Z_mean, self.Z_mean - sf*std_lo, self.Z_mean + sf*std_hi]
         ratios = []
         for val in vals:
             p_XaXb_h1 = self.p_Xa * val / self._S_scale
@@ -183,15 +183,20 @@ class Model(object):
         # covariance matrix
         Sigma = np.eye(D) * self.opt['sigma_s']
         invSigma = np.eye(D) * (1. / self.opt['sigma_s'])
-        # iterate through all permutations of the vertices -- but if two
-        # vertices are connected, they are next to each other in the list
-        # (or on the ends), so we really only need to cycle through n
-        # orderings
-        e = np.empty(n)
+        # iterate through all permutations of the vertices -- but if
+        # two vertices are connected, they are next to each other in
+        # the list (or on the ends), so we really only need to cycle
+        # through 2n orderings (once for the original ordering, and
+        # once for the reverse)
+        e = np.empty(2*n)
         for i in xrange(n):
             idx = np.arange(i, i+n) % n
             d = x0 - x1[idx]
             e[i] = -0.5 * np.sum(np.dot(d, invSigma) * d)
+        for i in xrange(n):
+            idx = np.arange(i, i+n)[::-1] % n
+            d = x0 - x1[idx]
+            e[i+n] = -0.5 * np.sum(np.dot(d, invSigma) * d)
         # constants
         Z0 = (D / 2.) * np.log(2 * np.pi)
         Z1 = 0.5 * np.linalg.slogdet(Sigma)[1]

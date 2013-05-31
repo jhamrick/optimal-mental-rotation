@@ -18,12 +18,12 @@ def make_stimulus(npoints, rso):
     if hasattr(npoints, '__iter__'):
         npoints = rso.randint(npoints[0], npoints[1]+1)
     # pick random points
-    X = rso.rand(npoints, 2)
-    # subtract off the mean
-    X = X - np.mean(X, axis=0)
+    X_ = rso.rand(npoints, 2)
+    # normalize points
+    X = X_ - np.mean(X_, axis=0)
     # normalize the shape's size, so the furthest point is distance 1
     # away from the origin
-    X = X / np.max(np.sqrt(np.sum(X ** 2, axis=1)))
+    X = 0.9 * X / np.max(np.sqrt(np.sum(X ** 2, axis=1)))
     # order them by angle, so they plot nicely
     r = np.arctan2(X[:, 1], X[:, 0])
     idx = np.argsort(r)
@@ -164,8 +164,8 @@ def load_stimulus(stimname):
     return theta, Xa, Xb, Xm, Ia, Ib, Im, R
 
 
-def print_line(char='-', verbose=True):
-    if verbose:
+def print_line(char='-', verbose=1):
+    if verbose > 0:
         print "\n" + char*70
 
 
@@ -200,7 +200,7 @@ def run_model(stim, model, opt):
     # how many points were sampled
     samps = np.zeros(nsamp)
     # the estimate of Z
-    Z = np.empty((nsamp, 2))
+    Z = np.empty((nsamp, 3))
     # the likelihood ratio
     ratio = np.empty((nsamp, 3))
     # which hypothesis was accepted
@@ -216,7 +216,8 @@ def run_model(stim, model, opt):
 
         # fill in the data arrays
         samps[i] = len(m.ix) / float(m._rotations.size)
-        Z[i] = (m.Z_mean, m.Z_var)
+        Z[i, 0] = m.Z_mean
+        Z[i, 1:] = m.Z_var
         ratio[i] = m.likelihood_ratio()
         hyp[i] = m.ratio_test(level=10)
 
