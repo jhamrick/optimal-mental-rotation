@@ -181,8 +181,11 @@ class BayesianQuadratureModel(Model):
             if np.abs(nexti[idx] - self._icurr) == 1:
                 self._dir = np.sign(nexti[idx] - self._icurr)
             else:
-                assert self._dir != 0
-                self._dir = -self._dir
+                if self._dir == 0:
+                    assert nexti[idx] in (1, self._rotations.size-1)
+                    self._dir = 1 if nexti[idx] == 1 else -1
+                else:
+                    self._dir = -self._dir
 
         self.debug("Choosing next: %d" % nextr[idx], level=2)
         self.sample(nextr[idx])
