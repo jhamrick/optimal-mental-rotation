@@ -198,14 +198,14 @@ origins by deciding about two hypotheses, $h_0$: $\forall M,R\ X_b\neq
 MRX_a$ and $h_1$: $\exists M,R\textrm{ s.t. } X_b=MRX_a$.  To compare
 the hypotheses, we need to compute the posterior for each:
 \begin{equation}
-p(h\ \vert\ X_a, X_b)\propto p(X_a, X_b\ \vert\ h)p(h)
+p(h\ \vert\ X_a, X_b)\propto p(X_a, X_b\ \vert\ h)p(h).
 \end{equation}
 Assuming the hypotheses are equally likely \textit{a priori}, the
 prior term $p(h)$ will cancel out when comparing $h_0$ and $h_1$, thus
 allowing us to focus on the likelihoods:
 \begin{align}
   p(X_a,\ X_b\ \vert \ h_0)&=p(X_a)p(X_b) \label{eq:lh-h0}\\
-  p(X_a,\ X_b\ \vert \ h_1)&=\int_R\int_M p(X_a) p(X_b\vert X_a,R,M) p(R) p(M)\ \mathrm{d}M\ \mathrm{d}R \label{eq:lh-h1}
+  p(X_a,\ X_b\ \vert \ h_1)&=\int_R\int_M p(X_a) p(X_b\vert X_a,R,M) p(R) p(M)\ \mathrm{d}M\ \mathrm{d}R. \label{eq:lh-h1}
 \end{align}
 Under $h_0$, the likelihood is easy to compute because we assume that
 $X_a$ and $X_b$ are independent (Equation \ref{eq:lh-h0}). When the
@@ -214,12 +214,12 @@ configurations are the same, the likelihood becomes more complicated
 compute the integral over $M$ by enumerating every possible mapping
 between $X_a$ and $X_b$. After doing so, we obtain:
 \begin{equation} 
-  p(X_a,\ X_b\ \vert \ h_1)=\int_R p(X_a) p(X_b\vert X_a,R) p(R)\ \mathrm{d}R
+  p(X_a,\ X_b\ \vert \ h_1)=\int_R p(X_a) p(X_b\vert X_a,R) p(R)\ \mathrm{d}R.
 \end{equation}
 
 Once we have computed both likelihoods, we compute their ratio:
 \begin{equation}
-  \ell=\frac{p(X_a, X_b\ \vert \ h_1)}{p(X_a, X_b\ \vert \ h_0)}=\frac{\int_R p(X_b\ \vert\ X_a, R)p(R)\ \mathrm{d}R}{p(X_b)}
+  \ell=\frac{p(X_a, X_b\ \vert \ h_1)}{p(X_a, X_b\ \vert \ h_0)}=\frac{\int_R p(X_b\ \vert\ X_a, R)p(R)\ \mathrm{d}R}{p(X_b)}.
   \label{eq:lh-ratio}
 \end{equation}
 If $\ell<1$, then $h_0$ is the more likely hypothesis. If $\ell>1$,
@@ -259,20 +259,15 @@ We define the prior probabilities over stimuli according to a
 generative procedure. A set of $n$ vertices could be chosen in any of
 $n!$ different ways, and each vertex is located at a random angle
 (between 0 and $2\pi$) and radius (between 0 and 1). Thus, the prior
-over a shape $X$ is:
-\begin{equation}
-  p(X)=n!\left(\frac{1}{2\pi}\right)^n
-  \label{eq:prior}
-\end{equation} 
-which gives us the denominator in Equation \ref{eq:lh-ratio}.
-Computing the numerator is more difficult, as we we cannot compute
-$p(X_b\vert X_a, R)$ directly. Instead, we introduce a new variable
-$X_R$ denoting a mental image, which approximates $RX_a$. The $X_R$
-are generated sequentially by repeated application of a function
-$\tau$:
+over a shape $X$ is $p(X)=n!\left(\frac{1}{2\pi}\right)^n$, which
+gives us the denominator in Equation \ref{eq:lh-ratio}. Computing the
+numerator is more difficult, as we we cannot compute $p(X_b\vert X_a,
+R)$ directly. Instead, we introduce a new variable $X_R$ denoting a
+mental image, which approximates $RX_a$. The $X_R$ are generated
+sequentially by repeated application of a function $\tau$:
 \begin{align}
   X_R=RX_a&=\tau(X_{R-r}, r)=\tau(\tau(X_{R-2r}, r), r)=\ldots{}\nonumber \\
-  &=\tau^{(\frac{R}{r})}(X_a, r)
+  &=\tau^{(\frac{R}{r})}(X_a, r).
   \label{eq:tau}
 \end{align} 
 % I wasn't clear whether the step that happens in Equation 6 should be
@@ -362,7 +357,7 @@ model's estimate of $S$.
 Another strategy is to assume a parametric shape for $S$ and fit the
 appropriate parameters. If we assume that $S$ is approximately
 unimodal when $h_1$ is true\footnote{This is not always a reasonable
-  assumption, see e.g. Figure \ref{fig:vm}}., then a reasonable form
+  assumption, see e.g. Figure \ref{fig:vm}.}, then a reasonable form
 for the similarity function is that of a ``circular Gaussian'' or Von
 Mises distribution:
 \begin{equation}
@@ -403,7 +398,7 @@ $Z$ by placing a Gaussian Process (GP) prior on the function $S$ and
 evaluating $S$ at a particular set of points. Because our data is
 circular, we use a periodic kernel \cite{Rasmussen:2006vz}:
 \begin{equation}
-k(R, R^\prime)=h^2\exp\left(-\frac{2\sin^2\left(\frac{1}{2}(R-R^\prime)\right)}{w^2}\right)
+k(R, R^\prime)=h^2\exp\left(-\frac{2\sin^2\left(\frac{1}{2}(R-R^\prime)\right)}{w^2}\right).
 \end{equation}
 
 Bayesian Quadrature has its difficulties, however. While in our case
@@ -443,7 +438,7 @@ the higher value of $S$. At each step, we compute $\mu_Z$ and
 $\tilde{V}$ in order to estimate a distribution over the likelihood
 ratio $\ell$:
 \begin{equation*}
-p(\ell)\approx\frac{1}{p(X_b)}\ \mathcal{N}(Z\ \vert\ \mu_Z, \sigma_z)
+p(\ell)\approx\frac{1}{p(X_b)}\ \mathcal{N}(Z\ \vert\ \mu_Z, \sigma_z).
 \end{equation*}
 We choose $h_0$ when $p(\ell < 1)\geq 0.95$, and $h_1$ when $p(\ell >
 1)\geq 0.95$. Until one of these conditions are met (or the shape has
