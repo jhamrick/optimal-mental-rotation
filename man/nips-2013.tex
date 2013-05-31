@@ -65,22 +65,22 @@
 % the big picture goals clear at the start, and then segue into the
 % mystery of mental rotation -- how do we know which way to rotate?
 
-Consider the objects in Figure \ref{fig:mental-rotation}. In each
-panel, are the two depicted objects identical (except for a rotation),
-or distinct? When presented with this mental rotation task, people
-default to a strategy in which they visualize one object rotating
-until it is congruent with the other \cite{Shepard1971}. There is
-strong evidence for such \textit{mental imagery} or \textit{mental
-  simulation}: we can imagine three-dimensional objects in our minds
-and manipulate them, to a certain extent, as if they were real
-\cite{Kosslyn:2009tj}.  However, the use of mental simulation is
-predicated on determining appropriate parameters to give the
-simulation, and people's cognitive constraints may furthermore place
-limitations on the duration or precision of simulation. One hypothesis
-for how these issues are handled argues that people use a rational
-solution, meaning that it is optimal under existing constraints
-\cite{Lieder:2012wg,Vul:2009wy,Griffiths2012a}, such as processing
-speed, memory, or perceptual acuity.
+Consider the images on the left in Figure
+\ref{fig:mental-rotation}. In each panel, are the two depicted objects
+identical (except for a rotation), or distinct? When presented with
+this mental rotation task, people default to a strategy in which they
+visualize one object rotating until it is congruent with the other
+\cite{Shepard1971}. There is strong evidence for such \textit{mental
+  imagery} or \textit{mental simulation}: we can imagine
+three-dimensional objects in our minds and manipulate them, to a
+certain extent, as if they were real \cite{Kosslyn:2009tj}.  However,
+the use of mental simulation is predicated on determining appropriate
+parameters to give the simulation, and people's cognitive constraints
+may furthermore place limitations on the duration or precision of
+simulation. One hypothesis for how these issues are handled argues
+that people use a rational solution, meaning that it is optimal under
+existing constraints \cite{Lieder:2012wg,Vul:2009wy,Griffiths2012a},
+such as processing speed, memory, or perceptual acuity.
 
 In the case of the classic mental rotation task, we might ask: in what
 direction should the object be rotated?  What are the requirements for
@@ -107,19 +107,21 @@ future work.
 \section{Background}
 
 There is a long and rich history of work on mental rotation beginning
-with \cite{Shepard1971}, who presented participants with pairs of
-images such as those shown in Figure \ref{fig:mental-rotation}. These
-pairs of three-dimensional objects could either be: the same object
-rotated in plane (Figure \ref{fig:mental-rotation}A), the same object
-rotated in depth (Figure \ref{fig:mental-rotation}B), or two different
-objects (Figure \ref{fig:mental-rotation}C; in this case, the
-``different'' objects had reflective symmetry, but no rotational
+with Shepard and Metzler \cite{Shepard1971}, who presented
+participants with pairs of images such as those shown in Figure
+\ref{fig:mental-rotation} (left panel). These pairs of
+three-dimensional objects could either be: the same object rotated in
+plane (Figure \ref{fig:mental-rotation}A), the same object rotated in
+depth (Figure \ref{fig:mental-rotation}B), or two different objects
+(Figure \ref{fig:mental-rotation}C; in this case, the ``different''
+objects had reflective symmetry, but no rotational
 symmetry). Participants had to determine whether the two images were
 of the same object or not, and \cite{Shepard1971} famously found that
 response times for plane and depth rotations had a strong linear
 relationship with the minimum angle of rotation between the two
-objects. The conclusion was that participants were visually
-``rotating'' the objects in their minds.
+objects (Figure \ref{fig:mental-rotation}, right panel). The
+conclusion was that participants were visually ``rotating'' the
+objects in their minds.
 
 For many years, this idea was contested, with some researchers arguing
 the underlying cognitive processes were not visual in nature
@@ -287,13 +289,14 @@ different possible mappings of vertices:
 \end{equation}
 
 Because the vertices are connected in a way which forms a closed loop,
-we need only consider $n$ mappings, $M$, of the $n$ vertices (we
-assume the uncertainty is only in which is the ``first''
-vertex). Thus, the possible orderings are of the form $M=\lbrace{}0,
-1, \ldots{}, n\rbrace{}$, $M=\lbrace{}n, 0, \ldots{}, n-1\rbrace{}$,
-and so on. This gives us an explicit form for the similarity function:
+we need only consider $2n$ mappings, $M$, of the $n$ vertices (we
+assume uncertainty for which is the ``first'' vertex, and then which
+of its two neighbors is the ``second''). Thus, the possible orderings
+are of the form $M=\lbrace{}0, 1, \ldots{}, n\rbrace{}$,
+$M=\lbrace{}n, 0, \ldots{}, n-1\rbrace{}$, and so on. This gives us an
+explicit form for the similarity function:
 \begin{equation}
-  S(X_b, X_R)=\frac{1}{n}\sum_{M\in\mathbb{M}}\prod_{i=1}^n\mathcal{N}(X_b[i]\ \vert \ (MX_R)[i], \Sigma)
+  S(X_b, X_R)=\frac{1}{2n}\sum_{M\in\mathbb{M}}\prod_{i=1}^n\mathcal{N}(X_b[i]\ \vert \ (MX_R)[i], \Sigma)
   \label{eq:similarity}
 \end{equation}
 where $i$ denotes the $i^{th}$ vertex. An example of $S$ for the
@@ -310,7 +313,7 @@ examine several approaches to estimating $Z$.
 In each of these models, we denote the computed rotations to be a set
 $\mathbf{R}=\{R_1, R_2, \ldots{}\}$.
 
-\subsection{Gold standard}
+\paragraph{Gold standard}
 
 To compare the accuracy of other models' estimates of $Z$, we computed
 a ``gold standard''\footnote{This only gives an accurate estimate of
@@ -319,7 +322,7 @@ a ``gold standard''\footnote{This only gives an accurate estimate of
 evaluating $S(X_b, X_R)$ at 360 values of $R$ spaced evenly between
 $0$ and $2\pi$.
 
-\subsection{\Naive{} model}
+\paragraph{\Naive{} model}
 
 \begin{figure}[t]
   \centering
@@ -356,7 +359,7 @@ computes an estimate of $Z$ by linearly interpolating between sampled
 rotations. Figure \ref{fig:li} shows an example of the \naive{} model
 prior to estimating $Z$.
 
-\subsection{Parametric (Von Mises) model}
+\paragraph{Parametric (Von Mises) model}
 
 Another strategy is to assume a parametric shape for $S$ and fit the
 appropriate parameters. When $h_1$ is correct, it is likely that the
@@ -375,7 +378,7 @@ values of $S$. To choose the sequence of rotations, we use the same
 hill-climbing strategy as in the \naive{} model. Figure \ref{fig:vm}
 shows an example of this parametric model, prior to estimating $Z$.
 
-\subsection{Nonparametric (Bayesian Quadrature) model}
+\paragraph{Nonparametric (Bayesian Quadrature) model}
 
 \begin{figure}[t]
   \centering
@@ -413,7 +416,7 @@ prior over the log likelihood\footnote{In practice, as in
   \cite{Osborne:2012tm}, we use the transform of
   $\log(S+1)$. Additionally, while \cite{Osborne:2012tm} use a
   combination of MLII and marginalization to fit the kernel
-  parameters, we set the output scale $h_S=0.125$ and $h_{\log
+  parameters, we set the output scale $h_S=\sqrt{0.1}$ and $h_{\log
     S}=\log(h_S + 1)$, and use MLII to fit all other parameters.},
 thus ensuring that $S=e^{\log S}$ will be positive\footnote{We are not
   guaranteed positivity, however, the approximation to the integral
@@ -443,10 +446,11 @@ $Z$ is given by:
   \label{eq:bq-Z-var}
 \end{equation}
 
-To choose $\mathbf{R}$, we pick an initial direction of rotation which
-results in the higher value of $S$, and then continue rotating in that
-direction until the variance in Equation \ref{eq:bq-Z-var} is low
-enough that we are confident about the likelihood ratio $\ell$:
+\TODO{To choose $\mathbf{R}$}, we pick an initial direction of
+rotation which results in the higher value of $S$, and then continue
+rotating in that direction until the variance in Equation
+\ref{eq:bq-Z-var} is low enough that we are confident about the
+likelihood ratio $\ell$:
 \begin{equation*}
 p(\ell)\approx\frac{1}{p(X_b)}\ \mathcal{N}(Z\ \vert\ \mu_Z, \sigma_z)
 \end{equation*}
@@ -479,21 +483,22 @@ will continue to compute rotations and update its estimate of $Z$.
   \label{fig:rotations}
 \end{figure}
 
-We evaluated each model's performance on 50 randomly generated shapes
-(such as $X_a$ in Figure \ref{fig:stimuli}). For each shape, we picked
-a random angle $R$ and generated two stimuli: a $h_0$ stimulus, by
-reflecting $X_a$ across the $y$-axis and rotating it by $R$; and a
-$h_1$ stimulus, by simply rotating $X_a$ by $R$.
+We evaluated each model's performance on 20 randomly generated shapes
+which had between 3 and 6 vertices, inclusive, (e.g. $X_a$ in Figure
+\ref{fig:stimuli}). For each shape, we computed 18 ``different'' and
+18 ``same'' stimuli pairs, with $R$ spaced at $20^\prime$ increments
+between 0 and 360. ``Different'' pairs were created by reflecting
+$X_a$ across the $y$-axis and rotating it by $R$; for ``same'' pairs,
+$X_a$ was rotated by $R$.
 
 We considered three metrics of performance in particular:
 \begin{itemize}
-\item \textit{Rotations}: for stimuli where $h_1$ is correct, how
-  correlated are the true angles of rotation with the rotations
-  performed by the model? This is defined to be the Pearson's
-  correlation coefficient $\rho$ between $R$ and $\vert
-  \mathbf{R}\vert$. Figure \ref{fig:rotations} shows individual points
-  corresponding to true rotation vs. rotation by the model, for each
-  model.
+\item \textit{Rotations}: for ``same'' pairs, how correlated are the
+  true angles of rotation with the rotations performed by the model?
+  This is defined to be the Pearson's correlation coefficient $\rho$
+  between $R$ and $\vert \mathbf{R}\vert$. Figure \ref{fig:rotations}
+  shows individual points corresponding to true rotation vs. rotation
+  by the model, for each model.
 \item \textit{Responses}: how accurate is the model at choosing the
   correct hypothesis? This is defined to be the mean error ($\ME{}$),
   or fraction of times the model picks the incorrect hypothesis.
