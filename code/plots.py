@@ -376,7 +376,79 @@ def model_rotations(models):
         wspace=0.1, top=0.9, bottom=0.2,
         left=0.1, right=0.95)
 
-    return fig, axes
+    x = np.linspace(-np.pi / 16, np.pi + (np.pi / 16.), 100)
+
+    def plot_linreg(i, linreg):
+        if len(models) == 1:
+            ax = axes
+        else:
+            ax = axes[i]
+        y = x * linreg[0] + linreg[1]
+        ax.plot(x, y, 'k--', dashes=(2, 2))
+
+    def plot_h0(i, mean, sem):
+        if len(models) == 1:
+            ax = axes
+        else:
+            ax = axes[i]
+        y = np.ones(x.shape) * mean
+        yl = y - sem
+        yu = y + sem
+        ax.fill_between(x, yl, yu, color='b', alpha=0.2)
+        ax.plot(x, y, 'b-', label='"different" pairs')
+
+    def plot_h1_mean(i, x, y, yerr):
+        if len(models) == 1:
+            ax = axes
+        else:
+            ax = axes[i]
+        ax.errorbar(
+            x, y, yerr=yerr,
+            marker='o',
+            linestyle='',
+            color='k',
+            label='"same" pairs')
+
+    def plot_h1_all(i, x, y):
+        if len(models) == 1:
+            ax = axes
+        else:
+            ax = axes[i]
+        for ia, ang in enumerate(x):
+            if ia == 0:
+                label = '"same" pairs'
+            else:
+                label = None
+            ax.plot(
+                np.ones(y[ia].size) * ang,
+                y[ia],
+                marker='o',
+                alpha=0.5,
+                linestyle='',
+                color='k',
+                label=label)
+
+    def plot_legend():
+        if len(models[1:]) == 1:
+            ax = axes
+        else:
+            ax = axes[1]
+        leg = ax.legend(
+            loc='upper center',
+            frameon=True,
+            numpoints=1,
+            fontsize=12)
+        leg.get_frame().set_edgecolor('white')
+        leg.get_frame().set_color('#CCCCCC')
+
+    funcs = {
+        'linreg': plot_linreg,
+        'h0': plot_h0,
+        'h1_all': plot_h1_all,
+        'h1_mean': plot_h1_mean,
+        'legend': plot_legend
+    }
+    return fig, axes, funcs
 
 
 def model_z_accuracy(models):
