@@ -43,27 +43,7 @@
 \TODO{}
 \end{abstract}
 
-% I think the main thing would be doing something more sophisticated
-% in the search, rather than using the gradient. A less sophisticated
-% adaptive sampling method seems like it would be best, and using von
-% Mises makes sense.
-
 \section{Introduction}
-
-\TODO{Want to talk about previous work on strategies people might use,
-  e.g. eye-tracking results from Just and Carpenter (1975?)}
-
-% 1. The big picture
-% 2. Our contribution
-% 3. How we do it
-% 4. What's in the paper
-
-% The introduction could be made more general -- start with the
-% question of how a rational agent should use her computational
-% resources, and then get onto mental simulation/rotation as a special
-% case of that, rather than starting with the phenomena. I would make
-% the big picture goals clear at the start, and then segue into the
-% mystery of mental rotation -- how do we know which way to rotate?
 
 One of the challenges of solving any computational problem is
 determining how best to use the available computing resources. For
@@ -155,8 +135,11 @@ We assume that mental imagery is indeed a visual process, and turn to
 the question of how, and when, it is used. Previous work has examined
 how people might use imagery \cite{Hegarty2004, Schwartz1999} to solve
 reasoning problems, and when they might use imagery as opposed to a
-symbolic rule \cite{Schwartz:1996uy}. People seem to use imagery
-methodically, which raises the question: what is the method?
+symbolic rule \cite{Schwartz:1996uy}. Eye-tracking studies of people
+performing mental rotations suggest strategies that people might be
+using, such as aligning smaller features of the images
+\cite{Just1976}. People seem to use imagery methodically, which raises
+the question: what is the method?
 
 Others studying people's pattern of behavior when engaged in
 self-directed learning have found that they tend to use a strategy of
@@ -610,39 +593,45 @@ $Z$ were largely succeessful, with $\BQMSE{}$.
 
 \section{Discussion}
 
-We investigated strategies for performing the mental rotation task
-\cite{Shepard1971} in two dimensions, and found that a nonparametric
-model that enforces a positivity constraint on the likelihood function
-performs best, as it is able to actively monitor the confidence of its
-estimate. The simpler models performed much worse: they did not
-maintain the linear relationship with the true angle of rotation due
-to lack of robustness against local maxima, and they were inaccurate
-at identifying whether the two shapes were the same or not.
-
-One option for improving the performance of the simple models would be
-to fit a threshold value, below which local maxima would be
-ignored. However, this strategy would be rather brittle, for if the
-distribution of shapes changed, the threshold would have to be
-re-learned. It is possible that people exhibit this behavior, but we
-cannot make any assumptions one way or the other without empirical
-data.
-
-A further strength of the nonparametric model over the other models,
-however, is that it is likely to generalize well to three
-dimensions. One aspect of \cite{Osborne:2012tm} which we have not yet
-explored is their main contribution of \textit{active sampling}, in
-which samples are iteratively selected to maximally decrease the
-expected variance of $Z$. Due to the sequential constraint of mental
-rotation, this strategy is not particularly useful in two dimensions,
-as there are only every two directions in which to rotate. In three
-dimensions, however, there are an infinite number of directions that
-could be chosen after every step.
-
-We conclude that, from this initial survey, models of mental rotation
+In this paper, we asked: how do people use mental simulation?  We
+investigated the specific case of mental rotation, taking a rational
+analysis approach to characterizing optimal strategies for performing
+mental rotation. We found that an adaptive, nonparametric model
+performs best at the classic rotation task \cite{Shepard1971}, as it
+is able to actively monitor the confidence of its estimate and
+intelligently choose the direction of rotation. Two simpler models
+based on heuristics performed much worse: they did not maintain the
+linear relationship with the true angle of rotation due to lack of
+robustness against local maxima or incorrect rotation direction. The
+nonparametric model qualitatively approximates human behavioral
+judgments, both in linearity \cite{Shepard1971} and variability
+\cite{Just1976}. Future work will collect empirical data from
+participants to perform a more thorough, quantitative analysis.  We
+conclude that from this initial survey, models of mental rotation
 which take an ``active'', directed approach seem well-suited to
-explaining human behavior in these tasks. Future work will collect
-empirical data from participants to perform a more quantitative
-analysis of these modeling tools.
+explaining human behavior in such metacognitive domains as mental
+simulation.
+
+
+% One option for improving the performance of the simple models would be
+% to fit a threshold value, below which local maxima would be
+% ignored. However, this strategy would be rather brittle, for if the
+% distribution of shapes changed, the threshold would have to be
+% re-learned. It is possible that people exhibit this behavior, but we
+% cannot make any assumptions one way or the other without empirical
+% data.
+
+% A further strength of the nonparametric model over the other models,
+% however, is that it is likely to generalize well to three
+% dimensions. One aspect of \cite{Osborne:2012tm} which we have not yet
+% explored is their main contribution of \textit{active sampling}, in
+% which samples are iteratively selected to maximally decrease the
+% expected variance of $Z$. Due to the sequential constraint of mental
+% rotation, this strategy is not particularly useful in two dimensions,
+% as there are only every two directions in which to rotate. In three
+% dimensions, however, there are an infinite number of directions that
+% could be chosen after every step.
+
 
 % \textbf{Acknowledgments}
 % \TODO{}
