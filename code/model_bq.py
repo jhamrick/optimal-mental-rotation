@@ -134,7 +134,12 @@ class BayesianQuadratureModel(Model):
             Dc = delta[cix]
             if self.theta_Dc:
                 DcK = self._mll_Dc.make_kernel(params=self.theta_Dc)
-                Dcmu = GP(DcK, Rc, Dc, self.R)[0]
+                try:
+                    Dcmu = GP(DcK, Rc, Dc, self.R)[0]
+                except np.linalg.LinAlgError:
+                    Rc = list(Rc) + [2*np.pi]
+                    Dc = list(Dc) + [Rc[0]]
+                    Dcmu = np.interp(self.R, Rc, Dc)
             else:
                 Rc = list(Rc) + [2*np.pi]
                 Dc = list(Dc) + [Rc[0]]
