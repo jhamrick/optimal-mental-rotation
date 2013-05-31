@@ -143,8 +143,8 @@ class BayesianQuadratureModel(Model):
             Ri, Si,
             ntry=self.opt['ntry'],
             verbose=self.opt['verbose'] > 3,
-            wmin=np.pi / 8.,
-            wmax=2*np.pi)
+            wmin=np.radians(self.opt['bq_wmin']),
+            wmax=np.radians(self.opt['bq_wmax']))
 
         self.debug("Best parameters: %s" % (theta,), level=2)
         self.debug("Computing GP over %s..." % name, level=2)
@@ -257,8 +257,16 @@ class BayesianQuadratureModel(Model):
         pm = self.opt['prior_R'] * (self.mu_S + 1)
         C = safe_multiply(self.S_cov, pm[:, None], pm[None, :])
         C[np.abs(C) < 1e-100] = 0
-        self.Z_var = np.trapz(np.trapz(C, self.R, axis=0), self.R)
+        upper = np.trapz(np.trapz(C, self.R, axis=0), self.R)
 
+        m = self.mu_S
+        m[m < 0] = 0
+        pm = self.opt['prior_R'] * m
+        C = safe_multiply(self.S_cov, pm[:, None], pm[None, :])
+        C[np.abs(C) < 1e-100] = 0
+        lower = np.trapz(np.trapz(C, self.R, axis=0), self.R)
+
+        self.Z_var = (lower, upper)
         self.print_Z(level=0)
 
 
