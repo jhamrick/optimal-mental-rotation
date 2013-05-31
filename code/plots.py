@@ -340,109 +340,116 @@ def likelihood_all(models):
 
 
 def model_rotations(models):
-    fig, axes = plt.subplots(1, len(models), sharex=True, sharey=True)
+    fig, axes = plt.subplots(2, len(models), sharex=True, sharey=True)
     if len(models) == 1:
-        ax0 = axes
+        ax0 = axes[1]
     else:
-        ax0 = axes[0]
+        ax0 = axes[1][0]
 
     ax0.set_xticks([0, np.pi / 4., np.pi / 2., 3 * np.pi / 4., np.pi])
     ax0.set_xticklabels([0, 45, 90, 135, 180])
     ax0.set_xlim(-np.pi/16, np.pi+(np.pi/16))
 
     ax0.set_yticks([0, 25, 50, 75, 100])
-    ax0.set_yticklabels([0, 25, 50, 75, 100])
+    ax0.set_xticklabels([0, 45, 90, 135, 180])
     ax0.set_ylim(-5, 105)
-    ax0.set_ylabel("Percent rotated")
 
     for i in xrange(len(models)):
         if len(models) == 1:
-            ax = axes
+            tax = axes[0]
+            bax = axes[1]
         else:
-            ax = axes[i]
+            tax = axes[0][i]
+            bax = axes[1][i]
+
         model = models[i]
-        ax.set_title(model, fontsize=12)
-        ax.set_xlabel(r"True rotation ($R$)")
+        tax.set_title(model, fontsize=12)
+        bax.set_xlabel(r"True rotation ($R$)")
+        if i == 0:
+            tax.set_ylabel(r"Raw rotation")
+            bax.set_ylabel(r"Mean rotation")
+        for ax in (tax, bax):
+            sg.outward_ticks(ax=ax)
+            sg.clear_right(ax=ax)
+            sg.clear_top(ax=ax)
 
-        sg.outward_ticks(ax=ax)
-        sg.clear_right(ax=ax)
-        sg.clear_top(ax=ax)
-
-    sg.set_figsize(8, 2.7)
+    sg.set_figsize(8, 5.5)
     plt.subplots_adjust(
         wspace=0.1, top=0.9, bottom=0.2,
-        left=0.1, right=0.95)
+        hspace=0.4, left=0.1, right=0.95)
 
     x = np.linspace(-np.pi / 16, np.pi + (np.pi / 16.), 100)
 
     def plot_linreg(i, linreg):
         if len(models) == 1:
-            ax = axes
+            tax = axes[0]
+            bax = axes[1]
         else:
-            ax = axes[i]
+            tax = axes[0][i]
+            bax = axes[1][i]
+
         y = x * linreg[0] + linreg[1]
-        ax.plot(x, y, 'k--', dashes=(2, 2))
+        for ax in (tax, bax):
+            ax.plot(x, y, 'k--', dashes=(2, 2), label='linear regression')
 
-    def plot_h0(i, mean, sem):
+    def plot_h0(i, mean, std):
         if len(models) == 1:
-            ax = axes
+            bax = axes[1]
         else:
-            ax = axes[i]
+            bax = axes[1][i]
+
         y = np.ones(x.shape) * mean
-        yl = y - sem
-        yu = y + sem
-        ax.fill_between(x, yl, yu, color='b', alpha=0.2)
-        ax.plot(x, y, 'b-', label='"different" pairs')
+        yl = y - std
+        yu = y + std
+        bax.fill_between(x, yl, yu, color='b', alpha=0.2)
+        bax.plot(x, y, 'b-', label='"different" pairs', linewidth=2)
 
-    def plot_h1_mean(i, x, y, yerr):
+    def plot_h1(i, x, y, ymean, yerr):
         if len(models) == 1:
-            ax = axes
+            tax = axes[0]
+            bax = axes[1]
         else:
-            ax = axes[i]
-        ax.errorbar(
-            x, y, yerr=yerr,
+            tax = axes[0][i]
+            bax = axes[1][i]
+
+        for ia, ang in enumerate(x):
+            tax.plot(
+                np.ones(y[ia].size) * ang,
+                y[ia],
+                marker='o',
+                markersize=4,
+                alpha=0.3,
+                linestyle='',
+                color='k')
+
+        bax.errorbar(
+            x, ymean, yerr=yerr,
             marker='o',
+            markersize=7,
             linestyle='',
             color='k',
             label='"same" pairs')
 
-    def plot_h1_all(i, x, y):
-        if len(models) == 1:
-            ax = axes
-        else:
-            ax = axes[i]
-        for ia, ang in enumerate(x):
-            if ia == 0:
-                label = '"same" pairs'
-            else:
-                label = None
-            ax.plot(
-                np.ones(y[ia].size) * ang,
-                y[ia],
-                marker='o',
-                alpha=0.5,
-                linestyle='',
-                color='k',
-                label=label)
-
     def plot_legend():
         if len(models[1:]) == 1:
-            ax = axes
-        else:
             ax = axes[1]
+        else:
+            ax = axes[1][1]
         leg = ax.legend(
             loc='upper center',
             frameon=True,
             numpoints=1,
-            fontsize=12)
+            fontsize=12,
+            bbox_to_anchor=(0.5, 1.34),
+            ncol=3)
         leg.get_frame().set_edgecolor('white')
         leg.get_frame().set_color('#CCCCCC')
+        ax.set_zorder(100)
 
     funcs = {
         'linreg': plot_linreg,
         'h0': plot_h0,
-        'h1_all': plot_h1_all,
-        'h1_mean': plot_h1_mean,
+        'h1': plot_h1,
         'legend': plot_legend
     }
     return fig, axes, funcs
