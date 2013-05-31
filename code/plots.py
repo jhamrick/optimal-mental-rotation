@@ -351,7 +351,7 @@ def model_rotations(models):
     ax0.set_xlim(-np.pi/16, np.pi+(np.pi/16))
 
     ax0.set_yticks([0, 25, 50, 75, 100])
-    ax0.set_xticklabels([0, 45, 90, 135, 180])
+    ax0.set_yticklabels([0, 90, 180, 270, 360])
     ax0.set_ylim(-5, 105)
 
     for i in xrange(len(models)):
@@ -401,7 +401,7 @@ def model_rotations(models):
         y = np.ones(x.shape) * mean
         yl = y - std
         yu = y + std
-        bax.fill_between(x, yl, yu, color='b', alpha=0.2)
+        bax.fill_between(x, yl, yu, color='c', alpha=0.2)
         bax.plot(x, y, 'b-', label='"different" pairs', linewidth=2)
 
     def plot_h1(i, x, y, ymean, yerr):
