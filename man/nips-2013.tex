@@ -100,8 +100,8 @@ rotation becoming an optimal experiment design problem (or in machine
 learning parlance, an active learning problem). We show that recent
 work on methods for Bayesian quadrature
 \cite{Diaconis:1988uo,OHagan:1991tx,Osborne:2012tm} provides a way to
-solve this problem, outperforming several simpler heuristics for
-determining both the direction and extent of rotation.
+solve this problem, outperforming simpler heuristics for determining
+the direction and extent of rotation.
 
 The plan of the paper is as follows. First, we give a brief overview
 of the work on mental rotation and active learning. Next, we present
@@ -148,24 +148,50 @@ conclusion was that participants were visually ``rotating'' the
 objects in their minds.
 
 For many years, this idea was contested, with some researchers arguing
-the underlying cognitive processes were not visual in nature
-(e.g., \cite{Pylyshyn1981}). In particular, Anderson
-\cite{Anderson1978} proved that the mental imagery debate could not be
-resolved on the basis of response time data alone. In recent years,
-however, significant efforts have investigated the neural
-underpinnings of the mental rotation phenomena, arguing that the
-results of brain imaging studies support the existence of visual
-imagery \cite{Kosslyn:2009tj,Kosslyn1988}.
+the underlying cognitive processes were not visual in nature (e.g.,
+\cite{Pylyshyn1981}). In particular, Anderson \cite{Anderson1978}
+proved that the mental imagery debate could not be resolved on the
+basis of response time data alone. In recent years, however,
+significant efforts have investigated the neural underpinnings of the
+mental rotation phenomena, arguing that the results of brain imaging
+studies support the existence of visual imagery
+\cite{Kosslyn:2009tj,Kosslyn1988}.  We assume that mental imagery is
+indeed a visual process, and turn to the question of how, and when, it
+is used. Previous work has examined how people might use imagery
+\cite{Hegarty2004, Schwartz1999} to solve reasoning problems, and when
+they might use imagery as opposed to a symbolic rule
+\cite{Schwartz:1996uy}. Eye-tracking studies of people performing
+mental rotations suggest strategies that people might be using, such
+as aligning smaller features of the images \cite{Just1976}. People
+seem to use imagery methodically, which raises the question: what is
+the method?
 
-We assume that mental imagery is indeed a visual process, and turn to
-the question of how, and when, it is used. Previous work has examined
-how people might use imagery \cite{Hegarty2004, Schwartz1999} to solve
-reasoning problems, and when they might use imagery as opposed to a
-symbolic rule \cite{Schwartz:1996uy}. Eye-tracking studies of people
-performing mental rotations suggest strategies that people might be
-using, such as aligning smaller features of the images
-\cite{Just1976}. People seem to use imagery methodically, which raises
-the question: what is the method?
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[b]{0.4\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{../figures/stimuli_shapes.pdf}
+    \vspace{0pt}
+    \caption{Example stimuli}
+    \label{fig:stimuli}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.4\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{../figures/likelihood_function.pdf}
+    \caption{Likelihood function}
+    \label{fig:likelihood}
+  \end{subfigure}
+  \caption{\textbf{Rotated shapes and their similarity.}  \textbf{(a)}
+    An example stimulus in which the shapes differ only by a
+    rotation. All stimuli consist of three to six vertices centered
+    around the origin, and edges which create a closed loop from the
+    vertices. \textbf{(b)} The approximate likelihood (similarity) of
+    $X_b$ given $X_R$, where $X_R$ is a rotation of $X_a$ by the angle
+    $R$. The true angle of rotation between $X_a$ and $X_b$ is at
+    $\frac{2\pi}{3}$, corresponding to the global maximum in the
+    likelihood function.}
+  \label{fig:shapes}
+\end{figure}
 
 Others studying people's pattern of behavior when engaged in
 self-directed learning have found that they tend to use a strategy of
@@ -231,27 +257,28 @@ then $h_1$ is the more likely hypothesis.
   \centering
   \begin{subfigure}[b]{0.4\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{../figures/stimuli_shapes.pdf}
-    \vspace{0pt}
-    \caption{Example stimuli}
-    \label{fig:stimuli}
+    \includegraphics[width=\textwidth]{../figures/li_regression.pdf}
+    \caption{\Naive{} model}
+    \label{fig:li}
   \end{subfigure}
   \begin{subfigure}[b]{0.4\textwidth}
     \centering
-    \includegraphics[width=\textwidth]{../figures/likelihood_function.pdf}
-    \caption{Likelihood function}
-    \label{fig:likelihood}
+    \includegraphics[width=\textwidth]{../figures/vm_regression.pdf}
+    \caption{Parametric model}
+    \label{fig:vm}
   \end{subfigure}
-  \caption{\textbf{Rotated shapes and their similarity.}  \textbf{(a)}
-    An example stimulus in which the shapes differ only by a
-    rotation. All stimuli consist of three to six vertices centered
-    around the origin, and edges which create a closed loop from the
-    vertices. \textbf{(b)} The approximate likelihood (similarity) of
-    $X_b$ given $X_R$, where $X_R$ is a rotation of $X_a$ by the angle
-    $R$. The true angle of rotation between $X_a$ and $X_b$ is at
-    $\frac{2\pi}{3}$, corresponding to the global maximum in the
-    likelihood function.}
-  \label{fig:shapes}
+  \caption{\textbf{Simple methods of estimating $S$.} In both cases,
+    hill-climbing search is used until a maxima is found (in this
+    case, at approximately $\frac{\pi}{6}$). The sampled points
+    $\mathbf{R}$ (red circles) are then used to estimate $S$ (black
+    lines are the true $S$, red lines are the estimate). \textbf{(a)}
+    Linear interpolation. The overall estimate of $Z$ here will be too
+    low, but certain angles will have a disproportionate contribution
+    (e.g., between $\frac{\pi}{4}$ and $\frac{3\pi}{4}$. \textbf{(b)}
+    Best fit of scaled Von Mises PDF parameters. As in (a), $Z$ will
+    be underestimated. However, the fit around the maximum near
+    $\frac{\pi}{6}$ is much more accurate.}
+  \label{fig:simple-models}
 \end{figure}
 
 Given the computational model defined above, we now explore the ways
@@ -320,34 +347,6 @@ the trapezoidal rule.
 
 \paragraph{\Naive{}}
 
-\begin{figure}[t]
-  \centering
-  \begin{subfigure}[b]{0.4\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{../figures/li_regression.pdf}
-    \caption{\Naive{} model}
-    \label{fig:li}
-  \end{subfigure}
-  \begin{subfigure}[b]{0.4\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{../figures/vm_regression.pdf}
-    \caption{Parametric model}
-    \label{fig:vm}
-  \end{subfigure}
-  \caption{\textbf{Simple methods of estimating $S$.} In both cases,
-    hill-climbing search is used until a maxima is found (in this
-    case, at approximately $\frac{\pi}{6}$). The sampled points
-    $\mathbf{R}$ (red circles) are then used to estimate $S$ (black
-    lines are the true $S$, red lines are the estimate). \textbf{(a)}
-    Linear interpolation. The overall estimate of $Z$ here will be too
-    low, but certain angles will have a disproportionate contribution
-    (e.g., between $\frac{\pi}{4}$ and $\frac{3\pi}{4}$. \textbf{(b)}
-    Best fit of scaled Von Mises PDF parameters. As in (a), $Z$ will
-    be underestimated. However, the fit around the maximum near
-    $\frac{\pi}{6}$ is much more accurate.}
-  \label{fig:simple-models}
-\end{figure}
-
 As a baseline, we defined a \naive{} model which performs a
 hill-climbing search over the similarity function until it reaches a
 (possibly local) maximum. Once a maximum as been found, the model
@@ -404,6 +403,22 @@ circular, we use a periodic kernel \cite{Rasmussen:2006vz}:
 k(R, R^\prime)=h^2\exp\left(-\frac{2\sin^2\left(\frac{1}{2}(R-R^\prime)\right)}{w^2}\right).
 \end{equation}
 
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.85\textwidth]{../figures/model_rotations.pdf}
+  \caption{\textbf{Model rotations.} Top: each subplot shows the
+    correspondence between the true angle of rotation ($R$) for
+    ``same'' pairs and the amount of rotation performed by the
+    model. Bottom: each subplot shows the models' mean rotations over
+    stimuli pairs that were judged correctly. Black dots correspond to
+    ``same'' pairs, and blue lines correspond to ``different'' pairs
+    (for which the mean rotation is constant across true rotations, as
+    the true rotation is undefined). Error bars/shaded regions
+    indicate one standard deviation, and the dotted lines indicate the
+    least-squares fit to the ``same'' pairs.}
+  \label{fig:rotations}
+\end{figure}
+
 Bayesian Quadrature has its difficulties, however. While in our case
 $S$ is a non-negative likelihood function, GP regression enforces no
 such constraint. In an effort to avoid this problem,
@@ -414,7 +429,7 @@ likelihood\footnote{In practice, as in \cite{Osborne:2012tm}, we use
   marginalization to fit the $w$ kernel parameters. The output scales
   are fixed at $h_S=\sqrt{0.1}$ and $h_{\log S}=\log(h_S + 1)$.}, thus
 ensuring that $S=e^{\log S}$ will be positive\footnote{We are not
-  guaranteed positivity, however, the approximation to the integral
+  guaranteed positivity, however, as the approximation to the integral
   over $\log S$ (Equation \ref{eq:bq-Z-mean}) requires computing
   $\mu_S$, which may have non-positive segments.}:
 \begin{equation*}
@@ -467,18 +482,17 @@ procedure.
 
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.9\textwidth]{../figures/model_rotations.pdf}
-  \caption{\textbf{Model rotations.} Top: each subplot shows the
-    correspondence between the true angle of rotation ($R$) for
-    ``same'' pairs and the amount of rotation performed by the
-    model. Bottom: each subplot shows the models' mean rotations over
-    stimuli pairs that were judged correctly. Black dots correspond to
-    ``same'' pairs, and blue lines correspond to ``different'' pairs
-    (for which the mean rotation is constant across true rotations, as
-    the true rotation is undefined). Error bars/shaded regions
-    indicate one standard deviation, and the dotted lines indicate the
-    least-squares fit to the ``same'' pairs.}
-  \label{fig:rotations}
+  \includegraphics[width=0.85\textwidth]{../figures/Z_accuracy.pdf}
+  \caption{\textbf{Accuracy in estimating $Z$.} Each subplot shows the
+    true (``gold standard'') value of $Z$ vs. the value estimated by
+    the model. Black dotted lines indicate a perfect 1:1
+    correspondence between the true and estimated values. The \naive{}
+    model (left panel) tends to overestimate. The parametric model
+    (center panel) is very accurate for about half the ``same'' pairs,
+    and severely underestimates the rest. The nonparametric model
+    (right panel) maintains a decent correspondence with the true
+    $Z$.}
+  \label{fig:accuracy}
 \end{figure}
 
 We evaluated each model's performance on 20 shapes which had between 3
@@ -493,30 +507,30 @@ was generated randomly, but under the constraint that the
 judged according to the ``gold standard''.
 
 We considered three metrics of performance in particular:
-\begin{itemize}
-\item \textit{Response error rates}: How accurate was the model at
-  choosing the correct hypothesis? This was defined as the mean error
-  ($\ME{}$), or fraction of times the model chose incorrectly.
-\item \textit{Rotations}: For those ``same'' pairs which the model
-  judged correct, how correlated were the model's rotations with the
-  true angles of rotation?  We quantified this using the Pearson's
-  correlation coefficient $\rho$ for the true rotation ($R$) versus
-  the extent of the model's rotations ($\vert \mathbf{R}\vert$). The
-  top row in Figure \ref{fig:rotations} shows individual points
-  corresponding to true rotations vs. rotations by the models for all
-  stimuli, including those judged incorrectly. The bottom row shows
-  mean model rotations, across only those stimuli which were judged
-  correctly. We structured the analysis in this way to better compare
-  to the results of \cite{Shepard1971}, which also excluded
-  incorrectly judged stimuli.
-\item \textit{Estimates of $Z$}: How accurate was the model's estimate
-  of $Z$? We defined this quantity as the mean squared error
-  ($\MSE{}$) between the model's estimate of $Z$ and the ``gold
-  standard'' value, where the error has scale such that $\MSE{}=0$
-  indicates no error and $\MSE{}=1$ indicates maximum error. Figure
-  \ref{fig:accuracy} shows plots of the true (``gold standard'') value
-  of $Z$ vs. the model's estimate, for each model.
-\end{itemize}
+
+\textit{Response error rates}: How accurate was the model at choosing
+the correct hypothesis? This was defined as the mean error ($\ME{}$),
+or fraction of times the model chose incorrectly.
+
+\textit{Rotations}: For those ``same'' pairs which the model judged
+correct, how correlated were the model's rotations with the true
+angles of rotation?  We quantified this using the Pearson's
+correlation coefficient $\rho$ for the true rotation ($R$) versus the
+extent of the model's rotations ($\vert \mathbf{R}\vert$). The top row
+in Figure \ref{fig:rotations} shows individual points corresponding to
+true rotations vs. rotations by the models for all stimuli, including
+those judged incorrectly. The bottom row shows mean model rotations,
+across only those stimuli which were judged correctly. We structured
+the analysis in this way to better compare to the results of
+\cite{Shepard1971}, which also excluded incorrectly judged stimuli.
+
+\textit{Estimates of $Z$}: How accurate was the model's estimate of
+$Z$? We defined this quantity as the mean squared error ($\MSE{}$)
+between the model's estimate of $Z$ and the ``gold standard'' value,
+where the error has scale such that $\MSE{}=0$ indicates no error and
+$\MSE{}=1$ indicates maximum error. Figure \ref{fig:accuracy} shows
+plots of the true (``gold standard'') value of $Z$ vs. the model's
+estimate, for each model.
 
 \paragraph{\Naive{}} 
 
@@ -566,22 +580,6 @@ the analysis. The individual rotations performed by the parametric and
 the same hill-climbing stopping strategy.
 
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.9\textwidth]{../figures/Z_accuracy.pdf}
-  \caption{\textbf{Accuracy in estimating $Z$.} Each subplot shows the
-    true (``gold standard'') value of $Z$ vs. the value estimated by
-    the model. Black dotted lines indicate a perfect 1:1
-    correspondence between the true and estimated values. The \naive{}
-    model (left panel) tends to overestimate. The parametric model
-    (center panel) is very accurate for about half the ``same'' pairs,
-    and severely underestimates the rest. The nonparametric model
-    (right panel) maintains a decent correspondence with the true
-    $Z$.}
-  \label{fig:accuracy}
-\end{figure}
-
-
 \paragraph{Nonparametric (Bayesian Quadrature)}
 
 The nonparametric model was much more accurate in choosing the correct
@@ -612,14 +610,17 @@ actively monitor the confidence of its estimate and intelligently
 choose the direction of rotation. Two simpler models based on
 heuristics performed much worse: they did not maintain the linear
 relationship with the true angle of rotation due to lack of robustness
-against local maxima or incorrect rotation direction. The
-nonparametric model qualitatively approximates human behavioral
-judgments, both in linearity \cite{Shepard1971} and variability
-\cite{Just1976}. Future work will collect empirical data from
-participants to perform a more thorough, quantitative analysis.  We
-conclude that from this initial survey, models which take an
-``active'', directed approach seem well-suited to explaining mental
-simulation.
+against local maxima or incorrect rotation direction.  More broadly,
+the nonparametric model provides answers to puzzling questions
+surrounding the incremental nature of mental rotation: which way
+should the object be rotated, and for how long? This model formalizes
+these answers in a way that is qualitatively consistent with human
+behavior, both in response time linearity \cite{Shepard1971} and
+variability \cite{Just1976}. These results further indicate that this
+may be another instance in which people do appropriately use available
+computational resources to solve the task at hand.  Rational, adaptive
+approaches such as this may therefore be successful when applied to
+more complex cognitive processes above and beyond mental rotation.
 
 % two questions: which way to rotate, when to stop, giving formal answer
 % to these questions which produces answers consistent with human
