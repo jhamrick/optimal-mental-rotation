@@ -65,34 +65,51 @@
 % the big picture goals clear at the start, and then segue into the
 % mystery of mental rotation -- how do we know which way to rotate?
 
+One of the challenges of solving any computational problem is
+determining how best to use the available computing resources. For
+example, a computer can render complex graphics faster by recognizing
+that this kind of computation should be carried out by a specialized
+graphics processor. The same challenge arises in designing an
+intelligent agent: how should the agent make best use of its computing
+resources? Recent research on rational models of human cognition has
+provided insight into the nature of the computational problems that
+human beings need to solve (e.g., \cite{something}), but leaves open
+the question of how people allocate their resources in solving those
+problems. In this paper, we take a step towards addressing this
+question, applying rational analysis (in the spirit of
+\cite{marr,anderson, shepard}) to one aspect of human metacognition:
+the use of mental simulation.
+
 Consider the images on the left in Figure
 \ref{fig:mental-rotation}. In each panel, are the two depicted objects
 identical (except for a rotation), or distinct? When presented with
 this mental rotation task, people default to a strategy in which they
 visualize one object rotating until it is congruent with the other
-\cite{Shepard1971}. There is strong evidence for such \textit{mental
-  imagery} or \textit{mental simulation}: we can imagine
-three-dimensional objects in our minds and manipulate them, to a
-certain extent, as if they were real \cite{Kosslyn:2009tj}.  However,
-the use of mental simulation is predicated on determining appropriate
-parameters to give the simulation, and people's cognitive constraints
-may furthermore place limitations on the duration or precision of
-simulation. One hypothesis for how these issues are handled argues
-that people use a rational solution, meaning that it is optimal under
-existing constraints \cite{Lieder:2012wg,Vul:2009wy,Griffiths2012a},
-such as processing speed, memory, or perceptual acuity.
+\cite{Shepard1971}. There is strong evidence for such mental
+simulation: we can imagine three-dimensional objects in our minds and
+manipulate them, to a certain extent, as if they were real
+\cite{Kosslyn:2009tj}.  However, the use of mental simulation is
+predicated on determining appropriate parameters to give the
+simulation, analogous to determining exactly what computation should
+be passed to a graphics processor.  In the case of the classic mental
+rotation task, we might ask: How do people know which way to rotate
+the object?  When should one stop rotating and accept the hypothesis
+that the objects are different?
 
-In the case of the classic mental rotation task, we might ask: in what
-direction should the object be rotated?  What are the requirements for
-``congruence''? When should one stop rotating and accept the
-hypothesis that the objects are different? We investigate several
-computational solutions to this task and qualitatively compare them to
-general mental rotation results. Of particular interest is a model
-which actively reasons about the amount of evidence it has, and
-performs mental rotations until it reaches a certain level of
-confidence. We contrast this model with simpler approaches which are
-less computationally demanding, but which employ less flexible
-strategies.
+Recent work in cognitive science has shown how problems of allocating
+cognitive resources to solving computational problems can be analyzed
+using the methods of statistical decision theory
+\cite{Lieder:2012wg,Vul:2009wy}. We apply this ``rational
+metacognition'' approach to the problem of mental rotation. We
+investigate several computational solutions to this task and
+qualitatively compare them to human mental rotation performance. In
+particular, we argue that performing mental rotation can be framed as
+an integration problem, with the direction of rotation becoming a
+statistical design problem (or in machine learning parlance, a problem
+of active learning). We show that recent work on methods for Bayesian
+quadrature \cite{Diaconis:1988uo,OHagan:1991tx,Osborne:2012tm}
+provides a way to solve this problem, outperforming several simpler
+heuristics for determining both the direction and extent of rotation.
 
 The plan of the paper is as follows. First, we give a brief overview
 of the work on mental rotation and active learning. Next, we present
