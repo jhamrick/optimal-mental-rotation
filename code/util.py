@@ -21,8 +21,6 @@ def make_stimulus(npoints, rso):
     X_ = rso.rand(npoints, 2)
     # normalize points
     X = X_ - np.mean(X_, axis=0)
-    u, s, v = np.linalg.svd(X)
-    X = np.dot(u, np.dot(np.eye(*X.shape), v))
     # normalize the shape's size, so the furthest point is distance 1
     # away from the origin
     X = 0.9 * X / np.max(np.sqrt(np.sum(X ** 2, axis=1)))
@@ -166,8 +164,8 @@ def load_stimulus(stimname):
     return theta, Xa, Xb, Xm, Ia, Ib, Im, R
 
 
-def print_line(char='-', verbose=True):
-    if verbose:
+def print_line(char='-', verbose=1):
+    if verbose > 0:
         print "\n" + char*70
 
 

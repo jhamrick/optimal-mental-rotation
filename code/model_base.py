@@ -183,15 +183,20 @@ class Model(object):
         # covariance matrix
         Sigma = np.eye(D) * self.opt['sigma_s']
         invSigma = np.eye(D) * (1. / self.opt['sigma_s'])
-        # iterate through all permutations of the vertices -- but if two
-        # vertices are connected, they are next to each other in the list
-        # (or on the ends), so we really only need to cycle through n
-        # orderings
-        e = np.empty(n)
+        # iterate through all permutations of the vertices -- but if
+        # two vertices are connected, they are next to each other in
+        # the list (or on the ends), so we really only need to cycle
+        # through 2n orderings (once for the original ordering, and
+        # once for the reverse)
+        e = np.empty(2*n)
         for i in xrange(n):
             idx = np.arange(i, i+n) % n
             d = x0 - x1[idx]
             e[i] = -0.5 * np.sum(np.dot(d, invSigma) * d)
+        for i in xrange(n):
+            idx = np.arange(i, i+n)[::-1] % n
+            d = x0 - x1[idx]
+            e[i+n] = -0.5 * np.sum(np.dot(d, invSigma) * d)
         # constants
         Z0 = (D / 2.) * np.log(2 * np.pi)
         Z1 = 0.5 * np.linalg.slogdet(Sigma)[1]
