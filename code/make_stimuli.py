@@ -7,7 +7,7 @@ matplotlib.use('AGG')
 
 import util
 
-stim_dir = "../stimuli/"
+stim_dir = util.STIM_DIR
 
 
 def make_stimulus(stimnum, npoints, nsamps, sigma, R, rso):
