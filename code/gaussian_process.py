@@ -1,7 +1,24 @@
 import numpy as np
 
 from numpy import dot, log, pi, exp, trace
-from numpy.linalg import inv, cholesky
+from numpy.linalg import inv
+
+
+def cholesky(mat):
+    m = np.mean(np.abs(mat))
+    try:
+        L = np.linalg.cholesky(mat)
+    except np.linalg.LinAlgError:
+        # matrix is singular, let's try adding some noise and see if
+        # we can invert it then
+        noise = np.random.normal(0, m * 1e-4, mat.shape)
+        try:
+            L = np.linalg.cholesky(mat + noise)
+        except np.linalg.LinAlgError:
+            raise np.linalg.LinAlgError(
+                "Could not compute Cholesky decomposition of "
+                "kernel matrix, even with jitter")
+    return L
 
 
 class GP(object):
@@ -11,6 +28,23 @@ class GP(object):
         self.x = x
         self.y = y
         self.xo = xo
+
+    @property
+    def params(self):
+        return self.K.params
+
+    @params.setter
+    def params(self, val):
+        if self.K.params == val:
+            return
+        self.K.params = val
+        self._Kxx = None
+        self._inv_Kxx = None
+        self._Kxoxo = None
+        self._Kxxo = None
+        self._Kxox = None
+        self._m = None
+        self._C = None
 
     @property
     def x(self):
@@ -119,13 +153,15 @@ class GP(object):
 
         """
 
-        y, K, Ki = self._y, self.Kxx, self.inv_Kxx
+        y, K = self._y, self.Kxx
         sign, logdet = np.linalg.slogdet(K)
         if sign != 1:
-            raise ValueError("matrix is not positive definite")
+            return -np.inf
+
+        Ki = self.inv_Kxx
         data_fit = -0.5 * dot(y.T, dot(Ki, y))
         complexity_penalty = -0.5 * logdet
-        constant = -0.5 * log(2 * pi)
+        constant = -0.5 * y.size * log(2 * pi)
         llh = data_fit + complexity_penalty + constant
         return llh
 
@@ -133,7 +169,11 @@ class GP(object):
         return np.exp(self.log_lh())
 
     def dloglh_dtheta(self):
-        y, Ki = self._y, self.inv_Kxx
+        y = self._y
+        try:
+            Ki = self.inv_Kxx
+        except np.linalg.LinAlgError:
+            return np.array([-np.inf for p in self.params])
 
         # compute kernel jacobian
         dK_dtheta = self.K.jacobian(self.x, self.x)
