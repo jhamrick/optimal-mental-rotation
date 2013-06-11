@@ -44,6 +44,8 @@
     bq_wmin: 20,
     # maximum w value
     bq_wmax: 360,
+    # scaling value
+    gamma: 1,
 
     # example for 'notes' notebook
     example_hyp: 1,
