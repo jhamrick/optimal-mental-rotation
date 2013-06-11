@@ -131,7 +131,7 @@ def bq_regression(model):
     ax_S = plt.subplot(2, 2, 1)
     regression(
         model.R, model.S, model.Ri, model.Si,
-        model.R, model.mu_S, np.diag(model.cov_S),
+        model.R, model.gp_S.m, np.diag(model.gp_S.C),
         title="GPR for $S$",
         xlabel=None,
         legend=False)
@@ -146,8 +146,8 @@ def bq_regression(model):
     # plot the regression for log S
     ax_logS = plt.subplot(2, 2, 3)
     regression(
-        model.R, np.log(model.S + 1), model.Ri, np.log(model.Si + 1),
-        model.R, model.mu_logS, np.diag(model.cov_logS),
+        model.R, model.log_S, model.Ri, model.log_Si,
+        model.R, model.gp_logS.m, np.diag(model.gp_logS.C),
         title=r"GPR for $\log(S+1)$",
         ylabel=r"Similarity ($\log(S+1)$)",
         legend=False)
@@ -156,7 +156,7 @@ def bq_regression(model):
     ax_Dc = plt.subplot(2, 2, 4)
     regression(
         model.R, model.delta, model.Rc, model.Dc,
-        model.R, model.mu_Dc, None,
+        model.R, model.gp_Dc.m, np.diag(model.gp_Dc.C),
         title=r"GPR for $\Delta_c$",
         ylabel=r"Difference ($\Delta_c$)",
         legend=False)
