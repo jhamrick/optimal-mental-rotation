@@ -127,11 +127,25 @@ def regression(x, y, xi, yi, xo, yo_mean, yo_var, **kwargs):
 
 def bq_regression(model):
 
+    R = model.R
+    S = model.S
+    logS = model._bq.log_transform(S)
+    Ri = model.Ri
+    Si = model.Si
+    logSi = model._bq.log_transform(Si)
+    delta = model._bq.delta
+    Rc = model._bq.Rc
+    Dc = model._bq.Dc
+
+    gp_S = model._bq.gp_S
+    gp_logS = model._bq.gp_logS
+    gp_Dc = model._bq.gp_Dc
+
     # plot the regression for S
     ax_S = plt.subplot(2, 2, 1)
     regression(
-        model.R, model.S, model.Ri, model.Si,
-        model.R, model.gp_S.m, np.diag(model.gp_S.C),
+        R, S, Ri, Si,
+        R, gp_S.m, np.diag(gp_S.C),
         title="GPR for $S$",
         xlabel=None,
         legend=False)
@@ -146,8 +160,8 @@ def bq_regression(model):
     # plot the regression for log S
     ax_logS = plt.subplot(2, 2, 3)
     regression(
-        model.R, model.log_S, model.Ri, model.log_Si,
-        model.R, model.gp_logS.m, np.diag(model.gp_logS.C),
+        R, logS, Ri, logSi,
+        R, gp_logS.m, np.diag(gp_logS.C),
         title=r"GPR for $\log(S+1)$",
         ylabel=r"Similarity ($\log(S+1)$)",
         legend=False)
@@ -155,8 +169,8 @@ def bq_regression(model):
     # plot the regression for mu_logS - log_muS
     ax_Dc = plt.subplot(2, 2, 4)
     regression(
-        model.R, model.delta, model.Rc, model.Dc,
-        model.R, model.gp_Dc.m, np.diag(model.gp_Dc.C),
+        R, delta, Rc, Dc,
+        R, gp_Dc.m, np.diag(gp_Dc.C),
         title=r"GPR for $\Delta_c$",
         ylabel=r"Difference ($\Delta_c$)",
         legend=False)
@@ -165,8 +179,8 @@ def bq_regression(model):
     # combine the two regression means
     ax_final = plt.subplot(2, 2, 2)
     regression(
-        model.R, model.S, model.Ri, model.Si,
-        model.R, model.S_mean, model.S_var,
+        R, S, Ri, Si,
+        R, model.S_mean, model.S_var,
         title=r"Final GPR for $S$",
         xlabel=None,
         ylabel=None,
