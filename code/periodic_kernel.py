@@ -6,27 +6,7 @@ from numpy import exp, sin, cos
 import sympy as sym
 from sympy.functions.special.delta_functions import DiracDelta as delta
 
-
-def selfparams(f):
-    def wrapped_func(obj, x1, x2):
-        bf = f.__get__(obj, type(obj))
-        return bf(x1, x2, obj.h, obj.w, obj.p, obj.s)
-    return wrapped_func
-
-
-def make_sym():
-    h = sym.Symbol('h')
-    w = sym.Symbol('w')
-    p = sym.Symbol('p')
-    s = sym.Symbol('s')
-    d = sym.Symbol('d')
-
-    h2 = h ** 2
-    w2 = w ** 2
-    obs = (s ** 2) * delta(d)
-
-    f = h2 * sym.exp(-2.*(sym.sin(d / (2.*p)) ** 2) / w2) + obs
-    return f
+from base_kernel import BaseKernel
 
 
 class PeriodicKernel(object):
@@ -41,7 +21,13 @@ class PeriodicKernel(object):
 
     """
 
-    sym_K = make_sym()
+    __metaclass__ = BaseKernel
+
+    _sym_h = sym.Symbol('h')
+    _sym_w = sym.Symbol('w')
+    _sym_p = sym.Symbol('p')
+    _sym_s = sym.Symbol('s')
+    _sym_d = sym.Symbol('d')
 
     def __init__(self, h, w, p, s):
         """Create a PeriodicKernel object at specific parameter values.
@@ -54,6 +40,8 @@ class PeriodicKernel(object):
             Input scale (Gaussian standard deviation) kernel parameter
         p : number
             Period kernel parameter
+        s : number
+            Observation noise standard deviation
 
         """
 
@@ -61,6 +49,21 @@ class PeriodicKernel(object):
         self.w = w
         self.p = p
         self.s = s
+
+    @property
+    def sym_K(self):
+        h = self._sym_h
+        w = self._sym_w
+        p = self._sym_p
+        s = self._sym_s
+        d = self._sym_d
+
+        h2 = h ** 2
+        w2 = w ** 2
+        obs = (s ** 2) * delta(d)
+
+        f = h2 * sym.exp(-2.*(sym.sin(d / (2.*p)) ** 2) / w2) + obs
+        return f
 
     def copy(self):
         return PeriodicKernel(*self.params)
@@ -94,7 +97,7 @@ class PeriodicKernel(object):
         for i in xrange(x1.size):
             for j in xrange(x2.size):
                 d = x1[i] - x2[j]
-                dKxx[i, j] = 2*h*exp(-2.0*sin(0.5*d/p)**2/w**2)
+                dKxx[i, j] = 2.0*h*exp(-2.0*sin(0.5*d/p)**2/w**2)
         return dKxx
 
     @staticmethod
@@ -128,7 +131,7 @@ class PeriodicKernel(object):
                     dd = 1
                 else:
                     dd = 0
-                dKxx[i, j] = 2*s*dd
+                dKxx[i, j] = 2.0*s*dd
         return dKxx
 
     @staticmethod
@@ -142,10 +145,10 @@ class PeriodicKernel(object):
                     dd = 1
                 else:
                     dd = 0
-                dKxx[0, i, j] = 2*h*exp(-2.0*sin(0.5*d/p)**2/w**2)
+                dKxx[0, i, j] = 2.0*h*exp(-2.0*sin(0.5*d/p)**2/w**2)
                 dKxx[1, i, j] = 4.0*h**2*exp(-2.0*sin(0.5*d/p)**2/w**2)*sin(0.5*d/p)**2/w**3
                 dKxx[2, i, j] = 2.0*d*h**2*exp(-2.0*sin(0.5*d/p)**2/w**2)*sin(0.5*d/p)*cos(0.5*d/p)/(p**2*w**2)
-                dKxx[3, i, j] = 2*s*dd
+                dKxx[3, i, j] = 2.0*s*dd
         return dKxx
 
     @staticmethod
@@ -155,7 +158,7 @@ class PeriodicKernel(object):
         for i in xrange(x1.size):
             for j in xrange(x2.size):
                 d = x1[i] - x2[j]
-                dKxx[i, j] = 2*exp(-2.0*sin(0.5*d/p)**2/w**2)
+                dKxx[i, j] = 2.0*exp(-2.0*sin(0.5*d/p)**2/w**2)
         return dKxx
 
     @staticmethod
@@ -285,7 +288,7 @@ class PeriodicKernel(object):
                     dd = 1
                 else:
                     dd = 0
-                dKxx[i, j] = 2*dd
+                dKxx[i, j] = 2.0*dd
         return dKxx
 
     @staticmethod
@@ -301,7 +304,7 @@ class PeriodicKernel(object):
                     dd = 0
 
                 # h
-                dKxx[0, 0, i, j] = 2*exp(-2.0*sin(0.5*d/p)**2/w**2)
+                dKxx[0, 0, i, j] = 2.0*exp(-2.0*sin(0.5*d/p)**2/w**2)
                 dKxx[0, 1, i, j] = 8.0*h*exp(-2.0*sin(0.5*d/p)**2/w**2)*sin(0.5*d/p)**2/w**3
                 dKxx[0, 2, i, j] = 4.0*d*h*exp(-2.0*sin(0.5*d/p)**2/w**2)*sin(0.5*d/p)*cos(0.5*d/p)/(p**2*w**2)
                 dKxx[0, 3, i, j] = 0
@@ -322,36 +325,6 @@ class PeriodicKernel(object):
                 dKxx[3, 0, i, j] = 0
                 dKxx[3, 1, i, j] = 0
                 dKxx[3, 2, i, j] = 0
-                dKxx[3, 3, i, j] = 2*dd
+                dKxx[3, 3, i, j] = 2.0*dd
 
         return dKxx
-
-    # kernel function
-    K = selfparams(_K)
-    __call__ = K
-
-    # first derivatives
-    dK_dh = selfparams(_dK_dh)
-    dK_dw = selfparams(_dK_dw)
-    dK_dp = selfparams(_dK_dp)
-    dK_ds = selfparams(_dK_ds)
-    jacobian = selfparams(_jacobian)
-
-    # second derivatives
-    d2K_dhdh = selfparams(_d2K_dhdh)
-    d2K_dhdw = selfparams(_d2K_dhdw)
-    d2K_dhdp = selfparams(_d2K_dhdp)
-    d2K_dhds = selfparams(_d2K_dhds)
-    d2K_dwdh = selfparams(_d2K_dwdh)
-    d2K_dwdw = selfparams(_d2K_dwdw)
-    d2K_dwdp = selfparams(_d2K_dwdp)
-    d2K_dwds = selfparams(_d2K_dwds)
-    d2K_dpdh = selfparams(_d2K_dpdh)
-    d2K_dpdw = selfparams(_d2K_dpdw)
-    d2K_dpdp = selfparams(_d2K_dpdp)
-    d2K_dpds = selfparams(_d2K_dpds)
-    d2K_dsdh = selfparams(_d2K_dsdh)
-    d2K_dsdw = selfparams(_d2K_dsdw)
-    d2K_dsdp = selfparams(_d2K_dsdp)
-    d2K_dsds = selfparams(_d2K_dsds)
-    hessian = selfparams(_hessian)
