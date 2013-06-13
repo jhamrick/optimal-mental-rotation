@@ -4,14 +4,9 @@ np.seterr(all='raise')
 
 from models.kernels import GaussianKernel, PeriodicKernel
 from snippets.safemath import EPS
-from util import load_opt, rand_params
+from util import load_opt, rand_params, approx_deriv
 
 ######################################################################
-
-
-def approx_deriv(y0, y1, dx):
-    dy = (y1 - y0) / 2.
-    return dy / dx
 
 
 class TestKernels(object):

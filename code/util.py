@@ -221,6 +221,11 @@ def rand_params(*args):
             params.append(np.random.uniform(0, 0.5))
     return tuple(params)
 
+
+def approx_deriv(y0, y1, dx):
+    dy = (y1 - y0) / 2.
+    return dy / dx
+
 run_model = models.tools.run_model
 run_all = models.tools.run_all
 load_stimulus = models.tools.load_stimulus
