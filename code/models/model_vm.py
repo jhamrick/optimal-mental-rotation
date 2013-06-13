@@ -1,10 +1,11 @@
 import numpy as np
-import snippets.circstats as circ
 import scipy.optimize as sopt
 
 from model_base import Model
 from search import hill_climbing
-from util import log_clip
+
+import snippets.circstats as circ
+from snippets.safemath import log_clip
 
 
 class VonMisesModel(Model):
@@ -132,14 +133,3 @@ class VonMisesModel(Model):
         self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
         self.Z_var = 0
         self.print_Z(level=0)
-
-
-if __name__ == "__main__":
-    import util
-    import sys
-
-    # load options
-    opt = util.load_opt()
-
-    # run each stim
-    util.run_all(sys.argv[1:], VonMisesModel, opt)

@@ -1,4 +1,8 @@
 {
+    # stimuli and data directory names
+    stim_dir: ../stimuli-dev,
+    data_dir: ../data-dev,
+
     # number of vertices for each stimulus
     # if a tuple, it is the inclusive range of then number of 
     # possible vertices

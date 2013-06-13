@@ -1,27 +1,40 @@
 import numpy as np
 from functools import wraps
+
 from model_base import Model
+from search import hill_climbing
 
 
-class GoldStandardModel(Model):
+class NaiveModel(Model):
 
     @wraps(Model.__init__)
     def __init__(self, *args, **kwargs):
-        super(GoldStandardModel, self).__init__(*args, **kwargs)
-        self._rotations = np.arange(self.R.size, dtype='i8')
+        super(NaiveModel, self).__init__(*args, **kwargs)
+        self._icurr = 0
+        self._ilast = None
 
     def next(self):
         """Sample the next point."""
 
-        self.ix = range(self._rotations.size)
-        raise StopIteration
+        self.debug("Finding next sample")
+
+        icurr = hill_climbing(self)
+        if icurr is None:
+            raise StopIteration
+
+        self._ilast = self._icurr
+        self._icurr = icurr
 
     def fit(self):
         """Fit the likelihood function."""
 
-        self.Ri = self.R[self.ix]
-        self.Si = self.S[self.ix]
-        self.S_mean = self.Si.copy()
+        self.debug("Fitting likelihood")
+
+        self.ix = sorted(self.ix)
+        self.Ri = self.R[self.ix + [0]]
+        self.Ri[-1] = 2*np.pi
+        self.Si = self.S[self.ix + [0]]
+        self.S_mean = np.interp(self.R, self.Ri, self.Si)
         self.S_var = np.zeros(self.S_mean.shape)
 
     def integrate(self):
@@ -37,14 +50,4 @@ class GoldStandardModel(Model):
 
         self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
         self.Z_var = 0
-
-
-if __name__ == "__main__":
-    import util
-    import sys
-
-    # load options
-    opt = util.load_opt()
-
-    # run each stim
-    util.run_all(sys.argv[1:], GoldStandardModel, opt)
+        self.print_Z(level=0)

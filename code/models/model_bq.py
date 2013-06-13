@@ -3,9 +3,8 @@ import numpy as np
 from model_base import Model
 from gaussian_process import GP
 import bq
-reload(bq)
 
-from util import log_clip, safe_multiply
+from snippets.safemath import log_clip, safe_multiply
 
 
 class BayesianQuadratureModel(Model):
@@ -223,14 +222,3 @@ class BayesianQuadratureModel(Model):
         self.Z_mean = self._bq.mean
         self.Z_var = self._bq.var
         self.print_Z(level=0)
-
-
-if __name__ == "__main__":
-    import util
-    import sys
-
-    # load options
-    opt = util.load_opt()
-
-    # run each stim
-    util.run_all(sys.argv[1:], BayesianQuadratureModel, opt)
