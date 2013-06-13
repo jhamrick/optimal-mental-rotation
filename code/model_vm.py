@@ -1,5 +1,5 @@
 import numpy as np
-import circstats as circ
+import snippets.circstats as circ
 import scipy.optimize as sopt
 
 from model_base import Model
