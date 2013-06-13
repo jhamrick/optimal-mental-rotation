@@ -23,28 +23,31 @@ def cholesky(mat):
 
 class GP(object):
 
-    def __init__(self, K, x, y, xo):
+    def __init__(self, K, x, y, xo, s=0):
         self.K = K
         self.x = x
         self.y = y
         self.xo = xo
+        self.s = s
 
     @property
     def params(self):
-        return self.K.params
+        return tuple(list(self.K.params) + [self._s])
 
     @params.setter
     def params(self, val):
-        if self.K.params == val:
-            return
-        self.K.params = val
-        self._Kxx = None
-        self._inv_Kxx = None
-        self._Kxoxo = None
-        self._Kxxo = None
-        self._Kxox = None
-        self._m = None
-        self._C = None
+        params = self.params
+        if params[:-1] != val[:-1]:
+            self.K.params = val[:-1]
+            self._Kxx = None
+            self._inv_Kxx = None
+            self._Kxoxo = None
+            self._Kxxo = None
+            self._Kxox = None
+            self._m = None
+            self._C = None
+        if params[-1] != val[-1]:
+            self.s = val[-1]
 
     @property
     def x(self):
@@ -84,9 +87,23 @@ class GP(object):
         self._y = val.copy()
 
     @property
+    def s(self):
+        return self._s
+
+    @s.setter
+    def s(self, val):
+        if self._s == val:
+            return
+        self._Kxx = None
+        self._m = None
+        self._C = None
+        self._s = val
+
+    @property
     def Kxx(self):
         if self._Kxx is None:
             self._Kxx = self.K(self._x, self._x)
+            self._Kxx += np.eye(self._x.size) * (self._s ** 2)
             if np.isnan(self._Kxx).any():
                 print self.K.params
                 raise ArithmeticError("Kxx contains invalid values")
@@ -173,14 +190,16 @@ class GP(object):
         return np.exp(self.log_lh())
 
     def dloglh_dtheta(self):
-        y = self._y
+        x, y = self._x, self._y
         try:
             Ki = self.inv_Kxx
         except np.linalg.LinAlgError:
             return np.array([-np.inf for p in self.params])
 
         # compute kernel jacobian
-        dK_dtheta = self.K.jacobian(self.x, self.x)
+        dK_dtheta = np.empty((len(self.params), y.size, y.size))
+        dK_dtheta[:-1] = self.K.jacobian(x, x)
+        dK_dtheta[-1] = np.eye(y.size) * 2 * self._s
 
         dloglh = np.empty(dK_dtheta.shape[0])
         for i in xrange(dloglh.size):
@@ -192,10 +211,13 @@ class GP(object):
         return dloglh
 
     def dlh_dtheta(self):
-        y, K, Ki = self._y, self.Kxx, self.inv_Kxx
+        x, y, K, Ki = self._x, self._y, self.Kxx, self.inv_Kxx
         n = y.size
 
-        dK_dtheta = self.K.jacobian(self.x, self.x)
+        dK_dtheta = np.empty((len(self.params), y.size, y.size))
+        dK_dtheta[:-1] = self.K.jacobian(x, x)
+        dK_dtheta[-1] = np.eye(y.size) * 2 * self._s
+
         yKiy = dot(y.T, dot(Ki, y))
         invsqrtdet = np.linalg.det(K) ** (-1 / 2.)
         t0 = -0.5 * exp(-0.5 * yKiy) * (2 * pi) ** (-n / 2.) * invsqrtdet
@@ -210,15 +232,22 @@ class GP(object):
         return dlh
 
     def d2lh_dtheta2(self):
-        y, K, Ki = self._y, self.Kxx, self.inv_Kxx
+        y, x, K, Ki = self._y, self._x, self.Kxx, self.inv_Kxx
         n = y.size
+        nparam = len(self.params)
 
-        dK_dtheta = self.K.jacobian(self.x, self.x)
+        dK_dtheta = np.empty((nparam, y.size, y.size))
+        dK_dtheta[:-1] = self.K.jacobian(x, x)
+        dK_dtheta[-1] = np.eye(y.size) * 2 * self._s
+
+        d2K_dtheta2 = np.zeros((nparam, nparam, y.size, y.size))
+        d2K_dtheta2[:-1, :-1] = self.K.hessian(x, x)
+        d2K_dtheta2[-1, -1] = np.eye(y.size) * 2
+
         dKinv_dtheta = [dot(-Ki, dot(dK_dtheta[i], Ki))
                         for i in xrange(dK_dtheta.shape[0])]
         tr = [trace(dot(Ki, dK_dtheta[i]))
               for i in xrange(dK_dtheta.shape[0])]
-        d2K_dtheta2 = self.K.hessian(self.x, self.x)
         invsqrtdet = np.linalg.det(K) ** (-1 / 2.)
 
         yKinv = dot(y.T, Ki)
@@ -259,3 +288,4 @@ class GP(object):
         new_gp._Kxox = copy(self._Kxox)
         new_gp._m = copy(self._m)
         new_gp._C = copy(self._C)
+        return new_gp
