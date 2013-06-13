@@ -19,7 +19,7 @@ def rand_params(*args):
         elif param == 'p':
             params.append(np.random.uniform(0.33, 3))
         elif param == 's':
-            params.append(np.random.uniform(0, 1))
+            params.append(np.random.uniform(0, 0.5))
     return tuple(params)
 
 
@@ -34,7 +34,7 @@ class TestKernels(object):
         opt = load_opt()
         self.N_big = opt['n_big_test_iters']
         self.N_small = opt['n_small_test_iters']
-        self.thresh = np.sqrt(EPS)
+        self.thresh = np.sqrt(EPS) * 10
 
     def check_params(self, kernel, params):
         k = kernel(*params)
@@ -75,7 +75,7 @@ class TestKernels(object):
     def check_jacobian(self, kernel, params, x):
         k = kernel(*params)
         jac = k.jacobian(x, x)
-        dtheta = self.thresh * 10
+        dtheta = self.thresh
 
         approx_jac = np.empty(jac.shape)
         for i in xrange(len(params)):
@@ -88,14 +88,17 @@ class TestKernels(object):
             approx_jac[i] = approx_deriv(k0, k1, dtheta)
 
         diff = jac - approx_jac
-        if (np.abs(diff) > self.thresh).any():
-            print self.thresh, diff
+        bad = np.abs(diff) > self.thresh
+        if bad.any():
+            print "threshold:", self.thresh
+            print "worst err:", np.abs(diff).max()
+            print "frac bad: ", (np.sum(bad) / float(bad.size))
             raise AssertionError("bad jacobian")
 
     def check_hessian(self, kernel, params, x):
         k = kernel(*params)
         hess = k.hessian(x, x)
-        dtheta = self.thresh * 10
+        dtheta = self.thresh
 
         approx_hess = np.empty(hess.shape)
         for i in xrange(len(params)):
@@ -108,8 +111,11 @@ class TestKernels(object):
             approx_hess[:, i] = approx_deriv(jac0, jac1, dtheta)
 
         diff = hess - approx_hess
+        bad = np.abs(diff) > self.thresh
         if (np.abs(diff) > self.thresh).any():
-            print self.thresh, np.abs(diff).max()
+            print "threshold:", self.thresh
+            print "worst err:", np.abs(diff).max()
+            print "frac bad: ", (np.sum(bad) / float(bad.size))
             raise AssertionError("bad hessian")
 
     ######################################################################
@@ -151,3 +157,15 @@ class TestKernels(object):
         for i in xrange(self.N_small):
             params = rand_params('h', 'w', 's')
             yield (self.check_hessian, GaussianKernel, params, x)
+
+    def test_periodic_jacobian(self):
+        x = np.linspace(-2*np.pi, 2*np.pi, 16)
+        for i in xrange(self.N_small):
+            params = rand_params('h', 'w', 'p', 's')
+            yield (self.check_jacobian, PeriodicKernel, params, x)
+
+    def test_periodic_hessian(self):
+        x = np.linspace(-2*np.pi, 2*np.pi, 16)
+        for i in xrange(self.N_small):
+            params = rand_params('h', 'w', 'p', 's')
+            yield (self.check_hessian, PeriodicKernel, params, x)
