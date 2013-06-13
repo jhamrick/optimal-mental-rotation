@@ -208,6 +208,19 @@ def load_sims(name, data_dir):
     return stims, samps, Z, ratio, hyp
 
 
+def rand_params(*args):
+    params = []
+    for param in args:
+        if param == 'h':
+            params.append(np.random.uniform(0, 2))
+        elif param == 'w':
+            params.append(np.random.uniform(np.pi / 32., np.pi / 2.))
+        elif param == 'p':
+            params.append(np.random.uniform(0.33, 3))
+        elif param == 's':
+            params.append(np.random.uniform(0, 0.5))
+    return tuple(params)
+
 run_model = models.tools.run_model
 run_all = models.tools.run_all
 load_stimulus = models.tools.load_stimulus
