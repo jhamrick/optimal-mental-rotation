@@ -3,8 +3,8 @@ import scipy.optimize as optim
 from numpy import dot
 
 from snippets.safemath import EPS
-from periodic_kernel import PeriodicKernel as kernel
 from gaussian_process import GP
+import kernels
 
 
 class BQ(object):
@@ -32,6 +32,13 @@ class BQ(object):
         self.log_Si = self.log_transform(self.Si)
         self.ix = ix
 
+        if opt['kernel'] == 'gaussian':
+            self.kernel = kernels.GaussianKernel
+        elif opt['kernel'] == 'periodic':
+            self.kernel = kernels.PeriodicKernel
+        else:
+            raise ValueError("invalid kernel type: %s" % opt['kernel'])
+
     def debug(self, msg, level=0):
         if self.opt['verbose'] > level:
             print ("  "*level) + msg
@@ -53,7 +60,10 @@ class BQ(object):
         ntry = self.opt['ntry_bq']
         verbose = self.opt['verbose'] > 3
 
-        allkeys = ('h', 'w', 'p', 's')
+        if self.opt['kernel'] == "gaussian":
+            allkeys = ('h', 'w', 's')
+        else:
+            allkeys = ('h', 'w', 'p', 's')
         # minimization bounds
         allbounds = {
             'h': (EPS, None),
@@ -84,7 +94,7 @@ class BQ(object):
             allkeys,
             [1 if default[i] is None else default[i]
              for i in xrange(len(allkeys))]))
-        gp = GP(kernel(*[params[k] for k in allkeys]), x, y, self.R)
+        gp = GP(self.kernel(*[params[k] for k in allkeys]), x, y, self.R)
 
         # update the GP object with new parameter values
         def update(theta):
