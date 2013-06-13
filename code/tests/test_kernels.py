@@ -29,10 +29,9 @@ class TestKernels(object):
         K = kernel(x, x)
         print "Kernel parameters:", kernel.params
 
-        h, w, s = params
+        h, w = params
         pdx = scipy.stats.norm.pdf(dx, loc=0, scale=w)
         pdx *= (h ** 2) * np.sqrt(2 * np.pi) * w
-        pdx[dx == 0] += s ** 2
 
         diff = abs(pdx - K)
         if not (diff < self.thresh).all():
@@ -44,9 +43,8 @@ class TestKernels(object):
         K = kernel(x, x)
         print "Kernel parameters:", kernel.params
 
-        h, w, p, s = params
+        h, w, p = params
         pdx = (h ** 2) * np.exp(-2. * (np.sin(dx / (2. * p)) ** 2) / (w ** 2))
-        pdx[dx == 0] += s ** 2
 
         diff = abs(pdx - K)
         if not (diff < self.thresh).all():
@@ -103,12 +101,12 @@ class TestKernels(object):
 
     def test_gaussian_kernel_params(self):
         for i in xrange(self.N_big):
-            params = rand_params('h', 'w', 's')
+            params = rand_params('h', 'w')
             yield self.check_params, GaussianKernel, params
 
     def test_periodic_kernel_params(self):
         for i in xrange(self.N_big):
-            params = rand_params('h', 'w', 'p', 's')
+            params = rand_params('h', 'w', 'p')
             yield self.check_params, PeriodicKernel, params
 
     def test_gaussian_K(self):
@@ -116,7 +114,7 @@ class TestKernels(object):
         x = np.linspace(-2, 2, 10)
         dx = x[:, None] - x[None, :]
         for i in xrange(self.N_big):
-            params = rand_params('h', 'w', 's')
+            params = rand_params('h', 'w')
             yield (self.check_gaussian_K, x, dx, params)
 
     def test_periodic_K(self):
@@ -124,29 +122,29 @@ class TestKernels(object):
         x = np.linspace(-2*np.pi, 2*np.pi, 16)
         dx = x[:, None] - x[None, :]
         for i in xrange(self.N_big):
-            params = rand_params('h', 'w', 'p', 's')
+            params = rand_params('h', 'w', 'p')
             yield (self.check_periodic_K, x, dx, params)
 
     def test_gaussian_jacobian(self):
         x = np.linspace(-2, 2, 10)
         for i in xrange(self.N_small):
-            params = rand_params('h', 'w', 's')
+            params = rand_params('h', 'w')
             yield (self.check_jacobian, GaussianKernel, params, x)
 
     def test_gaussian_hessian(self):
         x = np.linspace(-2, 2, 10)
         for i in xrange(self.N_small):
-            params = rand_params('h', 'w', 's')
+            params = rand_params('h', 'w')
             yield (self.check_hessian, GaussianKernel, params, x)
 
     def test_periodic_jacobian(self):
         x = np.linspace(-2*np.pi, 2*np.pi, 16)
         for i in xrange(self.N_small):
-            params = rand_params('h', 'w', 'p', 's')
+            params = rand_params('h', 'w', 'p')
             yield (self.check_jacobian, PeriodicKernel, params, x)
 
     def test_periodic_hessian(self):
         x = np.linspace(-2*np.pi, 2*np.pi, 16)
         for i in xrange(self.N_small):
-            params = rand_params('h', 'w', 'p', 's')
+            params = rand_params('h', 'w', 'p')
             yield (self.check_hessian, PeriodicKernel, params, x)
