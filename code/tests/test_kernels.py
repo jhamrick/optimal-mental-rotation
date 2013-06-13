@@ -23,6 +23,11 @@ def rand_params(*args):
     return tuple(params)
 
 
+def approx_deriv(y0, y1, dx):
+    dy = (y1 - y0) / 2.
+    return dy / dx
+
+
 class TestKernels(object):
 
     def __init__(self):
@@ -31,7 +36,14 @@ class TestKernels(object):
         self.N_small = opt['n_small_test_iters']
         self.thresh = np.sqrt(EPS)
 
-    def check_gaussian_kernel(self, x, dx, params):
+    def check_params(self, kernel, params):
+        k = kernel(*params)
+        if k.params != params:
+            print k.params
+            print params
+            raise AssertionError("parameters do not match")
+
+    def check_gaussian_K(self, x, dx, params):
         kernel = GaussianKernel(*params)
         K = kernel(x, x)
         print "Kernel parameters:", kernel.params
@@ -46,7 +58,7 @@ class TestKernels(object):
             print self.thresh, diff
             raise AssertionError("invalid gaussian kernel matrix")
 
-    def check_periodic_kernel(self, x, dx, params):
+    def check_periodic_K(self, x, dx, params):
         kernel = PeriodicKernel(*params)
         K = kernel(x, x)
         print "Kernel parameters:", kernel.params
@@ -60,12 +72,45 @@ class TestKernels(object):
             print self.thresh, diff
             raise AssertionError("invalid periodic kernel matrix")
 
-    def check_params(self, kernel, params):
+    def check_jacobian(self, kernel, params, x):
         k = kernel(*params)
-        if k.params != params:
-            print k.params
-            print params
-            raise AssertionError("parameters do not match")
+        jac = k.jacobian(x, x)
+        dtheta = self.thresh * 10
+
+        approx_jac = np.empty(jac.shape)
+        for i in xrange(len(params)):
+            p0 = list(params)
+            p0[i] -= dtheta
+            p1 = list(params)
+            p1[i] += dtheta
+            k0 = kernel(*p0)(x, x)
+            k1 = kernel(*p1)(x, x)
+            approx_jac[i] = approx_deriv(k0, k1, dtheta)
+
+        diff = jac - approx_jac
+        if (np.abs(diff) > self.thresh).any():
+            print self.thresh, diff
+            raise AssertionError("bad jacobian")
+
+    def check_hessian(self, kernel, params, x):
+        k = kernel(*params)
+        hess = k.hessian(x, x)
+        dtheta = self.thresh * 10
+
+        approx_hess = np.empty(hess.shape)
+        for i in xrange(len(params)):
+            p0 = list(params)
+            p1 = list(params)
+            p0[i] -= dtheta
+            p1[i] += dtheta
+            jac0 = kernel(*p0).jacobian(x, x)
+            jac1 = kernel(*p1).jacobian(x, x)
+            approx_hess[:, i] = approx_deriv(jac0, jac1, dtheta)
+
+        diff = hess - approx_hess
+        if (np.abs(diff) > self.thresh).any():
+            print self.thresh, np.abs(diff).max()
+            raise AssertionError("bad hessian")
 
     ######################################################################
 
@@ -85,7 +130,7 @@ class TestKernels(object):
         dx = x[:, None] - x[None, :]
         for i in xrange(self.N_big):
             params = rand_params('h', 'w', 's')
-            yield (self.check_gaussian_kernel, x, dx, params)
+            yield (self.check_gaussian_K, x, dx, params)
 
     def test_periodic_K(self):
         """Test stats.periodic_kernel output matrix"""
@@ -93,4 +138,16 @@ class TestKernels(object):
         dx = x[:, None] - x[None, :]
         for i in xrange(self.N_big):
             params = rand_params('h', 'w', 'p', 's')
-            yield (self.check_periodic_kernel, x, dx, params)
+            yield (self.check_periodic_K, x, dx, params)
+
+    def test_gaussian_jacobian(self):
+        x = np.linspace(-2, 2, 10)
+        for i in xrange(self.N_small):
+            params = rand_params('h', 'w', 's')
+            yield (self.check_jacobian, GaussianKernel, params, x)
+
+    def test_gaussian_hessian(self):
+        x = np.linspace(-2, 2, 10)
+        for i in xrange(self.N_small):
+            params = rand_params('h', 'w', 's')
+            yield (self.check_hessian, GaussianKernel, params, x)

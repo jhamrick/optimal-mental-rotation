@@ -58,6 +58,6 @@
 
     # for running tests
     n_big_test_iters: 20,
-    n_small_test_iters: 1
+    n_small_test_iters: 5
 }
 
