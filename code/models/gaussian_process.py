@@ -158,7 +158,11 @@ class GP(object):
         if sign != 1:
             return -np.inf
 
-        Ki = self.inv_Kxx
+        try:
+            Ki = self.inv_Kxx
+        except np.linalg.LinAlgError:
+            return -np.inf
+
         data_fit = -0.5 * dot(y.T, dot(Ki, y))
         complexity_penalty = -0.5 * logdet
         constant = -0.5 * y.size * log(2 * pi)
