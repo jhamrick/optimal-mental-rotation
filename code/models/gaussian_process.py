@@ -188,18 +188,32 @@ class GP(object):
         return np.exp(self.log_lh())
 
     def dloglh_dtheta(self):
+        """Compute the partial derivative of the marginal log likelihood with
+        respect to its parameters `\theta`.
+
+        See Eq. 5.9 of Rasmussen & Williams (2006).
+
+        References
+        ----------
+        Rasmussen, C. E., & Williams, C. K. I. (2006). Gaussian processes
+            for machine learning. MIT Press.
+
+        """
+
         x, y = self._x, self._y
         try:
             Ki = self.inv_Kxx
         except np.linalg.LinAlgError:
             return np.array([-np.inf for p in self.params])
 
+        nparam = len(self.params)
+
         # compute kernel jacobian
-        dK_dtheta = np.empty((len(self.params), y.size, y.size))
+        dK_dtheta = np.empty((nparam, y.size, y.size))
         dK_dtheta[:-1] = self.K.jacobian(x, x)
         dK_dtheta[-1] = np.eye(y.size) * 2 * self._s
 
-        dloglh = np.empty(dK_dtheta.shape[0])
+        dloglh = np.empty(nparam)
         for i in xrange(dloglh.size):
             k = np.dot(Ki, dK_dtheta[i])
             t0 = 0.5 * dot(y.T, np.dot(k, np.dot(Ki, y)))
@@ -209,70 +223,76 @@ class GP(object):
         return dloglh
 
     def dlh_dtheta(self):
+        """Compute the partial derivative of the marginal likelihood with
+        respect to its parameters `\theta`.
+
+        See Eq. 5.9 of Rasmussen & Williams (2006).
+
+        References
+        ----------
+        Rasmussen, C. E., & Williams, C. K. I. (2006). Gaussian processes
+            for machine learning. MIT Press.
+
+        """
+
         x, y, K, Ki = self._x, self._y, self.Kxx, self.inv_Kxx
-        n = y.size
-
-        dK_dtheta = np.empty((len(self.params), y.size, y.size))
-        dK_dtheta[:-1] = self.K.jacobian(x, x)
-        dK_dtheta[-1] = np.eye(y.size) * 2 * self._s
-
-        yKiy = dot(y.T, dot(Ki, y))
-        invsqrtdet = np.linalg.det(K) ** (-1 / 2.)
-        t0 = -0.5 * exp(-0.5 * yKiy) * (2 * pi) ** (-n / 2.) * invsqrtdet
-
-        dlh = np.empty(dK_dtheta.shape[0])
-        for i in xrange(dlh.size):
-            dinvK_dtheta = dot(-Ki, dK_dtheta[i], Ki)
-            t1 = dot(y.T, dot(dinvK_dtheta, y))
-            t2 = trace(dot(Ki, dK_dtheta[i]))
-            dlh[i] = t0 * (t1 + t2)
-
-        return dlh
-
-    def d2lh_dtheta2(self):
-        y, x, K, Ki = self._y, self._x, self.Kxx, self.inv_Kxx
-        n = y.size
         nparam = len(self.params)
 
         dK_dtheta = np.empty((nparam, y.size, y.size))
         dK_dtheta[:-1] = self.K.jacobian(x, x)
         dK_dtheta[-1] = np.eye(y.size) * 2 * self._s
 
-        d2K_dtheta2 = np.zeros((nparam, nparam, y.size, y.size))
-        d2K_dtheta2[:-1, :-1] = self.K.hessian(x, x)
-        d2K_dtheta2[-1, -1] = np.eye(y.size) * 2
+        lh = self.lh()
+        Kiy = dot(Ki, y)
+        dlh = np.empty(nparam)
+        for i in xrange(dlh.size):
+            KidK = dot(Ki, dK_dtheta[i])
+            t0 = dot(y.T, dot(KidK, Kiy))
+            t1 = trace(KidK)
+            dlh[i] = 0.5 * lh * (t0 - t1)
 
-        dKinv_dtheta = [dot(-Ki, dot(dK_dtheta[i], Ki))
-                        for i in xrange(dK_dtheta.shape[0])]
-        tr = [trace(dot(Ki, dK_dtheta[i]))
-              for i in xrange(dK_dtheta.shape[0])]
-        invsqrtdet = np.linalg.det(K) ** (-1 / 2.)
+        return dlh
 
-        yKinv = dot(y.T, Ki)
-        Kinvy = dot(Ki, y)
+    def d2lh_dtheta2(self):
+        y, x, K, Ki = self._y, self._x, self.Kxx, self.inv_Kxx
+        nparam = len(self.params)
 
-        A = exp(-0.5 * dot(y.T, dot(Ki, y)))
-        B = invsqrtdet
-        const = -0.5 * (2 * pi) ** (-n / 2.)
+        # first kernel derivatives
+        dK = np.empty((nparam, y.size, y.size))
+        dK[:-1] = self.K.jacobian(x, x)
+        dK[-1] = np.eye(y.size) * 2 * self._s
+        dKi = [dot(-Ki, dot(dK[i], Ki)) for i in xrange(nparam)]
 
-        d2lh = np.empty((dK_dtheta.shape[0], dK_dtheta.shape[0]))
-        for i in xrange(d2lh.shape[0]):
-            C = dot(y.T, dot(dKinv_dtheta[i], y))
-            D = tr[i]
+        # second kernel derivatives
+        d2K = np.zeros((nparam, nparam, y.size, y.size))
+        d2K[:-1, :-1] = self.K.hessian(x, x)
+        d2K[-1, -1] = np.eye(y.size) * 2
 
-            for j in xrange(d2lh.shape[1]):
-                dA = -0.5 * dot(y.T, dot(dKinv_dtheta[j], y)) * A
-                dB = -0.5 * invsqrtdet * tr[j]
-                dC = (-dot(y.T, dot(dKinv_dtheta[j], dot(dK_dtheta[i], Kinvy)))
-                      - dot(yKinv, dot(d2K_dtheta2[i][j], Kinvy))
-                      - dot(yKinv, dot(dK_dtheta[i], dot(dKinv_dtheta[j], y))))
-                dD = trace(dot(dKinv_dtheta[j], dK_dtheta[i]) +
-                           dot(Ki, d2K_dtheta2[i][j]))
+        # likelihood
+        lh = self.lh()
+        # first derivative of the likelihood
+        dlh = self.dlh_dtheta()
 
-                d2lh[i, j] = const * (
-                    dA * B * (C + D) +
-                    A * dB * (C + D) +
-                    A * B * (dC + dD))
+        yKi = dot(y.T, Ki)
+        Kiy = dot(Ki, y)
+
+        d2lh = np.empty((nparam, nparam))
+        for i in xrange(nparam):
+            KidK_i = dot(Ki, dK[i])
+            ydKi_iy = dot(y.T, dot(KidK_i, Kiy))
+            ydKi_iy_tr = ydKi_iy - trace(KidK_i)
+
+            for j in xrange(nparam):
+                dKi_jdK_i = dot(dKi[j], dK[i])
+                d_ydKi_iy = (
+                    dot(y.T, dot(dKi_jdK_i, Kiy)) +
+                    dot(yKi, dot(d2K[i, j], Kiy)) +
+                    dot(yKi, dot(dK[i], dot(dKi[j], y))))
+                d_tr = trace(dKi_jdK_i + dot(Ki, d2K[i, j]))
+
+                t0 = dlh[j] * ydKi_iy_tr
+                t1 = lh * (d_ydKi_iy - d_tr)
+                d2lh[i, j] = 0.5 * (t0 + t1)
 
         return d2lh
 
