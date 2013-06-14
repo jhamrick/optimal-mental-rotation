@@ -31,7 +31,7 @@ class TestKernels(object):
 
         h, w = params
         pdx = scipy.stats.norm.pdf(dx, loc=0, scale=w)
-        pdx *= (h ** 2) * np.sqrt(2 * np.pi) * w
+        pdx *= h ** 2
 
         diff = abs(pdx - K)
         if not (diff < self.thresh).all():
