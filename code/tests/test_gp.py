@@ -16,7 +16,8 @@ class TestKernels(object):
         opt = load_opt()
         self.N_big = opt['n_big_test_iters']
         self.N_small = opt['n_small_test_iters']
-        self.thresh = np.sqrt(EPS) * 10
+        self.thresh = 1e-6
+        self.dtheta = np.sqrt(EPS) * 100
 
     def check_mean(self, gp, y):
         diff = np.abs(gp.m - y)
@@ -33,22 +34,21 @@ class TestKernels(object):
 
     def check_dloglh(self, gp, params):
         jac = gp.dloglh_dtheta()
-        dtheta = self.thresh
 
         approx_jac = np.empty(jac.shape)
         for i in xrange(len(params)):
             p0 = list(params)
-            p0[i] -= dtheta
+            p0[i] -= self.dtheta
             gp0 = gp.copy()
             gp0.params = p0
 
             p1 = list(params)
-            p1[i] += dtheta
+            p1[i] += self.dtheta
             gp1 = gp.copy()
             gp1.params = p1
 
             approx_jac[i] = approx_deriv(
-                gp0.log_lh(), gp1.log_lh(), dtheta)
+                gp0.log_lh(), gp1.log_lh(), self.dtheta)
 
         diff = np.abs(jac - approx_jac)
         bad = diff > self.thresh
@@ -62,22 +62,21 @@ class TestKernels(object):
 
     def check_dlh(self, gp, params):
         jac = gp.dlh_dtheta()
-        dtheta = self.thresh
 
         approx_jac = np.empty(jac.shape)
         for i in xrange(len(params)):
             p0 = list(params)
-            p0[i] -= dtheta
+            p0[i] -= self.dtheta
             gp0 = gp.copy()
             gp0.params = p0
 
             p1 = list(params)
-            p1[i] += dtheta
+            p1[i] += self.dtheta
             gp1 = gp.copy()
             gp1.params = p1
 
             approx_jac[i] = approx_deriv(
-                gp0.lh(), gp1.lh(), dtheta)
+                gp0.lh(), gp1.lh(), self.dtheta)
 
         diff = jac - approx_jac
         bad = diff > self.thresh
@@ -91,22 +90,21 @@ class TestKernels(object):
 
     def check_d2lh(self, gp, params):
         hess = gp.d2lh_dtheta2()
-        dtheta = self.thresh
 
         approx_hess = np.empty(hess.shape)
         for i in xrange(len(params)):
             p0 = list(params)
-            p0[i] -= dtheta
+            p0[i] -= self.dtheta
             gp0 = gp.copy()
             gp0.params = p0
 
             p1 = list(params)
-            p1[i] += dtheta
+            p1[i] += self.dtheta
             gp1 = gp.copy()
             gp1.params = p1
 
             approx_hess[:, i] = approx_deriv(
-                gp0.dlh_dtheta(), gp1.dlh_dtheta(), dtheta)
+                gp0.dlh_dtheta(), gp1.dlh_dtheta(), self.dtheta)
 
         diff = hess - approx_hess
         bad = diff > self.thresh
