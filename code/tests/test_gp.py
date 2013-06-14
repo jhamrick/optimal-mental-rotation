@@ -124,38 +124,43 @@ class TestKernels(object):
         x = xo = np.linspace(-2*np.pi, 2*np.pi, 16)
         y = np.sin(x)
         for i in xrange(self.N_big):
-            params = list(rand_params('h', 'w')) + [0]
-            gp = GP(kernel(*params), x, y, xo)
+            params = rand_params('h', 'w')
+            s = 0
+            gp = GP(kernel(*params), x, y, xo, s=s)
             yield self.check_mean, gp, y
 
     def test_inv(self):
         x = xo = np.linspace(-2*np.pi, 2*np.pi, 16)
         y = np.sin(x)
         for i in xrange(self.N_small):
-            params = rand_params('h', 'w', 's')
-            gp = GP(kernel(*params), x, y, xo)
+            params = rand_params('h', 'w')
+            s = rand_params('s')
+            gp = GP(kernel(*params), x, y, xo, s=s)
             yield self.check_inv, gp
 
     def test_dloglh(self):
         x = xo = np.linspace(-2*np.pi, 2*np.pi, 16)
         y = np.sin(x)
         for i in xrange(self.N_big):
-            params = rand_params('h', 'w', 's')
-            gp = GP(kernel(*params), x, y, xo)
-            yield self.check_dloglh, gp, params
+            params = rand_params('h', 'w')
+            s = rand_params('s')
+            gp = GP(kernel(*params), x, y, xo, s=s)
+            yield self.check_dloglh, gp, params + (s,)
 
     def test_dlh(self):
         x = xo = np.linspace(-2*np.pi, 2*np.pi, 16)
         y = np.sin(x)
         for i in xrange(self.N_big):
-            params = rand_params('h', 'w', 's')
-            gp = GP(kernel(*params), x, y, xo)
-            yield self.check_dlh, gp, params
+            params = rand_params('h', 'w')
+            s = rand_params('s')
+            gp = GP(kernel(*params), x, y, xo, s=s)
+            yield self.check_dlh, gp, params + (s,)
 
     def test_d2lh(self):
         x = xo = np.linspace(-2*np.pi, 2*np.pi, 16)
         y = np.sin(x)
         for i in xrange(self.N_big):
-            params = rand_params('h', 'w', 's')
-            gp = GP(kernel(*params), x, y, xo)
-            yield self.check_d2lh, gp, params
+            params = rand_params('h', 'w')
+            s = rand_params('s')
+            gp = GP(kernel(*params), x, y, xo, s=s)
+            yield self.check_d2lh, gp, params + (s,)

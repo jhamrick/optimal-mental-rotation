@@ -219,6 +219,8 @@ def rand_params(*args):
             params.append(np.random.uniform(0.33, 3))
         elif param == 's':
             params.append(np.random.uniform(0, 0.5))
+    if len(params) == 1:
+        return params[0]
     return tuple(params)
 
 

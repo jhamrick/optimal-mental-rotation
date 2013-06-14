@@ -92,8 +92,6 @@ class GP(object):
 
     @s.setter
     def s(self, val):
-        if self._s == val:
-            return
         self._Kxx = None
         self._m = None
         self._C = None
