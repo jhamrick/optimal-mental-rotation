@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.optimize as optim
+import scipy.stats
 from numpy import dot
+from numpy.linalg import inv
 
 from snippets.safemath import EPS
 from gaussian_process import GP
@@ -48,12 +50,35 @@ class BQ(object):
 
     def E(self, f, axis=-1, p_R=None):
         if p_R is None:
-            p_R = self.opt['prior_R']
+            mu, var = self.opt['prior_R']
+            p_R = scipy.stats.norm.pdf(self.R, mu, np.sqrt(var))
         pfx = f * p_R
         m = np.trapz(pfx, self.R, axis=axis)
         return m
 
-    def _fit_gp(self, x, y, name):
+    def _small_ups_vec(self, x, gp):
+        mu, var = self.opt['prior_R']
+        std = np.sqrt(var + (gp.K.w ** 2))
+        vec = (gp.K.h ** 2) * scipy.stats.norm.pdf(x, mu, std)
+        return vec
+
+    def _big_ups_mat(self, x1, x2, gp1, gp2):
+        mu, var = self.opt['prior_R']
+
+        var1 = gp1.K.w ** 2
+        var2 = gp2.K.w ** 2
+        h = (gp1.K.h * gp2.K.h) ** 2
+
+        x1mu = (x1[:, None] - mu) ** 2
+        x2mu = (x2[None, :] - mu) ** 2
+        x1x2 = (x1[:, None] - x2[None, :]) ** 2
+        num = (x1mu*var2) + (x2mu*var1) + (x1x2*var)
+        det = (var1*var2) + (var1*var) + (var2*var)
+        mat = h * np.exp(-0.5 * num / det) / (2*np.pi*np.sqrt(det))
+
+        return mat
+
+    def _fit_gp(self, x, y, name, **kwargs):
         self.debug("Fitting parameters for GP over %s ..." % name, level=2)
 
         # parameters / options
@@ -81,20 +106,25 @@ class BQ(object):
         }
 
         # default parameter values
-        default = [self.opt.get(k, None) for k in allkeys]
+        default_dict = dict([(k, self.opt.get(k, None)) for k in allkeys])
+        default_dict.update(kwargs)
+        default = [default_dict[k] for k in allkeys]
         # parameters we are actually fitting
         fitidx, fitkeys = zip(*[
             (i, allkeys[i]) for i in xrange(len(default))
             if default[i] is None])
+        fitidx = list(fitidx)
         if len(fitidx) == 1:
-            fitidx = [list(fitidx)]
+            fitidx = [fitidx]
         bounds = tuple(allbounds[key] for key in fitkeys)
         # create the GP object with dummy init params
         params = dict(zip(
             allkeys,
             [1 if default[i] is None else default[i]
              for i in xrange(len(allkeys))]))
-        gp = GP(self.kernel(*[params[k] for k in allkeys]), x, y, self.R)
+        kparams = tuple(params[k] for k in allkeys[:-1])
+        s = params.get('s', 0)
+        gp = GP(self.kernel(*kparams), x, y, self.R, s=s)
 
         # update the GP object with new parameter values
         def update(theta):
@@ -137,14 +167,15 @@ class BQ(object):
         return gp
 
     def choose_candidates(self):
-        nc = len(self.ix) * 2
+        nc = max(len(self.ix) * 2, self.opt['n_candidate'])
+        dist = np.degrees(self.gp_S.K.w)
         ideal = list(np.linspace(0, self.R.size, nc+1).astype('i8')[:-1])
         for i in self.ix:
             diff = np.abs(np.array(ideal) - i)
             closest = np.argmin(diff)
-            if diff[closest] <= self.opt['dr']:
+            if diff[closest] <= dist:
                 del ideal[closest]
-        cix = sorted(ideal + self.ix)
+        cix = sorted(set(ideal + self.ix))
         self.Rc = self.R[cix].copy()
         self.Dc = self.delta[cix].copy()
 
@@ -163,7 +194,11 @@ class BQ(object):
         self.debug("Fitting likelihood")
 
         self.gp_S = self._fit_gp(self.Ri, self.Si, "S")
-        self.gp_logS = self._fit_gp(self.Ri, self.log_Si, "log(S)")
+        if not self.opt.get('h', None):
+            logh = np.log(self.opt['h'] + 1)
+        else:
+            logh = None
+        self.gp_logS = self._fit_gp(self.Ri, self.log_Si, "log(S)", h=logh)
 
         # use a crude thresholding here as our tilde transformation
         # will fail if the mean goes below zero
@@ -172,7 +207,7 @@ class BQ(object):
         # fit delta, the difference between S and logS
         self.delta = self.gp_logS.m - self.log_transform(self._S0)
         self.choose_candidates()
-        self.gp_Dc = self._fit_gp(self.Rc, self.Dc, "Delta_c")
+        self.gp_Dc = self._fit_gp(self.Rc, self.Dc, "Delta_c", h=None)
 
         self.S_mean = self._S0 + (self._S0 + self.opt['gamma'])*self.gp_Dc.m
         # the estimated variance of S
@@ -185,7 +220,7 @@ class BQ(object):
     ##################################################################
     # Mean
     @property
-    def mean(self):
+    def mean2(self):
         mean_ev = self.E(self.S_mean)
         # sanity check
         if mean_ev < 0:
@@ -194,10 +229,85 @@ class BQ(object):
             mean_ev = self._S0
         return mean_ev
 
+    @property
+    def mean(self):
+        gamma = self.opt['gamma']
+
+        xs = self.Ri
+        x_sc = self.Rc
+        l_s = self.Si
+        delta_tl_sc = self.Dc
+
+        # K_l = self.gp_S.Kxx
+        inv_K_l = self.gp_S.inv_Kxx
+
+        # K_del = self.gp_Dc.Kxx
+        inv_K_del = self.gp_Dc.inv_Kxx
+
+        # calculate ups for the likelihood, where ups is defined as
+        # ups_s = int K(x, x_s) p(x) dx
+        ups_l = self._small_ups_vec(xs, self.gp_S)
+
+        # calculate ups for the likelihood, where ups is defined as
+        # ups_s = int K(x, x_s)  p(x) dx
+        #ups_tl = self._small_ups_vec(xs, self.gp_logS)
+
+        # compute mean of int l(x) p(x) dx given l_s
+        ups_inv_K_l = dot(inv_K_l, ups_l)
+        minty_l = dot(ups_inv_K_l, l_s)
+
+        # calculate Ups for delta & the likelihood, where Ups is defined as
+        # Ups_s_s' = int K(x_s, x) K(x, x_s') prior(x) dx
+        Ups_del_l = self._big_ups_mat(
+            x_sc, xs, self.gp_Dc, self.gp_S)
+
+        # compute mean of int delta(x) l(x) p(x) dx given l_s and delta_tl_sc
+        del_inv_K_del = dot(inv_K_del, delta_tl_sc).T
+        Ups_inv_K_del_l = dot(inv_K_l, Ups_del_l.T).T
+        minty_del_l = dot(del_inv_K_del, dot(Ups_inv_K_del_l, l_s))
+
+        # calculate ups for delta, where ups is defined as
+        # ups_s = int K(x, x_s)  p(x) dx
+        ups_del = self._small_ups_vec(delta_tl_sc, self.gp_Dc)
+        #ups_del = self.E(self.gp_Dc.Kxxo)
+        print "ups_del:"
+        print ups_del
+        print self.E(self.gp_Dc.Kxxo)
+
+        # compute mean of int delta(x) p(x) dx given l_s and delta_tl_sc
+        ups_inv_K_del = dot(inv_K_del, ups_del).T
+        minty_del = dot(ups_inv_K_del, delta_tl_sc)
+        print "minty_del:"
+        print minty_del
+        print self.E(self.gp_Dc.m * self.gp_S.m)
+
+        # the correction factor due to l being non-negative
+        mean_ev_correction = minty_del_l + gamma * minty_del
+
+        # the mean evidence
+        mean_ev = minty_l + mean_ev_correction
+        # sanity check
+        if mean_ev < 0:
+            print "mean of evidence negative"
+            print "mean of evidence: %s" % mean_ev
+            mean_ev = minty_l
+
+        return mean_ev
+
     ##################################################################
     # Variance
     @property
     def dm_dw(self):
+        """Compute the partial derivative of a GP mean with respect to
+        w, the input scale parameter.
+
+        The analytic form is:
+        $\frac{\partial K(x_*, x)}{\partial w}K_y^{-1}\mathbf{y} - K(x_*, x)K_y^{-1}\frac{\partial K(x, x)}{\partial w}K_y^{-1}\mathbf{y}$
+
+        Where $K_y=K(x, x) + s^2I$
+
+        """
+
         x, xs = self.R, self.Ri
         inv_Kxx = self.gp_logS.inv_Kxx
         Kxox = self.gp_logS.Kxox

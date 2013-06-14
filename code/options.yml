@@ -50,6 +50,8 @@
     bq_wmax: 360,
     # scaling value
     gamma: 1,
+    # number of candidate points
+    n_candidate: 10,
 
     # example for 'notes' notebook
     example_hyp: 1,
