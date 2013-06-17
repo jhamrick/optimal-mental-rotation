@@ -1,8 +1,10 @@
 import numpy as np
+import scipy.stats
 
 from model_base import Model
 from gaussian_process import GP
 import bq
+reload(bq)
 
 from snippets.safemath import log_clip, safe_multiply
 
@@ -75,6 +77,8 @@ class BayesianQuadratureModel(Model):
         rnext = []
         rr = list(self._rotations)
         for r in self.ix:
+            if r not in rr:
+                continue
             i = rr.index(r)
             n = (i + 1) % self._rotations.size
             rn = self._rotations[n]
@@ -87,8 +91,6 @@ class BayesianQuadratureModel(Model):
                 inext.append(p)
                 rnext.append(rp)
 
-        m = self.gp_logS.m
-        C = self.S_cov
         nextvars = []
         nexti = []
         nextr = []
@@ -97,57 +99,12 @@ class BayesianQuadratureModel(Model):
             if r in self.ix:
                 continue
 
-            Ri = np.concatenate([self.Ri, [self.R[r]]])
-            Si = np.concatenate([self.Si, [m[r]]])
-            lSi = np.log(Si + 1)
-
-            SK = self._mll_S.make_kernel(params=self.theta_S)
-            Smu, Scov = GP(SK, Ri, Si, self.R)
-
-            logSK = self._mll_logS.make_kernel(params=self.theta_logS)
-            logSmu, logScov = GP(logSK, Ri, lSi, self.R)
-
-            delta = logSmu - np.log(Smu + 1)
-            cix = sorted(set(self._candidate() + [r]))
-            Rc = self.R[cix]
-            Dc = delta[cix]
-            if self.theta_Dc:
-                DcK = self._mll_Dc.make_kernel(params=self.theta_Dc)
-                try:
-                    Dcmu = GP(DcK, Rc, Dc, self.R)[0]
-                except np.linalg.LinAlgError:
-                    Rc = list(Rc) + [2*np.pi]
-                    Dc = list(Dc) + [Rc[0]]
-                    Dcmu = np.interp(self.R, Rc, Dc)
-            else:
-                Rc = list(Rc) + [2*np.pi]
-                Dc = list(Dc) + [Rc[0]]
-                Dcmu = np.interp(self.R, Rc, Dc)
-
-            Samean = ((Smu + 1) * (1 + Dcmu)) - 1
-
-            params = self._mll_logS.free_params(self.theta_logS)
-            if self._mll_logS.h is None:
-                ii = 1
-            else:
-                ii = 0
-            Hw = self._mll_logS.hessian(params, Ri, lSi)
-            Cw = np.matrix(np.exp(log_clip(-np.diag(Hw))[ii]))
-            dm_dw = np.matrix(
-                self._mll_logS.dm_dw(params, Ri, lSi, self.R))
-            Sacov = np.array(
-                logScov + np.dot(dm_dw.T, np.dot(Cw, dm_dw)))
-
-            # Zmean = np.trapz(self.opt['prior_R'] * Samean, self.R)
-            # variance
-            pm = self.opt['prior_R'] * (Samean + 1)
-            C = safe_multiply(Sacov, pm[:, None], pm[None, :])
-            C[np.abs(C) < 1e-100] = 0
-            Zvar = np.trapz(np.trapz(C, self.R, axis=0), self.R)
+            xpc_unc = self._bq.expected_uncertainty_evidence(r)
+            print r, xpc_unc
 
             nexti.append(i)
             nextr.append(r)
-            nextvars.append(Zvar)
+            nextvars.append(xpc_unc)
 
         nextvars = np.array(nextvars)
         nexti = np.array(nexti)
