@@ -276,7 +276,8 @@ class BQ(object):
         self.choose_candidates()
         self.gp_Dc = self._fit_gp(self.Rc, self.Dc, "Delta_c", h=None)
 
-        self.S_mean = self._S0 + (self._S0 + self.gamma)*self.gp_Dc.m
+        # the estimated mean of S
+        self.S_mean = self.gp_S.m + (self.gp_S.m + self.gamma)*self.gp_Dc.m
         # the estimated variance of S
         dm_dw, Cw = self.dm_dw, self.Cw
         self.S_cov = self.gp_logS.C + dot(dm_dw, dot(Cw, dm_dw.T))
@@ -298,57 +299,36 @@ class BQ(object):
 
     @property
     def mean(self):
-        gamma = self.gamma
+        # values for the GP over l(x)
+        x_s = self.gp_S.x
+        alpha_l = self.gp_S.inv_Kxx_y
 
-        xs = self.Ri
-        x_sc = self.Rc
-        l_s = self.Si
-        delta_tl_sc = self.Dc
+        # values for the GP of Delta(x)
+        x_sc = self.gp_Dc.x
+        alpha_del = self.gp_Dc.inv_Kxx_y
 
-        # K_l = self.gp_S.Kxx
-        inv_K_l = self.gp_S.inv_Kxx
+        ## First term
+        # E[m_l | x_s] = (int K_l(x, x_s) p(x) dx) alpha_l(x_s)
+        int_K_l = self._small_ups_vec(x_s, self.gp_S)
+        E_m_l = dot(int_K_l, alpha_l)
 
-        # K_del = self.gp_Dc.Kxx
-        inv_K_del = self.gp_Dc.inv_Kxx
+        ## Second term
+        # E[m_l*m_del | x_s, x_c] = alpha_del(x_sc)' *
+        #     int K_del(x_sc, x) K_l(x, x_s) p(x) dx *
+        #     alpha_l(x_s)
+        int_K_del_K_l = self._big_ups_mat(
+            x_sc, x_s, self.gp_Dc, self.gp_S)
+        E_m_l_m_del = dot(
+            alpha_del.T, dot(int_K_del_K_l, alpha_l))
 
-        # calculate ups for the likelihood, where ups is defined as
-        # ups_s = int K(x, x_s) p(x) dx
-        ups_l = self._small_ups_vec(xs, self.gp_S)
+        ## Third term
+        # E[m_del | x_sc] = (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
+        int_K_del = self._small_ups_vec(x_sc, self.gp_Dc)
+        E_m_del = dot(int_K_del, alpha_del)
 
-        # compute mean of int l(x) p(x) dx given l_s
-        ups_inv_K_l = dot(inv_K_l, ups_l)
-        minty_l = dot(ups_inv_K_l, l_s)
-
-        # calculate Ups for delta & the likelihood, where Ups is defined as
-        # Ups_s_s' = int K(x_s, x) K(x, x_s') prior(x) dx
-        Ups_del_l = self._big_ups_mat(
-            x_sc, xs, self.gp_Dc, self.gp_S)
-
-        # compute mean of int delta(x) l(x) p(x) dx given l_s and delta_tl_sc
-        del_inv_K_del = dot(inv_K_del, delta_tl_sc).T
-        Ups_inv_K_del_l = dot(inv_K_l, Ups_del_l.T).T
-        minty_del_l = dot(del_inv_K_del, dot(Ups_inv_K_del_l, l_s))
-
-        # calculate ups for delta, where ups is defined as
-        # ups_s = int K(x, x_s)  p(x) dx
-        ups_del = self._small_ups_vec(delta_tl_sc, self.gp_Dc)
-
-        # compute mean of int delta(x) p(x) dx given l_s and delta_tl_sc
-        ups_inv_K_del = dot(inv_K_del, ups_del).T
-        minty_del = dot(ups_inv_K_del, delta_tl_sc)
-
-        # the correction factor due to l being non-negative
-        mean_ev_correction = minty_del_l + gamma * minty_del
-
-        # the mean evidence
-        mean_ev = minty_l + mean_ev_correction
-        # sanity check
-        if mean_ev < 0:
-            print "mean of evidence negative"
-            print "mean of evidence: %s" % mean_ev
-            mean_ev = minty_l
-
-        return mean_ev
+        # put the three terms together
+        m_Z = E_m_l + E_m_l_m_del + self.gamma*E_m_del
+        return m_Z
 
     ##################################################################
     # Variance
