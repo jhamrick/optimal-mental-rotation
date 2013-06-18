@@ -292,14 +292,9 @@ class BQ(object):
     ##################################################################
     # Mean
     @property
-    def mean2(self):
-        mean_ev = self.E(self.S_mean)
-        # sanity check
-        if mean_ev < 0:
-            print 'mean of evidence negative'
-            print 'mean of evidence: %s' % mean_ev
-            mean_ev = self._S0
-        return mean_ev
+    def mean_approx(self):
+        m_Z = self.E(self.S_mean)
+        return m_Z
 
     @property
     def mean(self):
