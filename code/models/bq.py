@@ -28,11 +28,7 @@ class BQ(object):
 
     def __init__(self, R, S, ix, opt):
         self.opt = opt
-        self.R = R
-        self.Ri = R[ix]
-        self.Si = S[ix]
-        self.log_Si = self.log_transform(self.Si)
-        self.ix = ix
+        self.gamma = self.opt['gamma']
 
         if opt['kernel'] == 'gaussian':
             self.kernel = kernels.GaussianKernel
@@ -41,7 +37,11 @@ class BQ(object):
         else:
             raise ValueError("invalid kernel type: %s" % opt['kernel'])
 
-        self.gamma = self.opt['gamma']
+        self.R = R
+        self.Ri = R[ix]
+        self.Si = S[ix]
+        self.log_Si = self.log_transform(self.Si)
+        self.ix = ix
 
     def debug(self, msg, level=0):
         if self.opt['verbose'] > level:
