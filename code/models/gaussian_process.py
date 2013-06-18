@@ -41,6 +41,7 @@ class GP(object):
             self.K.params = val[:-1]
             self._Kxx = None
             self._inv_Kxx = None
+            self._inv_Kxx_y = None
             self._Kxoxo = None
             self._Kxxo = None
             self._Kxox = None
@@ -57,6 +58,7 @@ class GP(object):
     def x(self, val):
         self._Kxx = None
         self._inv_Kxx = None
+        self._inv_Kxx_y = None
         self._Kxxo = None
         self._Kxox = None
         self._m = None
@@ -82,6 +84,7 @@ class GP(object):
 
     @y.setter
     def y(self, val):
+        self._inv_Kxx_y = None
         self._m = None
         self._C = None
         self._y = val.copy()
@@ -133,6 +136,12 @@ class GP(object):
         return self._Kxox
 
     @property
+    def inv_Kxx_y(self):
+        if self._inv_Kxx_y is None:
+            self._inv_Kxx_y = dot(self.inv_Kxx, self.y)
+        return self._inv_Kxx_y
+
+    @property
     def m(self):
         """Predictive mean of the GP.
 
@@ -142,8 +151,7 @@ class GP(object):
 
         """
         if self._m is None:
-            Ki, y = self.inv_Kxx, self._y
-            self._m = dot(self.Kxox, dot(Ki, y))
+            self._m = dot(self.Kxox, self.inv_Kxx_y)
         return self._m
 
     @property
@@ -174,11 +182,11 @@ class GP(object):
             return -np.inf
 
         try:
-            Ki = self.inv_Kxx
+            Kiy = self.inv_Kxx_y
         except np.linalg.LinAlgError:
             return -np.inf
 
-        data_fit = -0.5 * dot(y.T, dot(Ki, y))
+        data_fit = -0.5 * dot(y.T, Kiy)
         complexity_penalty = -0.5 * logdet
         constant = -0.5 * y.size * log(2 * pi)
         llh = data_fit + complexity_penalty + constant
@@ -216,7 +224,7 @@ class GP(object):
         dloglh = np.empty(nparam)
         for i in xrange(dloglh.size):
             k = np.dot(Ki, dK_dtheta[i])
-            t0 = 0.5 * dot(y.T, np.dot(k, np.dot(Ki, y)))
+            t0 = 0.5 * dot(y.T, np.dot(k, self.inv_Kxx_y))
             t1 = -0.5 * np.trace(k)
             dloglh[i] = t0 + t1
 
@@ -236,6 +244,7 @@ class GP(object):
         """
 
         x, y, K, Ki = self._x, self._y, self.Kxx, self.inv_Kxx
+        Kiy = self.inv_Kxx_y
         nparam = len(self.params)
 
         dK_dtheta = np.empty((nparam, y.size, y.size))
@@ -243,7 +252,6 @@ class GP(object):
         dK_dtheta[-1] = np.eye(y.size) * 2 * self._s
 
         lh = self.lh()
-        Kiy = dot(Ki, y)
         dlh = np.empty(nparam)
         for i in xrange(dlh.size):
             KidK = dot(Ki, dK_dtheta[i])
@@ -255,6 +263,7 @@ class GP(object):
 
     def d2lh_dtheta2(self):
         y, x, K, Ki = self._y, self._x, self.Kxx, self.inv_Kxx
+        Kiy = self.inv_Kxx_y
         nparam = len(self.params)
 
         # first kernel derivatives
@@ -273,9 +282,6 @@ class GP(object):
         # first derivative of the likelihood
         dlh = self.dlh_dtheta()
 
-        yKi = dot(y.T, Ki)
-        Kiy = dot(Ki, y)
-
         d2lh = np.empty((nparam, nparam))
         for i in xrange(nparam):
             KidK_i = dot(Ki, dK[i])
@@ -286,8 +292,8 @@ class GP(object):
                 dKi_jdK_i = dot(dKi[j], dK[i])
                 d_ydKi_iy = (
                     dot(y.T, dot(dKi_jdK_i, Kiy)) +
-                    dot(yKi, dot(d2K[i, j], Kiy)) +
-                    dot(yKi, dot(dK[i], dot(dKi[j], y))))
+                    dot(Kiy.T, dot(d2K[i, j], Kiy)) +
+                    dot(Kiy.T, dot(dK[i], dot(dKi[j], y))))
                 d_tr = trace(dKi_jdK_i + dot(Ki, d2K[i, j]))
 
                 t0 = dlh[j] * ydKi_iy_tr
@@ -301,6 +307,7 @@ class GP(object):
         copy = lambda x: None if x is None else x.copy()
         new_gp._Kxx = copy(self._Kxx)
         new_gp._inv_Kxx = copy(self._inv_Kxx)
+        new_gp._inv_Kxx_y = copy(self._inv_Kxx_y)
         new_gp._Kxoxo = copy(self._Kxoxo)
         new_gp._Kxxo = copy(self._Kxxo)
         new_gp._Kxox = copy(self._Kxox)
