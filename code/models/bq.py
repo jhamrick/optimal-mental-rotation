@@ -277,10 +277,14 @@ class BQ(object):
         self.gp_Dc = self._fit_gp(self.Rc, self.Dc, "Delta_c", h=None)
 
         # the estimated mean of S
-        self.S_mean = self.gp_S.m + (self.gp_S.m + self.gamma)*self.gp_Dc.m
+        m_S = self.gp_S.m
+        m_Dc = self.gp_Dc.m
+        self.S_mean = m_S + (m_S + self.gamma)*m_Dc
+
         # the estimated variance of S
+        C_logS = self.gp_logS.C
         dm_dw, Cw = self.dm_dw, self.Cw
-        self.S_cov = self.gp_logS.C + dot(dm_dw, dot(Cw, dm_dw.T))
+        self.S_cov = C_logS + dot(dm_dw, dot(Cw, dm_dw.T))
         self.S_cov[np.abs(self.S_cov) < np.sqrt(EPS)] = EPS
 
         return self.S_mean, self.S_cov
