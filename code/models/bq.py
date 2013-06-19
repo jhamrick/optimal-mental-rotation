@@ -9,6 +9,10 @@ from gaussian_process import GP
 import kernels
 
 
+def mdot(*args):
+    return reduce(np.dot, args)
+
+
 class BQ(object):
     """Estimate a likelihood function, S(y|x) using Gaussian Process
     regressions, as in Osborne et al. (2012):
@@ -317,8 +321,9 @@ class BQ(object):
         #     alpha_l(x_s)
         int_K_del_K_l = self._big_ups_mat(
             x_sc, x_s, self.gp_Dc, self.gp_S)
-        E_m_l_m_del = dot(
-            alpha_del.T, dot(int_K_del_K_l, alpha_l))
+        E_m_l_m_del = mdot(alpha_del.T,
+                           int_K_del_K_l,
+                           alpha_l)
 
         ## Third term
         # E[m_del | x_sc] = (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
@@ -343,14 +348,14 @@ class BQ(object):
 
         """
 
-        x, xs = self.R, self.Ri
+        x, x_s = self.R, self.Ri
         inv_Kxx = self.gp_logS.inv_Kxx
         Kxox = self.gp_logS.Kxox
-        dKxox_dw = self.gp_logS.K.dK_dw(x, xs)
-        dKxx_dw = self.gp_logS.K.dK_dw(xs, xs)
-        inv_dKxx_dw = dot(inv_Kxx, dot(dKxx_dw, inv_Kxx))
-        dm_dw = (dot(dKxox_dw, dot(inv_Kxx, self.log_Si)) -
-                 dot(Kxox, dot(inv_dKxx_dw, self.log_Si)))
+        dKxox_dw = self.gp_logS.K.dK_dw(x, x_s)
+        dKxx_dw = self.gp_logS.K.dK_dw(x_s, x_s)
+        inv_dKxx_dw = mdot(inv_Kxx, dKxx_dw, inv_Kxx)
+        dm_dw = (mdot(dKxox_dw, inv_Kxx, self.log_Si) -
+                 mdot(Kxox, inv_dKxx_dw, self.log_Si))
         return dm_dw[:, None]
 
     @property
@@ -377,21 +382,67 @@ class BQ(object):
         if var_ev < 0:
             print 'variance of evidence: %s' % var_ev
             raise RuntimeError('variance of evidence negative')
-
-        # # compute coarse lower bound for variance, because we know it
-        # # can't go below zero
-        # lower = self.S_mean - np.sqrt(np.diag(self.S_cov))
-        # p_R = (lower >= EPS).astype('f8')
-        # p_R = p_R / (np.sum(p_R) * (self.R[1] - self.R[0]))
-        # var_ev_low = self.E(self.E(mCm, p_R=p_R), p_R=p_R)
-        # return var_ev_low, var_ev
         return var_ev, var_ev
 
     @property
     def var(self):
+        # values for the GPs over l(x) and log(l(x))
+        x_s = self.gp_S.x
+        alpha_l = self.gp_S.inv_Kxx_y
+        inv_L_tl = np.linalg.cholesky(self.gp_logS.Kxx)
+        inv_K_tl = self.gp_logS.inv_Kxx
+
+        ## First term
+        # E[m_l C_tl m_l | x_s] = alpha_l(x_s)' *
+        #    int int K_l(x_s, x) K_tl(x, x') K_l(x', x_s) p(x) p(x') dx dx' *
+        #    alpha_l(x_s) - beta(x_s)'beta(x_s)
+        # Where beta is defined as:
+        # beta(x_s) = inv(L_tl(x_s, x_s)) *
+        #    int K_tl(x_s, x) K_l(x, x_s) p(x) dx *
+        #    alpha_l(x_s)
+        int_K_l_K_tl_K_l = self._big_chi_mat(x_s, self.gp_S, self.gp_logS)
+        int_K_tl_K_l_mat = self._big_ups_mat(x_s, x_s, self.gp_logS, self.gp_S)
+        beta = mdot(inv_L_tl, int_K_tl_K_l_mat, alpha_l)
+        alpha_int_alpha = mdot(alpha_l.T, int_K_l_K_tl_K_l, alpha_l)
+        beta2 = dot(beta.T, beta)
+        E_m_l_C_tl_m_l = alpha_int_alpha - beta2
+
+        ## Second term
+        # E[m_l C_tl | x_s] =
+        #    [ int int K_tl(x', x) K_l(x, x_s) p(x) p(x') dx dx' -
+        #      ( int K_tl(x, x_s) p(x) dx) *
+        #        inv(K_tl(x_s, x_s)) *
+        #        int K_tl(x_s, x) K_l(x, x_s) p(x) dx
+        #      )
+        #    ] alpha_l(x_s)
+        int_K_tl_K_l_vec = self._small_ups2_vec(x_s, self.gp_logS, self.gp_S)
+        int_K_tl_vec = self._small_ups_vec(x_s, self.gp_logS)
+        int_inv_int = mdot(int_K_tl_vec, inv_K_tl, int_K_tl_K_l_mat)
+        E_m_l_C_tl = dot(int_K_tl_K_l_vec - int_inv_int, alpha_l)
+
+        ## Third term
+        # E[C_tl | x_s] =
+        #    int int K_tl(x, x') p(x) p(x') dx dx' -
+        #    ( int K_tl(x, x_s) p(x) dx *
+        #      inv(K_tl(x_s, x_s)) *
+        #      [int K_tl(x, x_s) p(x) dx]'
+        #    )
+        # Where eta is defined as:
+        # eta(x_s) = inv(L_tl(x_s, x_s)) int K_tl(x_s, x) p(x) dx
+        int_K_tl_scalar = self._small_chi_const(self.gp_logS)
+        E_C_tl = int_K_tl_scalar - mdot(int_K_tl_vec, inv_K_tl, int_K_tl_vec.T)
+
+        term1 = E_m_l_C_tl_m_l
+        term2 = 2*self.gamma * E_m_l_C_tl
+        term3 = self.gamma**2 * E_C_tl
+        V_Z = term1 + term2 + term3
+        return V_Z, V_Z
+
+    @property
+    def var3(self):
         gamma = self.gamma
 
-        xs = self.Ri
+        x_s = self.Ri
         l_s = self.Si
         tl_s = self.log_Si
 
@@ -403,11 +454,11 @@ class BQ(object):
 
         # calculate ups for the likelihood, where ups is defined as
         # ups_s = int K(x, x_s)  p(x) dx
-        ups_tl = self._small_ups_vec(xs, self.gp_logS)
+        ups_tl = self._small_ups_vec(x_s, self.gp_logS)
 
         # calculate ups2 for the likelihood, where ups2 is defined as
         # ups2_s = int int K(x, x') K(x', x_s) p(x) prior(x') dx dx'
-        ups2_l = self._small_ups2_vec(xs, self.gp_logS, self.gp_S)
+        ups2_l = self._small_ups2_vec(x_s, self.gp_logS, self.gp_S)
 
         # calculate chi for the likelihood, where chi is defined as
         # chi = int int K(x, x') p(x) prior(x') dx dx'
@@ -416,29 +467,29 @@ class BQ(object):
         # calculate Chi for the likelihood, where Chi is defined as
         # Chi_l = int int K(x_s, x) K(x, x') K(x', x_s) p(x)
         # prior(x') dx dx'
-        Chi_l_tl_l = self._big_chi_mat(xs, self.gp_S, self.gp_logS)
+        Chi_l_tl_l = self._big_chi_mat(x_s, self.gp_S, self.gp_logS)
 
         # calculate Ups for the likelihood and the likelihood, where
         # Ups is defined as
         # Ups_s_s' = int K(x_s, x) K(x, x_s') prior(x) dx
-        Ups_tl_l = self._big_ups_mat(xs, xs, self.gp_logS, self.gp_S)
-
-        # compute the variance of int log_transform(l)(x) p(x) dx given l_s
-        ups_inv_K_tl = dot(inv_K_tl, ups_tl).T
-        Vinty_tl = chi_tl - dot(ups_inv_K_tl, ups_tl)
-
-        # compute int dx p(x) int dx' p(x') C_(tl|s)(x, x') m_(l|s)(x')
-        Ups_inv_K_tl_l = dot(Ups_tl_l, inv_K_l_l)
-        Cminty_tl_l = (dot(ups2_l.T, inv_K_l_l) -
-                       dot(ups_inv_K_tl, Ups_inv_K_tl_l))
+        Ups_tl_l = self._big_ups_mat(x_s, x_s, self.gp_logS, self.gp_S)
 
         # compute int dx p(x) int dx' p(x') m_(l|s)(x)
         #               C_(tl|s)(x, x') m_(l|s)(x')
+        Ups_inv_K_tl_l = dot(Ups_tl_l, inv_K_l_l)
         inv_R_Ups_inv_K_tl_l = dot(R_tl.T, Ups_inv_K_tl_l)
         mCminty_l_tl_l = dot(
             inv_K_l_l.T, dot(
                 Chi_l_tl_l, inv_K_l_l
             )) - sum(inv_R_Ups_inv_K_tl_l ** 2)
+
+        # compute int dx p(x) int dx' p(x') C_(tl|s)(x, x') m_(l|s)(x')
+        ups_inv_K_tl = dot(inv_K_tl, ups_tl).T
+        Cminty_tl_l = (dot(ups2_l.T, inv_K_l_l) -
+                       dot(ups_inv_K_tl, Ups_inv_K_tl_l))
+
+        # compute the variance of int log_transform(l)(x) p(x) dx given l_s
+        Vinty_tl = chi_tl - dot(ups_inv_K_tl, ups_tl)
 
         # variance of the evidence
         var_ev = (gamma**2 * Vinty_tl +
@@ -455,7 +506,7 @@ class BQ(object):
         # Dtheta_K_tl is the gradient of the Gaussian covariance over the
         # transformed likelihood between x_s and x_s: each plate in the stack
         # is the derivative with respect to a different log input scale
-        Dtheta_K_tl = self.gp_logS.K.dK_dw(xs, xs)
+        Dtheta_K_tl = self.gp_logS.K.dK_dw(x_s, x_s)
 
         # compute mean of int tl(x) l(x) p(x) dx given l_s and tl_s
         minty_tl_l = dot(inv_K_tl_tl.T, Ups_inv_K_tl_l)
@@ -466,7 +517,7 @@ class BQ(object):
         # Dtheta_Ups_tl_l is the modification of Ups_tl_l to allow for
         # derivatives wrt log input scales: each plate in the stack is the
         # derivative with respect to a different log input scale.
-        Dtheta_Ups_tl_l_const, Dtheta_ups_tl_const = self._dtheta_consts(xs)
+        Dtheta_Ups_tl_l_const, Dtheta_ups_tl_const = self._dtheta_consts(x_s)
         Dtheta_Ups_tl_l = Ups_tl_l * Dtheta_Ups_tl_l_const
 
         # Dtheta_ups_tl is the modification of ups_tl to allow for
@@ -491,9 +542,9 @@ class BQ(object):
     def expected_uncertainty_evidence(self, x_a):
         gamma = self.gamma
 
-        xs = self.Ri
+        x_s = self.Ri
         xc = self.Rc
-        x_sa = np.array(list(xs) + [x_a])
+        x_sa = np.array(list(x_s) + [x_a])
         x_sca = np.array(list(xc) + [x_a])
         l_s = self.Si
         tl_s = self.log_Si
@@ -504,7 +555,7 @@ class BQ(object):
 
         inv_K_tl = self.gp_logS.inv_Kxx
         inv_K_tl_s = dot(inv_K_tl, tl_s)
-        K_tl_s_a = K_tl(xs, np.array([x_a]))[:, 0]
+        K_tl_s_a = K_tl(x_s, np.array([x_a]))[:, 0]
 
         R_tl_s = np.linalg.cholesky(self.gp_logS.Kxx)
         inv_R_tl_s = inv(R_tl_s)
@@ -525,10 +576,10 @@ class BQ(object):
         # r_a, on our belief about the log input scales
 
         # Dtheta_K_tl_a_s is the gradient of the tl Gaussian covariance over
-        # the transformed likelihood between x_a and xs: each plate in the
+        # the transformed likelihood between x_a and x_s: each plate in the
         # stack is the derivative with respect to a different log input scale
-        Dtheta_K_tl_s = K_tl.dK_dw(xs, xs)
-        Dtheta_K_tl_a_s = K_tl.dK_dw(xs, np.array([x_a]))[:, 0]
+        Dtheta_K_tl_s = K_tl.dK_dw(x_s, x_s)
+        Dtheta_K_tl_a_s = K_tl.dK_dw(x_s, np.array([x_a]))[:, 0]
 
         K_inv_K_tl_a_s = dot(inv_R_tl_s, inv_R_K_tl_s_a).T
 
@@ -578,14 +629,14 @@ class BQ(object):
         ups_inv_K_del_sca = dot(inv_K_del_sca, ups_del_sca).T
 
         # delta will certainly be zero at x_a
-        delta_tl_sca = np.concatenate([self.Dc, np.zeros(1)])
+        del_sca = np.concatenate([self.Dc, np.zeros(1)])
 
-        del_inv_K = dot(inv_K_del_sca, delta_tl_sca).T
+        del_inv_K = dot(inv_K_del_sca, del_sca).T
         del_inv_K_Ups_inv_K_l_sa = dot(
             del_inv_K, dot(inv_K_l_sa, Ups_sca_sa.T).T)
 
-        # mean of int delta(x) p(x) dx given delta_tl_sca
-        minty_del = dot(ups_inv_K_del_sca, delta_tl_sca)
+        # mean of int delta(x) p(x) dx given del_sca
+        minty_del = dot(ups_inv_K_del_sca, del_sca)
 
         # Now we finish up by subtracting the expected squared mean from the
         # previously computed second moment
