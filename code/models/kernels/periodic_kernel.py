@@ -21,6 +21,7 @@ class PeriodicKernel(object):
     """
 
     __metaclass__ = BaseKernel
+    __slots__ = ['h', 'w', 'p']
 
     _sym_h = sym.Symbol('h')
     _sym_w = sym.Symbol('w')
