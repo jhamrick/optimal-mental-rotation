@@ -195,7 +195,7 @@ class BQ(object):
              for i in xrange(len(allkeys))]))
         kparams = tuple(params[k] for k in allkeys[:-1])
         s = params.get('s', 0)
-        gp = GP(self.kernel(*kparams), x, y, self.R, s=s)
+        gp = GP(self.kernel(*kparams), x, y, s=s)
 
         # update the GP object with new parameter values
         def update(theta):
@@ -205,13 +205,13 @@ class BQ(object):
         # negative log likelihood
         def f(theta):
             update(theta)
-            out = -gp.log_lh()
+            out = -gp.log_lh
             return out
 
         # jacobian of the negative log likelihood
         def df(theta):
             update(theta)
-            out = -gp.dloglh_dtheta()[fitidx]
+            out = -gp.dloglh_dtheta[fitidx]
             return out
 
         # run the optimization a few times to find the best fit
@@ -273,22 +273,22 @@ class BQ(object):
 
         # use a crude thresholding here as our tilde transformation
         # will fail if the mean goes below zero
-        self._S0 = np.clip(self.gp_S.m, EPS, np.inf)
+        self._S0 = np.clip(self.gp_S.mean(self.R), EPS, np.inf)
 
         # fit delta, the difference between S and logS
-        self.delta = self.gp_logS.m - self.log_transform(self._S0)
+        self.delta = self.gp_logS.mean(self.R) - self.log_transform(self._S0)
         self.choose_candidates()
         self.gp_Dc = self._fit_gp(self.Rc, self.Dc, "Delta_c", h=None)
 
         # the estimated mean of S
-        m_S = self.gp_S.m
-        m_Dc = self.gp_Dc.m
+        m_S = self.gp_S.mean(self.R)
+        m_Dc = self.gp_Dc.mean(self.R)
         self.S_mean = m_S + (m_S + self.gamma)*m_Dc
 
         # the estimated variance of S
-        C_logS = self.gp_logS.C
+        C_logS = self.gp_logS.cov(self.R)
         dm_dw, Cw = self.dm_dw, self.Cw
-        self.S_cov = C_logS + dot(dm_dw, dot(Cw, dm_dw.T))
+        self.S_cov = C_logS# + mdot(dm_dw, Cw, dm_dw.T)
         self.S_cov[np.abs(self.S_cov) < np.sqrt(EPS)] = EPS
 
         return self.S_mean, self.S_cov
@@ -350,7 +350,7 @@ class BQ(object):
 
         x, x_s = self.R, self.Ri
         inv_Kxx = self.gp_logS.inv_Kxx
-        Kxox = self.gp_logS.Kxox
+        Kxox = self.gp_logS.Kxox(x)
         dKxox_dw = self.gp_logS.K.dK_dw(x, x_s)
         dKxx_dw = self.gp_logS.K.dK_dw(x_s, x_s)
         inv_dKxx_dw = mdot(inv_Kxx, dKxx_dw, inv_Kxx)
@@ -368,14 +368,14 @@ class BQ(object):
         # H_theta is the diagonal of the hessian of the likelihood of
         # the GP over the log-likelihood with respect to its log input
         # scale.
-        H_theta = self.gp_logS.d2lh_dtheta2()
+        H_theta = self.gp_logS.d2lh_dtheta2
         # XXX: fix this slicing
         Cw = np.array([[-1. / H_theta[1, 1]]])
         return Cw
 
     @property
     def var2(self):
-        m_S = self.gp_S.m + self.gamma
+        m_S = self.gp_S.mean(self.R) + self.gamma
         mCm = self.S_cov * m_S[:, None] * m_S[None, :]
         var_ev = self.E(self.E(mCm))
         # sanity check
@@ -389,7 +389,7 @@ class BQ(object):
         # values for the GPs over l(x) and log(l(x))
         x_s = self.gp_S.x
         alpha_l = self.gp_S.inv_Kxx_y
-        inv_L_tl = np.linalg.cholesky(self.gp_logS.Kxx)
+        inv_L_tl = self.gp_logS.inv_Lxx
         inv_K_tl = self.gp_logS.inv_Kxx
 
         ## First term
@@ -557,8 +557,7 @@ class BQ(object):
         inv_K_tl_s = dot(inv_K_tl, tl_s)
         K_tl_s_a = K_tl(x_s, np.array([x_a]))[:, 0]
 
-        R_tl_s = np.linalg.cholesky(self.gp_logS.Kxx)
-        inv_R_tl_s = inv(R_tl_s)
+        inv_R_tl_s = self.gp_logS.inv_Lxx
 
         # compute predictive mean for transformed likelihood, given
         # zero prior mean
