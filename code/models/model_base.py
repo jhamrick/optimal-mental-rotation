@@ -2,8 +2,16 @@ import numpy as np
 import scipy.misc
 import tools
 
-
 class Model(object):
+
+    # default options
+    default_opt = {
+        'verbose': False,
+        'scale': 1,
+        'dr': 10,
+        'sigma_s': 0.2,
+        'prior_R': (0, 1),
+    }
 
     def __init__(self, Xa, Xb, Xm, R, **opt):
         """Initialize the mental rotation model.
@@ -36,24 +44,11 @@ class Model(object):
 
         """
 
-        # default options
-        default_opt = {
-            'verbose': False,
-            'scale': 1,
-            'dr': 10,
-            'sigma_s': 0.2,
-            'prior_R': np.ones_like(R) / (2*np.pi),
-        }
         # self.opt was defined by a subclass
-        if hasattr(self, 'opt'):
-            default_opt.update(self.opt)
-        # user overrides
-        default_opt.update(opt)
-        self.opt = default_opt
-
-        if len(self.opt['prior_R']) == 2:
-            mu, var = self.opt['prior_R']
-            self.opt['prior_R'] = scipy.stats.norm.pdf(R, mu, np.sqrt(var))
+        opts = self.default_opt.copy()
+        opts.update(getattr(self, 'opt', {}))
+        opts.update(opt)
+        self.opt = opt
 
         # stimuli
         self.Xa = Xa.copy()
@@ -142,10 +137,10 @@ class Model(object):
         std_hi = 0 if not self.Z_var else np.sqrt(self.Z_var[1])
         sf = self.opt['stop_factor']
         vals = [self.Z_mean, self.Z_mean - sf*std_lo, self.Z_mean + sf*std_hi]
-        ratios = []
-        for val in vals:
-            p_XaXb_h1 = self.p_Xa * val / self._S_scale
-            ratios.append(p_XaXb_h1 / self.p_XaXb_h0)
+        ratios = [
+            self.p_Xa * val / (self._S_scale * self.p_XaXa_h0)
+            for val in vals
+        ]
         return tuple(ratios)
 
     def ratio_test(self, level=-1):
