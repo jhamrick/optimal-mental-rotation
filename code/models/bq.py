@@ -1,8 +1,11 @@
 import numpy as np
 import scipy.optimize as optim
 import scipy.stats
-from numpy import dot
+from numpy import dot, sum, exp
 from numpy.linalg import inv
+from numpy.random import uniform
+from collections import OrderedDict
+from itertools import izip
 
 from snippets.safemath import EPS
 from gaussian_process import GP
@@ -11,6 +14,18 @@ import kernels
 
 def mdot(*args):
     return reduce(np.dot, args)
+
+
+def mvn_logpdf(x, m, C, Z=None):
+    Ci = inv(C)
+    if Z is None:
+        Z = -0.5 * np.linalg.slogdet(C)[1]
+    d = x.shape[-1]
+    const = np.log(2*np.pi)*(-d/2.) + Z
+    diff = x - m
+    pdf = const - 0.5 * sum(
+        sum(diff[..., None, :] * Ci * diff[..., None], axis=-1), axis=-1)
+    return pdf
 
 
 class BQ(object):
@@ -47,6 +62,31 @@ class BQ(object):
         self.log_Si = self.log_transform(self.Si)
         self.ix = ix
 
+        # default kernel parameter values
+        if self.opt['kernel'] == "gaussian":
+            params = ('h', 'w', 's')
+        else:
+            params = ('h', 'w', 'p', 's')
+        self.default_params = OrderedDict(
+            [(p, self.opt.get(p, None)) for p in params])
+
+        # minimization bounds
+        self.bounds = OrderedDict([
+            ('h', (EPS, None)),
+            ('w', (np.radians(self.opt['bq_wmin']),
+                   np.radians(self.opt['bq_wmax']))),
+            ('p', (EPS, None)),
+            ('s', (0, None))
+        ])
+
+        # random initial value functions
+        self.randf = OrderedDict([
+            ('h', lambda x, y: uniform(EPS, np.max(np.abs(y))*2)),
+            ('w', lambda x, y: uniform(np.ptp(x)/100., np.ptp(x)/10.)),
+            ('p', lambda x, y: uniform(EPS, 2*np.pi)),
+            ('s', lambda x, y: uniform(0, np.sqrt(np.var(y))))
+        ])
+
     def debug(self, msg, level=0):
         if self.opt['verbose'] > level:
             print ("  "*level) + msg
@@ -79,7 +119,7 @@ class BQ(object):
         N0 = ha / np.sqrt(2*np.pi*(wa + 2*var))
         Nv = wb + var - (var ** 2 / (wa + 2*var))
         N1c = hb / np.sqrt(2*np.pi*Nv)
-        N1e = np.exp(-(x2 - mu) ** 2 / (2 * Nv))
+        N1e = exp(-(x2 - mu) ** 2 / (2 * Nv))
 
         return N0 * N1c * N1e
 
@@ -95,7 +135,7 @@ class BQ(object):
         x1x2 = (x1[:, None] - x2[None, :]) ** 2
         num = (x1mu*var2) + (x2mu*var1) + (x1x2*var)
         det = (var1*var2) + (var1*var) + (var2*var)
-        mat = h * np.exp(-0.5 * num / det) / (2*np.pi*np.sqrt(det))
+        mat = h * exp(-0.5 * num / det) / (2*np.pi*np.sqrt(det))
 
         return mat
 
@@ -106,27 +146,24 @@ class BQ(object):
         return h2 / np.sqrt(2*np.pi*(w2 + 2*var))
 
     def _big_chi_mat(self, x, gp1, gp2):
-        def gaussian(x, mu, var):
-            C = 1. / np.sqrt(2*np.pi*var)
-            e = np.exp(-(x - mu)**2 / (2*var))
-            return C * e
-
-        mu, var = self.opt['prior_R']
-        wa = gp1.K.w ** 2
+        mu, cov = self.opt['prior_R']
+        ha = gp1.K.h ** 2
         hb = gp2.K.h ** 2
-        wb = gp2.K.w ** 2
+        Wa = np.array(gp1.K.w) * np.ones((1, 1)) ** 2
+        Wb = np.array(gp2.K.w) * np.ones((1, 1)) ** 2
 
-        det_input_scale = np.sqrt(
-            (2*var + wb - 2*var**2/(var + wa)))
-        input_scale = (
-            ((var + wa)**2 * (2*var + wb - 2*var**2/(var + wa))) / var**2)
+        G = dot(cov, inv(Wa + cov))
+        Gi = inv(G)
+        C = Wb + 2*cov - 2*dot(G, cov)
 
-        vec_A = self._small_ups_vec(x, gp1)
-        C = (hb / det_input_scale) / np.sqrt(2*np.pi*input_scale)
-        e = np.exp(-(x[:, None] - x[None, :])**2 / (2*input_scale))
-        mat_A = C * e
+        N1 = exp(mvn_logpdf(x, mu, cov + Wa))
+        N2 = exp(mvn_logpdf(
+            x[:, None] - x[None, :],
+            np.zeros(x.shape[1]),
+            mdot(Gi, C, Gi),
+            Z=np.linalg.slogdet(C)[1] * -0.5))
 
-        mat = mat_A * dot(vec_A[:, None], vec_A[None])
+        mat = ha**2 * hb * N2 * N1[:, None] * N1[None, :]
         return mat
 
     def _dtheta_consts(self, x):
@@ -156,51 +193,27 @@ class BQ(object):
         ntry = self.opt['ntry_bq']
         verbose = self.opt['verbose'] > 3
 
-        if self.opt['kernel'] == "gaussian":
-            allkeys = ('h', 'w', 's')
-        else:
-            allkeys = ('h', 'w', 'p', 's')
-        # minimization bounds
-        allbounds = {
-            'h': (EPS, None),
-            'w': (np.radians(self.opt['bq_wmin']),
-                  np.radians(self.opt['bq_wmax'])),
-            'p': (EPS, None),
-            's': (0, None)
-        }
-        # random initial value functions
-        randf = {
-            'h': lambda: np.random.uniform(EPS, np.max(np.abs(y))*2),
-            'w': lambda: np.random.uniform(np.ptp(x) / 100., np.ptp(x) / 10.),
-            'p': lambda: np.random.uniform(EPS, 2*np.pi),
-            's': lambda: np.random.uniform(0, np.sqrt(np.var(y)))
-        }
-
         # default parameter values
-        default_dict = dict([(k, self.opt.get(k, None)) for k in allkeys])
-        default_dict.update(kwargs)
-        default = [default_dict[k] for k in allkeys]
+        default = self.default_params.copy()
+        default.update({p: kwargs[p] for p in default if p in kwargs})
+
         # parameters we are actually fitting
-        fitidx, fitkeys = zip(*[
-            (i, allkeys[i]) for i in xrange(len(default))
-            if default[i] is None])
-        fitidx = list(fitidx)
-        if len(fitidx) == 1:
-            fitidx = [fitidx]
-        bounds = tuple(allbounds[key] for key in fitkeys)
+        fitmask = np.array([v is None for k, v in default.iteritems()])
+        fitkeys = [k for m, k in izip(fitmask, default) if m]
+        bounds = tuple(self.bounds[key] for key in fitkeys)
         # create the GP object with dummy init params
-        params = dict(zip(
-            allkeys,
-            [1 if default[i] is None else default[i]
-             for i in xrange(len(allkeys))]))
-        kparams = tuple(params[k] for k in allkeys[:-1])
+        params = OrderedDict([
+            (k, (1 if v is None else v))
+            for k, v in default.iteritems()
+        ])
+        kparams = tuple(v for k, v in params.iteritems() if k != 's')
         s = params.get('s', 0)
         gp = GP(self.kernel(*kparams), x, y, s=s)
 
         # update the GP object with new parameter values
         def update(theta):
             params.update(dict(zip(fitkeys, theta)))
-            gp.params = tuple(params[k] for k in allkeys)
+            gp.params = params.values()
 
         # negative log likelihood
         def f(theta):
@@ -211,14 +224,14 @@ class BQ(object):
         # jacobian of the negative log likelihood
         def df(theta):
             update(theta)
-            out = -gp.dloglh_dtheta[fitidx]
+            out = -gp.dloglh_dtheta[fitmask]
             return out
 
         # run the optimization a few times to find the best fit
         args = np.empty((ntry, len(bounds)))
         fval = np.empty(ntry)
         for i in xrange(ntry):
-            p0 = tuple(randf[k]() for k in fitkeys)
+            p0 = tuple(self.randf[k](x, y) for k in fitkeys)
             update(p0)
             if verbose:
                 print "      p0 = %s" % (p0,)
@@ -400,7 +413,8 @@ class BQ(object):
         # beta(x_s) = inv(L_tl(x_s, x_s)) *
         #    int K_tl(x_s, x) K_l(x, x_s) p(x) dx *
         #    alpha_l(x_s)
-        int_K_l_K_tl_K_l = self._big_chi_mat(x_s, self.gp_S, self.gp_logS)
+        int_K_l_K_tl_K_l = self._big_chi_mat(
+            x_s[:, None], self.gp_S, self.gp_logS)
         int_K_tl_K_l_mat = self._big_ups_mat(x_s, x_s, self.gp_logS, self.gp_S)
         beta = mdot(inv_L_tl, int_K_tl_K_l_mat, alpha_l)
         alpha_int_alpha = mdot(alpha_l.T, int_K_l_K_tl_K_l, alpha_l)
@@ -647,8 +661,8 @@ class BQ(object):
         nla = nlsa[-1]
         nls = dot(nlsa[:-1], l_s) + (gamma * minty_del)
 
-        e = np.exp(tm_a + 0.5 * tv_a)
-        e2 = np.exp(2*tm_a + 2*tv_a)
+        e = exp(tm_a + 0.5 * tv_a)
+        e2 = exp(2*tm_a + 2*tv_a)
 
         term1 = nls ** 2
         term2 = 2 * nls * nla * gamma * (e - 1)

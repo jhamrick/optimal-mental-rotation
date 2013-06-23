@@ -58,6 +58,11 @@ class BayesianQuadratureModel(Model):
         self._dir = 0
         self._icurr = 0
 
+        mu, cov = self.opt['prior_R']
+        mu = np.array(mu) * np.ones(1)
+        cov = np.array(cov) * np.ones((1, 1))
+        self.opt['prior_R'] = mu, cov
+
     def next(self):
         """Sample the next point."""
 
