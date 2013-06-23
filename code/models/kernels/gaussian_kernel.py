@@ -1,11 +1,9 @@
-import numba
-
 import numpy as np
 from numpy import exp, sqrt, pi
 
 import sympy as sym
 
-from base_kernel import BaseKernel
+from base_kernel import BaseKernel, lazyjit
 
 
 class GaussianKernel(object):
@@ -67,7 +65,7 @@ class GaussianKernel(object):
         self.h, self.w = val
 
     @staticmethod
-    @numba.jit('f8[:,:](f8[:], f8[:], f8, f8)', warn=False)
+    @lazyjit('f8[:,:](f8[:], f8[:], f8, f8)', warn=False)
     def _K(x1, x2, h, w):
         Kxx = np.empty((x1.size, x2.size))
         for i in xrange(x1.size):
@@ -77,7 +75,7 @@ class GaussianKernel(object):
         return Kxx
 
     @staticmethod
-    @numba.jit('f8[:,:](f8[:], f8[:], f8, f8)', warn=False)
+    @lazyjit('f8[:,:](f8[:], f8[:], f8, f8)', warn=False)
     def _dK_dh(x1, x2, h, w):
         dKxx = np.empty((x1.size, x2.size))
         for i in xrange(x1.size):
@@ -87,7 +85,7 @@ class GaussianKernel(object):
         return dKxx
 
     @staticmethod
-    @numba.jit('f8[:,:](f8[:], f8[:], f8, f8)', warn=False)
+    @lazyjit('f8[:,:](f8[:], f8[:], f8, f8)', warn=False)
     def _dK_dw(x1, x2, h, w):
         dKxx = np.empty((x1.size, x2.size))
         for i in xrange(x1.size):
@@ -97,7 +95,7 @@ class GaussianKernel(object):
         return dKxx
 
     @staticmethod
-    @numba.jit('f8[:,:,:](f8[:], f8[:], f8, f8)', warn=False)
+    @lazyjit('f8[:,:,:](f8[:], f8[:], f8, f8)', warn=False)
     def _jacobian(x1, x2, h, w):
         dKxx = np.empty((2, x1.size, x2.size))
         for i in xrange(x1.size):
@@ -108,7 +106,7 @@ class GaussianKernel(object):
         return dKxx
 
     @staticmethod
-    @numba.jit('f8[:,:](f8[:], f8[:], f8, f8)', warn=False)
+    @lazyjit('f8[:,:](f8[:], f8[:], f8, f8)', warn=False)
     def _d2K_dhdh(x1, x2, h, w):
         dKxx = np.empty((x1.size, x2.size))
         for i in xrange(x1.size):
@@ -118,7 +116,7 @@ class GaussianKernel(object):
         return dKxx
 
     @staticmethod
-    @numba.jit('f8[:,:](f8[:], f8[:], f8, f8)', warn=False)
+    @lazyjit('f8[:,:](f8[:], f8[:], f8, f8)', warn=False)
     def _d2K_dhdw(x1, x2, h, w):
         dKxx = np.empty((x1.size, x2.size))
         for i in xrange(x1.size):
@@ -128,7 +126,7 @@ class GaussianKernel(object):
         return dKxx
 
     @staticmethod
-    @numba.jit('f8[:,:](f8[:], f8[:], f8, f8)', warn=False)
+    @lazyjit('f8[:,:](f8[:], f8[:], f8, f8)', warn=False)
     def _d2K_dwdh(x1, x2, h, w):
         dKxx = np.empty((x1.size, x2.size))
         for i in xrange(x1.size):
@@ -138,7 +136,7 @@ class GaussianKernel(object):
         return dKxx
 
     @staticmethod
-    @numba.jit('f8[:,:](f8[:], f8[:], f8, f8)', warn=False)
+    @lazyjit('f8[:,:](f8[:], f8[:], f8, f8)', warn=False)
     def _d2K_dwdw(x1, x2, h, w):
         dKxx = np.empty((x1.size, x2.size))
         for i in xrange(x1.size):
@@ -148,7 +146,7 @@ class GaussianKernel(object):
         return dKxx
 
     @staticmethod
-    @numba.jit('f8[:,:,:,:](f8[:], f8[:], f8, f8)', warn=False)
+    @lazyjit('f8[:,:,:,:](f8[:], f8[:], f8, f8)', warn=False)
     def _hessian(x1, x2, h, w):
         dKxx = np.empty((2, 2, x1.size, x2.size))
         for i in xrange(x1.size):
