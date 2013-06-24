@@ -48,6 +48,7 @@ class GP(object):
 
     @x.setter
     def x(self, val):
+        assert val.ndim == 2, val.ndim
         self._memoized = {}
         self._x = val.copy()
 
@@ -57,6 +58,7 @@ class GP(object):
 
     @y.setter
     def y(self, val):
+        assert val.ndim == 2, val.ndim
         self._memoized = {}
         self._y = val.copy()
 
