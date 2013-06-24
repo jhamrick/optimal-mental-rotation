@@ -102,55 +102,43 @@ class BQ(object):
         m = np.trapz(pfx, self.R, axis=axis)
         return m
 
-    def _small_ups_vec(self, x, gp):
-        mu, var = self.opt['prior_R']
-        std = np.sqrt(var + (gp.K.w ** 2))
-        vec = (gp.K.h ** 2) * scipy.stats.norm.pdf(x, mu, std)
+    def _gaussint1(self, x, gp):
+        n, d = x.shape
+        mu, cov = self.opt['prior_R']
+        h = gp.K.h ** 2
+        W = (np.array(gp.K.w) * np.eye(d)) ** 2
+        vec = h * exp(mvn_logpdf(x, mu, cov + W))
         return vec
 
-    def _small_ups2_vec(self, x2, gp1, gp2):
-        mu, var = self.opt['prior_R']
+    def _gaussint2(self, x1, x2, gp1, gp2):
+        n1, d = x1.shape
+        n2, d = x2.shape
+        mu, cov = self.opt['prior_R']
 
         ha = gp1.K.h ** 2
-        wa = gp1.K.w ** 2
         hb = gp2.K.h ** 2
-        wb = gp2.K.w ** 2
+        Wa = (np.array(gp1.K.w) * np.eye(d)) ** 2
+        Wb = (np.array(gp2.K.w) * np.eye(d)) ** 2
 
-        N0 = ha / np.sqrt(2*np.pi*(wa + 2*var))
-        Nv = wb + var - (var ** 2 / (wa + 2*var))
-        N1c = hb / np.sqrt(2*np.pi*Nv)
-        N1e = exp(-(x2 - mu) ** 2 / (2 * Nv))
+        i1, i2 = np.meshgrid(np.arange(n1), np.arange(n2))
+        x = np.concatenate([x1[i1.T], x2[i2.T]], axis=2)
+        m = np.concatenate([mu, mu])
+        C = np.concatenate([
+            np.concatenate([Wa + cov, cov], axis=1),
+            np.concatenate([cov, Wb + cov], axis=1)
+        ], axis=0)
 
-        return N0 * N1c * N1e
-
-    def _big_ups_mat(self, x1, x2, gp1, gp2):
-        mu, var = self.opt['prior_R']
-
-        var1 = gp1.K.w ** 2
-        var2 = gp2.K.w ** 2
-        h = (gp1.K.h * gp2.K.h) ** 2
-
-        x1mu = (x1[:, None] - mu) ** 2
-        x2mu = (x2[None, :] - mu) ** 2
-        x1x2 = (x1[:, None] - x2[None, :]) ** 2
-        num = (x1mu*var2) + (x2mu*var1) + (x1x2*var)
-        det = (var1*var2) + (var1*var) + (var2*var)
-        mat = h * exp(-0.5 * num / det) / (2*np.pi*np.sqrt(det))
-
+        mat = ha * hb * exp(mvn_logpdf(x, m, C))
         return mat
 
-    def _small_chi_const(self, gp):
-        mu, var = self.opt['prior_R']
-        h2 = gp.K.h ** 2
-        w2 = gp.K.w ** 2
-        return h2 / np.sqrt(2*np.pi*(w2 + 2*var))
-
-    def _big_chi_mat(self, x, gp1, gp2):
+    def _gaussint3(self, x, gp1, gp2):
+        n, d = x.shape
         mu, cov = self.opt['prior_R']
+
         ha = gp1.K.h ** 2
         hb = gp2.K.h ** 2
-        Wa = np.array(gp1.K.w) * np.ones((1, 1)) ** 2
-        Wb = np.array(gp2.K.w) * np.ones((1, 1)) ** 2
+        Wa = (np.array(gp1.K.w) * np.eye(d)) ** 2
+        Wb = (np.array(gp2.K.w) * np.eye(d)) ** 2
 
         G = dot(cov, inv(Wa + cov))
         Gi = inv(G)
@@ -159,12 +147,40 @@ class BQ(object):
         N1 = exp(mvn_logpdf(x, mu, cov + Wa))
         N2 = exp(mvn_logpdf(
             x[:, None] - x[None, :],
-            np.zeros(x.shape[1]),
+            np.zeros(d),
             mdot(Gi, C, Gi),
             Z=np.linalg.slogdet(C)[1] * -0.5))
 
         mat = ha**2 * hb * N2 * N1[:, None] * N1[None, :]
         return mat
+
+    def _gaussint4(self, x, gp1, gp2):
+        n, d = x.shape
+        mu, cov = self.opt['prior_R']
+
+        ha = gp1.K.h ** 2
+        hb = gp2.K.h ** 2
+        Wa = (np.array(gp1.K.w) * np.eye(d)) ** 2
+        Wb = (np.array(gp2.K.w) * np.eye(d)) ** 2
+
+        C0 = Wa + 2*cov
+        C1 = Wb + cov - mdot(cov, inv(C0), cov)
+
+        N0 = exp(mvn_logpdf(np.zeros(d), np.zeros(d), C0))
+        N1 = exp(mvn_logpdf(x, mu, C1))
+
+        vec = ha * hb * N0 * N1
+        return vec
+
+    def _gaussint5(self, d, gp):
+        mu, cov = self.opt['prior_R']
+        h = gp.K.h ** 2
+        W = (np.array(gp.K.w) * np.eye(d)) ** 2
+        const = h * exp(mvn_logpdf(
+            np.zeros(d),
+            np.zeros(d),
+            W + 2*cov))
+        return const
 
     def _dtheta_consts(self, x):
         mu, L = self.opt['prior_R']
@@ -277,25 +293,34 @@ class BQ(object):
 
         self.debug("Fitting likelihood")
 
-        self.gp_S = self._fit_gp(self.Ri, self.Si, "S")
+        Ri = self.Ri[:, None]
+        Si = self.Si[:, None]
+        log_Si = self.log_Si[:, None]
+
+        self.gp_S = self._fit_gp(Ri, Si, "S")
         if self.opt.get('h', None):
             logh = np.log(self.opt['h'] + 1)
         else:
             logh = None
-        self.gp_logS = self._fit_gp(self.Ri, self.log_Si, "log(S)", h=logh)
+        self.gp_logS = self._fit_gp(Ri, log_Si, "log(S)", h=logh)
 
         # use a crude thresholding here as our tilde transformation
         # will fail if the mean goes below zero
-        self._S0 = np.clip(self.gp_S.mean(self.R), EPS, np.inf)
+        self._S0 = np.clip(self.gp_S.mean(self.R)[:, 0], EPS, np.inf)
 
         # fit delta, the difference between S and logS
-        self.delta = self.gp_logS.mean(self.R) - self.log_transform(self._S0)
+        mls = self.gp_logS.mean(self.R)[:, 0]
+        lms = self.log_transform(self._S0)
+        self.delta = mls - lms
         self.choose_candidates()
-        self.gp_Dc = self._fit_gp(self.Rc, self.Dc, "Delta_c", h=None)
+
+        Rc = self.Rc[:, None]
+        Dc = self.Dc[:, None]
+        self.gp_Dc = self._fit_gp(Rc, Dc, "Delta_c", h=None)
 
         # the estimated mean of S
-        m_S = self.gp_S.mean(self.R)
-        m_Dc = self.gp_Dc.mean(self.R)
+        m_S = self.gp_S.mean(self.R)[:, 0]
+        m_Dc = self.gp_Dc.mean(self.R)[:, 0]
         self.S_mean = m_S + (m_S + self.gamma)*m_Dc
 
         # the estimated variance of S
@@ -325,14 +350,14 @@ class BQ(object):
 
         ## First term
         # E[m_l | x_s] = (int K_l(x, x_s) p(x) dx) alpha_l(x_s)
-        int_K_l = self._small_ups_vec(x_s, self.gp_S)
+        int_K_l = self._gaussint1(x_s, self.gp_S)
         E_m_l = dot(int_K_l, alpha_l)
 
         ## Second term
         # E[m_l*m_del | x_s, x_c] = alpha_del(x_sc)' *
         #     int K_del(x_sc, x) K_l(x, x_s) p(x) dx *
         #     alpha_l(x_s)
-        int_K_del_K_l = self._big_ups_mat(
+        int_K_del_K_l = self._gaussint2(
             x_sc, x_s, self.gp_Dc, self.gp_S)
         E_m_l_m_del = mdot(alpha_del.T,
                            int_K_del_K_l,
@@ -340,7 +365,7 @@ class BQ(object):
 
         ## Third term
         # E[m_del | x_sc] = (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
-        int_K_del = self._small_ups_vec(x_sc, self.gp_Dc)
+        int_K_del = self._gaussint1(x_sc, self.gp_Dc)
         E_m_del = dot(int_K_del, alpha_del)
 
         # put the three terms together
@@ -401,6 +426,8 @@ class BQ(object):
     def var(self):
         # values for the GPs over l(x) and log(l(x))
         x_s = self.gp_S.x
+        n, d = x_s.shape
+
         alpha_l = self.gp_S.inv_Kxx_y
         inv_L_tl = self.gp_logS.inv_Lxx
         inv_K_tl = self.gp_logS.inv_Kxx
@@ -413,9 +440,9 @@ class BQ(object):
         # beta(x_s) = inv(L_tl(x_s, x_s)) *
         #    int K_tl(x_s, x) K_l(x, x_s) p(x) dx *
         #    alpha_l(x_s)
-        int_K_l_K_tl_K_l = self._big_chi_mat(
-            x_s[:, None], self.gp_S, self.gp_logS)
-        int_K_tl_K_l_mat = self._big_ups_mat(x_s, x_s, self.gp_logS, self.gp_S)
+        int_K_l_K_tl_K_l = self._gaussint3(
+            x_s, self.gp_S, self.gp_logS)
+        int_K_tl_K_l_mat = self._gaussint2(x_s, x_s, self.gp_logS, self.gp_S)
         beta = mdot(inv_L_tl, int_K_tl_K_l_mat, alpha_l)
         alpha_int_alpha = mdot(alpha_l.T, int_K_l_K_tl_K_l, alpha_l)
         beta2 = dot(beta.T, beta)
@@ -429,8 +456,8 @@ class BQ(object):
         #        int K_tl(x_s, x) K_l(x, x_s) p(x) dx
         #      )
         #    ] alpha_l(x_s)
-        int_K_tl_K_l_vec = self._small_ups2_vec(x_s, self.gp_logS, self.gp_S)
-        int_K_tl_vec = self._small_ups_vec(x_s, self.gp_logS)
+        int_K_tl_K_l_vec = self._gaussint4(x_s, self.gp_logS, self.gp_S)
+        int_K_tl_vec = self._gaussint1(x_s, self.gp_logS)
         int_inv_int = mdot(int_K_tl_vec, inv_K_tl, int_K_tl_K_l_mat)
         E_m_l_C_tl = dot(int_K_tl_K_l_vec - int_inv_int, alpha_l)
 
@@ -443,7 +470,7 @@ class BQ(object):
         #    )
         # Where eta is defined as:
         # eta(x_s) = inv(L_tl(x_s, x_s)) int K_tl(x_s, x) p(x) dx
-        int_K_tl_scalar = self._small_chi_const(self.gp_logS)
+        int_K_tl_scalar = self._gaussint5(d, self.gp_logS)
         E_C_tl = int_K_tl_scalar - mdot(int_K_tl_vec, inv_K_tl, int_K_tl_vec.T)
 
         term1 = E_m_l_C_tl_m_l
@@ -468,25 +495,25 @@ class BQ(object):
 
         # calculate ups for the likelihood, where ups is defined as
         # ups_s = int K(x, x_s)  p(x) dx
-        ups_tl = self._small_ups_vec(x_s, self.gp_logS)
+        ups_tl = self._gaussint1(x_s, self.gp_logS)
 
         # calculate ups2 for the likelihood, where ups2 is defined as
         # ups2_s = int int K(x, x') K(x', x_s) p(x) prior(x') dx dx'
-        ups2_l = self._small_ups2_vec(x_s, self.gp_logS, self.gp_S)
+        ups2_l = self._gaussint4(x_s, self.gp_logS, self.gp_S)
 
         # calculate chi for the likelihood, where chi is defined as
         # chi = int int K(x, x') p(x) prior(x') dx dx'
-        chi_tl = self._small_chi_const(self.gp_logS)
+        chi_tl = self._gaussint5(self.gp_logS)
 
         # calculate Chi for the likelihood, where Chi is defined as
         # Chi_l = int int K(x_s, x) K(x, x') K(x', x_s) p(x)
         # prior(x') dx dx'
-        Chi_l_tl_l = self._big_chi_mat(x_s, self.gp_S, self.gp_logS)
+        Chi_l_tl_l = self._gaussint3(x_s, self.gp_S, self.gp_logS)
 
         # calculate Ups for the likelihood and the likelihood, where
         # Ups is defined as
         # Ups_s_s' = int K(x_s, x) K(x, x_s') prior(x) dx
-        Ups_tl_l = self._big_ups_mat(x_s, x_s, self.gp_logS, self.gp_S)
+        Ups_tl_l = self._gaussint2(x_s, x_s, self.gp_logS, self.gp_S)
 
         # compute int dx p(x) int dx' p(x') m_(l|s)(x)
         #               C_(tl|s)(x, x') m_(l|s)(x')
@@ -627,18 +654,18 @@ class BQ(object):
 
         # update ups for the likelihood, where ups is defined as
         # ups_s = int K(x, x_s)  prior(x) dx
-        ups_l_sa = self._small_ups_vec(x_sa, self.gp_S)
+        ups_l_sa = self._gaussint1(x_sa, self.gp_S)
         ups_inv_K_l_sa = dot(inv_K_l_sa, ups_l_sa).T
 
         # update Ups for delta & the likelihood, where Ups is defined as
         # Ups_s_s' = int K(x_s, x) K(x, x_s') prior(x) dx
-        Ups_sca_sa = self._big_ups_mat(x_sca, x_sa, self.gp_Dc, self.gp_S)
+        Ups_sca_sa = self._gaussint2(x_sca, x_sa, self.gp_Dc, self.gp_S)
 
         # update for the influence of the new observation at x_a on delta.
 
         # update ups for delta, where ups is defined as
         # ups_s = int K(x, x_s)  prior(x) dx
-        ups_del_sca = self._small_ups_vec(x_sca, self.gp_Dc)
+        ups_del_sca = self._gaussint1(x_sca, self.gp_Dc)
         ups_inv_K_del_sca = dot(inv_K_del_sca, ups_del_sca).T
 
         # delta will certainly be zero at x_a
