@@ -29,8 +29,31 @@ def memoprop(f):
 
 
 class GP(object):
+    """Gaussian Process object.
+
+    References
+    ----------
+    Rasmussen, C. E., & Williams, C. K. I. (2006). Gaussian processes
+        for machine learning. MIT Press.
+
+    """
 
     def __init__(self, K, x, y, s=0):
+        """Initialize the GP.
+
+        Parameters
+        ----------
+        K : function
+            Kernel function, which takes two vectors as input and returns
+            their inner product.
+        x : numpy.ndarray
+            Vector of input points
+        y : numpy.ndarray
+            Vector of input observations
+        s : number (default=0)
+            Observation noise parameter
+
+        """
         self._memoized = {}
         self.K = K
         self.x = x
@@ -44,6 +67,7 @@ class GP(object):
 
     @property
     def x(self):
+        """Vector of input points."""
         return self._x
 
     @x.setter
@@ -54,6 +78,7 @@ class GP(object):
 
     @property
     def y(self):
+        """Vector of input observations."""
         return self._y
 
     @y.setter
@@ -64,6 +89,7 @@ class GP(object):
 
     @property
     def s(self):
+        """Observation noise parameter."""
         return self._s
 
     @s.setter
@@ -73,6 +99,7 @@ class GP(object):
 
     @property
     def params(self):
+        """Kernel parameters."""
         return tuple(list(self.K.params) + [self._s])
 
     @params.setter
@@ -86,6 +113,13 @@ class GP(object):
 
     @memoprop
     def Kxx(self):
+        """The kernel covariance matrix:
+
+        $$K_{xx} = K(x, x') + s^2\delta(x-x'),$$
+
+        where $\delta$ is the Dirac delta function.
+
+        """
         x, s = self._x, self._s
         K = self.K(x, x)
         K += np.eye(x.size) * (s ** 2)
@@ -96,19 +130,23 @@ class GP(object):
 
     @memoprop
     def Lxx(self):
+        """Cholesky decomposition of K(x, x')"""
         return cholesky(self.Kxx)
 
     @memoprop
     def inv_Lxx(self):
+        """Inverse cholesky decomposition of K(x, x')"""
         return inv(self.Lxx)
 
     @memoprop
     def inv_Kxx(self):
+        """Inverse of K(x, x')"""
         Li = self.inv_Lxx
         return dot(Li.T, Li)
 
     @memoprop
     def inv_Kxx_y(self):
+        """Dot product of inv(K(x, x')) and y"""
         return dot(self.inv_Kxx, self._y)
 
     @memoprop
@@ -137,11 +175,12 @@ class GP(object):
 
     @property
     def lh(self):
-        return np.exp(self.log_lh)
+        """The likelihood of y given x and theta. See GP.log_lh"""
+        return exp(self.log_lh)
 
     @memoprop
     def dloglh_dtheta(self):
-        """Compute the partial derivative of the marginal log likelihood with
+        """The partial derivatives of the marginal log likelihood with
         respect to its parameters `\theta`.
 
         See Eq. 5.9 of Rasmussen & Williams (2006).
@@ -170,14 +209,14 @@ class GP(object):
         for i in xrange(dloglh.size):
             k = np.dot(Ki, dK_dtheta[i])
             t0 = 0.5 * dot(y.T, np.dot(k, self.inv_Kxx_y))
-            t1 = -0.5 * np.trace(k)
+            t1 = -0.5 * trace(k)
             dloglh[i] = t0 + t1
 
         return dloglh
 
     @memoprop
     def dlh_dtheta(self):
-        """Compute the partial derivative of the marginal likelihood with
+        """The partial derivatives of the marginal likelihood with
         respect to its parameters `\theta`.
 
         See Eq. 5.9 of Rasmussen & Williams (2006).
@@ -209,6 +248,11 @@ class GP(object):
 
     @memoprop
     def d2lh_dtheta2(self):
+        """The second partial derivatives of the marginal likelihood
+        with respect to its parameters `\theta`.
+
+        """
+
         y, x, K, Ki = self._y, self._x, self.Kxx, self.inv_Kxx
         Kiy = self.inv_Kxx_y
         nparam = len(self.params)
@@ -250,12 +294,29 @@ class GP(object):
         return d2lh
 
     def Kxoxo(self, xo):
+        """Kernel covariance matrix of new sample points xo:
+
+        K(xo, xo')
+
+        """
         return self.K(xo, xo)
 
     def Kxxo(self, xo):
+        """Kernel covariance matrix/vector between given points x and
+        new points xo:
+
+        K(x, xo)
+
+        """
         return self.K(self._x, xo)
 
     def Kxox(self, xo):
+        """Kernel covariance matrix/vector between given points x and
+        new points xo:
+
+        K(xo, x)
+
+        """
         return self.K(xo, self._x)
 
     def mean(self, xo):
@@ -264,6 +325,11 @@ class GP(object):
         This is computing Eq. 2.23 of Rasmussen & Williams (2006):
 
         $$\mathbf{m}=K(X_*, X)[K(X, X) + \sigma_n^2]^{-1}\mathbf{y}$$
+
+        References
+        ----------
+        Rasmussen, C. E., & Williams, C. K. I. (2006). Gaussian processes
+            for machine learning. MIT Press.
 
         """
         return dot(self.Kxox(xo), self.inv_Kxx_y)
@@ -274,6 +340,11 @@ class GP(object):
         This is computing Eq. 2.24 of Rasmussen & Williams (2006):
 
         $$\mathbf{C}=K(X_*, X_*) - K(X_*, X)[K(X, X) + \sigma_n^2]^{-1}K(X, X_*)$$
+
+        References
+        ----------
+        Rasmussen, C. E., & Williams, C. K. I. (2006). Gaussian processes
+            for machine learning. MIT Press.
 
         """
         Kxoxo = self.Kxoxo(xo)
