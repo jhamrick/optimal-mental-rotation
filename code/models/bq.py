@@ -420,7 +420,7 @@ class BQ(object):
         # scale.
         H_theta = self.gp_logS.d2lh_dtheta2
         # XXX: fix this slicing
-        Cw = np.array([[-1. / H_theta[1, 1]]])
+        Cw = np.diagflat(-1. / H_theta[1, 1])
         return Cw
 
     @property
