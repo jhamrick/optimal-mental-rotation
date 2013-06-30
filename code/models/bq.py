@@ -489,8 +489,7 @@ class BQ(object):
         term1 = E_m_l_C_tl_m_l
         term2 = 2*self.gamma * E_m_l_C_tl
         term3 = self.gamma**2 * E_C_tl
-        V_Z = term1 + term2 + term3
-        print V_Z
+        V_Z = sum(term1 + term2 + term3)
 
         ##############################################################
         ## Variance correction
@@ -500,19 +499,27 @@ class BQ(object):
         dK_const1, dK_const2 = self._dtheta_consts(x_s)
 
         ## First term of nu
-        term1a = mdot(alpha_l.T, int_K_tl_K_l_mat * dK_const1, alpha_tl)
+        term1a = sum(sum(
+            alpha_l[:, None, :, None] *
+            int_K_tl_K_l_mat[:, :, None, None] *
+            dK_const1 *
+            alpha_tl[None, :, None, :],
+            axis=0), axis=0)
         term1b = mdot(alpha_l.T, int_K_tl_K_l_mat, zeta, alpha_tl)
         term1 = term1a - term1b
 
         ## Second term of nu
-        term2a = mdot(int_K_tl_vec * dK_const2, alpha_tl)
+        term2a = sum(
+            int_K_tl_vec[:, None, None] *
+            dK_const2 *
+            alpha_tl[:, :, None],
+            axis=0)
         term2b = mdot(int_K_tl_vec, zeta, alpha_tl)
         term2 = term2a - term2b
 
-        nu = term1 + self.gamma*term2
+        nu = np.diag(term1 + self.gamma*term2)
         V_Z_correction = -mdot(nu, self.Cw, nu.T)
         V_Z += V_Z_correction
-        print V_Z
 
         return V_Z, V_Z
 
