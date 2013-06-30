@@ -8,7 +8,7 @@ from collections import OrderedDict
 from itertools import izip
 
 from snippets.safemath import EPS
-from gaussian_process import GP
+from gp import GP
 import kernels
 
 

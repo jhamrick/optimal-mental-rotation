@@ -1,12 +1,8 @@
 import numpy as np
-import scipy.stats
 
 from model_base import Model
-from gaussian_process import GP
 import bq
 reload(bq)
-
-from snippets.safemath import log_clip, safe_multiply
 
 
 class BayesianQuadratureModel(Model):
