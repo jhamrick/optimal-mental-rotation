@@ -1,4 +1,8 @@
 {
+    # stimuli and data directory names
+    stim_dir: ../stimuli-dev,
+    data_dir: ../data-dev,
+
     # number of vertices for each stimulus
     # if a tuple, it is the inclusive range of then number of 
     # possible vertices
@@ -16,7 +20,7 @@
     # the amount we rotate by
     dr: 11.25,
     # prior over angles
-    prior_R: 0.15915494309189535, 
+    prior_R: [3.141592653589793, 9.869604401089358],
     # data scale, to avoid underflow
     scale: 1,
     # stopping factor, in number of std. devs.
@@ -37,16 +41,23 @@
     # periodic scale
     p: 1,
     # type of kernel to use for bayesian quadrature
-    kernel: periodic,
+    kernel: gaussian,
     # number of tries to fit parameters in bayesian quadrature
     ntry_bq: 5,
     # minimum w value
     bq_wmin: 20,
     # maximum w value
     bq_wmax: 360,
+    # scaling value
+    gamma: 1,
 
     # example for 'notes' notebook
     example_hyp: 1,
     example_num: '001',
-    example_rot: '120'
+    example_rot: '120',
+
+    # for running tests
+    n_big_test_iters: 20,
+    n_small_test_iters: 5
 }
+

@@ -1,9 +1,10 @@
 import numpy as np
 
-from snippets.stats import GP
 from model_base import Model
-from kernel import KernelMLL
-from util import log_clip, safe_multiply
+from gaussian_process import GP
+import bq
+
+from snippets.safemath import log_clip, safe_multiply
 
 
 class BayesianQuadratureModel(Model):
@@ -30,7 +31,7 @@ class BayesianQuadratureModel(Model):
         ------------------------
         kernel : string
             Type of kernel to use, either 'gaussian' or 'periodic'
-        ntry : int (default=10)
+        ntry_bq : int (default=10)
             Number of optimizations to run
         s : float (default=0)
             Observation noise parameter value (if None, will be fit)
@@ -43,39 +44,17 @@ class BayesianQuadratureModel(Model):
 
         # default options
         self.opt = {
-            'ntry': 10,
+            'ntry_bq': 10,
             'kernel': 'periodic',
             'h': None,
             's': 0,
             'p': 1,
+            'gamma': 1,
         }
 
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
         self._dir = 0
         self._icurr = 0
-
-        # marginal log likelihood objects
-        self._mll_S = KernelMLL(
-            kernel=self.opt['kernel'],
-            h=self.opt['h'],
-            w=None,
-            s=self.opt['s'],
-            p=self.opt['p'],
-        )
-        self._mll_logS = KernelMLL(
-            kernel=self.opt['kernel'],
-            h=np.log(self.opt['h'] + 1) if self.opt.get('h', None) else None,
-            w=None,
-            s=self.opt['s'],
-            p=self.opt['p'],
-        )
-        self._mll_Dc = KernelMLL(
-            kernel=self.opt['kernel'],
-            h=None,
-            w=None,
-            s=self.opt['s'],
-            p=self.opt['p'],
-        )
 
     def next(self):
         """Sample the next point."""
@@ -108,7 +87,7 @@ class BayesianQuadratureModel(Model):
                 inext.append(p)
                 rnext.append(rp)
 
-        m = self.mu_logS
+        m = self.gp_logS.m
         C = self.S_cov
         nextvars = []
         nexti = []
@@ -199,37 +178,6 @@ class BayesianQuadratureModel(Model):
         self.fit()
         self.integrate()
 
-    def _fit_gp(self, Ri, Si, mll, name):
-        self.debug("Fitting parameters for GP over %s ..." % name, level=2)
-
-        # fit parameters
-        theta = mll.maximize(
-            Ri, Si,
-            ntry=self.opt['ntry'],
-            verbose=self.opt['verbose'] > 3,
-            wmin=np.radians(self.opt['bq_wmin']),
-            wmax=np.radians(self.opt['bq_wmax']))
-
-        self.debug("Best parameters: %s" % (theta,), level=2)
-        self.debug("Computing GP over %s..." % name, level=2)
-
-        # GP regression
-        kernel = mll.make_kernel(params=theta)
-        mu, cov = GP(kernel, Ri, Si, self.R)
-
-        return mu, cov, theta
-
-    def _candidate(self):
-        nc = len(self.ix) * 2
-        ideal = list(np.linspace(0, self.R.size, nc+1).astype('i8')[:-1])
-        for i in self.ix:
-            diff = np.abs(np.array(ideal) - i)
-            closest = np.argmin(diff)
-            if diff[closest] <= self.opt['dr']:
-                del ideal[closest]
-        c = sorted(ideal + self.ix)
-        return c
-
     def fit(self):
         """Run the GP regressions to fit the likelihood function.
 
@@ -248,54 +196,9 @@ class BayesianQuadratureModel(Model):
         self.ix = sorted(self.ix)
         self.Ri = self.R[self.ix].copy()
         self.Si = self.S[self.ix].copy()
-        lSi = np.log(self.Si + 1)
 
-        # compute GP regressions for S and log(S)
-        self.mu_S, self.cov_S, self.theta_S = self._fit_gp(
-            self.Ri, self.Si, self._mll_S, "S")
-        if ((self.mu_S + 1) <= 0).any():
-            print "Warning: regression for mu_S returned negative values"
-        self.mu_logS, self.cov_logS, self.theta_logS = self._fit_gp(
-            self.Ri, lSi, self._mll_logS, "log(S)")
-
-        # choose "candidate" points, halfway between given points
-        self.delta = self.mu_logS - np.log(self.mu_S + 1)
-        cix = self._candidate()
-        self.Rc = self.R[cix].copy()
-        self.Dc = self.delta[cix].copy()
-        # handle if some of the ycs are nan
-        if np.isnan(self.Dc).any():
-            goodidx = ~np.isnan(self.Dc)
-            self.Rc = self.Rc[goodidx]
-            self.Dc = self.Dc[goodidx]
-
-        # compute GP regression for Delta_c -- just use logS parameters
-        try:
-            self.mu_Dc, self.cov_Dc, self.theta_Dc = self._fit_gp(
-                self.Rc, self.Dc, self._mll_Dc, "Delta_c")
-        except RuntimeError:
-            Rc = list(self.Rc) + [2*np.pi]
-            Dc = list(self.Dc) + [self.Rc[0]]
-            self.mu_Dc = np.interp(self.R, Rc, Dc)
-            self.cov_Dc = np.zeros((self.mu_Dc.size, self.mu_Dc.size))
-            self.theta_Dc = None
-
-        # the final estimated mean of S
-        self.S_mean = ((self.mu_S + 1) * (1 + self.mu_Dc)) - 1
-
-        # marginalize out w
-        params = self._mll_logS.free_params(self.theta_logS)
-        if self._mll_logS.h is None:
-            ii = 1
-        else:
-            ii = 0
-        # estimate the variance
-        Hw = self._mll_logS.hessian(params, self.Ri, lSi)
-        Cw = np.matrix(np.exp(log_clip(-np.diag(Hw))[ii]))
-        dm_dw = np.matrix(
-            self._mll_logS.dm_dw(params, self.Ri, lSi, self.R))
-        self.S_cov = np.array(
-            self.cov_logS + np.dot(dm_dw.T, np.dot(Cw, dm_dw)))
+        self._bq = bq.BQ(self.R, self.S, self.ix, self.opt)
+        self.S_mean, self.S_cov = self._bq.fit()
         self.S_var = np.diag(self.S_cov)
 
     def integrate(self):
@@ -316,32 +219,6 @@ class BayesianQuadratureModel(Model):
             raise RuntimeError(
                 "S_mean or S_var is not set, did you call self.fit first?")
 
-        # mean
-        self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
-
-        # variance
-        pm = self.opt['prior_R'] * (self.S_mean + 1)
-        C = safe_multiply(self.S_cov, pm[:, None], pm[None, :])
-        C[np.abs(C) < 1e-100] = 0
-        upper = np.trapz(np.trapz(C, self.R, axis=0), self.R)
-
-        m = self.S_mean
-        m[m < 0] = 0
-        pm = self.opt['prior_R'] * m
-        C = safe_multiply(self.S_cov, pm[:, None], pm[None, :])
-        C[np.abs(C) < 1e-100] = 0
-        lower = np.trapz(np.trapz(C, self.R, axis=0), self.R)
-
-        self.Z_var = (lower, upper)
+        self.Z_mean = self._bq.mean
+        self.Z_var = self._bq.var
         self.print_Z(level=0)
-
-
-if __name__ == "__main__":
-    import util
-    import sys
-
-    # load options
-    opt = util.load_opt()
-
-    # run each stim
-    util.run_all(sys.argv[1:], BayesianQuadratureModel, opt)

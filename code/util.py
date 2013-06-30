@@ -2,15 +2,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.ndimage as nd
 import PIL
+import models
 import os
 import yaml
 
 from snippets.graphing import plot_to_array
-from snippets.safemath import MIN_LOG, MAX_LOG
-from snippets.safemath import log_clip, safe_multiply, safe_log
 
-STIM_DIR = "../stimuli-nips-2013"
-DATA_DIR = "../data-nips-2013"
+OPT_PATH = "options.yml"
+
+
+def load_opt():
+    with open(OPT_PATH, 'r') as fh:
+        opt = yaml.load(fh)
+    return opt
 
 
 def make_stimulus(npoints, rso):
@@ -145,120 +149,8 @@ def reflect_image(I):
     return rI
 
 
-def load_stimulus(stimname):
-    stimf = np.load(os.path.join(STIM_DIR, stimname + ".npz"))
-
-    # rotation
-    R = stimf['R']
-    theta = stimf['theta']
-    # shapes
-    Xm = stimf['Xm']
-    Xa = Xm[0]
-    Xb = stimf['Xb']
-    # observations
-    Im = stimf['Im']
-    Ia = Im[0]
-    Ib = stimf['Ib']
-
-    stimf.close()
-    return theta, Xa, Xb, Xm, Ia, Ib, Im, R
-
-
-def print_line(char='-', verbose=1):
-    if verbose > 0:
-        print "\n" + char*70
-
-
-def run_model(stim, model, opt):
-
-    modelname = model.__name__
-    name = "%s-%s.npz" % (modelname, stim)
-    datadir = os.path.join(DATA_DIR, modelname)
-    path = os.path.abspath(os.path.join(datadir, name))
-    lockfile = path + ".lock"
-
-    # skip this simulation, if it already exists
-    if os.path.exists(path) or os.path.exists(lockfile):
-        print_line(char='#')
-        print "'%s' exists, skipping" % path
-        return
-
-    print_line(char='#')
-    print "%s (%s)" % (stim, path)
-
-    # make the data directories if they don't exist
-    if not os.path.exists(datadir):
-        os.makedirs(datadir)
-
-    # create a lockfile
-    with open(lockfile, 'w') as fh:
-        fh.write("%s\n" % path)
-
-    # number of samples
-    nsamp = opt['nsamps']
-
-    # how many points were sampled
-    samps = np.zeros(nsamp)
-    # the estimate of Z
-    Z = np.empty((nsamp, 3))
-    # the likelihood ratio
-    ratio = np.empty((nsamp, 3))
-    # which hypothesis was accepted
-    hyp = np.empty(nsamp)
-
-    # load the stimulus
-    theta, Xa, Xb, Xm, Ia, Ib, Im, R = load_stimulus(stim)
-
-    for i in xrange(nsamp):
-        # run the model
-        m = model(Ia[i], Ib[i], Im[:, i], R, **opt)
-        m.run()
-
-        # fill in the data arrays
-        samps[i] = len(m.ix) / float(m._rotations.size)
-        Z[i, 0] = m.Z_mean
-        Z[i, 1:] = m.Z_var
-        ratio[i] = m.likelihood_ratio()
-        hyp[i] = m.ratio_test(level=10)
-
-    if os.path.exists(lockfile):
-        np.savez(
-            path,
-            samps=samps,
-            Z=Z,
-            ratio=ratio,
-            hyp=hyp
-        )
-
-        try:
-            # remove lockfile
-            os.remove(lockfile)
-        except OSError:
-            pass
-
-
-def run_all(stims, model, opt):
-    # get stimuli -- if none passed, then run all of them
-    if len(stims) == 0:
-        stims = find_stims()
-    # run each stim
-    for stim in stims:
-        run_model(stim, model, opt)
-
-
-def load_opt():
-    with open('options.yml', 'r') as fh:
-        opt = yaml.load(fh)
-    return opt
-
-
-def find_stims():
-    stims = sorted([os.path.splitext(x)[0] for x in os.listdir(STIM_DIR)])
-    return stims
-
-
-def compress_sims(name):
-    path = os.path.join(DATA_DIR, name)
+def compress_sims(name, data_dir):
+    path = os.path.join(data_dir, name)
     print "Compressing '%s'..." % path
     sims = sorted(os.listdir(path))
     nsim = len(sims)
@@ -293,7 +185,7 @@ def compress_sims(name):
         hyp[sidx] = data['hyp']
         data.close()
 
-    newpath = os.path.join(DATA_DIR, name + ".npz")
+    newpath = os.path.join(data_dir, name + ".npz")
     np.savez(
         newpath,
         stims=stims,
@@ -304,8 +196,8 @@ def compress_sims(name):
     print "-> Saved to '%s'" % newpath
 
 
-def load_sims(name):
-    path = os.path.join(DATA_DIR, name + '.npz')
+def load_sims(name, data_dir):
+    path = os.path.join(data_dir, name + '.npz')
     data = np.load(path)
     stims = data['stims']
     samps = data['samps']
@@ -314,3 +206,29 @@ def load_sims(name):
     hyp = data['hyp']
     data.close()
     return stims, samps, Z, ratio, hyp
+
+
+def rand_params(*args):
+    params = []
+    for param in args:
+        if param == 'h':
+            params.append(np.random.uniform(0, 2))
+        elif param == 'w':
+            params.append(np.random.uniform(np.pi / 32., np.pi / 2.))
+        elif param == 'p':
+            params.append(np.random.uniform(0.33, 3))
+        elif param == 's':
+            params.append(np.random.uniform(0, 0.5))
+    if len(params) == 1:
+        return params[0]
+    return tuple(params)
+
+
+def approx_deriv(y0, y1, dx):
+    dy = (y1 - y0) / 2.
+    return dy / dx
+
+run_model = models.tools.run_model
+run_all = models.tools.run_all
+load_stimulus = models.tools.load_stimulus
+find_stims = models.tools.find_stims

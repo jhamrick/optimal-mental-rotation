@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.misc
-import util
+import tools
 
 
 class Model(object):
@@ -50,6 +50,10 @@ class Model(object):
         # user overrides
         default_opt.update(opt)
         self.opt = default_opt
+
+        if len(self.opt['prior_R']) == 2:
+            mu, var = self.opt['prior_R']
+            self.opt['prior_R'] = scipy.stats.norm.pdf(R, mu, np.sqrt(var))
 
         # stimuli
         self.Xa = Xa.copy()
@@ -108,13 +112,13 @@ class Model(object):
 
     def run(self):
         verbose = self.opt['verbose']
-        util.print_line(verbose=verbose)
+        tools.print_line(verbose=verbose)
         for i in self:
-            util.print_line(verbose=verbose)
+            tools.print_line(verbose=verbose)
         if self.Ri is None or self.Si is None:
             self.fit()
             self.integrate()
-        util.print_line(char="#", verbose=verbose)
+        tools.print_line(char="#", verbose=verbose)
         self.print_Z()
         self.ratio_test()
 

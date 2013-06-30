@@ -2,7 +2,7 @@ import numpy as np
 import scipy.stats
 import pandas as pd
 import util
-import circstats as circ
+import snippets.circstats as circ
 
 from snippets.stats import xcorr
 
