@@ -429,6 +429,7 @@ class BQ(object):
         n, d = x_s.shape
 
         alpha_l = self.gp_S.inv_Kxx_y
+        alpha_tl = self.gp_logS.inv_Kxx_y
         inv_L_tl = self.gp_logS.inv_Lxx
         inv_K_tl = self.gp_logS.inv_Kxx
 
@@ -477,6 +478,30 @@ class BQ(object):
         term2 = 2*self.gamma * E_m_l_C_tl
         term3 = self.gamma**2 * E_C_tl
         V_Z = term1 + term2 + term3
+        print V_Z
+
+        ##############################################################
+        ## Variance correction
+
+        dK_tl_dw = self.gp_logS.K.dK_dw(x_s, x_s)
+        zeta = dot(inv_K_tl, dK_tl_dw)
+        dK_const1, dK_const2 = self._dtheta_consts(x_s)
+
+        ## First term of nu
+        term1a = mdot(alpha_l.T, int_K_tl_K_l_mat * dK_const1, alpha_tl)
+        term1b = mdot(alpha_l.T, int_K_tl_K_l_mat, zeta, alpha_tl)
+        term1 = term1a - term1b
+
+        ## Second term of nu
+        term2a = mdot(int_K_tl_vec * dK_const2, alpha_tl)
+        term2b = mdot(int_K_tl_vec, zeta, alpha_tl)
+        term2 = term2a - term2b
+
+        nu = term1 + self.gamma*term2
+        V_Z_correction = -mdot(nu, self.Cw, nu.T)
+        V_Z += V_Z_correction
+        print V_Z
+
         return V_Z, V_Z
 
     @property
