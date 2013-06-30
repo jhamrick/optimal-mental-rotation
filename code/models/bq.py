@@ -183,24 +183,36 @@ class BQ(object):
         return const
 
     def _dtheta_consts(self, x):
+        n, d = x.shape
         mu, L = self.opt['prior_R']
-        Wl = float(self.gp_S.K.w ** 2)
-        Wtl = float(self.gp_logS.K.w ** 2)
+        I = np.eye(d)
+        Wl = (self.gp_S.K.w ** 2) * I
+        Wtl = (self.gp_logS.K.w ** 2) * I
+        iWtl = inv(Wtl)
 
-        denom = (Wtl * L) + (Wl * L) + (Wl * Wtl)
-        C = Wtl * L / denom
-        Ct = Wl * L / denom
+        A = dot(L, inv(Wtl + L))
+        B = L - dot(A, L)
+        C = dot(B, inv(B + Wl))
+        CA = dot(C, A)
+        BCB = B - dot(C, B)
 
-        xsubmu = (x - mu)[None, :]
-        Dtheta_Ups_tl_l_const = (1. / Wtl) * (
-            L * (1 - C - Ct) +
-            (-(C * xsubmu) + ((1 - Ct) * xsubmu.T) ** 2))
+        xsubmu = x - mu
+        mat_const = np.empty((n, n, d, d))
+        vec_const = np.empty((n, d, d))
+        c = -0.5*iWtl
 
-        LLWtl = 1 - (L / (L + Wtl))
-        Dtheta_ups_tl_const = (1. / Wtl) * (
-            (L * LLWtl) + (LLWtl * xsubmu[0]) ** 2)
+        m1 = dot(A - I, xsubmu.T).T
+        m2a = dot(A - CA - I, xsubmu.T).T
+        m2b = dot(C, xsubmu.T).T
 
-        return Dtheta_Ups_tl_l_const, Dtheta_ups_tl_const
+        for i in xrange(n):
+            vec_const[i] = c * (I + dot(B - dot(m1[i], m1[i].T), iWtl))
+
+            for j in xrange(n):
+                m2 = m2a[i] + m2b[j]
+                mat_const[i, j] = c * (I + dot(BCB - dot(m2, m2.T), iWtl))
+
+        return mat_const, vec_const
 
     def _fit_gp(self, x, y, name, **kwargs):
         self.debug("Fitting parameters for GP over %s ..." % name, level=2)
