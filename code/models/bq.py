@@ -183,24 +183,36 @@ class BQ(object):
         return const
 
     def _dtheta_consts(self, x):
+        n, d = x.shape
         mu, L = self.opt['prior_R']
-        Wl = float(self.gp_S.K.w ** 2)
-        Wtl = float(self.gp_logS.K.w ** 2)
+        I = np.eye(d)
+        Wl = (self.gp_S.K.w ** 2) * I
+        Wtl = (self.gp_logS.K.w ** 2) * I
+        iWtl = inv(Wtl)
 
-        denom = (Wtl * L) + (Wl * L) + (Wl * Wtl)
-        C = Wtl * L / denom
-        Ct = Wl * L / denom
+        A = dot(L, inv(Wtl + L))
+        B = L - dot(A, L)
+        C = dot(B, inv(B + Wl))
+        CA = dot(C, A)
+        BCB = B - dot(C, B)
 
-        xsubmu = (x - mu)[None, :]
-        Dtheta_Ups_tl_l_const = (1. / Wtl) * (
-            L * (1 - C - Ct) +
-            (-(C * xsubmu) + ((1 - Ct) * xsubmu.T) ** 2))
+        xsubmu = x - mu
+        mat_const = np.empty((n, n, d, d))
+        vec_const = np.empty((n, d, d))
+        c = -0.5*iWtl
 
-        LLWtl = 1 - (L / (L + Wtl))
-        Dtheta_ups_tl_const = (1. / Wtl) * (
-            (L * LLWtl) + (LLWtl * xsubmu[0]) ** 2)
+        m1 = dot(A - I, xsubmu.T).T
+        m2a = dot(A - CA - I, xsubmu.T).T
+        m2b = dot(C, xsubmu.T).T
 
-        return Dtheta_Ups_tl_l_const, Dtheta_ups_tl_const
+        for i in xrange(n):
+            vec_const[i] = c * (I + dot(B - dot(m1[i], m1[i].T), iWtl))
+
+            for j in xrange(n):
+                m2 = m2a[i] + m2b[j]
+                mat_const[i, j] = c * (I + dot(BCB - dot(m2, m2.T), iWtl))
+
+        return mat_const, vec_const
 
     def _fit_gp(self, x, y, name, **kwargs):
         self.debug("Fitting parameters for GP over %s ..." % name, level=2)
@@ -408,7 +420,7 @@ class BQ(object):
         # scale.
         H_theta = self.gp_logS.d2lh_dtheta2
         # XXX: fix this slicing
-        Cw = np.array([[-1. / H_theta[1, 1]]])
+        Cw = np.diagflat(-1. / H_theta[1, 1])
         return Cw
 
     @property
@@ -429,6 +441,7 @@ class BQ(object):
         n, d = x_s.shape
 
         alpha_l = self.gp_S.inv_Kxx_y
+        alpha_tl = self.gp_logS.inv_Kxx_y
         inv_L_tl = self.gp_logS.inv_Lxx
         inv_K_tl = self.gp_logS.inv_Kxx
 
@@ -476,7 +489,38 @@ class BQ(object):
         term1 = E_m_l_C_tl_m_l
         term2 = 2*self.gamma * E_m_l_C_tl
         term3 = self.gamma**2 * E_C_tl
-        V_Z = term1 + term2 + term3
+        V_Z = sum(term1 + term2 + term3)
+
+        ##############################################################
+        ## Variance correction
+
+        dK_tl_dw = self.gp_logS.K.dK_dw(x_s, x_s)
+        zeta = dot(inv_K_tl, dK_tl_dw)
+        dK_const1, dK_const2 = self._dtheta_consts(x_s)
+
+        ## First term of nu
+        term1a = sum(sum(
+            alpha_l[:, None, :, None] *
+            int_K_tl_K_l_mat[:, :, None, None] *
+            dK_const1 *
+            alpha_tl[None, :, None, :],
+            axis=0), axis=0)
+        term1b = mdot(alpha_l.T, int_K_tl_K_l_mat, zeta, alpha_tl)
+        term1 = term1a - term1b
+
+        ## Second term of nu
+        term2a = sum(
+            int_K_tl_vec[:, None, None] *
+            dK_const2 *
+            alpha_tl[:, :, None],
+            axis=0)
+        term2b = mdot(int_K_tl_vec, zeta, alpha_tl)
+        term2 = term2a - term2b
+
+        nu = np.diag(term1 + self.gamma*term2)
+        V_Z_correction = -mdot(nu, self.Cw, nu.T)
+        V_Z += V_Z_correction
+
         return V_Z, V_Z
 
     @property
