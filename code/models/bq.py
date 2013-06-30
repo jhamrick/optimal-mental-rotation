@@ -424,7 +424,7 @@ class BQ(object):
         return Cw
 
     @property
-    def var2(self):
+    def var_approx(self):
         m_S = self.gp_S.mean(self.R) + self.gamma
         mCm = self.S_cov * m_S[:, None] * m_S[None, :]
         var_ev = self.E(self.E(mCm))
@@ -522,107 +522,6 @@ class BQ(object):
         V_Z += V_Z_correction
 
         return V_Z, V_Z
-
-    @property
-    def var3(self):
-        gamma = self.gamma
-
-        x_s = self.Ri
-        l_s = self.Si
-        tl_s = self.log_Si
-
-        inv_K_l = self.gp_S.inv_Kxx
-        inv_K_l_l = dot(inv_K_l, l_s)
-        inv_K_tl = self.gp_logS.inv_Kxx
-        inv_K_tl_tl = dot(inv_K_tl, tl_s)
-        R_tl = np.linalg.cholesky(self.gp_logS.Kxx)
-
-        # calculate ups for the likelihood, where ups is defined as
-        # ups_s = int K(x, x_s)  p(x) dx
-        ups_tl = self._gaussint1(x_s, self.gp_logS)
-
-        # calculate ups2 for the likelihood, where ups2 is defined as
-        # ups2_s = int int K(x, x') K(x', x_s) p(x) prior(x') dx dx'
-        ups2_l = self._gaussint4(x_s, self.gp_logS, self.gp_S)
-
-        # calculate chi for the likelihood, where chi is defined as
-        # chi = int int K(x, x') p(x) prior(x') dx dx'
-        chi_tl = self._gaussint5(self.gp_logS)
-
-        # calculate Chi for the likelihood, where Chi is defined as
-        # Chi_l = int int K(x_s, x) K(x, x') K(x', x_s) p(x)
-        # prior(x') dx dx'
-        Chi_l_tl_l = self._gaussint3(x_s, self.gp_S, self.gp_logS)
-
-        # calculate Ups for the likelihood and the likelihood, where
-        # Ups is defined as
-        # Ups_s_s' = int K(x_s, x) K(x, x_s') prior(x) dx
-        Ups_tl_l = self._gaussint2(x_s, x_s, self.gp_logS, self.gp_S)
-
-        # compute int dx p(x) int dx' p(x') m_(l|s)(x)
-        #               C_(tl|s)(x, x') m_(l|s)(x')
-        Ups_inv_K_tl_l = dot(Ups_tl_l, inv_K_l_l)
-        inv_R_Ups_inv_K_tl_l = dot(R_tl.T, Ups_inv_K_tl_l)
-        mCminty_l_tl_l = dot(
-            inv_K_l_l.T, dot(
-                Chi_l_tl_l, inv_K_l_l
-            )) - sum(inv_R_Ups_inv_K_tl_l ** 2)
-
-        # compute int dx p(x) int dx' p(x') C_(tl|s)(x, x') m_(l|s)(x')
-        ups_inv_K_tl = dot(inv_K_tl, ups_tl).T
-        Cminty_tl_l = (dot(ups2_l.T, inv_K_l_l) -
-                       dot(ups_inv_K_tl, Ups_inv_K_tl_l))
-
-        # compute the variance of int log_transform(l)(x) p(x) dx given l_s
-        Vinty_tl = chi_tl - dot(ups_inv_K_tl, ups_tl)
-
-        # variance of the evidence
-        var_ev = (gamma**2 * Vinty_tl +
-                  2*gamma * Cminty_tl_l +
-                  mCminty_l_tl_l)
-
-        ## now we account for our uncertainty in the log input scales
-
-        # the variances of our posteriors over our input scales. We assume the
-        # covariance matrix has zero off-diagonal elements; the posterior is
-        # spherical.
-        V_theta = self.Cw[0, 0]
-
-        # Dtheta_K_tl is the gradient of the Gaussian covariance over the
-        # transformed likelihood between x_s and x_s: each plate in the stack
-        # is the derivative with respect to a different log input scale
-        Dtheta_K_tl = self.gp_logS.K.dK_dw(x_s, x_s)
-
-        # compute mean of int tl(x) l(x) p(x) dx given l_s and tl_s
-        minty_tl_l = dot(inv_K_tl_tl.T, Ups_inv_K_tl_l)
-
-        # compute mean of int tl(x) p(x) dx given l_s and tl_s
-        minty_tl = dot(ups_tl.T, inv_K_tl_tl)
-
-        # Dtheta_Ups_tl_l is the modification of Ups_tl_l to allow for
-        # derivatives wrt log input scales: each plate in the stack is the
-        # derivative with respect to a different log input scale.
-        Dtheta_Ups_tl_l_const, Dtheta_ups_tl_const = self._dtheta_consts(x_s)
-        Dtheta_Ups_tl_l = Ups_tl_l * Dtheta_Ups_tl_l_const
-
-        # Dtheta_ups_tl is the modification of ups_tl to allow for
-        # derivatives wrt log input scales: each plate in the stack is the
-        # derivative with respect to a different log input scale.
-        Dtheta_ups_tl = ups_tl * Dtheta_ups_tl_const
-
-        line1 = -minty_tl_l - (gamma * minty_tl)
-        line2 = Ups_inv_K_tl_l.T + (gamma * ups_tl.T)
-        line3 = dot(dot(inv_K_tl, Dtheta_K_tl), inv_K_tl_tl)
-        line4 = dot(inv_K_l_l.T, dot(Dtheta_Ups_tl_l.T, inv_K_tl_tl))
-        line5 = gamma * dot(Dtheta_ups_tl.T, inv_K_tl_tl)
-
-        int_ml_Dtheta_mtl = line1 + dot(line2, line3) + line4 + line5
-
-        # Now perform the correction to our variance
-        var_ev_correction = (int_ml_Dtheta_mtl ** 2) * V_theta
-        var_ev += var_ev_correction
-
-        return var_ev, var_ev
 
     def expected_uncertainty_evidence(self, x_a):
         gamma = self.gamma
