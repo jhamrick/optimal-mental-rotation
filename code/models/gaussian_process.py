@@ -1,34 +1,75 @@
 import numpy as np
+import copy
 
 from numpy import dot, log, pi, exp, trace
-from numpy.linalg import inv
+from numpy.linalg import inv, cholesky
 
 
-def cholesky(mat):
-    m = np.mean(np.abs(mat))
-    try:
-        L = np.linalg.cholesky(mat)
-    except np.linalg.LinAlgError:
-        # matrix is singular, let's try adding some noise and see if
-        # we can invert it then
-        noise = np.random.normal(0, m * 1e-4, mat.shape)
-        try:
-            L = np.linalg.cholesky(mat + noise)
-        except np.linalg.LinAlgError:
-            raise np.linalg.LinAlgError(
-                "Could not compute Cholesky decomposition of "
-                "kernel matrix, even with jitter")
-    return L
+def memoprop(f):
+    """Memoized property.
+
+    When the property is accessed for the first time, the return value
+    is stored and that value is given on subsequent calls. The memoized
+    value can be cleared by calling 'del prop', where prop is the name
+    of the property.
+
+    """
+    fname = f.__name__
+
+    def fget(self):
+        if fname not in self._memoized:
+            self._memoized[fname] = f(self)
+        return self._memoized[fname]
+
+    def fdel(self):
+        del self._memoized[fname]
+
+    prop = property(fget=fget, fdel=fdel, doc=f.__doc__)
+    return prop
 
 
 class GP(object):
 
-    def __init__(self, K, x, y, xo, s=0):
+    def __init__(self, K, x, y, s=0):
+        self._memoized = {}
         self.K = K
         self.x = x
         self.y = y
-        self.xo = xo
         self.s = s
+
+    def copy(self):
+        new_gp = GP(self.K.copy(), self.x, self.y, s=self.s)
+        new_gp._memoized = copy.deepcopy(self._memoized)
+        return new_gp
+
+    @property
+    def x(self):
+        return self._x
+
+    @x.setter
+    def x(self, val):
+        assert val.ndim == 2, val.ndim
+        self._memoized = {}
+        self._x = val.copy()
+
+    @property
+    def y(self):
+        return self._y
+
+    @y.setter
+    def y(self, val):
+        assert val.ndim == 2, val.ndim
+        self._memoized = {}
+        self._y = val.copy()
+
+    @property
+    def s(self):
+        return self._s
+
+    @s.setter
+    def s(self, val):
+        self._memoized = {}
+        self._s = val
 
     @property
     def params(self):
@@ -38,127 +79,39 @@ class GP(object):
     def params(self, val):
         params = self.params
         if params[:-1] != val[:-1]:
+            self._memoized = {}
             self.K.params = val[:-1]
-            self._Kxx = None
-            self._inv_Kxx = None
-            self._Kxoxo = None
-            self._Kxxo = None
-            self._Kxox = None
-            self._m = None
-            self._C = None
         if params[-1] != val[-1]:
             self.s = val[-1]
 
-    @property
-    def x(self):
-        return self._x
-
-    @x.setter
-    def x(self, val):
-        self._Kxx = None
-        self._inv_Kxx = None
-        self._Kxxo = None
-        self._Kxox = None
-        self._m = None
-        self._C = None
-        self._x = val.copy()
-
-    @property
-    def xo(self):
-        return self._xo
-
-    @xo.setter
-    def xo(self, val):
-        self._Kxoxo = None
-        self._Kxxo = None
-        self._Kxox = None
-        self._m = None
-        self._C = None
-        self._xo = val.copy()
-
-    @property
-    def y(self):
-        return self._y
-
-    @y.setter
-    def y(self, val):
-        self._m = None
-        self._C = None
-        self._y = val.copy()
-
-    @property
-    def s(self):
-        return self._s
-
-    @s.setter
-    def s(self, val):
-        self._Kxx = None
-        self._m = None
-        self._C = None
-        self._s = val
-
-    @property
+    @memoprop
     def Kxx(self):
-        if self._Kxx is None:
-            self._Kxx = self.K(self._x, self._x)
-            self._Kxx += np.eye(self._x.size) * (self._s ** 2)
-            if np.isnan(self._Kxx).any():
-                print self.K.params
-                raise ArithmeticError("Kxx contains invalid values")
-        return self._Kxx
+        x, s = self._x, self._s
+        K = self.K(x, x)
+        K += np.eye(x.size) * (s ** 2)
+        if np.isnan(K).any():
+            print self.K.params
+            raise ArithmeticError("Kxx contains invalid values")
+        return K
 
-    @property
+    @memoprop
+    def Lxx(self):
+        return cholesky(self.Kxx)
+
+    @memoprop
+    def inv_Lxx(self):
+        return inv(self.Lxx)
+
+    @memoprop
     def inv_Kxx(self):
-        if self._inv_Kxx is None:
-            Li = inv(cholesky(self.Kxx))
-            self._inv_Kxx = dot(Li.T, Li)
-        return self._inv_Kxx
+        Li = self.inv_Lxx
+        return dot(Li.T, Li)
 
-    @property
-    def Kxoxo(self):
-        if self._Kxoxo is None:
-            self._Kxoxo = self.K(self._xo, self._xo)
-        return self._Kxoxo
+    @memoprop
+    def inv_Kxx_y(self):
+        return dot(self.inv_Kxx, self._y)
 
-    @property
-    def Kxxo(self):
-        if self._Kxxo is None:
-            self._Kxxo = self.K(self._x, self._xo)
-        return self._Kxxo
-
-    @property
-    def Kxox(self):
-        if self._Kxox is None:
-            self._Kxox = self.K(self._xo, self._x)
-        return self._Kxox
-
-    @property
-    def m(self):
-        """Predictive mean of the GP.
-
-        This is computing Eq. 2.23 of Rasmussen & Williams (2006):
-
-        $$\mathbf{m}=K(X_*, X)[K(X, X) + \sigma_n^2]^{-1}\mathbf{y}$$
-
-        """
-        if self._m is None:
-            Ki, y = self.inv_Kxx, self._y
-            self._m = dot(self.Kxox, dot(Ki, y))
-        return self._m
-
-    @property
-    def C(self):
-        """Predictive covariance of the GP.
-
-        This is computing Eq. 2.24 of Rasmussen & Williams (2006):
-
-        $$\mathbf{C}=K(X_*, X_*) - K(X_*, X)[K(X, X) + \sigma_n^2]^{-1}K(X, X_*)$$
-
-        """
-        if self._C is None:
-            self._C = self.Kxoxo - dot(self.Kxox, dot(self.inv_Kxx, self.Kxxo))
-        return self._C
-
+    @memoprop
     def log_lh(self):
         """The log likelihood of y given x and theta.
 
@@ -167,26 +120,26 @@ class GP(object):
         $$\log{p(\mathbf{y} | X \mathbf{\theta})} = -\frac{1}{2}\mathbf{y}^\top K_y^{-1}\mathbf{y} - \frac{1}{2}\log{|K_y|}-\frac{n}{2}\log{2\pi}$$
 
         """
-
         y, K = self._y, self.Kxx
         sign, logdet = np.linalg.slogdet(K)
         if sign != 1:
             return -np.inf
-
         try:
-            Ki = self.inv_Kxx
+            Kiy = self.inv_Kxx_y
         except np.linalg.LinAlgError:
             return -np.inf
 
-        data_fit = -0.5 * dot(y.T, dot(Ki, y))
+        data_fit = -0.5 * dot(y.T, Kiy)
         complexity_penalty = -0.5 * logdet
         constant = -0.5 * y.size * log(2 * pi)
         llh = data_fit + complexity_penalty + constant
         return llh
 
+    @property
     def lh(self):
-        return np.exp(self.log_lh())
+        return np.exp(self.log_lh)
 
+    @memoprop
     def dloglh_dtheta(self):
         """Compute the partial derivative of the marginal log likelihood with
         respect to its parameters `\theta`.
@@ -216,12 +169,13 @@ class GP(object):
         dloglh = np.empty(nparam)
         for i in xrange(dloglh.size):
             k = np.dot(Ki, dK_dtheta[i])
-            t0 = 0.5 * dot(y.T, np.dot(k, np.dot(Ki, y)))
+            t0 = 0.5 * dot(y.T, np.dot(k, self.inv_Kxx_y))
             t1 = -0.5 * np.trace(k)
             dloglh[i] = t0 + t1
 
         return dloglh
 
+    @memoprop
     def dlh_dtheta(self):
         """Compute the partial derivative of the marginal likelihood with
         respect to its parameters `\theta`.
@@ -236,14 +190,14 @@ class GP(object):
         """
 
         x, y, K, Ki = self._x, self._y, self.Kxx, self.inv_Kxx
+        Kiy = self.inv_Kxx_y
         nparam = len(self.params)
 
         dK_dtheta = np.empty((nparam, y.size, y.size))
         dK_dtheta[:-1] = self.K.jacobian(x, x)
         dK_dtheta[-1] = np.eye(y.size) * 2 * self._s
 
-        lh = self.lh()
-        Kiy = dot(Ki, y)
+        lh = self.lh
         dlh = np.empty(nparam)
         for i in xrange(dlh.size):
             KidK = dot(Ki, dK_dtheta[i])
@@ -253,8 +207,10 @@ class GP(object):
 
         return dlh
 
+    @memoprop
     def d2lh_dtheta2(self):
         y, x, K, Ki = self._y, self._x, self.Kxx, self.inv_Kxx
+        Kiy = self.inv_Kxx_y
         nparam = len(self.params)
 
         # first kernel derivatives
@@ -269,12 +225,9 @@ class GP(object):
         d2K[-1, -1] = np.eye(y.size) * 2
 
         # likelihood
-        lh = self.lh()
+        lh = self.lh
         # first derivative of the likelihood
-        dlh = self.dlh_dtheta()
-
-        yKi = dot(y.T, Ki)
-        Kiy = dot(Ki, y)
+        dlh = self.dlh_dtheta
 
         d2lh = np.empty((nparam, nparam))
         for i in xrange(nparam):
@@ -286,8 +239,8 @@ class GP(object):
                 dKi_jdK_i = dot(dKi[j], dK[i])
                 d_ydKi_iy = (
                     dot(y.T, dot(dKi_jdK_i, Kiy)) +
-                    dot(yKi, dot(d2K[i, j], Kiy)) +
-                    dot(yKi, dot(dK[i], dot(dKi[j], y))))
+                    dot(Kiy.T, dot(d2K[i, j], Kiy)) +
+                    dot(Kiy.T, dot(dK[i], dot(dKi[j], y))))
                 d_tr = trace(dKi_jdK_i + dot(Ki, d2K[i, j]))
 
                 t0 = dlh[j] * ydKi_iy_tr
@@ -296,14 +249,34 @@ class GP(object):
 
         return d2lh
 
-    def copy(self):
-        new_gp = GP(self.K.copy(), self.x, self.y, self.xo)
-        copy = lambda x: None if x is None else x.copy()
-        new_gp._Kxx = copy(self._Kxx)
-        new_gp._inv_Kxx = copy(self._inv_Kxx)
-        new_gp._Kxoxo = copy(self._Kxoxo)
-        new_gp._Kxxo = copy(self._Kxxo)
-        new_gp._Kxox = copy(self._Kxox)
-        new_gp._m = copy(self._m)
-        new_gp._C = copy(self._C)
-        return new_gp
+    def Kxoxo(self, xo):
+        return self.K(xo, xo)
+
+    def Kxxo(self, xo):
+        return self.K(self._x, xo)
+
+    def Kxox(self, xo):
+        return self.K(xo, self._x)
+
+    def mean(self, xo):
+        """Predictive mean of the GP.
+
+        This is computing Eq. 2.23 of Rasmussen & Williams (2006):
+
+        $$\mathbf{m}=K(X_*, X)[K(X, X) + \sigma_n^2]^{-1}\mathbf{y}$$
+
+        """
+        return dot(self.Kxox(xo), self.inv_Kxx_y)
+
+    def cov(self, xo):
+        """Predictive covariance of the GP.
+
+        This is computing Eq. 2.24 of Rasmussen & Williams (2006):
+
+        $$\mathbf{C}=K(X_*, X_*) - K(X_*, X)[K(X, X) + \sigma_n^2]^{-1}K(X, X_*)$$
+
+        """
+        Kxoxo = self.Kxoxo(xo)
+        Kxox = self.Kxox(xo)
+        Kxxo = self.Kxxo(xo)
+        return Kxoxo - dot(Kxox, dot(self.inv_Kxx, Kxxo))
