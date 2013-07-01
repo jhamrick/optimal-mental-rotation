@@ -107,7 +107,7 @@ class BQ(object):
         mu, cov = self.opt['prior_R']
         h = gp.K.h ** 2
         W = (np.array(gp.K.w) * np.eye(d)) ** 2
-        vec = h * exp(mvn_logpdf(x, mu, cov + W))
+        vec = h * exp(mvn_logpdf(x, mu, cov + W))[None]
         return vec
 
     def _gaussint2(self, x1, x2, gp1, gp2):
@@ -386,27 +386,15 @@ class BQ(object):
 
     ##################################################################
     # Variance
-    @property
-    def dm_dw(self):
+    def dm_dw(self, x):
         """Compute the partial derivative of a GP mean with respect to
         w, the input scale parameter.
 
-        The analytic form is:
-        $\frac{\partial K(x_*, x)}{\partial w}K_y^{-1}\mathbf{y} - K(x_*, x)K_y^{-1}\frac{\partial K(x, x)}{\partial w}K_y^{-1}\mathbf{y}$
-
-        Where $K_y=K(x, x) + s^2I$
-
         """
-
-        x, x_s = self.R, self.Ri
-        inv_Kxx = self.gp_logS.inv_Kxx
-        Kxox = self.gp_logS.Kxox(x)
-        dKxox_dw = self.gp_logS.K.dK_dw(x, x_s)
-        dKxx_dw = self.gp_logS.K.dK_dw(x_s, x_s)
-        inv_dKxx_dw = mdot(inv_Kxx, dKxx_dw, inv_Kxx)
-        dm_dw = (mdot(dKxox_dw, inv_Kxx, self.log_Si) -
-                 mdot(Kxox, inv_dKxx_dw, self.log_Si))
-        return dm_dw[:, None]
+        dm_dtheta = self.gp_logS.dm_dtheta(x)
+        # XXX: fix this slicing
+        dm_dw = dm_dtheta[1]
+        return dm_dw
 
     @property
     def Cw(self):
@@ -510,7 +498,7 @@ class BQ(object):
 
         ## Second term of nu
         term2a = sum(
-            int_K_tl_vec[:, None, None] *
+            int_K_tl_vec.T[:, :, None] *
             dK_const2 *
             alpha_tl[:, :, None],
             axis=0)
@@ -521,123 +509,83 @@ class BQ(object):
         V_Z_correction = -mdot(nu, self.Cw, nu.T)
         V_Z += V_Z_correction
 
-        return V_Z, V_Z
+        return V_Z
 
     def expected_uncertainty_evidence(self, x_a):
-        gamma = self.gamma
+        x_s = self.Ri[:, None]
+        xc = self.Rc[:, None]
 
-        x_s = self.Ri
-        xc = self.Rc
-        x_sa = np.array(list(x_s) + [x_a])
-        x_sca = np.array(list(xc) + [x_a])
-        l_s = self.Si
-        tl_s = self.log_Si
-
-        K_l = self.gp_S.K
-        K_tl = self.gp_logS.K
-        K_del = self.gp_Dc.K
-
-        inv_K_tl = self.gp_logS.inv_Kxx
-        inv_K_tl_s = dot(inv_K_tl, tl_s)
-        K_tl_s_a = K_tl(x_s, np.array([x_a]))[:, 0]
-
-        inv_R_tl_s = self.gp_logS.inv_Lxx
-
-        # compute predictive mean for transformed likelihood, given
-        # zero prior mean
-        tm_a = dot(K_tl_s_a.T, inv_K_tl_s)
-
-        # compute predictive variance for transformed likelihood,
-        # given zero prior mean
-        inv_R_K_tl_s_a = dot(inv_R_tl_s, K_tl_s_a)
-        C = K_tl(np.zeros(1), np.zeros(1))[0, 0]
-        tv_a = C - sum(inv_R_K_tl_s_a ** 2)
-        if tv_a < 0:
-            tv_a = EPS
-
-        # we correct for the impact of learning this new hyperparameter sample,
-        # r_a, on our belief about the log input scales
-
-        # Dtheta_K_tl_a_s is the gradient of the tl Gaussian covariance over
-        # the transformed likelihood between x_a and x_s: each plate in the
-        # stack is the derivative with respect to a different log input scale
-        Dtheta_K_tl_s = K_tl.dK_dw(x_s, x_s)
-        Dtheta_K_tl_a_s = K_tl.dK_dw(x_s, np.array([x_a]))[:, 0]
-
-        K_inv_K_tl_a_s = dot(inv_R_tl_s, inv_R_K_tl_s_a).T
-
-        # gradient of the mean of the log-likelihood at the added point wrt the
-        # log-input scales
-        Dtheta_tm_a = (dot(Dtheta_K_tl_a_s.T, inv_K_tl_s) -
-                       dot(K_inv_K_tl_a_s,
-                           dot(Dtheta_K_tl_s, inv_K_tl_s)))
-
-        # Now perform the correction to our predictive variance
-        V_theta = self.Cw[0, 0]
-        tv_a += (Dtheta_tm_a ** 2) * V_theta
-
-        # we update the covariance matrix over the likelihood
-        K_l_sa = K_l(x_sa, x_sa)
-        try:
-            inv_K_l_sa = inv(K_l_sa)
-        except np.linalg.LinAlgError:
+        if (x_s == x_a).all(axis=1).any():
             return 0
 
-        # we update the covariance matrix over delta
-        K_del_sca = K_del(x_sca, x_sca)
-        try:
-            inv_K_del_sca = inv(K_del_sca)
-        except np.linalg.LinAlgError:
-            return 0
+        # compute expected transformed mean
+        tm_a = self.gp_logS.mean(x_a)
 
-        # Now we compute the new rows and columns of Ups and ups
-        # matrices required to evaluate the sqd mean evidence after
-        # adding this new trial sample
-        # ======================================================
+        # compute expected transformed covariance
+        dm_dw = self.dm_dw(x_a)
+        Cw = self.Cw
+        tC_a = self.gp_logS.cov(x_a) + mdot(dm_dw, Cw, dm_dw.T)
 
-        # update ups for the likelihood, where ups is defined as
-        # ups_s = int K(x, x_s)  prior(x) dx
-        ups_l_sa = self._gaussint1(x_sa, self.gp_S)
-        ups_inv_K_l_sa = dot(inv_K_l_sa, ups_l_sa).T
+        #####
 
-        # update Ups for delta & the likelihood, where Ups is defined as
-        # Ups_s_s' = int K(x_s, x) K(x, x_s') prior(x) dx
-        Ups_sca_sa = self._gaussint2(x_sca, x_sa, self.gp_Dc, self.gp_S)
+        # include new x_a
+        x_sa = np.concatenate([x_s, x_a], axis=0)
+        if not (x_a == xc).all(axis=1).any():
+            x_sca = np.concatenate([xc, x_a], axis=0)
+        else:
+            x_sca = xc
+        l_a = self.gp_S.mean(x_a)
+        l_s = self.Si[:, None]
+        l_sa = np.concatenate([l_s, l_a])
+        del_sc = self.Dc[:, None]
+        del_sca = np.concatenate([del_sc, np.zeros((1, 1))])
 
-        # update for the influence of the new observation at x_a on delta.
+        # update gp over S
+        gp_Sa = self.gp_S.copy()
+        gp_Sa.x = x_sa
+        gp_Sa.y = l_sa
+        inv_K_l = gp_Sa.inv_Kxx
 
-        # update ups for delta, where ups is defined as
-        # ups_s = int K(x, x_s)  prior(x) dx
-        ups_del_sca = self._gaussint1(x_sca, self.gp_Dc)
-        ups_inv_K_del_sca = dot(inv_K_del_sca, ups_del_sca).T
+        # update gp over delta
+        gp_Dca = self.gp_Dc.copy()
+        gp_Dca.x = x_sca
+        gp_Dca.y = del_sca
+        alpha_del = gp_Dca.inv_Kxx_y
 
-        # delta will certainly be zero at x_a
-        del_sca = np.concatenate([self.Dc, np.zeros(1)])
+        # compute constants
 
-        del_inv_K = dot(inv_K_del_sca, del_sca).T
-        del_inv_K_Ups_inv_K_l_sa = dot(
-            del_inv_K, dot(inv_K_l_sa, Ups_sca_sa.T).T)
+        ## First term
+        # int K_l(x, x_s) p(x) dx inv(K_l(x_s, x_s))
+        int_K_l = self._gaussint1(x_sa, gp_Sa)
+        A = dot(int_K_l, inv_K_l)
 
-        # mean of int delta(x) p(x) dx given del_sca
-        minty_del = dot(ups_inv_K_del_sca, del_sca)
+        ## Second term
+        # alpha_del(x_sc)' *
+        # int K_del(x_sc, x) K_l(x, x_s) p(x) dx *
+        # inv(K_l(x_s, x_s))
+        int_K_del_K_l = self._gaussint2(x_sca, x_sa, gp_Dca, gp_Sa)
+        B = mdot(alpha_del.T, int_K_del_K_l, inv_K_l)
 
-        # Now we finish up by subtracting the expected squared mean from the
-        # previously computed second moment
-        # ======================================================
+        ## Third term
+        # (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
+        int_K_del = self._gaussint1(x_sca, gp_Dca)
+        C = dot(int_K_del, alpha_del)
 
-        # nlsa is the vector of weights, which, when multipled with the
-        # likelihoods, gives us our mean estimate for the evidence
-        nlsa = del_inv_K_Ups_inv_K_l_sa + ups_inv_K_l_sa
-        nla = nlsa[-1]
-        nls = dot(nlsa[:-1], l_s) + (gamma * minty_del)
+        # nlsa is the vector of weights, which, when multipled with
+        # the likelihoods, gives us our mean estimate for the evidence
+        nlsa = A + B
+        assert nlsa.shape[0] == 1
+        nla = nlsa[0, [-1]]
+        nls = dot(nlsa[0, :-1], l_s) + self.gamma * C
 
-        e = exp(tm_a + 0.5 * tv_a)
-        e2 = exp(2*tm_a + 2*tv_a)
+        e = tm_a + 0.5*tC_a
+        e2 = 2*tm_a + 2*tC_a
 
-        term1 = nls ** 2
-        term2 = 2 * nls * nla * gamma * (e - 1)
-        term3 = (nla * gamma) ** 2 * (e2 - 2*e + 1)
+        nls2 = nls ** 2
+        nlsnla = 2*nls*nla * self.gamma * (e - 1)
+        nla2 = (nla * self.gamma) ** 2 * (e2 - 2*e + 1)
 
-        unscaled_xpc_sqd_mean = term1 + term2 + term3
-        xpc_unc = -unscaled_xpc_sqd_mean
+        xpc_sqd_mean = nls2 + nlsnla + nla2
+        mean_second_moment = self.mean**2 + self.var
+        xpc_unc = mean_second_moment - xpc_sqd_mean
         return xpc_unc
