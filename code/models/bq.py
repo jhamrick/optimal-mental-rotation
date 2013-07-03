@@ -8,7 +8,7 @@ from collections import OrderedDict
 from itertools import izip
 
 from snippets.safemath import EPS
-from gp import GP
+from gp import GP, memoprop
 import kernels
 
 
@@ -46,6 +46,8 @@ class BQ(object):
     """
 
     def __init__(self, R, S, ix, opt):
+        self._memoized = {}
+
         self.opt = opt
         self.gamma = self.opt['gamma']
 
@@ -108,6 +110,7 @@ class BQ(object):
         h = gp.K.h ** 2
         W = (np.array(gp.K.w) * np.eye(d)) ** 2
         vec = h * exp(mvn_logpdf(x, mu, cov + W))[None]
+        assert vec.shape == (1, n)
         return vec
 
     def _gaussint2(self, x1, x2, gp1, gp2):
@@ -129,6 +132,7 @@ class BQ(object):
         ], axis=0)
 
         mat = ha * hb * exp(mvn_logpdf(x, m, C))
+        assert mat.shape == (n1, n2)
         return mat
 
     def _gaussint3(self, x, gp1, gp2):
@@ -152,6 +156,7 @@ class BQ(object):
             Z=np.linalg.slogdet(C)[1] * -0.5))
 
         mat = ha**2 * hb * N2 * N1[:, None] * N1[None, :]
+        assert mat.shape == (n, n)
         return mat
 
     def _gaussint4(self, x, gp1, gp2):
@@ -169,17 +174,18 @@ class BQ(object):
         N0 = exp(mvn_logpdf(np.zeros(d), np.zeros(d), C0))
         N1 = exp(mvn_logpdf(x, mu, C1))
 
-        vec = ha * hb * N0 * N1
+        vec = (ha * hb * N0 * N1)[None]
+        assert vec.shape == (1, n)
         return vec
 
     def _gaussint5(self, d, gp):
         mu, cov = self.opt['prior_R']
         h = gp.K.h ** 2
         W = (np.array(gp.K.w) * np.eye(d)) ** 2
-        const = h * exp(mvn_logpdf(
+        const = float(h * exp(mvn_logpdf(
             np.zeros(d),
             np.zeros(d),
-            W + 2*cov))
+            W + 2*cov)))
         return const
 
     def _dtheta_consts(self, x):
@@ -197,8 +203,8 @@ class BQ(object):
         BCB = B - dot(C, B)
 
         xsubmu = x - mu
-        mat_const = np.empty((n, n, d, d))
-        vec_const = np.empty((n, d, d))
+        mat_const = np.empty((n, n, d))
+        vec_const = np.empty((n, d))
         c = -0.5*iWtl
 
         m1 = dot(A - I, xsubmu.T).T
@@ -206,20 +212,18 @@ class BQ(object):
         m2b = dot(C, xsubmu.T).T
 
         for i in xrange(n):
-            vec_const[i] = c * (I + dot(B - dot(m1[i], m1[i].T), iWtl))
+            vec_const[i] = np.diag(
+                c * (I + dot(B - dot(m1[i], m1[i].T), iWtl)))
 
             for j in xrange(n):
                 m2 = m2a[i] + m2b[j]
-                mat_const[i, j] = c * (I + dot(BCB - dot(m2, m2.T), iWtl))
+                mat_const[i, j] = np.diag(
+                    c * (I + dot(BCB - dot(m2, m2.T), iWtl)))
 
         return mat_const, vec_const
 
     def _fit_gp(self, x, y, name, **kwargs):
         self.debug("Fitting parameters for GP over %s ..." % name, level=2)
-
-        # parameters / options
-        ntry = self.opt['ntry_bq']
-        verbose = self.opt['verbose'] > 3
 
         # default parameter values
         default = self.default_params.copy()
@@ -304,6 +308,7 @@ class BQ(object):
         """
 
         self.debug("Fitting likelihood")
+        self._memoized = {}
 
         Ri = self.Ri[:, None]
         Si = self.Si[:, None]
@@ -324,6 +329,7 @@ class BQ(object):
         mls = self.gp_logS.mean(self.R)[:, 0]
         lms = self.log_transform(self._S0)
         self.delta = mls - lms
+        self.delta[self.ix] = 0
         self.choose_candidates()
 
         Rc = self.Rc[:, None]
@@ -337,7 +343,7 @@ class BQ(object):
 
         # the estimated variance of S
         C_logS = self.gp_logS.cov(self.R)
-        dm_dw, Cw = self.dm_dw, self.Cw
+        dm_dw, Cw = self.dm_dw, self.Cw(self.gp_logS)
         self.S_cov = C_logS# + mdot(dm_dw, Cw, dm_dw.T)
         self.S_cov[np.abs(self.S_cov) < np.sqrt(EPS)] = EPS
 
@@ -345,25 +351,29 @@ class BQ(object):
 
     ##################################################################
     # Mean
-    @property
+    @memoprop
     def mean_approx(self):
         m_Z = self.E(self.S_mean)
         return m_Z
 
-    @property
+    @memoprop
     def mean(self):
-        # values for the GP over l(x)
         x_s = self.gp_S.x
+        x_sc = self.gp_Dc.x
+        ns, d = x_s.shape
+        nc, d = x_sc.shape
+
+        # values for the GP over l(x)
         alpha_l = self.gp_S.inv_Kxx_y
 
         # values for the GP of Delta(x)
-        x_sc = self.gp_Dc.x
         alpha_del = self.gp_Dc.inv_Kxx_y
 
         ## First term
         # E[m_l | x_s] = (int K_l(x, x_s) p(x) dx) alpha_l(x_s)
         int_K_l = self._gaussint1(x_s, self.gp_S)
-        E_m_l = dot(int_K_l, alpha_l)
+        E_m_l = float(dot(int_K_l, alpha_l))
+        assert E_m_l > 0
 
         ## Second term
         # E[m_l*m_del | x_s, x_c] = alpha_del(x_sc)' *
@@ -371,17 +381,17 @@ class BQ(object):
         #     alpha_l(x_s)
         int_K_del_K_l = self._gaussint2(
             x_sc, x_s, self.gp_Dc, self.gp_S)
-        E_m_l_m_del = mdot(alpha_del.T,
-                           int_K_del_K_l,
-                           alpha_l)
+        E_m_l_m_del = float(mdot(
+            alpha_del.T, int_K_del_K_l, alpha_l))
 
         ## Third term
         # E[m_del | x_sc] = (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
         int_K_del = self._gaussint1(x_sc, self.gp_Dc)
-        E_m_del = dot(int_K_del, alpha_del)
+        E_m_del = float(dot(int_K_del, alpha_del))
 
         # put the three terms together
         m_Z = E_m_l + E_m_l_m_del + self.gamma*E_m_del
+
         return m_Z
 
     ##################################################################
@@ -396,8 +406,7 @@ class BQ(object):
         dm_dw = dm_dtheta[1]
         return dm_dw
 
-    @property
-    def Cw(self):
+    def Cw(self, gp):
         """The variances of our posteriors over our input scale. We assume the
         covariance matrix has zero off-diagonal elements; the posterior
         is spherical.
@@ -406,12 +415,12 @@ class BQ(object):
         # H_theta is the diagonal of the hessian of the likelihood of
         # the GP over the log-likelihood with respect to its log input
         # scale.
-        H_theta = self.gp_logS.d2lh_dtheta2
+        H_theta = gp.d2lh_dtheta2
         # XXX: fix this slicing
         Cw = np.diagflat(-1. / H_theta[1, 1])
         return Cw
 
-    @property
+    @memoprop
     def var_approx(self):
         m_S = self.gp_S.mean(self.R) + self.gamma
         mCm = self.S_cov * m_S[:, None] * m_S[None, :]
@@ -422,11 +431,11 @@ class BQ(object):
             raise RuntimeError('variance of evidence negative')
         return var_ev, var_ev
 
-    @property
+    @memoprop
     def var(self):
         # values for the GPs over l(x) and log(l(x))
         x_s = self.gp_S.x
-        n, d = x_s.shape
+        ns, d = x_s.shape
 
         alpha_l = self.gp_S.inv_Kxx_y
         alpha_tl = self.gp_logS.inv_Kxx_y
@@ -445,9 +454,10 @@ class BQ(object):
             x_s, self.gp_S, self.gp_logS)
         int_K_tl_K_l_mat = self._gaussint2(x_s, x_s, self.gp_logS, self.gp_S)
         beta = mdot(inv_L_tl, int_K_tl_K_l_mat, alpha_l)
-        alpha_int_alpha = mdot(alpha_l.T, int_K_l_K_tl_K_l, alpha_l)
         beta2 = dot(beta.T, beta)
-        E_m_l_C_tl_m_l = alpha_int_alpha - beta2
+        alpha_int_alpha = mdot(alpha_l.T, int_K_l_K_tl_K_l, alpha_l)
+        E_m_l_C_tl_m_l = float(alpha_int_alpha - beta2)
+        assert E_m_l_C_tl_m_l > 0
 
         ## Second term
         # E[m_l C_tl | x_s] =
@@ -460,7 +470,8 @@ class BQ(object):
         int_K_tl_K_l_vec = self._gaussint4(x_s, self.gp_logS, self.gp_S)
         int_K_tl_vec = self._gaussint1(x_s, self.gp_logS)
         int_inv_int = mdot(int_K_tl_vec, inv_K_tl, int_K_tl_K_l_mat)
-        E_m_l_C_tl = dot(int_K_tl_K_l_vec - int_inv_int, alpha_l)
+        E_m_l_C_tl = float(dot(int_K_tl_K_l_vec - int_inv_int, alpha_l))
+        assert E_m_l_C_tl > 0
 
         ## Third term
         # E[C_tl | x_s] =
@@ -472,12 +483,14 @@ class BQ(object):
         # Where eta is defined as:
         # eta(x_s) = inv(L_tl(x_s, x_s)) int K_tl(x_s, x) p(x) dx
         int_K_tl_scalar = self._gaussint5(d, self.gp_logS)
-        E_C_tl = int_K_tl_scalar - mdot(int_K_tl_vec, inv_K_tl, int_K_tl_vec.T)
+        int_inv_int_tl = mdot(int_K_tl_vec, inv_K_tl, int_K_tl_vec.T)
+        E_C_tl = float(int_K_tl_scalar - int_inv_int_tl)
+        assert E_C_tl > 0
 
         term1 = E_m_l_C_tl_m_l
         term2 = 2*self.gamma * E_m_l_C_tl
         term3 = self.gamma**2 * E_C_tl
-        V_Z = sum(term1 + term2 + term3)
+        V_Z = term1 + term2 + term3
 
         ##############################################################
         ## Variance correction
@@ -486,106 +499,124 @@ class BQ(object):
         zeta = dot(inv_K_tl, dK_tl_dw)
         dK_const1, dK_const2 = self._dtheta_consts(x_s)
 
-        ## First term of nu
-        term1a = sum(sum(
-            alpha_l[:, None, :, None] *
-            int_K_tl_K_l_mat[:, :, None, None] *
-            dK_const1 *
-            alpha_tl[None, :, None, :],
-            axis=0), axis=0)
-        term1b = mdot(alpha_l.T, int_K_tl_K_l_mat, zeta, alpha_tl)
-        term1 = term1a - term1b
+        term1 = np.zeros((1, 1))
+        term2 = np.zeros((1, 1))
+        for i in xrange(d):
 
-        ## Second term of nu
-        term2a = sum(
-            int_K_tl_vec.T[:, :, None] *
-            dK_const2 *
-            alpha_tl[:, :, None],
-            axis=0)
-        term2b = mdot(int_K_tl_vec, zeta, alpha_tl)
-        term2 = term2a - term2b
+            ## First term of nu
+            int_K_tl_dK_l_mat = int_K_tl_K_l_mat * dK_const1[:, :, i]
+            term1a = mdot(alpha_l.T, int_K_tl_dK_l_mat, alpha_tl)
+            term1b = mdot(alpha_l.T, int_K_tl_K_l_mat, zeta, alpha_tl)
+            term1 += term1a - term1b
 
-        nu = np.diag(term1 + self.gamma*term2)
-        V_Z_correction = -mdot(nu, self.Cw, nu.T)
+            ## Second term of nu
+            int_dK_tl_vec = int_K_tl_vec * dK_const2[None, :, i]
+            term2a = dot(int_dK_tl_vec, alpha_tl)
+            term2b = mdot(int_K_tl_vec, zeta, alpha_tl)
+            term2 += term2a - term2b
+
+        nu = term1 + self.gamma*term2
+        V_Z_correction = float(mdot(nu, self.Cw(self.gp_logS), nu.T))
         V_Z += V_Z_correction
+        assert V_Z > 0
 
         return V_Z
 
     def expected_uncertainty_evidence(self, x_a):
         x_s = self.Ri[:, None]
         xc = self.Rc[:, None]
+        ns, d = x_s.shape
+        nc, d = xc.shape
+
+        sqd_mean = self.mean ** 2
 
         if (x_s == x_a).all(axis=1).any():
-            return 0
+            expected_sqd_mean = sqd_mean
 
-        # compute expected transformed mean
-        tm_a = self.gp_logS.mean(x_a)
-
-        # compute expected transformed covariance
-        dm_dw = self.dm_dw(x_a)
-        Cw = self.Cw
-        tC_a = self.gp_logS.cov(x_a) + mdot(dm_dw, Cw, dm_dw.T)
-
-        #####
-
-        # include new x_a
-        x_sa = np.concatenate([x_s, x_a], axis=0)
-        if not (x_a == xc).all(axis=1).any():
-            x_sca = np.concatenate([xc, x_a], axis=0)
         else:
-            x_sca = xc
-        l_a = self.gp_S.mean(x_a)
-        l_s = self.Si[:, None]
-        l_sa = np.concatenate([l_s, l_a])
-        del_sc = self.Dc[:, None]
-        del_sca = np.concatenate([del_sc, np.zeros((1, 1))])
 
-        # update gp over S
-        gp_Sa = self.gp_S.copy()
-        gp_Sa.x = x_sa
-        gp_Sa.y = l_sa
-        inv_K_l = gp_Sa.inv_Kxx
+            #####
 
-        # update gp over delta
-        gp_Dca = self.gp_Dc.copy()
-        gp_Dca.x = x_sca
-        gp_Dca.y = del_sca
-        alpha_del = gp_Dca.inv_Kxx_y
+            # include new x_a
+            x_sa = np.concatenate([x_s, x_a], axis=0)
+            nsa, d = x_sa.shape
 
-        # compute constants
+            l_a = self.gp_S.mean(x_a)
+            l_s = self.Si[:, None]
+            l_sa = np.concatenate([l_s, l_a], axis=0)
 
-        ## First term
-        # int K_l(x, x_s) p(x) dx inv(K_l(x_s, x_s))
-        int_K_l = self._gaussint1(x_sa, gp_Sa)
-        A = dot(int_K_l, inv_K_l)
+            tl_a = self.gp_logS.mean(x_a)
+            tl_s = self.log_Si[:, None]
+            tl_sa = np.concatenate([tl_s, tl_a], axis=0)
 
-        ## Second term
-        # alpha_del(x_sc)' *
-        # int K_del(x_sc, x) K_l(x, x_s) p(x) dx *
-        # inv(K_l(x_s, x_s))
-        int_K_del_K_l = self._gaussint2(x_sca, x_sa, gp_Dca, gp_Sa)
-        B = mdot(alpha_del.T, int_K_del_K_l, inv_K_l)
+            del_sc = self.Dc[:, None]
+            if not (x_a == xc).all(axis=1).any():
+                x_sca = np.concatenate([xc, x_a], axis=0)
+                del_sca = np.concatenate([del_sc, np.zeros((1, 1))], axis=0)
+            else:
+                x_sca = xc.copy()
+                del_sca = del_sc.copy()
+            nca, d = x_sca.shape
 
-        ## Third term
-        # (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
-        int_K_del = self._gaussint1(x_sca, gp_Dca)
-        C = dot(int_K_del, alpha_del)
+            # update gp over S
+            gp_Sa = self.gp_S.copy()
+            gp_Sa.x = x_sa
+            gp_Sa.y = l_sa
+            inv_K_l = gp_Sa.inv_Kxx
 
-        # nlsa is the vector of weights, which, when multipled with
-        # the likelihoods, gives us our mean estimate for the evidence
-        nlsa = A + B
-        assert nlsa.shape[0] == 1
-        nla = nlsa[0, [-1]]
-        nls = dot(nlsa[0, :-1], l_s) + self.gamma * C
+            # update gp over log(S)
+            gp_logSa = self.gp_logS.copy()
+            gp_logSa.x = x_sa
+            gp_logSa.y = tl_sa
 
-        e = tm_a + 0.5*tC_a
-        e2 = 2*tm_a + 2*tC_a
+            # update gp over delta
+            gp_Dca = self.gp_Dc.copy()
+            gp_Dca.x = x_sca
+            gp_Dca.y = del_sca
+            alpha_del = gp_Dca.inv_Kxx_y
 
-        nls2 = nls ** 2
-        nlsnla = 2*nls*nla * self.gamma * (e - 1)
-        nla2 = (nla * self.gamma) ** 2 * (e2 - 2*e + 1)
+            # compute constants
 
-        xpc_sqd_mean = nls2 + nlsnla + nla2
-        mean_second_moment = self.mean**2 + self.var
-        xpc_unc = mean_second_moment - xpc_sqd_mean
-        return xpc_unc
+            ## First term
+            # int K_l(x, x_s) p(x) dx inv(K_l(x_s, x_s))
+            int_K_l = self._gaussint1(x_sa, gp_Sa)
+            A = dot(int_K_l, inv_K_l)
+
+            ## Second term
+            # alpha_del(x_sc)' *
+            # int K_del(x_sc, x) K_l(x, x_s) p(x) dx *
+            # inv(K_l(x_s, x_s))
+            int_K_del_K_l = self._gaussint2(x_sca, x_sa, gp_Dca, gp_Sa)
+            B = mdot(alpha_del.T, int_K_del_K_l, inv_K_l)
+
+            ## Third term
+            # (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
+            int_K_del = self._gaussint1(x_sca, gp_Dca)
+            C = float(dot(int_K_del, alpha_del))
+
+            # nlsa is the vector of weights, which, when multipled with
+            # the likelihoods, gives us our mean estimate for the evidence
+            nlsa = A + B
+            nla = float(nlsa[:, -1])
+            nls = float(dot(nlsa[:, :-1], l_s)) + self.gamma * C
+
+            # compute expected transformed mean
+            tm_a = self.gp_logS.mean(x_a)
+
+            # compute expected transformed covariance
+            dm_dw = self.dm_dw(x_a)
+            Cw = self.Cw(gp_logSa)
+            tC_a = self.gp_logS.cov(x_a) + mdot(dm_dw, Cw, dm_dw.T)
+
+            # put it all together
+            e = float(np.exp(tm_a + 0.5*tC_a))
+            e2 = float(np.exp(2*tm_a + 2*tC_a))
+            nls2 = nls ** 2
+            nlsnla = 2*nls*nla * self.gamma * (e - 1)
+            nla2 = (nla * self.gamma) ** 2 * (e2 - 2*e + 1)
+
+            expected_sqd_mean = nls2 + nlsnla + nla2
+
+        mean_second_moment = sqd_mean + self.var
+        expected_var = mean_second_moment - expected_sqd_mean
+        return expected_var
