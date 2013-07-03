@@ -138,7 +138,7 @@ class Model(object):
         sf = self.opt['stop_factor']
         vals = [self.Z_mean, self.Z_mean - sf*std_lo, self.Z_mean + sf*std_hi]
         ratios = [
-            self.p_Xa * val / (self._S_scale * self.p_XaXa_h0)
+            self.p_Xa * val / (self._S_scale * self.p_XaXb_h0)
             for val in vals
         ]
         return tuple(ratios)
