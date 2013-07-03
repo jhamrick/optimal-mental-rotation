@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.optimize as optim
 import scipy.stats
 from numpy import dot, sum, exp
 from numpy.linalg import inv
@@ -74,19 +73,18 @@ class BQ(object):
 
         # minimization bounds
         self.bounds = OrderedDict([
-            ('h', (EPS, None)),
-            ('w', (np.radians(self.opt['bq_wmin']),
-                   np.radians(self.opt['bq_wmax']))),
+            ('h', (EPS, 1.0)),
+            ('w', (EPS, None)),
             ('p', (EPS, None)),
             ('s', (0, None))
         ])
 
         # random initial value functions
         self.randf = OrderedDict([
-            ('h', lambda x, y: uniform(EPS, np.max(np.abs(y))*2)),
-            ('w', lambda x, y: uniform(np.ptp(x)/100., np.ptp(x)/10.)),
-            ('p', lambda x, y: uniform(EPS, 2*np.pi)),
-            ('s', lambda x, y: uniform(0, np.sqrt(np.var(y))))
+            ('h', lambda x, y: lambda: uniform(EPS, np.max(np.abs(y))*2)),
+            ('w', lambda x, y: lambda: uniform(np.ptp(x)/100., np.ptp(x)/10.)),
+            ('p', lambda x, y: lambda: uniform(EPS, 2*np.pi)),
+            ('s', lambda x, y: lambda: uniform(0, np.sqrt(np.var(y))))
         ])
 
     def debug(self, msg, level=0):
@@ -232,7 +230,6 @@ class BQ(object):
         # parameters we are actually fitting
         fitmask = np.array([v is None for k, v in default.iteritems()])
         fitkeys = [k for m, k in izip(fitmask, default) if m]
-        bounds = tuple(self.bounds[key] for key in fitkeys)
         # create the GP object with dummy init params
         params = OrderedDict([
             (k, (1 if v is None else v))
@@ -242,42 +239,13 @@ class BQ(object):
         s = params.get('s', 0)
         gp = GP(self.kernel(*kparams), x, y, s=s)
 
-        # update the GP object with new parameter values
-        def update(theta):
-            params.update(dict(zip(fitkeys, theta)))
-            gp.params = params.values()
-
-        # negative log likelihood
-        def f(theta):
-            update(theta)
-            out = -gp.log_lh
-            return out
-
-        # jacobian of the negative log likelihood
-        def df(theta):
-            update(theta)
-            out = -gp.dloglh_dtheta[fitmask]
-            return out
-
-        # run the optimization a few times to find the best fit
-        args = np.empty((ntry, len(bounds)))
-        fval = np.empty(ntry)
-        for i in xrange(ntry):
-            p0 = tuple(self.randf[k](x, y) for k in fitkeys)
-            update(p0)
-            if verbose:
-                print "      p0 = %s" % (p0,)
-            popt = optim.minimize(
-                fun=f, x0=p0, jac=df, method='L-BFGS-B', bounds=bounds)
-            args[i] = popt['x']
-            fval[i] = popt['fun']
-            if self.opt['verbose'] > 3:
-                print "      -MLL(%s) = %f" % (args[i], fval[i])
-
-        # choose the parameters that give the best MLL
-        if args is None or fval is None:
-            raise RuntimeError("Could not find MLII parameter estimates")
-        update(args[np.argmin(fval)])
+        bounds = tuple(self.bounds[key] for key in fitkeys)
+        randf = tuple(self.randf[key](x, y) for key in fitkeys)
+        gp.fit_MLII(fitmask,
+                    bounds=bounds,
+                    randf=randf,
+                    nrestart=self.opt['ntry_bq'],
+                    verbose=self.opt['verbose'] > 3)
 
         self.debug("Best parameters: %s" % (gp.params,), level=2)
         return gp
