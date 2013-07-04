@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.misc
 import tools
+import copy
 from itertools import izip
 
 
@@ -15,7 +16,7 @@ class Model(object):
         'prior_R': (0, 1),
     }
 
-    def __init__(self, Xa, Xb, Xm, R, **opt):
+    def __init__(self, *args, **opt):
         """Initialize the mental rotation model.
 
         Parameters
@@ -46,41 +47,51 @@ class Model(object):
 
         """
 
+        if len(args) == 1:
+            self._copyfrom(args[0])
+            return
+
+        Xa, Xb, Xm, R = args
+
         # self.opt was defined by a subclass
         opts = self.default_opt.copy()
         opts.update(getattr(self, 'opt', {}))
         opts.update(opt)
         self.opt = opt
 
-        # stimuli
+        # copy given arguments
         self.Xa = Xa.copy()
         self.Xb = Xb.copy()
         self.Xm = Xm.copy()
-
-        # all possible rotations
         self.R = R.copy()
 
-        # compute similarities
-        self._S_scale = self.Xa.shape[0] - 1
-        self._S_scale /= (2 * np.pi * self.opt['sigma_s']) * self.opt['scale']
-        self.S = np.array([self.similarity(X) for X in self.Xm])
-        self.S *= self._S_scale
-
-        # prior over stimuli
+        # compute the prior over stimuli
         self.p_Xa = self.prior_X(Xa)
         self.p_Xb = self.prior_X(Xb)
 
-        # joint of h0
+        # compute joint of h0
         self.p_XaXb_h0 = self.p_Xa * self.p_Xb
+
+        # compute similarities
+        self._S_scale = (
+            (self.Xa.shape[0] - 1) /
+            (2 * np.pi * self.opt['sigma_s'] * self.opt['scale']))
+        self.S = np.array(
+            [tools.similarity(self.Xb, X, self.opt) for X in self.Xm])
+        self.S *= self._S_scale
 
         # possible sample points
         self._all_samples = {}
         deg = np.round(np.degrees(self.R)).astype('i8') % 360
         for R, S in izip(deg, self.S):
             if R in self._all_samples:
-                print "Warning: rotation %d already exists, overwriting" % R
+                print("Warning: rotation %d already exists, "
+                      "overwriting" % R)
             self._all_samples[R] = S
 
+        self.initialize()
+
+    def initialize(self):
         # sampled R and S values
         self._sampled = np.array([])
         self.Ri = np.array([])
@@ -96,6 +107,33 @@ class Model(object):
 
         # we get the first observation for free
         self.sample(0)
+
+    def _copyfrom(self, other):
+        self.opt = copy.deepcopy(other.opt)
+
+        self.Xa = other.Xa.copy()
+        self.Xb = other.Xb.copy()
+        self.Xm = other.Xm.copy()
+        self.p_Xa = other.p_Xa
+        self.p_Xb = other.p_Xb
+        self.p_XaXb_h0 = other.p_XaXb_h0
+        self.R = other.R.copy()
+        self.S = other.S.copy()
+        self._S_scale = other._S_scale
+        self._all_samples = other._all_samples.copy()
+
+        # these are defined by `initialize`
+        self._sampled = other._sampled.copy()
+        self.Ri = other.Ri.copy()
+        self.Si = other.Si.copy()
+        self.S_mean = other.S_mean
+        self.S_var = other.S_var
+        self.Z_mean = other.Z_mean
+        self.Z_var = other.Z_var
+
+    def copy(self):
+        cls = type(self)
+        return cls(self)
 
     def _get_S(self, d):
         # r will be in radians; convert it to the nearest round degree
