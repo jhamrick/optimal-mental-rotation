@@ -59,7 +59,6 @@ class Model(object):
 
         # all possible rotations
         self.R = R.copy()
-        self.R_deg = np.round(np.degrees(self.R)).astype('i8')
 
         # compute similarities
         self._S_scale = self.Xa.shape[0] - 1
@@ -75,14 +74,15 @@ class Model(object):
         self.p_XaXb_h0 = self.p_Xa * self.p_Xb
 
         # possible sample points
-        self._samples = {}
-        for R, S in izip(self.R_deg, self.S):
-            if R in self._samples:
+        self._all_samples = {}
+        deg = np.round(np.degrees(self.R)).astype('i8') % 360
+        for R, S in izip(deg, self.S):
+            if R in self._all_samples:
                 print "Warning: rotation %d already exists, overwriting" % R
-            self._samples[R] = S
-        self._sampled = []
+            self._all_samples[R] = S
 
         # sampled R and S values
+        self._sampled = np.array([])
         self.Ri = np.array([])
         self.Si = np.array([])
 
@@ -94,34 +94,63 @@ class Model(object):
         self.Z_mean = None
         self.Z_var = None
 
-        # we get the first (and last, because it's circular data)
-        # observation for free
+        # we get the first observation for free
         self.sample(0)
-        if self.opt.get('kernel', None) == 'gaussian':
-            self.sample(self.R.size - 1)
+
+    def _get_S(self, d):
+        # r will be in radians; convert it to the nearest round degree
+        dw = d % 360
+        S = self._all_samples[dw]
+        return S
+
+    def observed(self, R):
+        """Check whether R has already been sampled or not."""
+        if R is None:
+            return False
+        # r will be in radians; convert it to the nearest round degree
+        dw = int(np.round(np.degrees(R))) % 360
+        sampled = self._sampled % 360
+        return (dw == sampled).any()
 
     def sample(self, R):
-        # r will be in radians; convert it to the nearest round degree
         d = int(np.round(np.degrees(R)))
-        S = self._samples[d]
-        if d not in self._sampled:
-            self._sampled.append(d)
+        S = self._get_S(d)
+        if not self.observed(R):
             self.Ri = np.append(self.Ri, R)
             self.Si = np.append(self.Si, S)
-            self.debug("R=% 3s radians  S(X_b, X_R)=%f" % (R, S), level=1)
+        # add to the list of sampled regardless of whether we've
+        # already seen it, so we can keep track of the sequence of
+        # rotations
+        self._sampled = np.append(self._sampled, d)
+        self.debug("R=% 3s radians  S(X_b, X_R)=%f" % (R, S), level=1)
         return S
 
     @property
-    def next_R(self):
+    def curr_val(self):
+        """Most recently sampled R and S"""
+        print self._sampled[-1]
         R = np.radians(self._sampled[-1])
-        R_next = (R + self.opt['dr']) % (2*np.pi)
-        return R_next
+        d = int(np.round(np.degrees(R)))
+        S = self._get_S(d)
+        return R, S
+
+    def next_val(self):
+        if self._sampled.size < 2:
+            # pick a random direction
+            direction = (np.random.randint(0, 2) * 2) - 1
+        else:
+            direction = np.sign(self._sampled[-1] - self._sampled[-2])
+        R = np.radians(self._sampled[-1])
+        R_next = R + (direction * self.opt['dr'])
+        S_next = self.sample(R_next)
+        return R_next, S_next
 
     @property
-    def prev_R(self):
-        R = np.radians(self._sampled[-1])
-        R_prev = (R - self.opt('dr')) * (2*np.pi)
-        return R_prev
+    def num_samples_left(self):
+        all_samples = np.array(self._all_samples.keys())
+        sampled = self._sampled % 360
+        remaining = np.setdiff1d(all_samples, sampled)
+        return remaining.size
 
     def __iter__(self):
         return self
@@ -131,9 +160,9 @@ class Model(object):
         tools.print_line(verbose=verbose)
         for i in self:
             tools.print_line(verbose=verbose)
-        if self.Ri is None or self.Si is None:
-            self.fit()
-            self.integrate()
+        # if self.Ri is None or self.Si is None:
+        #     self.fit()
+        #     self.integrate()
         tools.print_line(char="#", verbose=verbose)
         self.print_Z()
         self.ratio_test()
