@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.optimize as sopt
 
-from model_base import Model
+from . import Model
 from search import hill_climbing
 
 import snippets.circstats as circ

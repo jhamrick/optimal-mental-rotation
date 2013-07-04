@@ -1,6 +1,6 @@
 import numpy as np
 
-from model_base import Model
+from . import Model
 import bq
 reload(bq)
 

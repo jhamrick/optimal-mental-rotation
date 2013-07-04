@@ -1,7 +1,7 @@
 import numpy as np
 from functools import wraps
 
-from model_base import Model
+from . import Model
 from search import hill_climbing
 
 
