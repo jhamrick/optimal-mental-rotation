@@ -251,17 +251,18 @@ class BQ(object):
         return gp
 
     def choose_candidates(self):
-        nc = max(len(self.ix) * 2, self.opt['n_candidate'])
-        dist = np.degrees(self.gp_S.K.w)
-        ideal = list(np.linspace(0, self.R.size, nc+1).astype('i8')[:-1])
-        for i in self.ix:
-            diff = np.abs(np.array(ideal) - i)
-            closest = np.argmin(diff)
-            if diff[closest] <= dist:
-                del ideal[closest]
-        cix = sorted(set(ideal + self.ix))
-        self.Rc = self.R[cix].copy()
-        self.Dc = self.delta[cix].copy()
+        nc = max(0, self.opt['n_candidate'] - len(self.ix))
+        if nc == 0:
+            self.cix = np.array(sorted(self.ix))
+        else:
+            idx = np.array(self.ix)[np.random.randint(0, len(self.ix), nc)]
+            direction = (np.random.randint(0, 2, nc) * 2) - 1
+            R = (self.R[idx] + (direction * self.gp_S.params[1])) % 2*np.pi
+            self.cix = np.array(sorted(set(
+                [np.argmin(np.abs(self.R - r)) for r in R] + self.ix
+            )))
+        self.Rc = self.R[self.cix].copy()
+        self.Dc = self.delta[self.cix].copy()
 
     def fit(self):
         """Run the GP regressions to fit the likelihood function.
