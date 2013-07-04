@@ -100,7 +100,7 @@ class BayesianQuadratureModel(Model):
             if r in self.ix:
                 continue
 
-            xpc_unc = self._bq.expected_uncertainty_evidence(r)
+            xpc_unc = self._bq.expected_uncertainty_evidence(np.array([r]))
             print r, xpc_unc
 
             nexti.append(i)
