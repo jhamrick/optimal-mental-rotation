@@ -135,11 +135,30 @@ class Model(object):
         cls = type(self)
         return cls(self)
 
+    def __iter__(self):
+        return self
+
     def _get_S(self, d):
         # r will be in radians; convert it to the nearest round degree
         dw = d % 360
         S = self._all_samples[dw]
         return S
+
+    @property
+    def curr_val(self):
+        """Most recently sampled R and S"""
+        print self._sampled[-1]
+        R = np.radians(self._sampled[-1])
+        d = int(np.round(np.degrees(R)))
+        S = self._get_S(d)
+        return R, S
+
+    @property
+    def num_samples_left(self):
+        all_samples = np.array(self._all_samples.keys())
+        sampled = self._sampled % 360
+        remaining = np.setdiff1d(all_samples, sampled)
+        return remaining.size
 
     def observed(self, R):
         """Check whether R has already been sampled or not."""
@@ -163,15 +182,6 @@ class Model(object):
         self.debug("R=% 3s radians  S(X_b, X_R)=%f" % (R, S), level=1)
         return S
 
-    @property
-    def curr_val(self):
-        """Most recently sampled R and S"""
-        print self._sampled[-1]
-        R = np.radians(self._sampled[-1])
-        d = int(np.round(np.degrees(R)))
-        S = self._get_S(d)
-        return R, S
-
     def next_val(self):
         if self._sampled.size < 2:
             # pick a random direction
@@ -182,16 +192,6 @@ class Model(object):
         R_next = R + (direction * self.opt['dr'])
         S_next = self.sample(R_next)
         return R_next, S_next
-
-    @property
-    def num_samples_left(self):
-        all_samples = np.array(self._all_samples.keys())
-        sampled = self._sampled % 360
-        remaining = np.setdiff1d(all_samples, sampled)
-        return remaining.size
-
-    def __iter__(self):
-        return self
 
     def run(self):
         verbose = self.opt['verbose']
@@ -259,34 +259,3 @@ class Model(object):
         # put it all together
         p_X = np.exp(log_pperm + log_pangle + log_pradius)
         return p_X
-
-    def similarity(self, X):
-        """Computes the similarity between sets of vertices `X0` and `X1`."""
-        # the beginning is the same as the end, so ignore the last vertex
-        x0 = self.Xb[:-1]
-        x1 = X[:-1]
-        # number of points and number of dimensions
-        n, D = x0.shape
-        # covariance matrix
-        Sigma = np.eye(D) * self.opt['sigma_s']
-        invSigma = np.eye(D) * (1. / self.opt['sigma_s'])
-        # iterate through all permutations of the vertices -- but if
-        # two vertices are connected, they are next to each other in
-        # the list (or on the ends), so we really only need to cycle
-        # through 2n orderings (once for the original ordering, and
-        # once for the reverse)
-        e = np.empty(2*n)
-        for i in xrange(n):
-            idx = np.arange(i, i+n) % n
-            d = x0 - x1[idx]
-            e[i] = -0.5 * np.sum(np.dot(d, invSigma) * d)
-        for i in xrange(n):
-            idx = np.arange(i, i+n)[::-1] % n
-            d = x0 - x1[idx]
-            e[i+n] = -0.5 * np.sum(np.dot(d, invSigma) * d)
-        # constants
-        Z0 = (D / 2.) * np.log(2 * np.pi)
-        Z1 = 0.5 * np.linalg.slogdet(Sigma)[1]
-        # overall similarity, marginalizing out order
-        S = np.sum(np.exp(e + Z0 + Z1 - np.log(n)))
-        return S
