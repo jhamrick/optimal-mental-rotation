@@ -1,4 +1,5 @@
 import numpy as np
+import scipy
 from . import Model
 
 
@@ -10,16 +11,19 @@ class GoldStandardModel(Model):
     def next(self):
         """Sample the next point."""
 
-        if self.num_samples_left == 0:
-            raise StopIteration
+        while self.num_samples_left > 0:
+            rcurr, scurr = self.curr_val
+            self.sample(rcurr + np.radians(1))
 
-        rcurr, scurr = self.curr_val
-        self.sample(np.degrees(rcurr) + 1)
+        self.fit()
+        self.integrate()
+        raise StopIteration
 
     def fit(self):
         """Fit the likelihood function."""
 
-        self.S_mean = self.Si.copy()
+        ix = np.argsort(self.Ri)
+        self.S_mean = np.append(self.Si[ix], self.Si[0])
         self.S_var = np.zeros(self.S_mean.shape)
 
     def integrate(self):
@@ -33,5 +37,7 @@ class GoldStandardModel(Model):
             raise RuntimeError(
                 "S_mean or S_var is not set, did you call self.fit first?")
 
-        self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
+        mu, var = self.opt['prior_R']
+        p = scipy.stats.norm.pdf(self.R, mu, np.sqrt(var))
+        self.Z_mean = np.trapz(p * self.S_mean, self.R)
         self.Z_var = 0
