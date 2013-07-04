@@ -308,12 +308,12 @@ class BQ(object):
         # the estimated mean of S
         m_S = self.gp_S.mean(self.R)[:, 0]
         m_Dc = self.gp_Dc.mean(self.R)[:, 0]
-        self.S_mean = m_S + (m_S + self.gamma)*m_Dc
+        self.S_mean = self._S0 + (m_S + self.gamma)*m_Dc
 
         # the estimated variance of S
         C_logS = self.gp_logS.cov(self.R)
-        dm_dw, Cw = self.dm_dw, self.Cw(self.gp_logS)
-        self.S_cov = C_logS# + mdot(dm_dw, Cw, dm_dw.T)
+        dm_dw, Cw = self.dm_dw(self.R[:, None]), self.Cw(self.gp_logS)
+        self.S_cov = C_logS + mdot(dm_dw, Cw, dm_dw.T)
         self.S_cov[np.abs(self.S_cov) < np.sqrt(EPS)] = EPS
 
         return self.S_mean, self.S_cov
