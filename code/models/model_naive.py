@@ -12,6 +12,7 @@ class NaiveModel(Model):
         super(NaiveModel, self).__init__(*args, **kwargs)
         self._icurr = 0
         self._ilast = None
+        self.sample(2*np.pi)
 
     def next(self):
         """Sample the next point."""
@@ -30,11 +31,12 @@ class NaiveModel(Model):
 
         self.debug("Fitting likelihood")
 
-        self.ix = sorted(self.ix)
-        self.Ri = self.R[self.ix + [0]]
-        self.Ri[-1] = 2*np.pi
-        self.Si = self.S[self.ix + [0]]
-        self.S_mean = np.interp(self.R, self.Ri, self.Si)
+        # the samples need to be in sorted order
+        ix = np.argsort(self.Ri)
+        Ri = self.Ri[ix]
+        Si = self.Si[ix]
+
+        self.S_mean = np.interp(self.R, Ri, Si)
         self.S_var = np.zeros(self.S_mean.shape)
 
     def integrate(self):

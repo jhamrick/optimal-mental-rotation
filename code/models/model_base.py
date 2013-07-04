@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.misc
 import tools
+from itertools import izip
+
 
 class Model(object):
 
@@ -57,8 +59,8 @@ class Model(object):
 
         # all possible rotations
         self.R = R.copy()
-        rot = np.round(np.arange(0, self.R.size - 1, self.opt['dr']))
-        self._rotations = np.round(rot).astype('i8')
+        self.R_deg = np.round(np.degrees(self.R)).astype('i8')
+
         # compute similarities
         self._S_scale = self.Xa.shape[0] - 1
         self._S_scale /= (2 * np.pi * self.opt['sigma_s']) * self.opt['scale']
@@ -72,11 +74,17 @@ class Model(object):
         # joint of h0
         self.p_XaXb_h0 = self.p_Xa * self.p_Xb
 
-        # samples
-        self.ix = []
+        # possible sample points
+        self._samples = {}
+        for R, S in izip(self.R_deg, self.S):
+            if R in self._samples:
+                print "Warning: rotation %d already exists, overwriting" % R
+            self._samples[R] = S
+        self._sampled = []
+
         # sampled R and S values
-        self.Ri = None
-        self.Si = None
+        self.Ri = np.array([])
+        self.Si = np.array([])
 
         # mean and variance of S
         self.S_mean = None
@@ -92,15 +100,28 @@ class Model(object):
         if self.opt.get('kernel', None) == 'gaussian':
             self.sample(self.R.size - 1)
 
-    def sample(self, r):
-        assert isinstance(r, int)
-        S = self.S[r]
-        if r not in self.ix:
-            self.ix.append(r)
-            self.Ri = None
-            self.Si = None
-            self.debug("R=% 3s degrees  S(X_b, X_R)=%f" % (r, S), level=1)
+    def sample(self, R):
+        # r will be in radians; convert it to the nearest round degree
+        d = int(np.round(np.degrees(R)))
+        S = self._samples[d]
+        if d not in self._sampled:
+            self._sampled.append(d)
+            self.Ri = np.append(self.Ri, R)
+            self.Si = np.append(self.Si, S)
+            self.debug("R=% 3s radians  S(X_b, X_R)=%f" % (R, S), level=1)
         return S
+
+    @property
+    def next_R(self):
+        R = np.radians(self._sampled[-1])
+        R_next = (R + self.opt['dr']) % (2*np.pi)
+        return R_next
+
+    @property
+    def prev_R(self):
+        R = np.radians(self._sampled[-1])
+        R_prev = (R - self.opt('dr')) * (2*np.pi)
+        return R_prev
 
     def __iter__(self):
         return self

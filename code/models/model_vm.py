@@ -71,10 +71,6 @@ class VonMisesModel(Model):
 
         self.debug("Fitting likelihood")
 
-        self.ix = sorted(self.ix)
-        self.Ri = self.R[self.ix]
-        self.Si = self.S[self.ix]
-
         args = np.empty((self.opt['ntry'], 3))
         fval = np.empty(self.opt['ntry'])
 
