@@ -1,6 +1,7 @@
 from models import Model
 import util
 import numpy as np
+from itertools import izip
 
 
 def load():
@@ -37,3 +38,77 @@ def test_init():
     assert m.S_var is None
     assert m.Z_mean is None
     assert m.Z_var is None
+
+
+def test_get_S():
+    m = setup()
+    for r, s in izip(m.R, m.S):
+        d = np.round(np.degrees(r))
+        s2 = m._get_S(d)
+        assert np.allclose(s, s2), (s, s2)
+
+
+def test_observed():
+    m = setup()
+    assert not m.observed(None)
+    assert m.observed(0)
+    assert m.observed(2*np.pi)
+    assert not m.observed(np.pi)
+    m.sample(np.pi)
+    assert m.observed(np.pi)
+    assert not m.observed(2.4590823476)
+    m.sample(2.4590823476)
+    assert m.observed(2.4590823476)
+
+
+def test_sample():
+    def check(m, r):
+        s = m.sample(r)
+        d = int(np.round(np.degrees(r)))
+        assert (m._sampled == np.array([0, d])).all()
+        assert (m.Ri == np.array([m.R[0], r])).all()
+        assert np.allclose(m.Si, np.array([m.S[0], s]))
+        m.sample(r)
+        assert (m._sampled == np.array([0, d, d])).all()
+        assert (m.Ri == np.array([m.R[0], r])).all()
+        assert np.allclose(m.Si, np.array([m.S[0], s]))
+
+    m0 = setup()
+    for i in xrange(20):
+        m = m0.copy()
+        r = np.random.uniform(0, 2*np.pi)
+        yield check, m, r
+
+
+def test_curr_val():
+    m = setup()
+    for i in xrange(20):
+        r0 = np.random.uniform(0, 2*np.pi)
+        s0 = m.sample(r0)
+        r, s = m.curr_val
+        assert np.abs(r - r0) < np.radians(1)
+        assert s == s0
+
+
+def test_num_samples_left():
+    m = setup()
+    n = len(m._all_samples)
+    print m.num_samples_left
+    assert m.num_samples_left == (n - 1)
+    for i, d in enumerate(m._all_samples.keys()):
+        r = np.radians(d)
+        m.sample(r)
+        assert m.num_samples_left == (n - i - 1)
+
+
+def test_next_val():
+    m = setup()
+    r0 = np.radians(1)
+    m.sample(r0)
+    r, s = m.next_val()
+    assert r > r0
+
+    r0 = np.radians(-1)
+    m.sample(r0)
+    r, s = m.next_val()
+    assert r < r0
