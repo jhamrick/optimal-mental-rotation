@@ -147,7 +147,6 @@ class Model(object):
     @property
     def curr_val(self):
         """Most recently sampled R and S"""
-        print self._sampled[-1]
         R = np.radians(self._sampled[-1])
         d = int(np.round(np.degrees(R)))
         S = self._get_S(d)
@@ -198,9 +197,6 @@ class Model(object):
         tools.print_line(verbose=verbose)
         for i in self:
             tools.print_line(verbose=verbose)
-        # if self.Ri is None or self.Si is None:
-        #     self.fit()
-        #     self.integrate()
         tools.print_line(char="#", verbose=verbose)
         self.print_Z()
         self.ratio_test()
