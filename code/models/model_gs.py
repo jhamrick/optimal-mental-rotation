@@ -10,10 +10,11 @@ class GoldStandardModel(Model):
     def next(self):
         """Sample the next point."""
 
-        self.Ri = np.radians(self.R_deg)
-        self.Si = self.S.copy()
+        if self.num_samples_left == 0:
+            raise StopIteration
 
-        raise StopIteration
+        rcurr, scurr = self.curr_val
+        self.sample(np.degrees(rcurr) + 1)
 
     def fit(self):
         """Fit the likelihood function."""

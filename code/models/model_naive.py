@@ -10,8 +10,6 @@ class NaiveModel(Model):
     @wraps(Model.__init__)
     def __init__(self, *args, **kwargs):
         super(NaiveModel, self).__init__(*args, **kwargs)
-        self._icurr = 0
-        self._ilast = None
         self.sample(2*np.pi)
 
     def next(self):
@@ -19,12 +17,8 @@ class NaiveModel(Model):
 
         self.debug("Finding next sample")
 
-        icurr = hill_climbing(self)
-        if icurr is None:
+        if not hill_climbing(self):
             raise StopIteration
-
-        self._ilast = self._icurr
-        self._icurr = icurr
 
     def fit(self):
         """Fit the likelihood function."""

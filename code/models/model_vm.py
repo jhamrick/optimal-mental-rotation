@@ -26,8 +26,6 @@ class VonMisesModel(Model):
         }
 
         super(VonMisesModel, self).__init__(*args, **kwargs)
-        self._icurr = 0
-        self._ilast = None
 
     @staticmethod
     def _mse(theta, x, y):
@@ -59,12 +57,8 @@ class VonMisesModel(Model):
 
         self.debug("Finding next sample")
 
-        icurr = hill_climbing(self)
-        if icurr is None:
+        if not hill_climbing(self):
             raise StopIteration
-
-        self._ilast = self._icurr
-        self._icurr = icurr
 
     def fit(self):
         """Fit the likelihood function."""
