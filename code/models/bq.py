@@ -497,95 +497,109 @@ class BQ(object):
         ns, d = x_s.shape
         nc, d = xc.shape
 
-        sqd_mean = self.mean ** 2
-
         if (x_s == x_a).all(axis=1).any():
-            expected_sqd_mean = sqd_mean
+            return self.var
 
+        # include new x_a
+        x_sa = np.concatenate([x_s, x_a], axis=0)
+        nsa, d = x_sa.shape
+
+        l_a = self.gp_S.mean(x_a)
+        l_s = self.Si[:, None]
+        l_sa = np.concatenate([l_s, l_a], axis=0)
+
+        tl_a = self.gp_logS.mean(x_a)
+        tl_s = self.log_Si[:, None]
+        tl_sa = np.concatenate([tl_s, tl_a], axis=0)
+
+        # update gp over S
+        gp_Sa = self.gp_S.copy()
+        gp_Sa.x = x_sa
+        gp_Sa.y = l_sa
+
+        # update gp over log(S)
+        gp_logSa = self.gp_logS.copy()
+        gp_logSa.x = x_sa
+        gp_logSa.y = tl_sa
+
+        # add jitter to the covariance matrix where our new point is,
+        # because if it's close to other x_s then it will cause problems
+        w = gp_Sa.params[1]
+        K_l = gp_Sa.Kxx.copy()
+        K_l[-1, -1] += w ** 2
+        gp_Sa._memoized['Kxx'] = K_l
+        assert 'inv_Kxx' not in gp_Sa._memoized
+        inv_K_l = gp_Sa.inv_Kxx
+
+        # update gp over delta
+        del_sc = self.Dc[:, None]
+        if (xc == x_a).all(axis=1).any():
+            x_sca = xc.copy()
+            del_sca = del_sc.copy()
+            gp_Dca = self.gp_Dc.copy()
         else:
-
-            #####
-
-            # include new x_a
-            x_sa = np.concatenate([x_s, x_a], axis=0)
-            nsa, d = x_sa.shape
-
-            l_a = self.gp_S.mean(x_a)
-            l_s = self.Si[:, None]
-            l_sa = np.concatenate([l_s, l_a], axis=0)
-
-            tl_a = self.gp_logS.mean(x_a)
-            tl_s = self.log_Si[:, None]
-            tl_sa = np.concatenate([tl_s, tl_a], axis=0)
-
-            del_sc = self.Dc[:, None]
-            if not (x_a == xc).all(axis=1).any():
-                x_sca = np.concatenate([xc, x_a], axis=0)
-                del_sca = np.concatenate([del_sc, np.zeros((1, 1))], axis=0)
-            else:
-                x_sca = xc.copy()
-                del_sca = del_sc.copy()
-            nca, d = x_sca.shape
-
-            # update gp over S
-            gp_Sa = self.gp_S.copy()
-            gp_Sa.x = x_sa
-            gp_Sa.y = l_sa
-            inv_K_l = gp_Sa.inv_Kxx
-
-            # update gp over log(S)
-            gp_logSa = self.gp_logS.copy()
-            gp_logSa.x = x_sa
-            gp_logSa.y = tl_sa
-
-            # update gp over delta
+            x_sca = np.concatenate([xc, x_a], axis=0)
+            del_sca = np.concatenate([del_sc, np.zeros((1, 1))], axis=0)
             gp_Dca = self.gp_Dc.copy()
             gp_Dca.x = x_sca
             gp_Dca.y = del_sca
-            alpha_del = gp_Dca.inv_Kxx_y
 
-            # compute constants
+            # the delta_c (not delta_s) will probably change with
+            # the addition of x_a. We can't recompute them
+            # (because we don't know l_a) but we can add noise
+            # to the diagonal of the covariance matrix to allow room
+            # for error for the x_c closest to x_a
+            ix = [i in self.ix for i in self.cix]
+            del_noise = gp_Dca.Kxx[:, -1]
+            del_noise[ix] = 0
+            del_noise[:-1] = 0
+            gp_Dca._memoized['Kxx'] += np.diagflat(del_noise)
+            assert 'inv_Kxx_y' not in gp_Dca._memoized
 
-            ## First term
-            # int K_l(x, x_s) p(x) dx inv(K_l(x_s, x_s))
-            int_K_l = self._gaussint1(x_sa, gp_Sa)
-            A = dot(int_K_l, inv_K_l)
+        nca, d = x_sca.shape
+        alpha_del = gp_Dca.inv_Kxx_y
 
-            ## Second term
-            # alpha_del(x_sc)' *
-            # int K_del(x_sc, x) K_l(x, x_s) p(x) dx *
-            # inv(K_l(x_s, x_s))
-            int_K_del_K_l = self._gaussint2(x_sca, x_sa, gp_Dca, gp_Sa)
-            B = mdot(alpha_del.T, int_K_del_K_l, inv_K_l)
+        # compute constants
 
-            ## Third term
-            # (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
-            int_K_del = self._gaussint1(x_sca, gp_Dca)
-            C = float(dot(int_K_del, alpha_del))
+        ## First term
+        # int K_l(x, x_s) p(x) dx inv(K_l(x_s, x_s))
+        int_K_l = self._gaussint1(x_sa, gp_Sa)
+        A = dot(int_K_l, inv_K_l)
 
-            # nlsa is the vector of weights, which, when multipled with
-            # the likelihoods, gives us our mean estimate for the evidence
-            nlsa = A + B
-            nla = float(nlsa[:, -1])
-            nls = float(dot(nlsa[:, :-1], l_s)) + self.gamma * C
+        ## Second term
+        # alpha_del(x_sc)' *
+        # int K_del(x_sc, x) K_l(x, x_s) p(x) dx *
+        # inv(K_l(x_s, x_s))
+        int_K_del_K_l = self._gaussint2(x_sca, x_sa, gp_Dca, gp_Sa)
+        B = mdot(alpha_del.T, int_K_del_K_l, inv_K_l)
 
-            # compute expected transformed mean
-            tm_a = self.gp_logS.mean(x_a)
+        ## Third term
+        # (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
+        int_K_del = self._gaussint1(x_sca, gp_Dca)
+        C = float(dot(int_K_del, alpha_del))
 
-            # compute expected transformed covariance
-            dm_dw = self.dm_dw(x_a)
-            Cw = self.Cw(gp_logSa)
-            tC_a = self.gp_logS.cov(x_a) + mdot(dm_dw, Cw, dm_dw.T)
+        # nlsa is the vector of weights, which, when multipled with
+        # the likelihoods, gives us our mean estimate for the evidence
+        nlsa = A + B
+        nla = float(nlsa[:, -1])
+        nls = float(dot(nlsa[:, :-1], l_s)) + self.gamma * C
 
-            # put it all together
-            e = float(np.exp(tm_a + 0.5*tC_a))
-            e2 = float(np.exp(2*tm_a + 2*tC_a))
-            nls2 = nls ** 2
-            nlsnla = 2*nls*nla * self.gamma * (e - 1)
-            nla2 = (nla * self.gamma) ** 2 * (e2 - 2*e + 1)
+        # compute expected transformed mean
+        tm_a = self.gp_logS.mean(x_a)
 
-            expected_sqd_mean = nls2 + nlsnla + nla2
+        # compute expected transformed covariance
+        dm_dw = self.dm_dw(x_a)
+        Cw = self.Cw(gp_logSa)
+        tC_a = self.gp_logS.cov(x_a) + mdot(dm_dw, Cw, dm_dw.T)
 
-        mean_second_moment = sqd_mean + self.var
+        # put it all together
+        e = float(np.exp(tm_a + 0.5*tC_a))
+        e2 = float(np.exp(2*tm_a + 2*tC_a))
+        nls2 = nls ** 2
+        nlsnla = 2*nls*nla * self.gamma * (e - 1)
+        nla2 = (nla * self.gamma) ** 2 * (e2 - 2*e + 1)
+        expected_sqd_mean = nls2 + nlsnla + nla2
+
+        mean_second_moment = self.mean ** 2 + self.var
         expected_var = mean_second_moment - expected_sqd_mean
         return expected_var
