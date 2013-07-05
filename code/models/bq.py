@@ -1,5 +1,7 @@
 import numpy as np
 import scipy.stats
+import warnings
+
 from numpy import dot, sum, exp
 from numpy.linalg import inv
 from numpy.random import uniform
@@ -457,7 +459,9 @@ class BQ(object):
         int_inv_int = mdot(int_K_tl_vec, inv_K_tl, int_K_tl_K_l_mat)
         E_m_l_C_tl = float(dot(int_K_tl_K_l_vec - int_inv_int, alpha_l))
         if E_m_l_C_tl <= 0:
-            print "Warning: E[m_l C_tl] = %f" % E_m_l_C_tl
+            warnings.warn(
+                "Warning: E[m_l C_tl] = %f" % E_m_l_C_tl,
+                RuntimeWarning)
 
         ## Third term
         # E[C_tl | x_s] =
