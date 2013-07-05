@@ -51,8 +51,6 @@ class BayesianQuadratureModel(Model):
         }
 
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
-        self._dir = 0
-        self._icurr = 0
 
         mu, cov = self.opt['prior_R']
         mu = np.array(mu) * np.ones(1)
@@ -68,70 +66,25 @@ class BayesianQuadratureModel(Model):
         if self.S_mean is None:
             self.fit()
             self.integrate()
-        hyp = self.ratio_test(level=1)
-        if hyp != -1:
+        if self.ratio_test(level=1) > -1:
             raise StopIteration
 
         self.debug("Finding next sample")
 
-        inext = []
-        rnext = []
-        rr = list(self._rotations)
-        for r in self.ix:
-            if r not in rr:
-                continue
-            i = rr.index(r)
-            n = (i + 1) % self._rotations.size
-            rn = self._rotations[n]
-            p = (i - 1) % self._rotations.size
-            rp = self._rotations[p]
-            if (rn not in self.ix) and (rn not in inext):
-                inext.append(n)
-                rnext.append(rn)
-            if (rp not in self.ix) and (rp not in inext):
-                inext.append(p)
-                rnext.append(rp)
-
-        nextvars = []
-        nexti = []
-        nextr = []
-
-        for r, i in zip(rnext, inext):
-            if r in self.ix:
-                continue
-
-            xpc_unc = self._bq.expected_uncertainty_evidence(np.array([r]))
-            print r, xpc_unc
-
-            nexti.append(i)
-            nextr.append(r)
-            nextvars.append(xpc_unc)
-
-        nextvars = np.array(nextvars)
-        nexti = np.array(nexti)
-        nextr = np.array(nextr)
-
-        assert nextvars.size <= 2
-        if nextvars.size == 0:
+        if self.num_samples_left == 0:
             self.debug("Exhausted all samples", level=2)
             raise StopIteration
-        elif nextvars.size == 1:
-            idx = 0
-            assert self._dir == np.sign(nexti[idx] - self._icurr)
-        else:
-            idx = np.argmin(nextvars)
-            if np.abs(nexti[idx] - self._icurr) == 1:
-                self._dir = np.sign(nexti[idx] - self._icurr)
-            else:
-                if self._dir == 0:
-                    assert nexti[idx] in (1, self._rotations.size-1)
-                    self._dir = 1 if nexti[idx] == 1 else -1
-                else:
-                    self._dir = -self._dir
 
-        self.debug("Choosing next: %d" % nextr[idx], level=2)
-        self.sample(nextr[idx])
-        self._icurr = nexti[idx]
+        rcurr, scurr = self.curr_val
+        d = int(np.round(np.degrees(rcurr)))
+        self.debug("Current: S(%d) = %f" % (d, scurr), level=1)
+
+        left_bound = np.round(np.degrees(rcurr - self.opt['dr']))
+        right_bound = np.round(np.degrees(rcurr + self.opt['dr']))
+        R = np.radians(np.arange(left_bound, right_bound+1, 1)[:, None, None])
+        S = np.array([self._bq.expected_uncertainty_evidence(r) for r in R])
+        ix = np.argmin(S)
+        self.sample(R[ix])
 
         self.fit()
         self.integrate()
@@ -150,12 +103,8 @@ class BayesianQuadratureModel(Model):
 
         self.debug("Fitting likelihood")
 
-        # input data
-        self.ix = sorted(self.ix)
-        self.Ri = self.R[self.ix].copy()
-        self.Si = self.S[self.ix].copy()
-
-        self._bq = bq.BQ(self.R, self.S, self.ix, self.opt)
+        self._bq = bq.BQ(
+            self.R[:, None], self.Ri[:, None], self.Si[:, None], self.opt)
         self.S_mean, self.S_cov = self._bq.fit()
         self.S_var = np.diag(self.S_cov)
 

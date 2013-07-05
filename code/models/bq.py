@@ -44,7 +44,7 @@ class BQ(object):
 
     """
 
-    def __init__(self, R, S, ix, opt):
+    def __init__(self, R, Ri, Si, opt):
         self._memoized = {}
 
         self.opt = opt
@@ -57,11 +57,17 @@ class BQ(object):
         else:
             raise ValueError("invalid kernel type: %s" % opt['kernel'])
 
-        self.R = R
-        self.Ri = R[ix]
-        self.Si = S[ix]
+        assert R.ndim == 2
+        assert Ri.ndim == 2
+        assert Si.ndim == 2
+        assert Ri.shape[1] == R.shape[1]
+        assert Ri.shape[0] == Si.shape[0]
+        assert Si.shape[1] == 1
+
+        self.R = R.copy()
+        self.Ri = Ri.copy()
+        self.Si = Si.copy()
         self.log_Si = self.log_transform(self.Si)
-        self.ix = ix
 
         # default kernel parameter values
         if self.opt['kernel'] == "gaussian":
@@ -71,19 +77,23 @@ class BQ(object):
         self.default_params = OrderedDict(
             [(p, self.opt.get(p, None)) for p in params])
 
+        # square root of smallest float value, so we can square it
+        # later on
+        EPS12 = np.sqrt(EPS)
+
         # minimization bounds
         self.bounds = OrderedDict([
-            ('h', (EPS, 1.0)),
-            ('w', (EPS, None)),
-            ('p', (EPS, None)),
+            ('h', (EPS12, 1.0)),
+            ('w', (EPS12, np.pi / 2.)),
+            ('p', (EPS12, None)),
             ('s', (0, None))
         ])
 
         # random initial value functions
         self.randf = OrderedDict([
-            ('h', lambda x, y: lambda: uniform(EPS, np.max(np.abs(y))*2)),
+            ('h', lambda x, y: lambda: uniform(EPS12, np.max(np.abs(y))*2)),
             ('w', lambda x, y: lambda: uniform(np.ptp(x)/100., np.ptp(x)/10.)),
-            ('p', lambda x, y: lambda: uniform(EPS, 2*np.pi)),
+            ('p', lambda x, y: lambda: uniform(EPS12, 2*np.pi)),
             ('s', lambda x, y: lambda: uniform(0, np.sqrt(np.var(y))))
         ])
 
@@ -251,18 +261,30 @@ class BQ(object):
         return gp
 
     def choose_candidates(self):
-        nc = max(0, self.opt['n_candidate'] - len(self.ix))
+        ns, d = self.Ri.shape
+        assert d == 1, "this code won't work for d>1"
+        nc = self.opt['n_candidate']
         if nc == 0:
-            self.cix = np.array(sorted(self.ix))
+            Rsc = self.Ri.copy()
         else:
-            idx = np.array(self.ix)[np.random.randint(0, len(self.ix), nc)]
-            direction = (np.random.randint(0, 2, nc) * 2) - 1
-            R = (self.R[idx] + (direction * self.gp_S.params[1])) % 2*np.pi
-            self.cix = np.array(sorted(set(
-                [np.argmin(np.abs(self.R - r)) for r in R] + self.ix
-            )))
-        self.Rc = self.R[self.cix].copy()
-        self.Dc = self.delta[self.cix].copy()
+            idx = np.random.randint(0, ns, nc)
+            direction = (np.random.randint(0, 2, (nc, d)) * 2) - 1
+            w = self.gp_S.params[1]
+            Rc = (self.Ri[idx] + (direction * w)) % 2*np.pi
+            Rc_no_s = np.setdiff1d(
+                np.round(Rc, decimals=8),
+                np.round(self.Ri, decimals=8))[:, None]
+            Rsc = np.concatenate([self.Ri, Rc_no_s], axis=0)
+        return Rsc
+
+    def compute_delta(self, R):
+        # use a crude thresholding here as our tilde transformation
+        # will fail if the mean goes below zero
+        m_S = np.clip(self.gp_S.mean(R), EPS, np.inf)
+        mls = self.gp_logS.mean(R)
+        lms = self.log_transform(m_S)
+        delta = mls - lms
+        return delta
 
     def fit(self):
         """Run the GP regressions to fit the likelihood function.
@@ -279,9 +301,9 @@ class BQ(object):
         self.debug("Fitting likelihood")
         self._memoized = {}
 
-        Ri = self.Ri[:, None]
-        Si = self.Si[:, None]
-        log_Si = self.log_Si[:, None]
+        Ri = self.Ri
+        Si = self.Si
+        log_Si = self.log_Si
 
         self.gp_S = self._fit_gp(Ri, Si, "S")
         if self.opt.get('h', None):
@@ -290,29 +312,23 @@ class BQ(object):
             logh = None
         self.gp_logS = self._fit_gp(Ri, log_Si, "log(S)", h=logh)
 
-        # use a crude thresholding here as our tilde transformation
-        # will fail if the mean goes below zero
-        self._S0 = np.clip(self.gp_S.mean(self.R)[:, 0], EPS, np.inf)
-
         # fit delta, the difference between S and logS
-        mls = self.gp_logS.mean(self.R)[:, 0]
-        lms = self.log_transform(self._S0)
-        self.delta = mls - lms
-        self.delta[self.ix] = 0
-        self.choose_candidates()
+        self.delta = self.compute_delta(self.R)
+        self.Rc = self.choose_candidates()
+        self.Dc = self.compute_delta(self.Rc)
 
-        Rc = self.Rc[:, None]
-        Dc = self.Dc[:, None]
+        Rc = self.Rc
+        Dc = self.Dc
         self.gp_Dc = self._fit_gp(Rc, Dc, "Delta_c", h=None)
 
         # the estimated mean of S
         m_S = self.gp_S.mean(self.R)[:, 0]
         m_Dc = self.gp_Dc.mean(self.R)[:, 0]
-        self.S_mean = self._S0 + (m_S + self.gamma)*m_Dc
+        self.S_mean = np.clip(m_S, EPS, np.inf) + (m_S + self.gamma)*m_Dc
 
         # the estimated variance of S
         C_logS = self.gp_logS.cov(self.R)
-        dm_dw, Cw = self.dm_dw(self.R[:, None]), self.Cw(self.gp_logS)
+        dm_dw, Cw = self.dm_dw(self.R), self.Cw(self.gp_logS)
         self.S_cov = C_logS + mdot(dm_dw, Cw, dm_dw.T)
         self.S_cov[np.abs(self.S_cov) < np.sqrt(EPS)] = EPS
 
@@ -392,7 +408,7 @@ class BQ(object):
     @memoprop
     def var_approx(self):
         m_S = self.gp_S.mean(self.R) + self.gamma
-        mCm = self.S_cov * m_S[:, None] * m_S[None, :]
+        mCm = self.S_cov * m_S * m_S.T
         var_ev = self.E(self.E(mCm))
         # sanity check
         if var_ev < 0:
@@ -492,12 +508,12 @@ class BQ(object):
         return V_Z
 
     def expected_uncertainty_evidence(self, x_a):
-        x_s = self.Ri[:, None]
-        xc = self.Rc[:, None]
+        x_s = self.Ri
+        xc = self.Rc
         ns, d = x_s.shape
         nc, d = xc.shape
 
-        if (x_s == x_a).all(axis=1).any():
+        if (np.abs(x_s - x_a) < 1e-16).all(axis=1).any():
             return self.var
 
         # include new x_a
@@ -505,11 +521,11 @@ class BQ(object):
         nsa, d = x_sa.shape
 
         l_a = self.gp_S.mean(x_a)
-        l_s = self.Si[:, None]
+        l_s = self.Si
         l_sa = np.concatenate([l_s, l_a], axis=0)
 
         tl_a = self.gp_logS.mean(x_a)
-        tl_s = self.log_Si[:, None]
+        tl_s = self.log_Si
         tl_sa = np.concatenate([tl_s, tl_a], axis=0)
 
         # update gp over S
@@ -526,13 +542,13 @@ class BQ(object):
         # because if it's close to other x_s then it will cause problems
         w = gp_Sa.params[1]
         K_l = gp_Sa.Kxx.copy()
-        K_l[-1, -1] += w ** 2
+        K_l[-1, -1] += w
         gp_Sa._memoized['Kxx'] = K_l
         assert 'inv_Kxx' not in gp_Sa._memoized
         inv_K_l = gp_Sa.inv_Kxx
 
         # update gp over delta
-        del_sc = self.Dc[:, None]
+        del_sc = self.Dc
         if (xc == x_a).all(axis=1).any():
             x_sca = xc.copy()
             del_sca = del_sc.copy()
@@ -549,10 +565,9 @@ class BQ(object):
             # (because we don't know l_a) but we can add noise
             # to the diagonal of the covariance matrix to allow room
             # for error for the x_c closest to x_a
-            ix = [i in self.ix for i in self.cix]
             del_noise = gp_Dca.Kxx[:, -1]
-            del_noise[ix] = 0
-            del_noise[:-1] = 0
+            del_noise[:ns] = 0
+            del_noise[-1] = 0
             gp_Dca._memoized['Kxx'] += np.diagflat(del_noise)
             assert 'inv_Kxx_y' not in gp_Dca._memoized
 
