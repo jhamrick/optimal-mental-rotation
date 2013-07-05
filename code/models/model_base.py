@@ -65,6 +65,10 @@ class Model(object):
         self.Xm = Xm.copy()
         self.R = R.copy()
 
+        # compute prior probabilities of angles
+        mu, var = self.opt['prior_R']
+        self.pR = scipy.stats.norm.pdf(self.R, mu, np.sqrt(var))
+
         # compute the prior over stimuli
         self.p_Xa = self.prior_X(Xa)
         self.p_Xb = self.prior_X(Xb)
@@ -178,7 +182,7 @@ class Model(object):
         # already seen it, so we can keep track of the sequence of
         # rotations
         self._sampled = np.append(self._sampled, d)
-        self.debug("R=% 3s radians  S(X_b, X_R)=%f" % (R, S), level=1)
+        self.debug("R=% 3s degrees  S(X_b, X_R)=%f" % (d, S), level=1)
         return S
 
     def next_val(self):
@@ -255,3 +259,21 @@ class Model(object):
         # put it all together
         p_X = np.exp(log_pperm + log_pangle + log_pradius)
         return p_X
+
+    def integrate(self):
+        """Compute the mean and variance of Z:
+
+        $$Z = \int S(X_b, X_R)p(R) dR$$
+
+        This is a dumb brute force way of doing this, by multiplying
+        S_mean by the prior and then using the trapezoidal rule to
+        approximate the integral.
+
+        """
+
+        if self.S_mean is None or self.S_var is None:
+            raise RuntimeError(
+                "S_mean or S_var is not set, did you call self.fit first?")
+
+        self.Z_mean = np.trapz(self.pR * self.S_mean, self.R)
+        self.Z_var = 0

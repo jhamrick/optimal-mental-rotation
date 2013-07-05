@@ -1,5 +1,4 @@
 import numpy as np
-import scipy
 from . import Model
 
 
@@ -25,19 +24,3 @@ class GoldStandardModel(Model):
         ix = np.argsort(self.Ri)
         self.S_mean = np.append(self.Si[ix], self.Si[0])
         self.S_var = np.zeros(self.S_mean.shape)
-
-    def integrate(self):
-        """Compute the mean and variance of Z:
-
-        $$Z = \int S(X_b, X_R)p(R) dR$$
-
-        """
-
-        if self.S_mean is None or self.S_var is None:
-            raise RuntimeError(
-                "S_mean or S_var is not set, did you call self.fit first?")
-
-        mu, var = self.opt['prior_R']
-        p = scipy.stats.norm.pdf(self.R, mu, np.sqrt(var))
-        self.Z_mean = np.trapz(p * self.S_mean, self.R)
-        self.Z_var = 0
