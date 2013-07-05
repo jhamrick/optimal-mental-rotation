@@ -83,11 +83,16 @@ class BayesianQuadratureModel(Model):
         d = int(np.round(np.degrees(rcurr)))
         self.debug("Current: S(%d) = %f" % (d, scurr), level=1)
 
-        left_bound = np.round(np.degrees(rcurr - self.opt['dr']))
-        right_bound = np.round(np.degrees(rcurr + self.opt['dr']))
-        R = np.radians(np.arange(left_bound, right_bound+1, 1)[:, None, None])
-        S = np.array([self._bq.expected_uncertainty_evidence(r) for r in R])
-        ix = np.argmin(S)
+        dr = self.opt['dr']
+        w = float(self._bq.gp_S.params[1])
+        box = np.max([dr, w])
+        r1 = np.radians(1)
+        R = np.arange(rcurr-box, rcurr+box+r1, r1)[:, None, None]
+        S = np.array([self._bq.expected_uncertainty_evidence(r)
+                      if not self.observed(r) else np.nan
+                      for r in R])
+
+        ix = np.nanargmin(S)
         self.sample(R[ix])
 
         self.fit()
