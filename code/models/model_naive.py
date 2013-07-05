@@ -5,6 +5,11 @@ from search import hill_climbing
 
 class NaiveModel(Model):
 
+    def __init__(self, *args, **kwargs):
+        super(NaiveModel, self).__init__(*args, **kwargs)
+        self.Ri = np.append(self.Ri, 2*np.pi)
+        self.Si = np.append(self.Si, self.Si[0])
+
     def next(self):
         """Sample the next point."""
 
@@ -25,8 +30,5 @@ class NaiveModel(Model):
 
         # the samples need to be in sorted order
         ix = np.argsort(self.Ri)
-        Ri = np.append(self.Ri[ix], 2*np.pi)
-        Si = np.append(self.Si[ix], self.Si[0])
-
-        self.S_mean = np.interp(self.R, Ri, Si)
+        self.S_mean = np.interp(self.R, self.Ri[ix], self.Si[ix])
         self.S_var = np.zeros(self.S_mean.shape)
