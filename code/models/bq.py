@@ -456,7 +456,8 @@ class BQ(object):
         int_K_tl_vec = self._gaussint1(x_s, self.gp_logS)
         int_inv_int = mdot(int_K_tl_vec, inv_K_tl, int_K_tl_K_l_mat)
         E_m_l_C_tl = float(dot(int_K_tl_K_l_vec - int_inv_int, alpha_l))
-        assert E_m_l_C_tl > 0
+        if E_m_l_C_tl <= 0:
+            print "Warning: E[m_l C_tl] = %f" % E_m_l_C_tl
 
         ## Third term
         # E[C_tl | x_s] =
