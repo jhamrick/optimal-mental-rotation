@@ -30,7 +30,7 @@ def mvn_logpdf(x, m, C, Z=None):
 
 
 def improve_covariance_conditioning(M):
-    sqd_jitters = np.max(EPS, np.max(M)) * 1e-4
+    sqd_jitters = np.max([EPS, np.max(M)]) * 1e-4
     M += np.eye(M.shape[0]) * sqd_jitters
 
 
