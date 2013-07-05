@@ -1,23 +1,24 @@
 import numpy as np
-from functools import wraps
-
 from . import Model
 from search import hill_climbing
 
 
 class NaiveModel(Model):
 
-    @wraps(Model.__init__)
     def __init__(self, *args, **kwargs):
         super(NaiveModel, self).__init__(*args, **kwargs)
-        self.sample(2*np.pi)
 
     def next(self):
         """Sample the next point."""
 
         self.debug("Finding next sample")
 
-        if not hill_climbing(self):
+        cont = hill_climbing(self)
+        self.fit()
+        self.integrate()
+        self.print_Z(level=0)
+
+        if not cont:
             raise StopIteration
 
     def fit(self):
@@ -27,23 +28,8 @@ class NaiveModel(Model):
 
         # the samples need to be in sorted order
         ix = np.argsort(self.Ri)
-        Ri = self.Ri[ix]
-        Si = self.Si[ix]
+        Ri = np.append(self.Ri[ix], 2*np.pi)
+        Si = np.append(self.Si[ix], self.Si[0])
 
         self.S_mean = np.interp(self.R, Ri, Si)
         self.S_var = np.zeros(self.S_mean.shape)
-
-    def integrate(self):
-        """Compute the mean and variance of Z:
-
-        $$Z = \int S(X_b, X_R)p(R) dR$$
-
-        """
-
-        if self.S_mean is None or self.S_var is None:
-            raise RuntimeError(
-                "S_mean or S_var is not set, did you call self.fit first?")
-
-        self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
-        self.Z_var = 0
-        self.print_Z(level=0)
