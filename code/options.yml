@@ -35,7 +35,7 @@
     ntry_vm: 20,
 
     # observation noise for bayesian quadrature
-    s: 0.0000001,
+    s: 0.01,
     # output scale for bayesian quadrature
     h: null,
     # periodic scale
