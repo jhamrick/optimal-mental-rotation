@@ -1,39 +1,23 @@
 import numpy as np
-from functools import wraps
-from model_base import Model
+from . import Model
 
 
 class GoldStandardModel(Model):
 
-    @wraps(Model.__init__)
-    def __init__(self, *args, **kwargs):
-        super(GoldStandardModel, self).__init__(*args, **kwargs)
-        self._rotations = np.arange(self.R.size, dtype='i8')
-
     def next(self):
         """Sample the next point."""
 
-        self.ix = range(self._rotations.size)
+        while self.num_samples_left > 0:
+            rcurr, scurr = self.curr_val
+            self.sample(rcurr + np.radians(1))
+
+        self.fit()
+        self.integrate()
         raise StopIteration
 
     def fit(self):
         """Fit the likelihood function."""
 
-        self.Ri = self.R[self.ix]
-        self.Si = self.S[self.ix]
-        self.S_mean = self.Si.copy()
+        ix = np.argsort(self.Ri)
+        self.S_mean = np.append(self.Si[ix], self.Si[0])
         self.S_var = np.zeros(self.S_mean.shape)
-
-    def integrate(self):
-        """Compute the mean and variance of Z:
-
-        $$Z = \int S(X_b, X_R)p(R) dR$$
-
-        """
-
-        if self.S_mean is None or self.S_var is None:
-            raise RuntimeError(
-                "S_mean or S_var is not set, did you call self.fit first?")
-
-        self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
-        self.Z_var = 0

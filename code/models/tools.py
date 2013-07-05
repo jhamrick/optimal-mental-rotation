@@ -2,6 +2,38 @@ import os
 import numpy as np
 
 
+def similarity(X0, X1, opt):
+    """Computes the similarity between sets of vertices `X0` and `X1`."""
+    # the beginning is the same as the end, so ignore the last vertex
+    x0 = X0[:-1]
+    x1 = X1[:-1]
+    # number of points and number of dimensions
+    n, D = x0.shape
+    # covariance matrix
+    Sigma = np.eye(D) * opt['sigma_s']
+    invSigma = np.eye(D) * (1. / opt['sigma_s'])
+    # iterate through all permutations of the vertices -- but if
+    # two vertices are connected, they are next to each other in
+    # the list (or on the ends), so we really only need to cycle
+    # through 2n orderings (once for the original ordering, and
+    # once for the reverse)
+    e = np.empty(2*n)
+    for i in xrange(n):
+        idx = np.arange(i, i+n) % n
+        d = x0 - x1[idx]
+        e[i] = -0.5 * np.sum(np.dot(d, invSigma) * d)
+    for i in xrange(n):
+        idx = np.arange(i, i+n)[::-1] % n
+        d = x0 - x1[idx]
+        e[i+n] = -0.5 * np.sum(np.dot(d, invSigma) * d)
+    # constants
+    Z0 = (D / 2.) * np.log(2 * np.pi)
+    Z1 = 0.5 * np.linalg.slogdet(Sigma)[1]
+    # overall similarity, marginalizing out order
+    S = np.sum(np.exp(e + Z0 + Z1 - np.log(n)))
+    return S
+
+
 def print_line(char='-', verbose=1):
     if verbose > 0:
         print "\n" + char*70
