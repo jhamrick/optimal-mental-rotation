@@ -4,9 +4,6 @@ from . import Model
 
 class GoldStandardModel(Model):
 
-    def __init__(self, *args, **kwargs):
-        super(GoldStandardModel, self).__init__(*args, **kwargs)
-
     def next(self):
         """Sample the next point."""
 

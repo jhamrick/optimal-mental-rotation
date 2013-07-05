@@ -5,9 +5,6 @@ from search import hill_climbing
 
 class NaiveModel(Model):
 
-    def __init__(self, *args, **kwargs):
-        super(NaiveModel, self).__init__(*args, **kwargs)
-
     def next(self):
         """Sample the next point."""
 
