@@ -4,6 +4,7 @@ import tools
 import copy
 import warnings
 from itertools import izip
+from snippets.safemath import normalize
 
 
 class Model(object):
@@ -78,12 +79,16 @@ class Model(object):
         self.p_XaXb_h0 = self.p_Xa * self.p_Xb
 
         # compute similarities
+        self.S = np.array(
+            [tools.similarity(self.Xb, X, self.opt) for X in self.Xm])
+        # we use an importance weighting trick to account for needing
+        # to use a gaussian prior -- multiply the likelihood by p(x) / q(x),
+        # where p(x) is the true prior (uniform) and q(x) is the gaussian.
+        px_qx = np.ones(self.S.shape) / (2*np.pi * self.pR)
         self._S_scale = (
             (self.Xa.shape[0] - 1) /
             (2 * np.pi * self.opt['sigma_s'] * self.opt['scale']))
-        self.S = np.array(
-            [tools.similarity(self.Xb, X, self.opt) for X in self.Xm])
-        self.S *= self._S_scale
+        self.S = self.S * px_qx * self._S_scale
 
         # possible sample points
         self._all_samples = {}
