@@ -2,6 +2,7 @@ import numpy as np
 import scipy.misc
 import tools
 import copy
+import warnings
 from itertools import izip
 
 
@@ -89,8 +90,9 @@ class Model(object):
         deg = np.round(np.degrees(self.R)).astype('i8') % 360
         for R, S in izip(deg, self.S):
             if R in self._all_samples:
-                print("Warning: rotation %d already exists, "
-                      "overwriting" % R)
+                warnings.warn(
+                    "Warning: rotation %d already exists, "
+                    "overwriting" % R, RuntimeWarning)
             self._all_samples[R] = S
 
         self.initialize()
