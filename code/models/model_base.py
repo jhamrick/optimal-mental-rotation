@@ -172,7 +172,7 @@ class Model(object):
         d = int(np.round(np.degrees(R)))
         S = self._get_S(d)
         if not self.observed(R):
-            self.Ri = np.append(self.Ri, R)
+            self.Ri = np.append(self.Ri, R % (2*np.pi))
             self.Si = np.append(self.Si, S)
         # add to the list of sampled regardless of whether we've
         # already seen it, so we can keep track of the sequence of

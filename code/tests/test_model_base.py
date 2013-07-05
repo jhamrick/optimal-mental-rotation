@@ -64,19 +64,25 @@ def test_observed():
 def test_sample():
     def check(m, r):
         s = m.sample(r)
+        rw = r % (2*np.pi)
         d = int(np.round(np.degrees(r)))
+        dw = int(np.round(np.degrees(rw)))
         assert (m._sampled == np.array([0, d])).all()
-        assert (m.Ri == np.array([m.R[0], r])).all()
+        assert (m.Ri == np.array([m.R[0], rw])).all()
         assert np.allclose(m.Si, np.array([m.S[0], s]))
         m.sample(r)
         assert (m._sampled == np.array([0, d, d])).all()
-        assert (m.Ri == np.array([m.R[0], r])).all()
+        assert (m.Ri == np.array([m.R[0], rw])).all()
+        assert np.allclose(m.Si, np.array([m.S[0], s]))
+        m.sample(rw)
+        assert (m._sampled == np.array([0, d, d, dw])).all()
+        assert (m.Ri == np.array([m.R[0], rw])).all()
         assert np.allclose(m.Si, np.array([m.S[0], s]))
 
     m0 = setup()
     for i in xrange(20):
         m = m0.copy()
-        r = np.random.uniform(0, 2*np.pi)
+        r = np.random.uniform(-2*np.pi, 2*np.pi)
         yield check, m, r
 
 
