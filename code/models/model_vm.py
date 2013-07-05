@@ -1,5 +1,5 @@
 import numpy as np
-import scipy.optimize as sopt
+import scipy.optimize as optim
 
 from . import Model
 from search import hill_climbing
@@ -57,7 +57,12 @@ class VonMisesModel(Model):
 
         self.debug("Finding next sample")
 
-        if not hill_climbing(self):
+        cont = hill_climbing(self)
+        self.fit()
+        self.integrate()
+        self.print_Z(level=0)
+
+        if not cont:
             raise StopIteration
 
     def fit(self):
@@ -76,7 +81,7 @@ class VonMisesModel(Model):
             p0 = (t0, k0, z0)
 
             # run mimization function
-            popt = sopt.minimize(
+            popt = optim.minimize(
                 fun=self._mse,
                 x0=p0,
                 args=(self.Ri, self.Si),
@@ -108,18 +113,3 @@ class VonMisesModel(Model):
         self.S_var = np.zeros(self.S_mean.shape)
 
         self.debug("Best parameters: %s" % self.theta, level=2)
-
-    def integrate(self):
-        """Compute the mean and variance of Z:
-
-        $$Z = \int S(X_b, X_R)p(R) dR$$
-
-        """
-
-        if self.S_mean is None or self.S_var is None:
-            raise RuntimeError(
-                "S_mean or S_var is not set, did you call self.fit first?")
-
-        self.Z_mean = np.trapz(self.opt['prior_R'] * self.S_mean, self.R)
-        self.Z_var = 0
-        self.print_Z(level=0)
