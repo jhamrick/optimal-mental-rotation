@@ -180,8 +180,7 @@ def calc_MSE(models, data):
     gs_Z_mean, gs_Z_std = process_Z(data["GoldStandardModel"])
     for model in models:
         Z_mean, Z_std = process_Z(data[model])
-        normed_err = (gs_Z_mean - Z_mean) / np.ptp(gs_Z_mean)
-        MSE[model] = np.mean(normed_err ** 2)
+        MSE[model] = np.mean((gs_Z_mean - Z_mean) ** 2)
     return MSE
 
 
@@ -190,7 +189,7 @@ def MSE_latex(models, MSE, shortnames):
     for model in models:
         shortname = shortnames[model]
         mse = MSE[model]
-        latex.append(new_cmd("%sMSE" % shortname, r"\MSE{}=%.2f" % mse))
+        latex.append(new_cmd("%sMSE" % shortname, r"\MSE{}=%.3f" % mse))
     return "".join(latex)
 
 
