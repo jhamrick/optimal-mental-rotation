@@ -1,0 +1,500 @@
+\documentclass{article} % For LaTeX2e
+\usepackage{nips12submit_e,times}
+%\documentstyle[nips12submit_09,times,art10]{article} % For LaTeX 2.09
+
+\usepackage{amsmath, amsthm, amssymb}
+% \usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{subcaption}
+
+\pagestyle{empty}
+
+\title{Mental Rotation as Bayesian Quadrature}
+\author{Jessica B.~Hamrick and Thomas L.~Griffiths\\
+  Department of Psychology\\
+  University of California, Berkeley\\
+  Berkeley, CA 94720\\
+  \texttt{\{jhamrick,tom\_griffiths\}@berkeley.edu}}
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to \LaTeX{} to determine where to break
+% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
+% puts 3 of 4 authors names on the first line, and the last on the second
+% line, try using \AND instead of \And before the third author name.
+
+\newcommand{\TODO}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\ME}[0]{\mathrm{ME}}
+\newcommand{\naive}[0]{na\"ive}
+\newcommand{\Naive}[0]{Na\"ive}
+
+\include{nips-2013-analyses}
+
+\nipsfinalcopy % Uncomment for camera-ready version
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  Given a computational resource--for example, the ability to
+  visualize an object rotating--how do you best make use of it? We
+  explored how mental simulation should used in the classic
+  psychological task of determining if two images depict the same
+  object in different orientations. We compared three models on this
+  mental rotation task, and found that a model based on an optimal
+  experiment design for Bayesian quadrature is objectively more
+  accurate and qualitatively more consistent with classic behavioral
+  data than the other models we evaluated. We suggest that rational
+  models which adaptively exploit available resources are promising in
+  their ability to characterize metacognitive processes like mental
+  simulation.
+\end{abstract}
+
+\section{Introduction}
+
+One of the challenges of solving any computational problem is
+determining how best to use the available computing resources. For
+example, a computer can render complex graphics faster by recognizing
+that this kind of computation should be carried out by a specialized
+graphics processor. The same challenge arises in designing an
+intelligent agent: how should the agent make best use of its computing
+resources? Recent research on rational models of human cognition has
+provided insight into the nature of the computational problems that
+human beings need to solve (e.g., \cite{Chater:1999wp,tenenbaumkgg11}),
+but leaves open the question of how people allocate their resources in
+solving those problems. In this paper, we take a step towards
+addressing this question, applying rational analysis (in the spirit of
+\cite{Marr:1983to,anderson90,Shepard:1987tt}) to one aspect of human
+metacognition: the use of mental simulation.
+
+Consider the images on the left in Figure
+\ref{fig:mental-rotation}. In each panel, are the two depicted objects
+identical (except for a rotation), or distinct? When presented with
+this mental rotation task, people default to a strategy in which they
+visualize one object rotating until it is congruent with the other
+\cite{Shepard1971}. There is strong evidence for such mental
+simulation: we can imagine three-dimensional objects in our minds and
+manipulate them, to a certain extent, as if they were real
+\cite{Kosslyn:2009tj}.  However, the use of mental simulation is
+predicated on determining appropriate parameters to give the
+simulation, analogous to determining exactly what computation should
+be passed to a graphics processor.  In the case of the classic mental
+rotation task, we might ask: How do people know which way to rotate
+the object?  When should one stop rotating and accept the hypothesis
+that the objects are different?
+
+Recent work in cognitive science has shown how problems of allocating
+cognitive resources to solving computational problems can be analyzed
+using the methods of statistical decision theory
+\cite{Lieder:2012wg,Vul:2009wy}. We apply this ``rational
+metacognition'' approach to the problem of mental rotation. We
+investigate several computational solutions to this task and
+qualitatively compare them to human mental rotation performance. In
+particular, we argue that performing mental rotation can be framed as
+integration over a probability distribution, with the direction of
+rotation becoming an optimal experiment design problem (or in machine
+learning parlance, an active learning problem). We show that recent
+work on methods for Bayesian quadrature
+\cite{Diaconis:1988uo,OHagan:1991tx,Osborne:2012tm} provides a way to
+solve this problem, outperforming simpler heuristics for determining
+the direction and extent of rotation.
+
+The plan of the paper is as follows. First, we present the problem
+domain and a computational-level analysis of how to solve it. We
+describe two different models which approximate this solution,
+evaluate their accuracy at approximating the computational solution,
+and qualitatively compare their behavior to that of the classic mental
+rotation results. We end with a brief summary and conclusion of our
+approach.
+
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.7\textwidth]{../figures/shepard-rotation.png}
+  \caption{\textbf{Classic mental rotation task}. Participants in
+    \cite{Shepard1971} saw stimuli such as those on the left, and
+    judged whether each pair of shapes was the same shape in two
+    different orientations (``same'' pairs), or two different shapes
+    (``different'' pairs). \textbf{A} and \textbf{B} show ``same''
+    pairs, while \textbf{C} shows a ``different'' pair. The plots on
+    the right indicate mean response times on the mental rotation
+    task, exhibiting a strong linear relationship with increasing
+    variance as a function of true rotation.}
+  \label{fig:mental-rotation}
+\end{figure}
+
+% \section{Background}
+
+% There is a long and rich history of work on mental rotation beginning
+% with Shepard and Metzler \cite{Shepard1971}, who presented
+% participants with pairs of images such as those shown in Figure
+% \ref{fig:mental-rotation} (left panel). These pairs of
+% three-dimensional objects could either be: the same object rotated in
+% the plane (Figure \ref{fig:mental-rotation}A), the same object rotated
+% in depth (Figure \ref{fig:mental-rotation}B), or two different objects
+% (Figure \ref{fig:mental-rotation}C; in this case, the ``different''
+% objects had reflective symmetry, but no rotational
+% symmetry). Participants had to determine whether the two images were
+% of the same object or not, and Shepard and Metzler famously found that
+% response times for plane and depth rotations had a strong linear
+% relationship with the minimum angle of rotation between the two
+% objects (Figure \ref{fig:mental-rotation}, right panel). The
+% conclusion was that participants were visually ``rotating'' the
+% objects in their minds.
+
+% For many years, this idea was contested, with some researchers arguing
+% the underlying cognitive processes were not visual in nature (e.g.,
+% \cite{Pylyshyn1981}). In particular, Anderson \cite{Anderson1978}
+% proved that the mental imagery debate could not be resolved on the
+% basis of response time data alone. In recent years, however,
+% significant efforts have investigated the neural underpinnings of the
+% mental rotation phenomena, arguing that the results of brain imaging
+% studies support the existence of visual imagery
+% \cite{Kosslyn:2009tj,Kosslyn1988}.  We assume that mental imagery is
+% indeed a visual process, and turn to the question of how, and when, it
+% is used. Previous work has examined how people might use imagery
+% \cite{Hegarty2004, Schwartz1999} to solve reasoning problems, and when
+% they might use imagery as opposed to a symbolic rule
+% \cite{Schwartz:1996uy}. Eye-tracking studies of people performing
+% mental rotations suggest strategies that people might be using, such
+% as aligning smaller features of the images \cite{Just1976}. People
+% seem to use imagery methodically, which raises the question: what is
+% the method?
+
+% Others studying people's pattern of behavior when engaged in
+% self-directed learning have found that they tend to use a strategy of
+% \textit{active learning} \cite{Gureckis:2012gu,Markant:2012uu}. When
+% given a choice as to the information they can obtain, people will not
+% choose the information randomly (as is the case with a \naive{} Monte
+% Carlo sampler), but according to some utility function such as
+% information gain \cite{Markant:2012uu,Nelson2007}. We propose that
+% such a strategy can be combined with the notion of mental imagery as a
+% tool: an optimal model of mental rotation may, perhaps, rely on an
+% active learning strategy. In the next sections, we investigate this
+% idea with several different approaches.
+
+\section{Computational-level model}
+
+We begin by first analyzing mental rotation at Marr's
+\textit{computational} level \cite{Marr:1983to}: what is the problem
+to be solved, and what is the optimal way to do so?  Formally, people
+are presented with two images, $X_a$ and $X_b$, which are the
+coordinates of the vertices of two-dimensional shapes similar to those
+used by \cite{Cooper:1975wp} (e.g., Figure
+\ref{fig:stimuli}). Participants must determine whether $X_a$ and
+$X_b$ were generated from the same (albeit possibly transformed and
+permuted) original shape, i.e., whether $\exists R,M\textrm{ s.t. }
+X_b=MRX_a$, where $M$ is a permutation matrix and $R$ is a rotation
+matrix.
+
+We can formulate the judgment of whether $X_a$ and $X_b$ have the same
+origins by deciding about two hypotheses, $h_0$: $\forall M,R\ X_b\neq
+MRX_a$ and $h_1$: $\exists M,R\textrm{ s.t. } X_b=MRX_a$.  To compare
+the hypotheses, we need to compute the posterior for each: $p(h\
+\vert\ X_a, X_b)\propto p(X_a, X_b\ \vert\ h)p(h)$.
+
+Assuming the hypotheses are equally likely \textit{a priori}, the
+prior term $p(h)$ will cancel out when comparing $h_0$ and $h_1$, thus
+allowing us to focus on the likelihoods:
+\begin{align}
+  p(X_a,\ X_b\ \vert \ h_0)&=p(X_a)p(X_b), \label{eq:lh-h0}\\
+  p(X_a,\ X_b\ \vert \ h_1)&=\int_R\int_M p(X_a) p(X_b\vert X_a,R,M) p(R) p(M)\ \mathrm{d}M\ \mathrm{d}R. \label{eq:lh-h1}
+\end{align}
+Under $h_0$, the likelihood is easy to compute because we assume that
+$X_a$ and $X_b$ are independent (Equation \ref{eq:lh-h0}). When the
+configurations are the same, the likelihood becomes more complicated
+(Equation \ref{eq:lh-h1}). For a small number of vertices, we can
+compute the integral over $M$ by enumerating every possible mapping
+between $X_a$ and $X_b$. After doing so, we obtain:
+\begin{equation} 
+  p(X_a,\ X_b\ \vert \ h_1)=\int_R p(X_a) p(X_b\vert X_a,R) p(R)\ \mathrm{d}R.
+\end{equation}
+
+Once we have computed both likelihoods, we compute their ratio $\ell$
+which is given by $\ell=\left(\int_R p(X_b\ \vert\ X_a, R)p(R)\
+  \mathrm{d}R\right) /\ p(X_b)$. If $\ell<1$, then $h_0$ is the more
+likely hypothesis. If $\ell>1$, then $h_1$ is the more likely
+hypothesis.
+
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[b]{0.32\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{../figures/stimuli_shapes.pdf}
+    \vspace{0pt}
+    \caption{Example stimuli}
+    \label{fig:stimuli}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.32\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{../figures/li_regression.pdf}
+    \caption{\Naive{} model}
+    \label{fig:li}
+  \end{subfigure}
+  \begin{subfigure}[b]{0.32\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{../figures/bq_regression_final.pdf}
+    \caption{Bayesian Quadrature Model}
+    \vspace{0pt}
+    \label{fig:bq}
+  \end{subfigure}
+  \caption{\textbf{(a)} An example stimulus in which the shapes differ
+    only by a rotation. All stimuli consist of three to six vertices
+    centered around the origin, and edges which create a closed loop
+    from the vertices. The true angle of rotation between $X_a$ and
+    $X_b$ is at $\frac{2\pi}{3}$. \textbf{(b-c)} Likelihood function
+    and \naive{} (b) and BQ (c) model estimates. The sampled points
+    $\mathbf{R}$ (red circles) are then used to estimate $S$ (black
+    lines are the true $S$, red lines are the estimate).}
+  \label{fig:shapes}
+\end{figure}
+
+\section{Metacognitive algorithms}
+
+Given the computational model defined above, we now explore the ways
+in which it can be expressed algorithmically. First, we define the
+prior probabilities over stimuli according to a generative
+procedure. A set of $n$ vertices could be chosen in any of $n!$
+different ways, and each vertex is located at a random angle (between
+0 and $2\pi$) and radius (between 0 and 1). Thus, the prior over a
+shape $X$ is $p(X)=n!\left(\frac{1}{2\pi}\right)^n$, which gives us
+the denominator of $\ell$. Computing the numerator is more difficult,
+as we we cannot compute $p(X_b\vert X_a, R)$ directly. Instead, we
+introduce a new variable $X_R$ denoting a mental image, which
+approximates $RX_a$. The $X_R$ are generated by repeated application
+of a function $\tau$:
+\begin{equation}
+  X_R=RX_a=\tau(X_{R-r}, r)=\tau(\tau(X_{R-2r}, r), r)=\ldots{}=\tau^{(\frac{R}{r})}(X_a, r).
+  \label{eq:tau}
+\end{equation} 
+where $r$ is a small angle, and $\tau^{(i)}$ indicates $i$ recursive
+applications of $\tau$. Using this sequential function, we get:
+\begin{align}
+  p(X_a, X_b\ \vert \ h_1)&=\int_R \int_{X} p(X_b\vert X) p(X\vert X_a, R)p(X_a)p(R)\ \mathrm{d}X\ \mathrm{d}R \nonumber \\
+  &= \int_R \int_X p(X_b\vert X)\delta(\tau^{(\frac{R}{r})}(X_a, r)-X)p(X_a)p(R)\ \mathrm{d}X\ \mathrm{d}R \nonumber \\
+  &= \int_R p(X_b\vert X_R)p(X_a)p(R)\ \mathrm{d}R
+\end{align}
+However, the exact form of $p(X_b\vert X_R)$ is still unknown. We
+approximate it with a similarity function $S(X_b, X_R)$, and denote
+the resulting integral as $Z$:
+\begin{equation}
+Z=\int_R S(X_b, X_R)p(R)\ \mathrm{d}R\approx \int_R p(X_b\vert X_R)p(R)\ \mathrm{d}R.
+\label{eq:Z}
+\end{equation}
+We define the similarity function $S$, which incorporates the
+different mappings as vertices, as follows. Because the vertices are
+connected in a way which forms a closed loop, we need only consider
+$2n$ mappings of the $n$ vertices (we assume uncertainty for which is
+the ``first'' vertex, and then which of its two neighbors is the
+``second''). So, the possible orderings are of the form $M=\lbrace{}0,
+1, \ldots{}, n\rbrace{}$, $M=\lbrace{}n, 0, \ldots{}, n-1\rbrace{}$,
+and so on. Combining this with a Gaussian similarity metric, we
+obtain:
+\begin{equation}
+  S(X_b, X_R)=\frac{1}{2n}\sum_{M\in\mathbb{M}}\prod_{i=1}^n\mathcal{N}(X_b[i]\ \vert \ (MX_R)[i], \Sigma)
+  \label{eq:similarity}
+\end{equation}
+where $i$ denotes the $i^{th}$ vertex. An example stimulus and
+corresponding $S$ is shown in Figure \ref{fig:shapes}.
+
+To summarize, the process of generating a mental image consists of
+computing a single $X_R$ (as in Equation \ref{eq:tau}) and then
+computing $S(X_b, X_R)$. We denote the sequence of rotations computed
+by this procedure as $\mathbf{R}=\{R_1, R_2, \ldots{}\}$. However,
+this sequence cannot be arbitrary, as mental rotation is
+computationally demanding. Our goal is to minimize the number of
+rotations $\vert\mathbf{R}\vert$ while still obtaining an estimate of
+$Z$ that is accurate enough to choose the correct hypothesis. With
+this in mind, we now examine several approaches to solve this problem.
+
+\paragraph{\Naive{}}
+
+As a baseline, we defined a \naive{} model which performs a
+hill-climbing search over the similarity function until it reaches a
+(possibly local) maximum. Once a maximum as been found, the model
+computes an estimate of $Z$ by linearly interpolating between sampled
+rotations. Figure \ref{fig:li} shows an example of the \naive{}
+model's estimate of $S$.
+
+\paragraph{Bayesian Quadrature}
+
+A more flexible strategy uses what is known as \emph{Bayesian
+  Quadrature} \cite{Diaconis:1988uo,OHagan:1991tx} to estimate $Z$.
+Bayesian Quadrature (BQ) allows us to compute a posterior distribution
+over $Z$ by placing a Gaussian Process (GP) prior on the function $S$
+and evaluating $S$ at a particular set of points. Because our data is
+circular, we use a periodic kernel \cite{Rasmussen:2006vz}.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{../figures/model_rotations.pdf}
+  \caption{\textbf{Model rotations.} Top: each subplot shows the
+    correspondence between the true angle of rotation ($R$) for
+    ``same'' pairs and the amount of rotation performed by the
+    model. Bottom: each subplot shows the models' mean rotations over
+    stimuli pairs that were judged correctly. Black dots correspond to
+    ``same'' pairs, and blue lines correspond to ``different'' pairs
+    (for which the mean rotation is constant across true rotations, as
+    the true rotation is undefined). Error bars/shaded regions
+    indicate one standard deviation, and the dotted lines indicate the
+    least-squares fit to the ``same'' pairs.}
+  \label{fig:rotations}
+\end{figure}
+
+BQ has its difficulties, however. While in our case $S$ is a
+non-negative likelihood function, GP regression enforces no such
+constraint. In an effort to avoid this problem, \cite{Osborne:2012tm}
+give a method to place a prior over the log likelihood\footnote{In
+  practice, as in \cite{Osborne:2012tm}, we use the transform of
+  $\log(S+1)$. Additionally, we follow \cite{Osborne:2012tm} and use a
+  combination of MLII and marginalization to fit the $w$ kernel
+  parameters. The output scales are fixed at $h_S=\sqrt{0.1}$ and
+  $h_{\log S}=\log(h_S + 1)$.}, thus ensuring that $S=e^{\log S}$ will
+be positive:
+\begin{equation*}
+  E[Z\ \vert \ \log S]=\int_{\log S}\left(\int_R \exp(\log{S(X_b,X_R)})p(R)\ \mathrm{d}R\right)\mathcal{N}\left(\log{S}\ \vert \ \mu_{\log S}, \Sigma_{\log S}\right)\ \mathrm{d}\log S
+\end{equation*}
+where $\mu_{\log S}$ and $\Sigma_{\log S}$ are the mean and
+covariance, respectively, of the GP regression over $\log S$ given
+$\mathbf{R}$. We approximate this according to the method given in
+\cite{Osborne:2012tm}:
+\begin{equation}
+  \mu_Z=E[Z\ \vert \ S, \log S, \Delta_c] \approx \int_R \mu_{S}(1 + \mu_{\Delta_c}) p(R)\ \mathrm{d}R 
+  \label{eq:bq-Z-mean}
+\end{equation}
+where $\mu_S$ is the mean of a GP regression over $S$ given
+$\mathbf{R}$; and $\mu_{\Delta_c}$ is a regression over
+$\Delta_c=\mu_{\log S} - \log \mu_S$ given $\mathbf{R}_c$, which
+consists of $\mathbf{R}$ and a set of intermediate \emph{candidate
+  points} $c$ as described in \cite{Osborne:2012tm}. The variance is
+$\tilde{V}(Z\vert S, \log S, \Delta_c)$ as defined in Equation 12 of
+\cite{Osborne:2012tm}.
+
+To start, we pick an initial direction of rotation which results in
+the higher value of $S$. At each step, we compute $\mu_Z$ and
+$\tilde{V}$ in order to estimate a distribution over the likelihood
+ratio $\ell$, i.e.  $p(\ell)\approx\frac{1}{p(X_b)}\ \mathcal{N}(Z\
+\vert\ \mu_Z, \sigma_z)$.  We choose $h_0$ when $p(\ell < 1)\geq
+0.95$, and $h_1$ when $p(\ell > 1)\geq 0.95$. Until one of these
+conditions are met (or the shape has been fully rotated), the model
+will continues to compute rotations and update its estimate of $Z$.
+
+We additionally allow the model to change direction or ``reset'' based
+on an estimate of the posterior variance of $Z$ given some new sample
+$a$. This is similar to the procedure given in \cite{Osborne:2012tm},
+however we do not compute the full posterior variance. Instead, we
+compute the variance given only the current mean estimate of $a$. If
+this estimated variance is lowered more by ``resetting'', then the
+model will change directions. Thus, it is able to have an active say
+in which mental rotations are computed, unlike the hill-climbing
+procedure.
+
+\section{Results}
+
+We evaluated each model's performance on 20 shapes which had between 3
+and 6 vertices, inclusive, (e.g., $X_a$ in Figure
+\ref{fig:stimuli}). For each shape, we computed 18 ``same'' and 18
+``different'' stimuli pairs, with $R$ spaced at $20^\prime$ increments
+between 0 and 360, as in \cite{Shepard1971}. ``Same'' pairs were
+created by rotating $X_a$ by $R$; the same was true for ``different'',
+except that $X_a$ was also reflected across the $y$-axis. Each shape
+was generated randomly, but under the constraint that the
+``same''/``different'' pairs created from the shape were
+distinguisable.
+
+We considered two metrics of performance. First, we looked at
+\textit{response error rates}: How accurate was the model at choosing
+the correct hypothesis? This was defined as the mean error ($\ME{}$),
+or fraction of times the model chose incorrectly.
+
+We also looked at \textit{rotations}: For those ``same'' pairs which
+the model judged correct, how correlated were the model's rotations
+with the true angles of rotation?  We quantified this using the
+Pearson's correlation coefficient $\rho$ for the true rotation ($R$)
+versus the extent of the model's rotations ($\vert
+\mathbf{R}\vert$). The top row in Figure \ref{fig:rotations} shows
+individual points corresponding to true rotations vs. rotations by the
+models for all stimuli, including those judged incorrectly. The bottom
+row shows mean model rotations, across only those stimuli which were
+judged correctly. We structured the analysis in this way to better
+compare to the results of \cite{Shepard1971}, which also excluded
+incorrectly judged stimuli.
+
+\paragraph{\Naive{}} 
+
+The \naive{} model's response error rate was $\NaiveME{}$, which is
+better than chance (equivalent to guessing randomly,
+i.e. $\ME{}=0.5$). The correlation between the \naive{} model's
+average rotation and the true angle of rotation was $\Naivecorr{}$
+(Figure \ref{fig:rotations}, bottom left). More complex patterns are
+revealed by examining the shape of the raw data in Figure
+\ref{fig:rotations}, top left: the \naive{} model corresponds
+extremely well to the true angle of rotation for approximately
+$R<\frac{\pi}{2}$. This is unsurprising, because the closer the true
+angle is to zero, the less the model has to rotate, and the less
+likely it will get stuck on local maxima. Thus, it is more likely to
+locate the global maximum, which corresponds to the true angle of
+rotation. For $R>\frac{\pi}{2}$, we see an increasing tendency to
+under-rotate due to getting stuck on local maxima, as well as a
+tendency to over-rotate if the wrong direction was initially chosen.
+
+
+\paragraph{Bayesian Quadrature}
+
+The BQ model was much more accurate in choosing the correct hypothesis
+than the other two models ($\BQME{}$). The average rotations computed
+by the BQ model were strongly correlated with the true rotations
+($\BQcorr$, see Figure \ref{fig:rotations}, bottom right). Because the
+BQ model has the capacity to ``reset'', it could recover from rotating
+in the incorrect direction (e.g., Figure \ref{fig:bq}) and thus did
+not over-rotate as frequently.  It also under-rotated less frequently:
+because the model continues to rotate until it is confident that its
+estimate of $Z$ is accurate, it does not get stuck as easily on local
+optima.
+
+
+\section{Conclusion}
+
+In this paper, we asked: how do people use mental simulation?  We
+investigated the specific case of mental rotation, using rational
+analysis to characterize optimal strategies for performing mental
+rotation. We found that an adaptive, BQ model performs best at the
+classic rotation task \cite{Shepard1971}, as it is able to actively
+monitor the confidence of its estimate and intelligently choose the
+direction of rotation. Two simpler models based on heuristics
+performed much worse: they did not maintain the linear relationship
+with the true angle of rotation due to lack of robustness against
+local maxima or incorrect rotation direction.  More broadly, the BQ
+model provides answers to puzzling questions surrounding the
+incremental nature of mental rotation: which way should the object be
+rotated, and for how long? This model formalizes these answers in a
+way that is qualitatively consistent with human behavior, both in
+response time linearity \cite{Shepard1971} and variability
+\cite{Just1976}. These results further indicate that this may be
+another instance in which people do appropriately use available
+computational resources to solve the task at hand.  Rational, adaptive
+approaches such as this may therefore be successful when applied to
+more complex cognitive processes above and beyond mental rotation.
+
+% two questions: which way to rotate, when to stop, giving formal answer
+% to these questions which produces answers consistent with human
+% behavior. instance of showing people are appropriately using
+% computationl resources
+
+
+% \textbf{Acknowledgments}
+% \TODO{}
+
+
+% \renewcommand\bibsection{\subsubsection*{\refname}}
+\renewcommand\refname{\normalsize{References}}
+\bibliographystyle{ieeetr}
+{\small \bibliography{references}}
+
+\end{document}
+
+
+
