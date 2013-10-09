@@ -125,6 +125,21 @@ def regression(x, y, xi, yi, xo, yo_mean, yo_var, **kwargs):
         plt.legend(loc=0, fontsize=12, frameon=False)
 
 
+def bq_regression_final(model):
+    plt.figure()
+    R = model.R
+    S = model.S
+    Ri = model.Ri
+    Si = model.Si
+    S_mean = model.S_mean
+    S_var = model.S_var
+    regression(
+        R, S, Ri, Si,
+        R, S_mean, S_var,
+        title="BQ regression for $S$")
+    plt.ylim(0, 1.05)
+
+
 def bq_regression(model):
 
     # plot the regression for S
@@ -340,63 +355,52 @@ def likelihood_all(models):
 
 
 def model_rotations(models):
-    fig, axes = plt.subplots(2, len(models), sharex=True, sharey=True)
-    if len(models) == 1:
-        ax0 = axes[1]
-    else:
-        ax0 = axes[1][0]
+    nm = len(models)
+    fig, axes = plt.subplots(1, 2*nm, sharex=True, sharey=True)
+    ax0 = axes[0]
 
     ax0.set_xticks([0, np.pi / 4., np.pi / 2., 3 * np.pi / 4., np.pi])
     ax0.set_xticklabels([0, 45, 90, 135, 180])
     ax0.set_xlim(-np.pi/16, np.pi+(np.pi/16))
 
     ax0.set_yticks([0, 25, 50, 75, 100])
-    ax0.set_yticklabels([0, 90, 180, 270, 360])
+    # ax0.set_yticklabels([0, 90, 180, 270, 360])
     ax0.set_ylim(-5, 105)
 
     for i in xrange(len(models)):
-        if len(models) == 1:
-            tax = axes[0]
-            bax = axes[1]
-        else:
-            tax = axes[0][i]
-            bax = axes[1][i]
+        tax = axes[i]
+        bax = axes[nm + i]
 
         model = models[i]
         tax.set_title(model, fontsize=12)
+        bax.set_title(model, fontsize=12)
+        tax.set_xlabel(r"True rotation ($R$)")
         bax.set_xlabel(r"True rotation ($R$)")
+
         if i == 0:
-            tax.set_ylabel(r"All rotations")
-            bax.set_ylabel(r"Mean correct rotations")
+            tax.set_ylabel(r"% rotated (out of 360$^\circ$)")
         for ax in (tax, bax):
             sg.outward_ticks(ax=ax)
             sg.clear_right(ax=ax)
             sg.clear_top(ax=ax)
 
-    sg.set_figsize(8, 5.5)
+    sg.set_figsize(12, 3)
     plt.subplots_adjust(
-        wspace=0.1, top=0.9, bottom=0.2,
+        wspace=0.2, top=0.9, bottom=0.2,
         hspace=0.4, left=0.1, right=0.95)
 
     x = np.linspace(-np.pi / 16, np.pi + (np.pi / 16.), 100)
 
     def plot_linreg(i, linreg):
-        if len(models) == 1:
-            tax = axes[0]
-            bax = axes[1]
-        else:
-            tax = axes[0][i]
-            bax = axes[1][i]
+        tax = axes[i]
+        bax = axes[nm + i]
 
         y = x * linreg[0] + linreg[1]
         for ax in (tax, bax):
             ax.plot(x, y, 'k--', dashes=(2, 2), label='linear regression')
 
     def plot_h0(i, mean, std):
-        if len(models) == 1:
-            bax = axes[1]
-        else:
-            bax = axes[1][i]
+        bax = axes[nm + i]
 
         y = np.ones(x.shape) * mean
         yl = y - std
@@ -405,12 +409,8 @@ def model_rotations(models):
         bax.plot(x, y, 'b-', label='"different" pairs', linewidth=2)
 
     def plot_h1(i, x, y, ymean, yerr):
-        if len(models) == 1:
-            tax = axes[0]
-            bax = axes[1]
-        else:
-            tax = axes[0][i]
-            bax = axes[1][i]
+        tax = axes[i]
+        bax = axes[nm + i]
 
         for ia, ang in enumerate(x):
             tax.plot(
