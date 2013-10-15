@@ -69,11 +69,11 @@ addressing this question, applying rational analysis (in the spirit of
 \cite{Marr:1983to,anderson90,Shepard:1987tt}) to one aspect of human
 metacognition: the use of mental simulation.
 
-Consider the images on the left in Fig.
-\ref{fig:mental-rotation}. In each panel, are the two depicted objects
-identical (except for a rotation), or distinct? When presented with
-this mental rotation task, people default to a strategy in which they
-visualize one object rotating until it is congruent with the other
+Consider the images on the left in Fig.~\ref{fig:mental-rotation}. In
+each panel, are the two depicted objects identical (except for a
+rotation), or distinct? When presented with this mental rotation task,
+people default to a strategy in which they visualize one object
+rotating until it is congruent with the other
 \cite{Shepard1971}. There is strong evidence for such mental
 simulation: we can imagine three-dimensional objects in our minds and
 manipulate them, to a certain extent, as if they were real
@@ -122,7 +122,7 @@ We begin by first analyzing mental rotation at Marr's
 \textit{computational} level \cite{Marr:1983to}: what is the problem
 to be solved?  Formally, people are presented with two images, $X_a$
 and $X_b$, which are the coordinates of the vertices of 2D shapes
-(e.g., Fig.  \ref{fig:stimuli}). Participants must determine whether
+(e.g., Fig.~\ref{fig:stimuli}). Participants must determine whether
 $X_a$ and $X_b$ depict the same shape, i.e., whether $\exists
 R\textrm{ s.t. } X_b=RX_a$, where $R$ is a rotation matrix. We can
 formulate the judgment of whether $X_a$ and $X_b$ have the same
@@ -173,8 +173,8 @@ mappings $M$ of the vertices,\footnote{Because the vertices are
   n-1\rbrace{}$, etc.} i.e. $S(X_b,
 X_R)=\frac{1}{2n}\sum_{M\in\mathbb{M}}\prod_{i=1}^n\mathcal{N}(X_b[i]\
 \vert \ (MX_R)[i], \Sigma)$ where $i$ denotes the $i^{th}$ vertex. An
-example stimulus and corresponding $S$ is shown in Fig.
-\ref{fig:shapes}.
+example stimulus and corresponding $S$ is shown in
+Fig.~\ref{fig:shapes}.
 
 To summarize, the process of generating a mental image consists of
 computing a single $X_R$ and then computing $S(X_b, X_R)$. We denote
@@ -191,7 +191,7 @@ We defined a \naive{} model which performs a hill-climbing search over
 the similarity function until it reaches a (possibly local)
 maximum. Once a maximum as been found, the model computes an estimate
 of $Z$ by linearly interpolating between sampled rotations (e.g.,
-Fig. \ref{fig:li}).
+Fig.~\ref{fig:li}).
 
 \paragraph{Bayesian Quadrature}
 
@@ -277,7 +277,7 @@ strategy, unlike the hill-climbing procedure.
 
 We evaluated each model's performance on 20 randomly generated shapes
 which had between three and six vertices, inclusive, (e.g., $X_a$ in
-Fig.  \ref{fig:stimuli}). For each shape, we computed 18 ``same'' and
+Fig.~\ref{fig:stimuli}). For each shape, we computed 18 ``same'' and
 18 ``different'' stimuli pairs, with $R$ spaced at $20^\prime$
 increments between 0 and 360, as in \cite{Shepard1971}. ``Same'' pairs
 were created by rotating $X_a$ by $R$; the same was true for
@@ -291,12 +291,12 @@ correct, how correlated were the model's rotations with the true
 angles of rotation?  We quantified this using the Pearson's
 correlation coefficient $\rho$ for the true rotation ($R$) versus the
 number of steps/rotations take by the model ($\vert
-\mathbf{R}\vert$). Fig. \ref{fig:rotations} shows true rotations vs
+\mathbf{R}\vert$). Fig.~\ref{fig:rotations} shows true rotations vs
 number of steps/rotations by the model for individual stimuli
 (\ref{fig:all-stimuli}) and average per true rotation
 (\ref{fig:correct-stimuli}). This latter analysis can be qualitatively
-compared to the results of \cite{Shepard1971} (Fig.
-\ref{fig:mental-rotation}).
+compared to the results of \cite{Shepard1971}
+(Fig.~\ref{fig:mental-rotation}).
 
 \paragraph{\Naive{}} 
 
@@ -304,7 +304,7 @@ The \naive{} model's response error rate was $\NaiveME{}$, which is
 better than chance (equivalent to guessing randomly,
 i.e. $\ME{}=0.5$). The correlation between the \naive{} model's
 average rotation and the true angle of rotation was $\Naivecorr{}$
-(Fig. \ref{fig:correct-stimuli}, left). For $R<\frac{\pi}{2}$, the
+(Fig.~\ref{fig:correct-stimuli}, left). For $R<\frac{\pi}{2}$, the
 \naive{} model corresponds extremely well to the true angle of
 rotation; this is because it needs to rotate less and is therefore
 less likely to get stuck on local maxima. For $R>\frac{\pi}{2}$, we
@@ -318,10 +318,10 @@ The BQ model was much more accurate in choosing the correct hypothesis
 than the other model ($\BQME{}$). The number of rotations computed by
 the BQ model were strongly correlated with the true rotations
 ($\BQcorr$), a result which is qualitatively similar to that exhibited
-by humans (Fig. \ref{fig:mental-rotation}
-vs. Fig. \ref{fig:correct-stimuli}, right). Because the BQ model has
+by humans (Fig.~\ref{fig:mental-rotation}
+vs. Fig.~\ref{fig:correct-stimuli}, right). Because the BQ model has
 the capacity to ``reset'', it could recover from rotating in the
-incorrect direction (e.g., Fig. \ref{fig:bq}) and thus did not
+incorrect direction (e.g., Fig.~\ref{fig:bq}) and thus did not
 over-rotate as frequently.  It also under-rotated less frequently:
 because the model continues to rotate until it is confident in its
 estimate of $Z$, it does not get stuck as easily on local optima.
