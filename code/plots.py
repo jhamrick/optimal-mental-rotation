@@ -356,20 +356,31 @@ def likelihood_all(models):
 
 def model_rotations(models):
     nm = len(models)
-    fig, axes = plt.subplots(1, 2*nm, sharex=True, sharey=True)
-    ax0 = axes[0]
 
-    ax0.set_xticks([0, np.pi / 4., np.pi / 2., 3 * np.pi / 4., np.pi])
-    ax0.set_xticklabels([0, 45, 90, 135, 180])
-    ax0.set_xlim(-np.pi/16, np.pi+(np.pi/16))
+    figA, axesA = plt.subplots(1, nm, sharex=True, sharey=True)
+    sg.set_figsize(6, 3)
+    plt.subplots_adjust(
+        wspace=0.2, top=0.9, bottom=0.2,
+        hspace=0.4, left=0.12, right=0.95)
 
-    ax0.set_yticks([0, 25, 50, 75, 100])
-    # ax0.set_yticklabels([0, 90, 180, 270, 360])
-    ax0.set_ylim(-5, 105)
+    figB, axesB = plt.subplots(1, nm, sharex=True, sharey=True)
+    sg.set_figsize(6, 3)
+    plt.subplots_adjust(
+        wspace=0.2, top=0.9, bottom=0.2,
+        hspace=0.4, left=0.1, right=0.95)
+
+    for ax0 in [axesA[0], axesB[0]]:
+        ax0.set_xticks([0, np.pi / 4., np.pi / 2., 3 * np.pi / 4., np.pi])
+        ax0.set_xticklabels([0, 45, 90, 135, 180])
+        ax0.set_xlim(-np.pi/16, np.pi+(np.pi/16))
+
+        ax0.set_yticks([0, 25, 50, 75, 100])
+        # ax0.set_yticklabels([0, 90, 180, 270, 360])
+        ax0.set_ylim(-5, 105)
 
     for i in xrange(len(models)):
-        tax = axes[i]
-        bax = axes[nm + i]
+        tax = axesA[i]
+        bax = axesB[i]
 
         model = models[i]
         tax.set_title(model, fontsize=12)
@@ -384,23 +395,18 @@ def model_rotations(models):
             sg.clear_right(ax=ax)
             sg.clear_top(ax=ax)
 
-    sg.set_figsize(12, 3)
-    plt.subplots_adjust(
-        wspace=0.2, top=0.9, bottom=0.2,
-        hspace=0.4, left=0.1, right=0.95)
-
     x = np.linspace(-np.pi / 16, np.pi + (np.pi / 16.), 100)
 
     def plot_linreg(i, linreg):
-        tax = axes[i]
-        bax = axes[nm + i]
+        tax = axesA[i]
+        bax = axesB[i]
 
         y = x * linreg[0] + linreg[1]
         for ax in (tax, bax):
             ax.plot(x, y, 'k--', dashes=(2, 2), label='linear regression')
 
     def plot_h0(i, mean, std):
-        bax = axes[nm + i]
+        bax = axesB[i]
 
         y = np.ones(x.shape) * mean
         yl = y - std
@@ -409,8 +415,8 @@ def model_rotations(models):
         bax.plot(x, y, 'b-', label='"different" pairs', linewidth=2)
 
     def plot_h1(i, x, y, ymean, yerr):
-        tax = axes[i]
-        bax = axes[nm + i]
+        tax = axesA[i]
+        bax = axesB[i]
 
         for ia, ang in enumerate(x):
             tax.plot(
@@ -430,29 +436,12 @@ def model_rotations(models):
             color='k',
             label='"same" pairs')
 
-    def plot_legend():
-        if len(models[1:]) == 1:
-            ax = axes[1]
-        else:
-            ax = axes[1][1]
-        leg = ax.legend(
-            loc='upper center',
-            frameon=True,
-            numpoints=1,
-            fontsize=12,
-            bbox_to_anchor=(0.5, 1.34),
-            ncol=3)
-        leg.get_frame().set_edgecolor('white')
-        leg.get_frame().set_color('#CCCCCC')
-        ax.set_zorder(100)
-
     funcs = {
         'linreg': plot_linreg,
         'h0': plot_h0,
         'h1': plot_h1,
-        'legend': plot_legend
     }
-    return fig, axes, funcs
+    return figA, figB, axesA, axesB, funcs
 
 
 def model_z_accuracy(models):
