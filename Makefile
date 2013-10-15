@@ -1,4 +1,4 @@
-.PHONY: figures pdf notes proposal clean-figs clean-pdf clean
+.PHONY: figures pdf notes proposal project nips nips-workshop clean clean-figs clean-pdf
 
 all: figures pdf
 
@@ -7,7 +7,7 @@ figures:
 	./makefigs.sh
 
 
-pdf: notes nips
+pdf: nips-workshop
 notes:
 	./nb2pdf.sh notes
 proposal:
@@ -16,6 +16,8 @@ project:
 	./tex2pdf.sh final-project
 nips:
 	./tex2pdf.sh nips-2013
+nips-workshop:
+	./tex2pdf.sh nips-2013-bayesian-optimization
 
 clean: clean-figs clean-pdf
 clean-figs:
@@ -27,3 +29,4 @@ clean-pdf:
 	rm -rf man/proposal_files/
 	rm -rf man/final-project_files/
 	rm -rf man/nips-2013_files/
+	rm -rf man/nips-2013-bayesian-optimization_files/
