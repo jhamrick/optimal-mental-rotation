@@ -40,7 +40,7 @@
 \begin{abstract}
   Given a computational resource--for example, the ability to
   visualize an object rotating--how do you best make use of it? We
-  explored how mental simulation should used in the classic
+  explored how mental simulation should be used in the classic
   psychological task of determining if two images depict the same
   object in different orientations. We compared two models on this
   mental rotation task, and found that a model based on an optimal
@@ -118,27 +118,27 @@ the direction and extent of rotation.
 
 \section{Computational-level model}
 
-We begin by first analyzing mental rotation at Marr's
-\textit{computational} level \cite{Marr:1983to}: what is the problem
-to be solved?  Formally, people are presented with two images, $X_a$
-and $X_b$, which are the coordinates of the vertices of 2D shapes
-(e.g., Fig.~\ref{fig:stimuli}). Participants must determine whether
-$X_a$ and $X_b$ depict the same shape, i.e., whether $\exists
-R\textrm{ s.t. } X_b=RX_a$, where $R$ is a rotation matrix. We can
-formulate the judgment of whether $X_a$ and $X_b$ have the same
-origins by deciding about two hypotheses, $h_0$: $\forall R\ X_b\neq
-RX_a$ and $h_1$: $\exists R\textrm{ s.t. } X_b=RX_a$.  To compare the
-hypotheses, we need to compute the posterior for each: $p(h\ \vert\
-X_a, X_b)\propto p(X_a, X_b\ \vert\ h)p(h)$. Assuming the hypotheses
-are equally likely \textit{a priori}, the prior term $p(h)$ will
-cancel out when comparing $h_0$ and $h_1$, thus allowing us to focus
-on the likelihoods, which are $p(X_a,\ X_b\ \vert \ h_0)=p(X_a)p(X_b)$
-for $h_0$ and $p(X_a,\ X_b\ \vert \ h_1)=\int_R p(X_a) p(X_b\vert
-X_a,R) p(R)\ \mathrm{d}R$ for $h_1$. From these likelihoods, we
-compute the ratio $\ell$ which is given by $\ell=\left(\int_R p(X_b\
-  \vert\ X_a, R)p(R)\ \mathrm{d}R\right) /\ p(X_b)$. If $\ell<1$, then
-$h_0$ is the more likely hypothesis. If $\ell>1$, then $h_1$ is the
-more likely hypothesis.
+We begin by analyzing mental rotation at Marr's \textit{computational}
+level \cite{Marr:1983to}: what is the problem to be solved?  Formally,
+people are presented with two images, $X_a$ and $X_b$, which are the
+coordinates of the vertices of 2D shapes (e.g.,
+Fig.~\ref{fig:stimuli}). Participants must determine whether $X_a$ and
+$X_b$ depict the same shape, i.e., whether $\exists R\textrm{ s.t. }
+X_b=RX_a$, where $R$ is a rotation matrix. We can formulate the
+judgment of whether $X_a$ and $X_b$ have the same origins by deciding
+about two hypotheses, $h_0$: $\forall R\ X_b\neq RX_a$ and $h_1$:
+$\exists R\textrm{ s.t. } X_b=RX_a$.  To compare the hypotheses, we
+need to compute the posterior for each: $p(h\ \vert\ X_a, X_b)\propto
+p(X_a, X_b\ \vert\ h)p(h)$. Assuming the hypotheses are equally likely
+\textit{a priori}, the prior term $p(h)$ will cancel out when
+comparing $h_0$ and $h_1$, thus allowing us to focus on the
+likelihoods, which are $p(X_a,\ X_b\ \vert \ h_0)=p(X_a)p(X_b)$ for
+$h_0$ and $p(X_a,\ X_b\ \vert \ h_1)=\int_R p(X_a) p(X_b\vert X_a,R)
+p(R)\ \mathrm{d}R$ for $h_1$. From these likelihoods, we compute the
+ratio $\ell$ which is given by $\ell=\left(\int_R p(X_b\ \vert\ X_a,
+  R)p(R)\ \mathrm{d}R\right) /\ p(X_b)$. If $\ell<1$, then $h_0$ is
+the more likely hypothesis. If $\ell>1$, then $h_1$ is the more likely
+hypothesis.
 
 \section{Algorithmic approximation}
 
@@ -199,16 +199,12 @@ A more flexible strategy uses what is known as \emph{Bayesian
   Quadrature} (BQ) \cite{Diaconis:1988uo,OHagan:1991tx} to estimate
 $Z$.  BQ computes a posterior distribution over $Z$ by placing a
 Gaussian Process (GP) prior on the function $S$ and evaluating $S$ at
-a particular set of points. However, althought $S$ is a non-negative
+a particular set of points. However, while $S$ is a non-negative
 likelihood function, GP regression enforces no such
 constraint. \cite{Osborne:2012tm} give a method to place a prior over
-the log likelihood,\footnote{In practice, as in \cite{Osborne:2012tm},
-  we use the transform of $\log(S+1)$. Additionally, we follow
-  \cite{Osborne:2012tm} and use a combination of MLII and
-  marginalization to fit the $w$ kernel parameters. The output scales
-  are fixed at $h_S=\sqrt{0.1}$ and $h_{\log S}=\log(h_S + 1)$.} thus
-ensuring that $S=e^{\log S}$ will be positive, i.e.  $E[Z\ \vert \
-\log S]=\int_{\log S}\left(\int_R \exp(\log{S(X_b,X_R)})p(R)\
+the \textit{log} likelihood, thus ensuring that $S=e^{\log S}$ will be
+positive, i.e.  $E[Z\ \vert \ \log S]=\int_{\log S}\left(\int_R
+  \exp(\log{S(X_b,X_R)})p(R)\
   \mathrm{d}R\right)\mathcal{N}\left(\log{S}\ \vert \ \mu_{\log S},
   \Sigma_{\log S}\right)\ \mathrm{d}\log S$, where $\mu_{\log S}$ and
 $\Sigma_{\log S}$ are the mean and covariance, respectively, of the GP
@@ -257,16 +253,16 @@ a set of intermediate \emph{candidate points} $c$ as described in
   \label{fig:shapes}
 \end{figure}
 
-We pick an initial direction of rotation which results in the higher
-value of $S$. At each step, we compute $\mu_Z$ and $\tilde{V}$ to
-estimate a distribution over the likelihood ratio $\ell$, i.e.
-$p(\ell)\approx\frac{1}{p(X_b)}\ \mathcal{N}(Z\ \vert\ \mu_Z,
-\sigma_z)$.  We choose $h_0$ when $p(\ell < 1)\geq 0.95$, and $h_1$
-when $p(\ell > 1)\geq 0.95$. Until one of these conditions are met (or
-the shape has been fully rotated), the model will continue to compute
-rotations and update its estimate of $Z$.  The model may also change
-direction based on the \textit{expected} posterior variance of $Z$
-given some new sample $a$.\footnote{This is similar to the full
+We pick the initial direction of rotation which results in the higher
+value of $S$. From then on, at each step we compute $\mu_Z$ and
+$\tilde{V}$ to estimate a distribution over the likelihood ratio
+$\ell$, i.e.  $p(\ell)\approx\frac{1}{p(X_b)}\ \mathcal{N}(Z\ \vert\
+\mu_Z, \sigma_z)$.  We choose $h_0$ when $p(\ell < 1)\geq 0.95$, and
+$h_1$ when $p(\ell > 1)\geq 0.95$. Until one of these conditions are
+met (or the shape has been fully rotated), the model will continue to
+compute rotations and update its estimate of $Z$.  The model may also
+change direction based on the \textit{expected} posterior variance of
+$Z$ given some new sample $a$.\footnote{This is similar to the full
   posterior variance calculation given in \cite{Osborne:2012tm},
   however we compute the variance given only the current mean estimate
   of $a$.} The model will change directions if doing so would lower
@@ -281,50 +277,51 @@ Fig.~\ref{fig:stimuli}). For each shape, we computed 18 ``same'' and
 18 ``different'' stimuli pairs, with $R$ spaced at $20^\prime$
 increments between 0 and 360, as in \cite{Shepard1971}. ``Same'' pairs
 were created by rotating $X_a$ by $R$; the same was true for
-``different'', except that $X_a$ was also reflected across the
+``different'' pairs, except that $X_a$ was also reflected across the
 $y$-axis. To gauge performance, we looked at \textit{response error
   rates}: how accurate was the model at choosing the correct
 hypothesis? This was defined as the mean error ($\ME{}$), or fraction
 of times the model chose incorrectly.  We additionally looked at
 \textit{rotations}: for those ``same'' pairs which the model judged
-correct, how correlated were the model's rotations with the true
+correctly, how correlated were the model's rotations with the true
 angles of rotation?  We quantified this using the Pearson's
-correlation coefficient $\rho$ for the true rotation ($R$) versus the
-number of steps/rotations take by the model ($\vert
-\mathbf{R}\vert$). Fig.~\ref{fig:rotations} shows true rotations vs
-number of steps/rotations by the model for individual stimuli
-(\ref{fig:all-stimuli}) and average per true rotation
-(\ref{fig:correct-stimuli}). This latter analysis can be qualitatively
-compared to the results of \cite{Shepard1971}
-(Fig.~\ref{fig:mental-rotation}).
+correlation coefficient $\rho$ for the true rotation, $R$, versus the
+number of steps/rotations take by the model, $\vert
+\mathbf{R}\vert$. Fig.~\ref{fig:rotations} shows true rotations vs
+(\ref{fig:all-stimuli}) the number of steps/rotations taken by the
+model for individual stimuli, and (\ref{fig:correct-stimuli}) the
+average number of steps taken for each true rotation. This latter
+analysis can be qualitatively compared to the results of
+\cite{Shepard1971}, as shown in Fig.~\ref{fig:mental-rotation}.
 
 \paragraph{\Naive{}} 
 
 The \naive{} model's response error rate was $\NaiveME{}$, which is
-better than chance (equivalent to guessing randomly,
+better than chance (where chance is equivalent to guessing randomly,
 i.e. $\ME{}=0.5$). The correlation between the \naive{} model's
 average rotation and the true angle of rotation was $\Naivecorr{}$
-(Fig.~\ref{fig:correct-stimuli}, left). For $R<\frac{\pi}{2}$, the
-\naive{} model corresponds extremely well to the true angle of
-rotation; this is because it needs to rotate less and is therefore
-less likely to get stuck on local maxima. For $R>\frac{\pi}{2}$, we
-see an increasing tendency to under-rotate due to getting stuck on
-local maxima, as well as a tendency to over-rotate if the wrong
-direction was initially chosen.
+(Fig.~\ref{fig:correct-stimuli}, left). As shown in
+Fig.~\ref{fig:correct-stimuli} (right), the \naive{} model corresponds
+extremely well to the true angle of rotation when $R<\frac{\pi}{2}$;
+this is because it needs to rotate less and is therefore less likely
+to get stuck on local maxima. For $R>\frac{\pi}{2}$, we see an
+increasing tendency to under-rotate due to getting stuck on local
+maxima, as well as a tendency to over-rotate if the wrong direction
+was initially chosen.
 
 \paragraph{Bayesian Quadrature}
 
 The BQ model was much more accurate in choosing the correct hypothesis
-than the other model ($\BQME{}$). The number of rotations computed by
-the BQ model were strongly correlated with the true rotations
+than the \naive{} model ($\BQME{}$). The number of rotations computed
+by the BQ model were strongly correlated with the true rotations
 ($\BQcorr$), a result which is qualitatively similar to that exhibited
 by humans (Fig.~\ref{fig:mental-rotation}
 vs. Fig.~\ref{fig:correct-stimuli}, right). Because the BQ model has
 the capacity to ``reset'', it could recover from rotating in the
 incorrect direction (e.g., Fig.~\ref{fig:bq}) and thus did not
-over-rotate as frequently.  It also under-rotated less frequently:
-because the model continues to rotate until it is confident in its
-estimate of $Z$, it does not get stuck as easily on local optima.
+over-rotate as frequently as the \naive{} model.  The BQ model also
+under-rotated less frequently because it rotates until it is confident
+in its estimate of $Z$ and thus does not get stuck on local optima.
 
 \begin{figure}[t]
   \centering
