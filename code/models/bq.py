@@ -29,6 +29,11 @@ def mvn_logpdf(x, m, C, Z=None):
     return pdf
 
 
+def improve_covariance_conditioning(M):
+    sqd_jitters = np.max([EPS, np.max(M)]) * 1e-4
+    M += np.eye(M.shape[0]) * sqd_jitters
+
+
 class BQ(object):
     """Estimate a likelihood function, S(y|x) using Gaussian Process
     regressions, as in Osborne et al. (2012):
@@ -308,11 +313,18 @@ class BQ(object):
         log_Si = self.log_Si
 
         self.gp_S = self._fit_gp(Ri, Si, "S")
+        K_l = self.gp_S.Kxx
+        improve_covariance_conditioning(K_l)
+        assert (K_l == self.gp_S.Kxx).all()
+
         if self.opt.get('h', None):
             logh = np.log(self.opt['h'] + 1)
         else:
             logh = None
         self.gp_logS = self._fit_gp(Ri, log_Si, "log(S)", h=logh)
+        K_tl = self.gp_logS.Kxx
+        improve_covariance_conditioning(K_tl)
+        assert (K_tl == self.gp_logS.Kxx).all()
 
         # fit delta, the difference between S and logS
         self.delta = self.compute_delta(self.R)
@@ -321,7 +333,10 @@ class BQ(object):
 
         Rc = self.Rc
         Dc = self.Dc
-        self.gp_Dc = self._fit_gp(Rc, Dc, "Delta_c", h=None)
+        self.gp_Dc = self._fit_gp(Rc, Dc, "Delta_c", h=None, s=0)
+        K_del = self.gp_Dc.Kxx
+        improve_covariance_conditioning(K_del)
+        assert (K_del == self.gp_Dc.Kxx).all()
 
         # the estimated mean of S
         m_S = self.gp_S.mean(self.R)[:, 0]
@@ -460,8 +475,7 @@ class BQ(object):
         E_m_l_C_tl = float(dot(int_K_tl_K_l_vec - int_inv_int, alpha_l))
         if E_m_l_C_tl <= 0:
             warnings.warn(
-                "Warning: E[m_l C_tl] = %f" % E_m_l_C_tl,
-                RuntimeWarning)
+                "E[m_l C_tl] = %f" % E_m_l_C_tl, RuntimeWarning)
 
         ## Third term
         # E[C_tl | x_s] =
@@ -545,12 +559,14 @@ class BQ(object):
 
         # add jitter to the covariance matrix where our new point is,
         # because if it's close to other x_s then it will cause problems
-        w = gp_Sa.params[1]
-        K_l = gp_Sa.Kxx.copy()
-        K_l[-1, -1] += w
-        gp_Sa._memoized['Kxx'] = K_l
-        assert 'inv_Kxx' not in gp_Sa._memoized
+        K_l = gp_Sa.Kxx
+        improve_covariance_conditioning(K_l)
+        assert (gp_Sa._memoized['Kxx'] == K_l).all()
         inv_K_l = gp_Sa.inv_Kxx
+
+        K_tl = gp_logSa.Kxx
+        improve_covariance_conditioning(K_tl)
+        assert (gp_logSa._memoized['Kxx'] == K_tl).all()
 
         # update gp over delta
         del_sc = self.Dc
@@ -570,10 +586,13 @@ class BQ(object):
             # (because we don't know l_a) but we can add noise
             # to the diagonal of the covariance matrix to allow room
             # for error for the x_c closest to x_a
-            del_noise = gp_Dca.Kxx[:, -1]
+            K_del = gp_Dca.Kxx
+            improve_covariance_conditioning(K_del)
+            del_noise = K_del[:, -1].copy()
             del_noise[:ns] = 0
             del_noise[-1] = 0
-            gp_Dca._memoized['Kxx'] += np.diagflat(del_noise)
+            K_del += np.diagflat(del_noise)
+            assert (K_del == gp_Dca._memoized['Kxx']).all()
             assert 'inv_Kxx_y' not in gp_Dca._memoized
 
         nca, d = x_sca.shape

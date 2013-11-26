@@ -57,6 +57,10 @@ class BayesianQuadratureModel(Model):
         cov = np.array(cov) * np.ones((1, 1))
         self.opt['prior_R'] = mu, cov
 
+        if self.opt['kernel'] == 'gaussian':
+            self.Ri = np.append(self.Ri, 2*np.pi)
+            self.Si = np.append(self.Si, self.Si[0])
+
     def next(self):
         """Sample the next point."""
 
