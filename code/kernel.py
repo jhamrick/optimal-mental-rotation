@@ -12,7 +12,10 @@ import periodic_mll as mll
 
 
 def cholesky(mat):
-    m = np.mean(np.abs(mat))
+    try:
+        m = np.mean(np.abs(mat))
+    except FloatingPointError:
+        raise np.linalg.LinAlgError("floating point error")
     try:
         L = np.linalg.cholesky(mat)
     except np.linalg.LinAlgError:
