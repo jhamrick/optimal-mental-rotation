@@ -44,12 +44,11 @@
   psychological task of determining if two images depict the same
   object in different orientations. We compared two models on this
   mental rotation task, and found that a model based on an optimal
-  experiment design for Bayesian quadrature is objectively more
-  accurate and qualitatively more consistent with classic behavioral
-  data than a simpler model. We suggest that rational models which
-  adaptively exploit available resources are promising in their
-  ability to characterize metacognitive processes like mental
-  simulation.
+  experiment design for Bayesian quadrature is qualitatively more
+  consistent with classic behavioral data than a simpler model. We
+  suggest that rational models which adaptively exploit available
+  resources are promising in their ability to characterize
+  metacognitive processes like mental simulation.
 \end{abstract}
 
 \section{Introduction}
@@ -74,9 +73,9 @@ each panel, are the two depicted objects identical (except for a
 rotation), or distinct? When presented with this mental rotation task,
 people default to a strategy in which they visualize one object
 rotating until it is congruent with the other
-\cite{Shepard1971}. There is strong evidence for such mental
-simulation: we can imagine three-dimensional objects in our minds and
-manipulate them, to a certain extent, as if they were real
+\cite{Shepard1971}. There is strong evidence for such ``mental
+simulation'': we can imagine three-dimensional objects in our minds
+and manipulate them, to a certain extent, as if they were real
 \cite{Kosslyn:2009tj}.  However, the use of mental simulation is
 predicated on determining appropriate parameters to give the
 simulation, analogous to determining exactly what computation should
@@ -85,20 +84,19 @@ rotation task, we might ask: How do people know which way to rotate
 the object?  When should one stop rotating and accept the hypothesis
 that the objects are different?
 
-Recent work in cognitive science has shown how problems of allocating
+Recent work in cognitive science has shown how the allocation of
 cognitive resources to solving computational problems can be analyzed
 using the methods of statistical decision theory
-\cite{Lieder:2012wg,Vul:2009wy}. We apply this ``rational
-metacognition'' approach to the problem of mental rotation. We
-investigate several computational solutions to this task and
-qualitatively compare them to human mental rotation performance. In
-particular, we argue that performing mental rotation can be framed as
-integration over a probability distribution, with the direction of
-rotation becoming an optimal experiment design problem (or in machine
-learning parlance, an active learning problem). We show that recent
-work on methods for Bayesian quadrature
-\cite{Diaconis:1988uo,OHagan:1991tx,Osborne:2012tm} provides a way to
-solve this problem, outperforming simpler heuristics for determining
+\cite{Lieder:2012wg,Vul:2009wy}. We suggest that this ``rational
+metacognition'' approach may also be applied to the problem of mental
+rotation. Specifically, we hypothesize that mental rotation can be
+framed as integration over a probability distribution, with the
+direction of rotation becoming an optimal experiment design problem
+(or in machine learning parlance, an active learning problem). In an
+initial investigation into this hypothesis, we find that recent
+methods for Bayesian quadrature
+\cite{Diaconis:1988uo,OHagan:1991tx,Osborne:2012tm}, in contrast to a
+simpler heuristic model, provide a possible solution to determining
 the direction and extent of rotation.
 
 \begin{figure}[t]
@@ -187,11 +185,11 @@ the correct hypothesis.
 
 \paragraph{\Naive{}}
 
-We defined a \naive{} model which performs a hill-climbing search over
-the similarity function until it reaches a (possibly local)
-maximum. Once a maximum as been found, the model computes an estimate
-of $Z$ by linearly interpolating between sampled rotations (e.g.,
-Fig.~\ref{fig:li}).
+As a lower bound on performance, we defined a \naive{} model which
+performs a hill-climbing search over the similarity function until it
+reaches a (possibly local) maximum. Once a maximum as been found, the
+model computes an estimate of $Z$ by linearly interpolating between
+sampled rotations (e.g., Fig.~\ref{fig:li}).
 
 \paragraph{Bayesian Quadrature}
 
@@ -258,16 +256,18 @@ value of $S$. From then on, at each step we compute $\mu_Z$ and
 $\tilde{V}$ to estimate a distribution over the likelihood ratio
 $\ell$, i.e.  $p(\ell)\approx\frac{1}{p(X_b)}\ \mathcal{N}(Z\ \vert\
 \mu_Z, \sigma_z)$.  We choose $h_0$ when $p(\ell < 1)\geq 0.95$, and
-$h_1$ when $p(\ell > 1)\geq 0.95$. Until one of these conditions are
-met (or the shape has been fully rotated), the model will continue to
-compute rotations and update its estimate of $Z$.  The model may also
-change direction based on the \textit{expected} posterior variance of
-$Z$ given some new sample $a$.\footnote{This is similar to the full
-  posterior variance calculation given in \cite{Osborne:2012tm},
-  however we compute the variance given only the current mean estimate
-  of $a$.} The model will change directions if doing so would lower
-this expected variance. Thus, it is able to actively change its
-strategy, unlike the hill-climbing procedure.
+$h_1$ when $p(\ell > 1)\geq 0.95$.\footnote{We chose a threshold of
+  0.95 because the standard confidence interval is 95\%. In the
+  future, however, this threshold could be fit to human data.} Until
+one of these conditions are met (or the shape has been fully rotated),
+the model will continue to compute rotations and update its estimate
+of $Z$.  Additionally, the model will change direction if doing so
+would lower the \textit{expected} posterior variance of $Z$ given some
+new sample $a$.\footnote{This is similar to the full posterior
+  variance calculation given in \cite{Osborne:2012tm}, however we
+  compute the variance given only the current mean estimate of $a$.}
+Thus, it is able to actively change its strategy, unlike the
+hill-climbing procedure.
 
 \section{Results}
 
@@ -353,26 +353,22 @@ in its estimate of $Z$ and thus does not get stuck on local optima.
 
 \section{Conclusion}
 
-In this paper, we asked: how do people use mental simulation?  We
-investigated the specific case of mental rotation, using rational
-analysis to characterize optimal strategies. We found that an
-adaptive, BQ model performs best at the classic rotation task
-\cite{Shepard1971}, as it is able to actively monitor the confidence
-of its estimate and intelligently choose the direction of rotation. A
-simpler model based on heuristics performed much worse: it did not
-maintain the linear relationship with the true angle of rotation due
-to lack of robustness against local maxima or incorrect rotation
-direction.  More broadly, the BQ model provides answers to puzzling
+In this paper, we asked: how do people perform mental simulation?  We
+performed an initial investigation into the specific case of mental
+rotation, using rational analysis to characterize optimal strategies.
+We demonstrated that the classic mental rotation task
+\cite{Shepard1971} presents a non-trivial computational problem and
+cannot be solved with a simple, heuristic-based model. In contrast, an
+adaptive, Bayesian Quadrature model provides answers to puzzling
 questions surrounding the incremental nature of mental rotation: which
 way should the object be rotated, and for how long? This model
 formalizes these answers in a way that is qualitatively consistent
 with human behavior, both in response time linearity
-\cite{Shepard1971} and variability \cite{Just1976}. These results
-further indicate that this may be another instance in which people do
-appropriately use available computational resources to solve the task
-at hand.  Rational, adaptive approaches such as this may therefore be
-successful when applied to more complex cognitive processes above and
-beyond mental rotation.
+\cite{Shepard1971} and variability \cite{Just1976}. Although this
+research is still in its first stages, these initial results support
+the idea that mental rotation may be another instance in which people
+do appropriately use available computational resources to solve the
+task at hand.
 
 
 % \renewcommand\bibsection{\subsubsection*{\refname}}
