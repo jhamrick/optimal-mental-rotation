@@ -1,0 +1,76 @@
+<div class="slide" id="instructions">
+  <h1>Instructions</h1>
+  <div class="blue">
+    <!-- TODO: put in the number of total trials -->
+    <p>In this experiment, you will make judgments about simple,
+    2-dimensional objects. There will be XXX trials total.</p>
+    <p>On each trial, you will see two images. Sometimes, they show
+    the <b>same</b> (possibly rotated) object:</p>
+
+    <div class="canvas-container">
+      <canvas id="example1_left_image" class="stim_canvas" width="300" height="300"></canvas>
+      <canvas id="example1_right_image" class="stim_canvas" width="300" height="300"></canvas>
+    </div>
+
+    <p>Other times, the images show <b>different</b> objects:</p>
+
+    <div class="canvas-container">
+      <canvas id="example2_left_image" class="stim_canvas" width="300" height="300"></canvas>
+      <canvas id="example2_right_image" class="stim_canvas" width="300" height="300"></canvas>
+    </div>
+
+    <p>The task is to determine whether the two images show the
+    <b>same</b> object or <b>different</b> objects.</p>
+
+    <p>You should try to answer as accurately and as quickly as
+    possible.</p>
+  </div>
+
+  <div class="continue">
+    <button type="button" class="next">Start</button>
+  </div>
+</div>
+
+<div class="slide" id="trial">
+  <div id="progress">
+    <div id="progress-text">Progress</div>
+    <div id="indicator-container">
+      <div id="indicator-outer">
+        <div id="indicator-stage"></div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+  </div>
+  
+  <div id="phase-container" class="blue">
+    <div id="prestim" class="phase">
+      <div class="canvas-container">
+	<canvas id="fixation" width="600" height="300"></canvas>
+      </div>
+      <div class="question">
+	<p>Look at the cross, and when you are ready to begin, press <b>b</b>.</p>
+      </div>
+    </div>
+
+    <div id="stim" class="phase">
+      <div class="canvas-container">
+	<canvas id="left_image" class="stim_canvas" width="300" height="300"></canvas>
+	<canvas id="right_image" class="stim_canvas" width="300" height="300"></canvas>
+	<div class="spacer"></div>
+      </div>
+
+      <div class="question">
+	<p id="question-text">Do these images show the same object?</p>
+	<div id="choices">
+	  <p>Press <b>s</b> for "same"</p>
+	  <p>Press <b>d</b> for "different"</p>
+	</div>
+      </div>
+    </div>
+
+    <div id="feedback" class="phase">
+      <div id="feedback-area" class="canvas-container"></div>
+    </div>
+  </div>
+
+</div>
