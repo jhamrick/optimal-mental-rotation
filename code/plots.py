@@ -142,11 +142,25 @@ def bq_regression_final(model):
 
 def bq_regression(model):
 
+    R = model.R
+    S = model.S
+    logS = model._bq.log_transform(S)
+    Ri = model.Ri
+    Si = model.Si
+    logSi = model._bq.log_transform(Si)
+    delta = model._bq.delta
+    Rc = model._bq.Rc
+    Dc = model._bq.Dc
+
+    gp_S = model._bq.gp_S
+    gp_logS = model._bq.gp_logS
+    gp_Dc = model._bq.gp_Dc
+
     # plot the regression for S
     ax_S = plt.subplot(2, 2, 1)
     regression(
-        model.R, model.S, model.Ri, model.Si,
-        model.R, model.mu_S, np.diag(model.cov_S),
+        R, S, Ri, Si,
+        R, gp_S.mean(R)[:, 0], np.diag(gp_S.cov(R)),
         title="GPR for $S$",
         xlabel=None,
         legend=False)
@@ -161,8 +175,8 @@ def bq_regression(model):
     # plot the regression for log S
     ax_logS = plt.subplot(2, 2, 3)
     regression(
-        model.R, np.log(model.S + 1), model.Ri, np.log(model.Si + 1),
-        model.R, model.mu_logS, np.diag(model.cov_logS),
+        R, logS, Ri, logSi,
+        R, gp_logS.mean(R)[:, 0], np.diag(gp_logS.cov(R)),
         title=r"GPR for $\log(S+1)$",
         ylabel=r"Similarity ($\log(S+1)$)",
         legend=False)
@@ -170,8 +184,8 @@ def bq_regression(model):
     # plot the regression for mu_logS - log_muS
     ax_Dc = plt.subplot(2, 2, 4)
     regression(
-        model.R, model.delta, model.Rc, model.Dc,
-        model.R, model.mu_Dc, None,
+        R, delta, Rc, Dc,
+        R, gp_Dc.mean(R)[:, 0], np.diag(gp_Dc.cov(R)),
         title=r"GPR for $\Delta_c$",
         ylabel=r"Difference ($\Delta_c$)",
         legend=False)
@@ -180,8 +194,8 @@ def bq_regression(model):
     # combine the two regression means
     ax_final = plt.subplot(2, 2, 2)
     regression(
-        model.R, model.S, model.Ri, model.Si,
-        model.R, model.S_mean, model.S_var,
+        R, S, Ri, Si,
+        R, model.S_mean, model.S_var,
         title=r"Final GPR for $S$",
         xlabel=None,
         ylabel=None,
@@ -192,7 +206,7 @@ def bq_regression(model):
     sg.align_ylabels(-0.12, ax_S, ax_logS)
     sg.set_ylabel_coords(-0.16, ax=ax_Dc)
     # sync y-axis limits
-    lim = (-0.2, 1.1)
+    lim = (-0.2, 1.5)
     ax_S.set_ylim(*lim)
     ax_logS.set_ylim(*lim)
     ax_final.set_ylim(*lim)
@@ -231,7 +245,7 @@ def bq_regression_all(model):
         R, S_mean, S_var,
         title="Bayesian Quadrature regression for $S$")
 
-    plt.ylim(0, 1.05)
+    plt.ylim(0, 1.45)
 
 
 def vm_regression(model):
@@ -246,7 +260,7 @@ def vm_regression(model):
         R, S, Ri, Si,
         R, S_mean, S_var,
         title="Von Mises regression for $S$")
-    plt.ylim(0, 1.05)
+    plt.ylim(0, 1.45)
 
 
 def vm_regression_all(models):
@@ -275,7 +289,7 @@ def vm_regression_all(models):
         R, S_mean, S_var,
         title="Von Mises regression for $S$")
 
-    plt.ylim(0, 1.05)
+    plt.ylim(0, 1.45)
 
 
 def li_regression(model):
@@ -290,7 +304,7 @@ def li_regression(model):
         R, S, Ri, Si,
         R, S_mean, S_var,
         title="Linear interpolation for $S$")
-    plt.ylim(0, 1.05)
+    plt.ylim(0, 1.45)
 
 
 def li_regression_all(models):
@@ -319,7 +333,7 @@ def li_regression_all(models):
         R, S_mean, S_var,
         title="Linear interpolation for $S$")
 
-    plt.ylim(0, 1.05)
+    plt.ylim(0, 1.45)
 
 
 def likelihood(model):
@@ -331,7 +345,7 @@ def likelihood(model):
         title="Likelihood function",
         legend=False)
 
-    plt.ylim(0, 1.05)
+    plt.ylim(0, 1.45)
 
 
 def likelihood_all(models):
@@ -351,7 +365,7 @@ def likelihood_all(models):
         title="Likelihood function",
         legend=False)
 
-    plt.ylim(0, 1.05)
+    plt.ylim(0, 1.45)
 
 
 def model_rotations(models):
