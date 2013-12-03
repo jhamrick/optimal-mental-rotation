@@ -1,5 +1,6 @@
 import numpy as np
 import json
+import matplotlib.pyplot as plt
 from path import path
 from . import DTYPE
 
@@ -112,3 +113,24 @@ class Stimulus2D(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
+    def draw(self, **kwargs):
+        v = self.vertices
+        X = np.empty((v.shape[0] + 1, 2))
+        X[:-1] = v
+        X[-1] = v[0]
+
+        fig, ax = plt.subplots()
+        ax.plot(
+            X[:, 0], X[:, 1],
+            color='k',
+            linewidth=2,
+            **kwargs)
+        ax.set_xticks([])
+        ax.set_xticklabels([])
+        ax.set_yticks([])
+        ax.set_yticklabels([])
+        ax.axis([-1, 1, -1, 1])
+        plt.box('off')
+        fig.set_figwidth(4)
+        fig.set_figheight(4)
