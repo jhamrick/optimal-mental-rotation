@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Simple example script for running notebooks and checking for errors
+Simple example script for running notebooks
 
 See https://gist.github.com/minrk/2620876
 
@@ -10,15 +10,21 @@ Usage: `run_nb.py foo.ipynb [bar.ipynb [...]]`
 
 import os
 import sys
-from IPython.zmq.blockingkernelmanager import BlockingKernelManager
+
+from IPython.kernel import KernelManager
 from IPython.nbformat.current import reads
 
 
 def run_notebook(nb):
-    km = BlockingKernelManager()
+    km = KernelManager()
     km.start_kernel(stderr=open(os.devnull, 'w'))
-    km.start_channels()
-    shell = km.shell_channel
+    try:
+        kc = km.client()
+    except AttributeError:
+        # 0.13
+        kc = km
+    kc.start_channels()
+    shell = kc.shell_channel
     # simple ping:
     shell.execute("pass")
     shell.get_msg()
@@ -47,6 +53,7 @@ def run_notebook(nb):
     print "    ran %3i cells" % cells
     if failures:
         print "    %3i cells raised exceptions" % failures
+    kc.stop_channels()
     km.shutdown_kernel()
     del km
 
