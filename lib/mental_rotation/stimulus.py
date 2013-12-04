@@ -134,3 +134,18 @@ class Stimulus2D(object):
         plt.box('off')
         fig.set_figwidth(4)
         fig.set_figheight(4)
+
+    def copy_from_state(self):
+        state = self.__getstate__()
+        cls = type(self)
+        stim = cls.__new__(cls)
+        stim.__setstate__(state)
+        return stim
+
+    def copy_from_vertices(self):
+        stim = type(self)(self.vertices)
+        return stim
+
+    def copy_from_initial(self):
+        stim = type(self)(self._v.copy())
+        return stim
