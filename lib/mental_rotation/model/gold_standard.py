@@ -6,7 +6,7 @@ from .base import BaseModel
 class GoldStandardModel(BaseModel):
 
     def draw(self):
-        self.model.R.value = self.model.R.value + np.radians(1)
+        self.model['R'].value = self.model['R'].value + np.radians(1)
 
     def sample(self, verbose=0):
         super(BaseModel, self).sample(iter=359, verbose=verbose)

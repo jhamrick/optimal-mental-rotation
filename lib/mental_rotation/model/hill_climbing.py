@@ -6,19 +6,19 @@ from .base import BaseModel
 class HillClimbingModel(BaseModel):
 
     def draw(self):
-        value = self.model.R.value
+        value = self.model['R'].value
         logp = self.logp
 
         dir = np.random.choice([1, -1])
-        self.model.R.value = value + dir*np.radians(10)
+        self.model['R'].value = value + dir*np.radians(10)
 
         if self.logp < logp:
             self.tally()
-            self.model.R.value = value - dir*np.radians(10)
+            self.model['R'].value = value - dir*np.radians(10)
 
             if self.logp < logp:
                 self.tally()
-                self.model.R.value = value
+                self.model['R'].value = value
                 self.status = 'halt'
 
     def sample(self, verbose=0):
