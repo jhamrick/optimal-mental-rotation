@@ -118,7 +118,7 @@ class Stimulus2D(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def draw(self, **kwargs):
+    def plot(self, **kwargs):
         v = self.vertices
         X = np.empty((v.shape[0] + 1, 2))
         X[:-1] = v

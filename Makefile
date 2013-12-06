@@ -31,11 +31,5 @@ clean-pdf:
 	rm -rf man/nips-2013_files/
 	rm -rf man/nips-2013-bayesian-optimization_files/
 
-coverage:
-	coverage erase
-	coverage run -a -m py.test tests/test_stimulus.py
-	coverage run -a -m py.test tests/test_base_model.py
-	coverage html
-
 test:
-	py.test tests/ --pdb
+	py.test --cov lib --cov-report html tests/

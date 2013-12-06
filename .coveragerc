@@ -9,6 +9,5 @@ exclude_lines =
     raise NotImplementedError
     if __name__ == .__main__.:
     def plot
-    def draw
     def _plot
 show_missing = true
