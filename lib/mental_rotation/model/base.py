@@ -22,7 +22,7 @@ def prior(X):
     return logp
 
 
-def similarity(X0, X1, S_sigma):
+def log_similarity(X0, X1, S_sigma):
     """Computes the similarity between sets of vertices `X0` and `X1`."""
     # number of points and number of dimensions
     n, D = X0.shape
@@ -47,8 +47,8 @@ def similarity(X0, X1, S_sigma):
     Z0 = (D / 2.) * np.log(2 * np.pi)
     Z1 = 0.5 * np.linalg.slogdet(Sigma)[1]
     # overall similarity, marginalizing out order
-    S = np.log(np.sum(np.exp(e + Z0 + Z1 - np.log(n))))
-    return S
+    logS = np.log(np.sum(np.exp(e + Z0 + Z1 - np.log(n))))
+    return logS
 
 
 class BaseModel(pymc.Sampler):
@@ -71,18 +71,20 @@ class BaseModel(pymc.Sampler):
             return Xr
 
         @pymc.potential
-        def S(Xb=Xb, Xr=Xr):
-            return similarity(Xb, Xr, S_sigma)
+        def logS(Xb=Xb, Xr=Xr):
+            return log_similarity(Xb, Xr, S_sigma)
 
-        vars = [Xa, Xb, R, Xr, S]
+        vars = [Xa, Xb, R, Xr, logS]
         name = type(self).__name__
         super(BaseModel, self).__init__(input=vars, name=name)
 
-        self._funs_to_tally['S'] = S.get_logp
-        self._funs_to_tally['logp'] = self.get_logp
+        self._funs_to_tally['logS'] = logS.get_logp
+        self._funs_to_tally['logp'] = lambda: self.logp
 
-    def get_logp(self):
-        return self.logp
+        for var in self.stochastics:
+            if str(var) == 'R':
+                self._R = var
+                break
 
     def integrate(self):
         raise NotImplementedError
