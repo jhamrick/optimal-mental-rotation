@@ -29,3 +29,5 @@ logging.basicConfig(level=LOGLEVEL, format=FORMAT)
 import numpy as np
 DTYPE = np.dtype(config.get("global", "dtype"))
 del np
+
+from .stimulus import Stimulus2D

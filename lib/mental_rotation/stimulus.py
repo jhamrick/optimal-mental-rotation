@@ -1,22 +1,26 @@
 import numpy as np
 import json
 import matplotlib.pyplot as plt
+from copy import copy
 from path import path
 from . import DTYPE
 
 
 class Stimulus2D(object):
 
-    def __init__(self, vertices):
+    def __init__(self, vertices, sort=True):
         if vertices.ndim != 2:
             raise ValueError("vertex array must be 2D")
         if vertices.shape[1] != 2:
             raise ValueError("vertex array must be n-by-2")
 
         # order them by angle, so they plot nicely
-        r = np.arctan2(vertices[:, 1], vertices[:, 0])
-        idx = np.argsort(r)
-        self._v = np.array(vertices[idx], dtype=DTYPE, copy=True)
+        if sort:
+            r = np.arctan2(vertices[:, 1], vertices[:, 0])
+            idx = np.argsort(r)
+            self._v = np.array(vertices[idx], dtype=DTYPE, copy=True)
+        else:
+            self._v = np.array(vertices, dtype=DTYPE, copy=True)
 
         self.operations = []
 
@@ -29,8 +33,8 @@ class Stimulus2D(object):
 
     def __getstate__(self):
         state = {}
-        state['vertices'] = self._v.tolist()
-        state['operations'] = self.operations
+        state['vertices'] = self._v.copy().tolist()
+        state['operations'] = copy(self.operations)
         return state
 
     def __setstate__(self, state):
@@ -143,9 +147,9 @@ class Stimulus2D(object):
         return stim
 
     def copy_from_vertices(self):
-        stim = type(self)(self.vertices)
+        stim = type(self)(self.vertices, sort=False)
         return stim
 
     def copy_from_initial(self):
-        stim = type(self)(self._v.copy())
+        stim = type(self)(self._v.copy(), sort=False)
         return stim

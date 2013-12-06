@@ -6,24 +6,27 @@ from .base import BaseModel
 class HillClimbingModel(BaseModel):
 
     def draw(self):
-        value = self._R.value
+        value = self.model.R.value
         logp = self.logp
-        print "current:", self._R.value, logp
 
         dir = np.random.choice([1, -1])
-        self._R.value = value + dir*np.radians(10)
-        print "first:", self._R.value, self.logp
+        self.model.R.value = value + dir*np.radians(10)
 
         if self.logp < logp:
-            self._R.value = value - dir*np.radians(10)
-            print "second:", self._R.value, self.logp
+            self.tally()
+            self.model.R.value = value - dir*np.radians(10)
 
             if self.logp < logp:
-                self._R.value = value
+                self.tally()
+                self.model.R.value = value
                 self.status = 'halt'
 
     def sample(self, verbose=0):
         super(BaseModel, self).sample(iter=360, verbose=verbose)
+
+        if self._current_iter == self._iter:
+            raise RuntimeError(
+                "exhausted all iterations, this shouldn't have happened!")
 
     def _loop(self):
         self.status = 'running'

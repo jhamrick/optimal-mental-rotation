@@ -4,63 +4,20 @@ import scipy
 import matplotlib.pyplot as plt
 import snippets.graphing as sg
 
-from ..stimulus import Stimulus2D
-
-
-def prior(X):
-    # the beginning is the same as the end, so ignore the last vertex
-    n = X.shape[0] - 1
-    # n points picked at random angles around the circle
-    log_pangle = -np.log(2*np.pi) * n
-    # random radii between 0 and 1
-    radius = 1
-    log_pradius = -np.log(radius) * n
-    # number of possible permutations of the points
-    log_pperm = np.log(scipy.misc.factorial(n))
-    # put it all together
-    logp = log_pperm + log_pangle + log_pradius
-    return logp
-
-
-def log_similarity(X0, X1, S_sigma):
-    """Computes the similarity between sets of vertices `X0` and `X1`."""
-    # number of points and number of dimensions
-    n, D = X0.shape
-    # covariance matrix
-    Sigma = np.eye(D) * S_sigma
-    invSigma = np.eye(D) * (1. / S_sigma)
-    # iterate through all permutations of the vertices -- but if
-    # two vertices are connected, they are next to each other in
-    # the list (or on the ends), so we really only need to cycle
-    # through 2n orderings (once for the original ordering, and
-    # once for the reverse)
-    e = np.empty(2*n)
-    for i in xrange(n):
-        idx = np.arange(i, i+n) % n
-        d = X0 - X1[idx]
-        e[i] = -0.5 * np.sum(np.dot(d, invSigma) * d)
-    for i in xrange(n):
-        idx = np.arange(i, i+n)[::-1] % n
-        d = X0 - X1[idx]
-        e[i+n] = -0.5 * np.sum(np.dot(d, invSigma) * d)
-    # constants
-    Z0 = (D / 2.) * np.log(2 * np.pi)
-    Z1 = 0.5 * np.linalg.slogdet(Sigma)[1]
-    # overall similarity, marginalizing out order
-    logS = np.log(np.sum(np.exp(e + Z0 + Z1 - np.log(n))))
-    return logS
+from .. import Stimulus2D
 
 
 class BaseModel(pymc.Sampler):
 
     def __init__(self, X_a, X_b, R_mu, R_kappa, S_sigma):
+
         @pymc.stochastic(observed=True, trace=False)
         def Xa(value=X_a.vertices):
-            return prior(value)
+            return self._prior(value)
 
         @pymc.stochastic(observed=True, trace=False)
         def Xb(value=X_b.vertices):
-            return prior(value)
+            return self._prior(value)
 
         R = pymc.CircVonMises("R", R_mu, R_kappa, value=0)
 
@@ -72,19 +29,21 @@ class BaseModel(pymc.Sampler):
 
         @pymc.potential
         def logS(Xb=Xb, Xr=Xr):
-            return log_similarity(Xb, Xr, S_sigma)
+            return self._log_similarity(Xb, Xr, S_sigma)
 
-        vars = [Xa, Xb, R, Xr, logS]
+        vars = {
+            'Xa': Xa,
+            'Xb': Xb,
+            'R': R,
+            'Xr': Xr,
+            'logS': logS
+        }
         name = type(self).__name__
         super(BaseModel, self).__init__(input=vars, name=name)
 
-        self._funs_to_tally['logS'] = logS.get_logp
+        self.model = vars
+        self._funs_to_tally['logS'] = self.model['logS'].get_logp
         self._funs_to_tally['logp'] = lambda: self.logp
-
-        for var in self.stochastics:
-            if str(var) == 'R':
-                self._R = var
-                break
 
     def integrate(self):
         raise NotImplementedError
@@ -179,3 +138,47 @@ class BaseModel(pymc.Sampler):
     def p_i(self):
         p = np.exp(self.trace('logp')[:])
         return p
+
+    @classmethod
+    def _prior(cls, X):
+        # the beginning is the same as the end, so ignore the last vertex
+        n = X.shape[0] - 1
+        # n points picked at random angles around the circle
+        log_pangle = -np.log(2*np.pi) * n
+        # random radii between 0 and 1
+        radius = 1
+        log_pradius = -np.log(radius) * n
+        # number of possible permutations of the points
+        log_pperm = np.log(scipy.misc.factorial(n))
+        # put it all together
+        logp = log_pperm + log_pangle + log_pradius
+        return logp
+
+    @classmethod
+    def _log_similarity(cls, X0, X1, S_sigma):
+        """Computes the similarity between sets of vertices `X0` and `X1`."""
+        # number of points and number of dimensions
+        n, D = X0.shape
+        # covariance matrix
+        Sigma = np.eye(D) * S_sigma
+        invSigma = np.eye(D) * (1. / S_sigma)
+        # iterate through all permutations of the vertices -- but if
+        # two vertices are connected, they are next to each other in
+        # the list (or on the ends), so we really only need to cycle
+        # through 2n orderings (once for the original ordering, and
+        # once for the reverse)
+        e = np.empty(2*n)
+        for i in xrange(n):
+            idx = np.arange(i, i+n) % n
+            d = X0 - X1[idx]
+            e[i] = -0.5 * np.sum(np.dot(d, invSigma) * d)
+        for i in xrange(n):
+            idx = np.arange(i, i+n)[::-1] % n
+            d = X0 - X1[idx]
+            e[i+n] = -0.5 * np.sum(np.dot(d, invSigma) * d)
+        # constants
+        Z0 = (D / 2.) * np.log(2 * np.pi)
+        Z1 = 0.5 * np.linalg.slogdet(Sigma)[1]
+        # overall similarity, marginalizing out order
+        logS = np.log(np.sum(np.exp(e + Z0 + Z1 - np.log(n))))
+        return logS
