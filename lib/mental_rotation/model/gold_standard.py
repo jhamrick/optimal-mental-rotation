@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 from .base import BaseModel
 
@@ -7,27 +6,36 @@ from .base import BaseModel
 class GoldStandardModel(BaseModel):
 
     def draw(self):
-        for v in self.stochastics:
-            if str(v) == "R":
-                v.value = v.value + np.radians(1)
-            else:
-                raise RuntimeError("unhandled variable: %s" % v)
+        self._R.value = self._R.value + np.radians(1)
 
     def sample(self, verbose=0):
         super(BaseModel, self).sample(iter=359, verbose=verbose)
 
     def integrate(self):
-        R = self.trace('R')[:]
-        p = np.exp(self.trace('logp')[:])
+        R = np.linspace(0, 2*np.pi, 360)
+        p = self.p(R)
         Z = np.trapz(p, R)
         return Z
 
-    def plot(self):
-        plt.figure()
-        R = self.trace('R')[:]
-        S = np.exp(self.trace('S')[:])
+    def S(self, R):
+        Ri = self.R_i
+        Si = self.S_i
+        ix = np.argsort(Ri)
+        S = np.interp(R, Ri[ix], Si[ix])
+        return S
+
+    def p(self, R):
+        Ri = self.R_i
+        pi = self.p_i
+        ix = np.argsort(Ri)
+        p = np.interp(R, Ri[ix], pi[ix])
+        return p
+
+    def plot(self, ax):
+        R = np.linspace(0, 2*np.pi, 360)
+        S = self.S(R)
         self._plot(
-            R, S, None, None, None, None, None,
+            ax, R, S, None, None, None, None, None,
             title="Likelihood function",
             legend=False)
-        plt.ylim(0, 1.45)
+        #ax.set_ylim(0, 1.45)

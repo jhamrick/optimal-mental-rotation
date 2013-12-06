@@ -90,7 +90,7 @@ class BaseModel(pymc.Sampler):
         raise NotImplementedError
 
     @staticmethod
-    def _plot(x, y, xi, yi, xo, yo_mean, yo_var, **kwargs):
+    def _plot(ax, x, y, xi, yi, xo, yo_mean, yo_var, **kwargs):
         """Plot the original function and the regression estimate.
 
         """
@@ -104,7 +104,8 @@ class BaseModel(pymc.Sampler):
         opt.update(kwargs)
 
         # overall figure settings
-        sg.set_figsize(5, 3)
+        fig = ax.get_figure()
+        sg.set_figsize(5, 3, fig=fig)
         plt.subplots_adjust(
             wspace=0.2, hspace=0.3,
             left=0.15, bottom=0.2, right=0.95)
@@ -113,11 +114,11 @@ class BaseModel(pymc.Sampler):
             ix = np.argsort(x)
             xn = x.copy()
             xn[xn < 0] += 2*np.pi
-            plt.plot(xn[ix], y[ix], 'k-', label="actual", linewidth=2)
+            ax.plot(xn[ix], y[ix], 'k-', label="actual", linewidth=2)
         if xi is not None:
             xin = xi.copy()
             xin[xin < 0] += 2*np.pi
-            plt.plot(xi, yi, 'ro', label="samples")
+            ax.plot(xi, yi, 'ro', label="samples")
 
         if xo is not None:
             ix = np.argsort(xo)
@@ -132,13 +133,13 @@ class BaseModel(pymc.Sampler):
                 # compute upper and lower bounds
                 lower = yo_mean[ix] - ys
                 upper = yo_mean[ix] + ys
-                plt.fill_between(xon[ix], lower, upper, color='r', alpha=0.25)
+                ax.fill_between(xon[ix], lower, upper, color='r', alpha=0.25)
 
-            plt.plot(xon[ix], yo_mean[ix], 'r-', label="estimate", linewidth=2)
+            ax.plot(xon[ix], yo_mean[ix], 'r-', label="estimate", linewidth=2)
 
         # customize x-axis
-        plt.xlim(0, 2 * np.pi)
-        plt.xticks(
+        ax.set_xlim(0, 2 * np.pi)
+        ax.set_xticks(
             [0, np.pi / 2., np.pi, 3 * np.pi / 2., 2 * np.pi],
             ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
 
@@ -150,11 +151,31 @@ class BaseModel(pymc.Sampler):
 
         # title and axis labels
         if opt['title']:
-            plt.title(opt['title'])
+            ax.set_title(opt['title'])
         if opt['xlabel']:
-            plt.xlabel(opt['xlabel'])
+            ax.set_xlabel(opt['xlabel'])
         if opt['ylabel']:
-            plt.ylabel(opt['ylabel'])
+            ax.set_ylabel(opt['ylabel'])
 
         if opt['legend']:
-            plt.legend(loc=0, fontsize=12, frameon=False)
+            ax.legend(loc=0, fontsize=12, frameon=False)
+
+    @property
+    def S(self):
+        raise NotImplementedError
+
+    @property
+    def R_i(self):
+        R = self.trace('R')[:]
+        R[R < 0] += 2*np.pi
+        return R
+
+    @property
+    def S_i(self):
+        S = np.exp(self.trace('logS')[:])
+        return S
+
+    @property
+    def p_i(self):
+        p = np.exp(self.trace('logp')[:])
+        return p
