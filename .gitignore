@@ -32,3 +32,4 @@ man/nips-2013-bayesian-optimization_files
 experiment/participants.db
 experiment/config.txt
 .coverage
+htmlcov
