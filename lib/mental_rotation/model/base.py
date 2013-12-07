@@ -124,13 +124,6 @@ class BaseModel(pymc.Sampler):
         }
         opt.update(kwargs)
 
-        # overall figure settings
-        fig = ax.get_figure()
-        sg.set_figsize(5, 3, fig=fig)
-        plt.subplots_adjust(
-            wspace=0.2, hspace=0.3,
-            left=0.15, bottom=0.2, right=0.95)
-
         if x is not None:
             ix = np.argsort(x)
             xn = x.copy()
@@ -160,31 +153,31 @@ class BaseModel(pymc.Sampler):
 
         # customize x-axis
         ax.set_xlim(0, 2 * np.pi)
-        ax.set_xticks(
-            [0, np.pi / 2., np.pi, 3 * np.pi / 2., 2 * np.pi],
+        ax.set_xticks([0, np.pi / 2., np.pi, 3 * np.pi / 2., 2 * np.pi])
+        ax.set_xticklabels(
             ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
 
         # axis styling
-        sg.outward_ticks()
-        sg.clear_right()
-        sg.clear_top()
-        sg.set_scientific(-2, 3, axis='y')
+        sg.outward_ticks(ax=ax)
+        sg.clear_right(ax=ax)
+        sg.clear_top(ax=ax)
+        sg.set_scientific(-2, 3, axis='y', ax=ax)
 
         # title and axis labels
         if opt['title']:
             ax.set_title(opt['title'])
         else: # pragma: no cover
-            pass
+            ax.set_title("")
 
         if opt['xlabel']:
             ax.set_xlabel(opt['xlabel'])
         else: # pragma: no cover
-            pass
+            ax.set_xlabel("")
 
         if opt['ylabel']:
             ax.set_ylabel(opt['ylabel'])
         else: # pragma: no cover
-            pass
+            ax.set_ylabel("")
 
         if opt['legend']:
             ax.legend(loc=0, fontsize=12, frameon=False)
