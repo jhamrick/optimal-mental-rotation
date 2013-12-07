@@ -1,14 +1,16 @@
 import numpy as np
 
-from numpy.random import uniform
 from collections import OrderedDict
-from itertools import izip
 from gp import GP, GaussianKernel
 
 import matplotlib.pyplot as plt
 import snippets.graphing as sg
+import logging
 
+from .. import SEED, config
 from .base import BaseModel
+
+logger = logging.getLogger("mental_rotation.model.bq")
 
 DTYPE = np.float64
 EPS = np.finfo(DTYPE).eps
@@ -58,42 +60,45 @@ class BQ(object):
         self.loglevel = opt['loglevel']
         self.n_candidate = opt['n_candidate']
 
-        # square root of smallest float value, so we can square it
-        # later on
-        EPS12 = np.sqrt(EPS)
-
-        # random initial value functions
-        self.randf = OrderedDict([
-            ('h', lambda x, y: lambda: uniform(EPS12, np.max(np.abs(y)) * 2)),
-            ('w', lambda x, y: lambda: uniform(
-                np.ptp(x) / 100., np.ptp(x) / 10.)),
-            ('s', lambda x, y: lambda: uniform(0, np.sqrt(np.var(y))))
-        ])
-
     def log_transform(self, x):
         return np.log((x / self.gamma) + 1)
 
     def _fit_gp(self, x, y, name, **kwargs):
-        print "Fitting parameters for GP over %s ..." % name
+        logger.info("Fitting parameters for GP over %s" % name)
 
-        # default parameter values
-        h = kwargs.get('h', self.default_params.get('h', None))
-        w = kwargs.get('w', self.default_params.get('w', None))
-        s = kwargs.get('s', self.default_params.get('s', None))
+        # figure out which parameters we are fitting and how to
+        # generate them
+        randf = []
+        fitmask = np.empty(3, dtype=bool)
+        for i, p in enumerate(['h', 'w', 's']):
+            # are we fitting the parameter?
+            p_v = kwargs.get(p, self.default_params.get(p, None))
+            if p_v is None:
+                fitmask[i] = True
 
-        # parameters we are actually fitting
-        fitmask = np.array([v is None for v in (h, w, s)])
+            # what should we use as an initial parameter?
+            p0 = kwargs.get('%s0' % p, p_v)
+            if p0 is None:
+                randf.append(lambda: np.abs(np.random.normal()))
+            else:
+                # need to use keyword argument, because python does
+                # not assign new values to closure variables in loop
+                def f(p=p0):
+                    return p
+                randf.append(f)
 
-        # create the GP object with dummy init params
-        kparams = tuple([1 if v is None else v for v in (h, w)])
-        gp = GP(GaussianKernel(*kparams), x, y, s=0 if s is None else s)
+        # generate initial parameter values
+        randf = np.array(randf)
+        h, w, s = [f() for f in randf]
 
-        gp.fit_MLII(fitmask,
-                    p0=kwargs.get('p0', None),
-                    nrestart=kwargs.get('ntry', self.ntry),
-                    verbose=True)
+        # number of restarts
+        ntry = kwargs.get('ntry', self.ntry)
 
-        print "Best parameters: %s" % (gp.params,)
+        # create the GP object
+        gp = GP(GaussianKernel(h, w), x, y, s=s)
+
+        # fit the parameters
+        gp.fit_MLII(fitmask, randf=randf[fitmask], nrestart=ntry)
         return gp
 
     def choose_candidates(self):
@@ -131,7 +136,8 @@ class BQ(object):
 
         """
 
-        print "Fitting likelihood"
+        logger.info("Fitting likelihood")
+        np.random.seed(SEED)
 
         # first figure out some sane parameters for h and w
         self.gp_S = self._fit_gp(self.R, self.S, "S")
@@ -194,8 +200,19 @@ class BayesianQuadratureModel(BaseModel):
     """
 
     def __init__(self, *args, **kwargs):
-        self.bq_opts = kwargs['bq_opts']
-        del kwargs['bq_opts']
+        self.bq_opts = {
+            'gamma': config.getfloat("bq", "gamma"),
+            'h': None,
+            'w': None,
+            's': config.getfloat("bq", "s"),
+            'ntry': config.getint("bq", "ntry"),
+            'loglevel': config.get("global", "loglevel"),
+            'n_candidate': config.getint("bq", "n_candidate")
+        }
+
+        if 'bq_opts' in kwargs:
+            self.bq_opts.update(kwargs['bq_opts'])
+            del kwargs['bq_opts']
 
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
 
