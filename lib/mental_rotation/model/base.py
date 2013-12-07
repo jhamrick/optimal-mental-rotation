@@ -62,17 +62,17 @@ class BaseModel(pymc.Sampler):
         if x is not None:
             ix = np.argsort(x)
             xn = x.copy()
-            xn[xn < 0] += 2*np.pi
+            xn[xn < 0] += 2 * np.pi
             ax.plot(xn[ix], y[ix], 'k-', label="actual", linewidth=2)
         if xi is not None:
             xin = xi.copy()
-            xin[xin < 0] += 2*np.pi
+            xin[xin < 0] += 2 * np.pi
             ax.plot(xi, yi, 'ro', label="samples")
 
         if xo is not None:
             ix = np.argsort(xo)
             xon = xo.copy()
-            xon[xon < 0] += 2*np.pi
+            xon[xon < 0] += 2 * np.pi
 
             if yo_var is not None:
                 # hack, for if there are zero or negative variances
@@ -101,13 +101,23 @@ class BaseModel(pymc.Sampler):
         # title and axis labels
         if opt['title']:
             ax.set_title(opt['title'])
+        else: # pragma: no cover
+            pass
+
         if opt['xlabel']:
             ax.set_xlabel(opt['xlabel'])
+        else: # pragma: no cover
+            pass
+
         if opt['ylabel']:
             ax.set_ylabel(opt['ylabel'])
+        else: # pragma: no cover
+            pass
 
         if opt['legend']:
             ax.legend(loc=0, fontsize=12, frameon=False)
+        else: # pragma: no cover
+            pass
 
     def plot(self, ax):
         raise NotImplementedError
@@ -119,7 +129,7 @@ class BaseModel(pymc.Sampler):
     @property
     def R_i(self):
         R = self.trace('R')[:]
-        R[R < 0] += 2*np.pi
+        R[R < 0] += 2 * np.pi
         return R
 
     @property

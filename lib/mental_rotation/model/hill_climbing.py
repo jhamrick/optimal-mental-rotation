@@ -20,11 +20,16 @@ class HillClimbingModel(BaseModel):
                 self.tally()
                 self.model['R'].value = value
                 self.status = 'halt'
+            else: # pragma: no cover
+                pass
+
+        else: # pragma: no cover
+            pass
 
     def sample(self, verbose=0):
         super(BaseModel, self).sample(iter=360, verbose=verbose)
 
-        if self._current_iter == self._iter:
+        if self._current_iter == self._iter: # pragma: no cover
             raise RuntimeError(
                 "exhausted all iterations, this shouldn't have happened!")
 
@@ -32,7 +37,7 @@ class HillClimbingModel(BaseModel):
         self.status = 'running'
         try:
             while not self.status == 'halt':
-                if self.status == 'paused':
+                if self.status == 'paused': # pragma: no cover
                     break
 
                 self.draw()
@@ -45,6 +50,8 @@ class HillClimbingModel(BaseModel):
 
         if self.status == 'halt':
             self._halt()
+        else: # pragma: no cover
+            pass
 
     def integrate(self):
         R = np.linspace(0, 2*np.pi, 360)

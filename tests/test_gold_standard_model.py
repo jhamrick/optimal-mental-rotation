@@ -23,10 +23,10 @@ class TestGoldStandardModel(TestBaseModel):
         S = np.empty_like(R)
         Xr = Xa.copy_from_vertices()
         for i, r in enumerate(R):
-            Xr = Xr.copy_from_vertices()
+            Xr = Xa.copy_from_vertices()
+            Xr.rotate(np.degrees(r))
             S[i] = np.exp(m._log_similarity(
                 Xr.vertices, Xb.vertices, util.S_sigma))
-            Xr.rotate(1)
         assert np.allclose(S, m.S_i)
 
     def test_p_i(self):
@@ -38,13 +38,13 @@ class TestGoldStandardModel(TestBaseModel):
         logp_Xa = m._prior(Xa.vertices)
         logp_Xb = m._prior(Xb.vertices)
         for i, r in enumerate(R):
-            Xr = Xr.copy_from_vertices()
+            Xr = Xa.copy_from_vertices()
+            Xr.rotate(np.degrees(r))
             logS = m._log_similarity(
                 Xr.vertices, Xb.vertices, util.S_sigma)
             logp_R = pymc.distributions.von_mises_like(
                 r, util.R_mu, util.R_kappa)
             p[i] = np.exp(logS + logp_R + logp_Xa + logp_Xb)
-            Xr.rotate(1)
         assert np.allclose(p, m.p_i)
 
     def test_S(self):
