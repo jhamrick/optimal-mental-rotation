@@ -5,26 +5,38 @@ from .base import BaseModel
 
 class HillClimbingModel(BaseModel):
 
+    def __init__(self, *args, **kwargs):
+        super(HillClimbingModel, self).__init__(*args, **kwargs)
+        self.direction = None
+
     def draw(self):
-        value = self.model['R'].value
-        logp = self.logp
+        R = self.model['R'].value
+        logS = self.model['logS'].logp
 
-        dir = np.random.choice([1, -1])
-        self.model['R'].value = value + dir*np.radians(10)
+        if self.direction is None:
+            self.direction = np.random.choice([1, -1])
+            step = self.direction * np.radians(10)
 
-        if self.logp < logp:
-            self.tally()
-            self.model['R'].value = value - dir*np.radians(10)
-
-            if self.logp < logp:
+            self.model['R'].value = R + step
+            new_logS = self.model['logS'].logp
+            if new_logS < logS or np.allclose(new_logS, logS):
                 self.tally()
-                self.model['R'].value = value
-                self.status = 'halt'
+                self.model['R'].value = R
+                self.direction *= -1
+
             else: # pragma: no cover
                 pass
 
-        else: # pragma: no cover
-            pass
+        else:
+            step = self.direction * np.radians(10)
+
+            self.model['R'].value = R + step
+            new_logS = self.model['logS'].logp
+            if new_logS < logS or np.allclose(new_logS, logS):
+                self.status = 'halt'
+
+            else: # pragma: no cover
+                pass
 
     def sample(self, verbose=0):
         super(BaseModel, self).sample(iter=360, verbose=verbose)
@@ -33,28 +45,8 @@ class HillClimbingModel(BaseModel):
             raise RuntimeError(
                 "exhausted all iterations, this shouldn't have happened!")
 
-    def _loop(self):
-        self.status = 'running'
-        try:
-            while not self.status == 'halt':
-                if self.status == 'paused': # pragma: no cover
-                    break
-
-                self.draw()
-                self.tally()
-
-                self._current_iter += 1
-
-        except KeyboardInterrupt:
-            self.status = 'halt'
-
-        if self.status == 'halt':
-            self._halt()
-        else: # pragma: no cover
-            pass
-
     def integrate(self):
-        R = np.linspace(0, 2*np.pi, 360)
+        R = np.linspace(0, 2 * np.pi, 360)
         p = self.p(R)
         Z = np.trapz(p, R)
         return Z
@@ -76,7 +68,7 @@ class HillClimbingModel(BaseModel):
     def plot(self, ax):
         Ri = self.R_i
         Si = self.S_i
-        R = np.linspace(0, 2*np.pi, 360)
+        R = np.linspace(0, 2 * np.pi, 360)
         S = self.S(R)
         self._plot(
             ax, None, None, Ri, Si, R, S, None,

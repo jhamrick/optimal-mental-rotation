@@ -23,6 +23,23 @@ class TestHillClimbingModel(TestBaseModel):
                 Xr.vertices, Xb.vertices, util.S_sigma))
         assert np.allclose(S, m.S_i)
 
+    def test_S_i_circle(self):
+        Xa = util.make_circle()
+        Xb = Xa.copy_from_vertices()
+        m = HillClimbingModel(Xa, Xb, util.R_mu, util.R_kappa, util.S_sigma)
+        m.sample()
+        assert np.allclose(m.S_i, m.S_i[0])
+
+        m = HillClimbingModel(Xa, Xb, util.R_mu, util.R_kappa, util.S_sigma)
+        m.direction = 1
+        m.sample()
+        assert np.allclose(m.S_i, m.S_i[0])
+
+        m = HillClimbingModel(Xa, Xb, util.R_mu, util.R_kappa, util.S_sigma)
+        m.direction = -1
+        m.sample()
+        assert np.allclose(m.S_i, m.S_i[0])
+
     def test_p_i(self):
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()

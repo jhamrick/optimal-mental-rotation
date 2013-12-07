@@ -18,6 +18,15 @@ def make_stim():
     return stim
 
 
+def make_circle():
+    R = np.radians(np.arange(0, 360, 10))
+    v = np.empty((R.size, 2))
+    v[:, 0] = np.cos(R)
+    v[:, 1] = np.sin(R)
+    X = Stimulus2D(v)
+    return X
+
+
 def make_model(cls):
     X = make_stim()
     X.flip([0, 1])
