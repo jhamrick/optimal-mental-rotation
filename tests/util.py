@@ -18,12 +18,10 @@ def make_stim():
     return stim
 
 
-def make_model(cls, R, flip):
-    X = Stimulus2D.random(8)
-    if flip:
-        X.flip([0, 1])
-    if R != 0:
-        X.rotate(R)
+def make_model(cls):
+    X = make_stim()
+    X.flip([0, 1])
+    X.rotate(39)
     Xa = X.copy_from_initial()
     Xb = X.copy_from_vertices()
     m = cls(Xa, Xb, R_mu, R_kappa, S_sigma)

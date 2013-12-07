@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import pytest
 from tempfile import NamedTemporaryFile
 from mental_rotation import Stimulus2D
@@ -139,3 +140,11 @@ def test_copy_from_initial():
     assert np.allclose(stim1._v, stim2._v)
     assert not np.allclose(stim1.vertices, stim2._v)
     assert not np.allclose(stim1.vertices, stim2.vertices)
+
+
+def test_plot():
+    stim = util.make_stim()
+    fig, ax = plt.subplots()
+    stim.plot(ax)
+    plt.show()
+    plt.close('all')
