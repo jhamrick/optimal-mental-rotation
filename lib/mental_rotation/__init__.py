@@ -22,12 +22,15 @@ BIN_PATH = get_path("bin")
 EXP_PATH = get_path("experiment")
 
 import logging
-LOGLEVEL = config.get("global", "loglevel").upper()
 FORMAT = '%(levelname)s -- %(processName)s/%(filename)s -- %(message)s'
-logging.basicConfig(level=LOGLEVEL, format=FORMAT)
+logging.basicConfig(format=FORMAT)
+logger = logging.getLogger("mental_rotation")
+logger.setLevel(config.get("global", "loglevel").upper())
 
 import numpy as np
 DTYPE = np.dtype(config.get("global", "dtype"))
 del np
+
+SEED = config.getint("global", "seed")
 
 from .stimulus import Stimulus2D
