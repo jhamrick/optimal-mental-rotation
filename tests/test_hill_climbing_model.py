@@ -20,22 +20,22 @@ class TestHillClimbingModel(TestBaseModel):
             Xr = Xa.copy_from_vertices()
             Xr.rotate(np.degrees(r))
             log_S[i] = m._log_similarity(
-                Xr.vertices, Xb.vertices, util.S_sigma)
+                Xr.vertices, Xb.vertices, m.opts['S_sigma'])
         assert np.allclose(log_S, m.log_S_i)
 
     def test_log_S_i_circle(self):
         Xa = util.make_circle()
         Xb = Xa.copy_from_vertices()
-        m = HillClimbingModel(Xa, Xb, util.R_mu, util.R_kappa, util.S_sigma)
+        m = HillClimbingModel(Xa, Xb)
         m.sample()
         assert np.allclose(m.log_S_i, m.log_S_i[0])
 
-        m = HillClimbingModel(Xa, Xb, util.R_mu, util.R_kappa, util.S_sigma)
+        m = HillClimbingModel(Xa, Xb)
         m.direction = 1
         m.sample()
         assert np.allclose(m.log_S_i, m.log_S_i[0])
 
-        m = HillClimbingModel(Xa, Xb, util.R_mu, util.R_kappa, util.S_sigma)
+        m = HillClimbingModel(Xa, Xb)
         m.direction = -1
         m.sample()
         assert np.allclose(m.log_S_i, m.log_S_i[0])
@@ -56,9 +56,9 @@ class TestHillClimbingModel(TestBaseModel):
             Xr = Xa.copy_from_vertices()
             Xr.rotate(np.degrees(r))
             log_S = m._log_similarity(
-                Xr.vertices, Xb.vertices, util.S_sigma)
+                Xr.vertices, Xb.vertices, m.opts['S_sigma'])
             log_p_R = pymc.distributions.von_mises_like(
-                r, util.R_mu, util.R_kappa)
+                r, m.opts['R_mu'], m.opts['R_kappa'])
             log_dZ_dR[i] = log_S + log_p_R
         assert np.allclose(log_dZ_dR, m.log_dZ_dR_i)
 

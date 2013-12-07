@@ -26,13 +26,13 @@ class TestBaseModel(object):
         log_S = m._log_similarity(
             Xb.vertices,
             Xa.vertices,
-            util.S_sigma)
+            m.opts['S_sigma'])
         assert log_S == m.model['log_S'].logp
 
         log_S = m._log_similarity(
             m.model['Xb'].value,
             m.model['Xr'].value,
-            util.S_sigma)
+            m.opts['S_sigma'])
         assert log_S == m.model['log_S'].logp
 
     def test_plot(self):

@@ -1,11 +1,6 @@
 import numpy as np
 
 from mental_rotation.stimulus import Stimulus2D
-from mental_rotation import config
-
-R_mu = config.getfloat("model", "R_mu")
-R_kappa = config.getfloat("model", "R_kappa")
-S_sigma = config.getfloat("model", "S_sigma")
 
 
 def seed():
@@ -33,5 +28,5 @@ def make_model(cls):
     X.rotate(39)
     Xa = X.copy_from_initial()
     Xb = X.copy_from_vertices()
-    m = cls(Xa, Xb, R_mu, R_kappa, S_sigma)
+    m = cls(Xa, Xb)
     return Xa, Xb, m

@@ -1,23 +1,31 @@
 import pymc
 import numpy as np
-import matplotlib.pyplot as plt
 import snippets.graphing as sg
 
 from . import model
+from .. import config
 
 
 class BaseModel(pymc.Sampler):
 
-    def __init__(self, X_a, X_b, R_mu, R_kappa, S_sigma):
+    def __init__(self, X_a, X_b, **opts):
+
+        self.opts = {
+            'R_mu': config.getfloat("model", "R_mu"),
+            'R_kappa': config.getfloat("model", "R_kappa"),
+            'S_sigma': config.getfloat("model", "S_sigma")
+        }
+        self.opts.update(opts)
 
         self.model = {}
         self.model['Xa'] = model.make_Xi('Xa', X_a)
         self.model['Xb'] = model.make_Xi('Xb', X_b)
-        self.model['R'] = model.make_R(R_mu, R_kappa)
+        self.model['R'] = model.make_R(
+            self.opts['R_mu'], self.opts['R_kappa'])
         self.model['Xr'] = model.make_Xr(
             self.model['Xa'], self.model['R'])
         self.model['log_S'] = model.make_log_S(
-            self.model['Xb'], self.model['Xr'], S_sigma)
+            self.model['Xb'], self.model['Xr'], self.opts['S_sigma'])
 
         self._prior = model.prior
         self._log_similarity = model.log_similarity

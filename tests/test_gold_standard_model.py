@@ -28,7 +28,7 @@ class TestGoldStandardModel(TestBaseModel):
             Xr = Xa.copy_from_vertices()
             Xr.rotate(np.degrees(r))
             log_S[i] = m._log_similarity(
-                Xr.vertices, Xb.vertices, util.S_sigma)
+                Xr.vertices, Xb.vertices, m.opts['S_sigma'])
         assert np.allclose(log_S, m.log_S_i)
 
     def test_log_S(self):
@@ -49,9 +49,9 @@ class TestGoldStandardModel(TestBaseModel):
             Xr = Xa.copy_from_vertices()
             Xr.rotate(np.degrees(r))
             log_S = m._log_similarity(
-                Xr.vertices, Xb.vertices, util.S_sigma)
+                Xr.vertices, Xb.vertices, m.opts['S_sigma'])
             log_p_R = pymc.distributions.von_mises_like(
-                r, util.R_mu, util.R_kappa)
+                r, m.opts['R_mu'], m.opts['R_kappa'])
             log_dZ_dR[i] = log_S + log_p_R
         assert np.allclose(log_dZ_dR, m.log_dZ_dR_i)
 
@@ -63,7 +63,8 @@ class TestGoldStandardModel(TestBaseModel):
         assert np.allclose(m.log_dZ_dR_i, m.log_dZ_dR(R))
 
         log_p_R = np.array([
-            pymc.distributions.von_mises_like(r, util.R_mu, util.R_kappa)
+            pymc.distributions.von_mises_like(
+                r, m.opts['R_mu'], m.opts['R_kappa'])
             for r in R])
 
         log_dZ_dR = m.log_S(R) + log_p_R
