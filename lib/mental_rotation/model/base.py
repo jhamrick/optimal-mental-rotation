@@ -193,3 +193,20 @@ class BaseModel(pymc.Sampler):
 
     def plot(self, ax):
         raise NotImplementedError
+
+    ##################################################################
+    # Misc
+
+    def print_stats(self):
+        print "log Z = %f" % self.log_Z
+        print "log LH(h0) = %f" % self.log_lh_h0
+        print "log LH(h1) = %f" % self.log_lh_h1
+
+        llr = self.log_lh_h0 - self.log_lh_h1
+        print "log LH(h0) / LH(h1) = %f" % llr
+        if llr < 0: # pragma: no cover
+            print "--> ACCEPT hypothesis 1"
+        elif llr > 0: # pragma: no cover
+            print "--> REJECT hypothesis 1"
+        else: # pragma: no cover
+            print "--> UNDECIDED"

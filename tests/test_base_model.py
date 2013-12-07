@@ -142,3 +142,11 @@ class TestBaseModel(object):
         log_p_Xa = m.model['Xa'].logp
         log_Z = m.log_Z
         assert m.log_lh_h1 == (log_p_Xa + log_Z)
+
+    def test_print_stats(self):
+        if self.cls is BaseModel:
+            return
+
+        Xa, Xb, m = util.make_model(self.cls)
+        m.sample()
+        m.print_stats()
