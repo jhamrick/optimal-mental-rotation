@@ -45,8 +45,8 @@ def log_similarity(X0, X1, S_sigma):
     Z0 = (D / 2.) * np.log(2 * np.pi)
     Z1 = 0.5 * np.linalg.slogdet(Sigma)[1]
     # overall similarity, marginalizing out order
-    logS = np.log(np.sum(np.exp(e + Z0 + Z1 - np.log(n))))
-    return logS
+    log_S = np.log(np.sum(np.exp(e + Z0 + Z1 - np.log(n))))
+    return log_S
 
 
 def make_Xi(name, X):
@@ -87,8 +87,8 @@ def make_Xr(Xa, R):
     return Xr
 
 
-def make_logS(Xb, Xr, S_sigma):
+def make_log_S(Xb, Xr, S_sigma):
     @pymc.potential
-    def logS(Xb=Xb, Xr=Xr):
+    def log_S(Xb=Xb, Xr=Xr):
         return log_similarity(Xb, Xr, S_sigma)
-    return logS
+    return log_S

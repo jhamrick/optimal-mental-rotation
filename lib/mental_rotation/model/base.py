@@ -16,7 +16,7 @@ class BaseModel(pymc.Sampler):
         self.model['R'] = model.make_R(R_mu, R_kappa)
         self.model['Xr'] = model.make_Xr(
             self.model['Xa'], self.model['R'])
-        self.model['logS'] = model.make_logS(
+        self.model['log_S'] = model.make_log_S(
             self.model['Xb'], self.model['Xr'], S_sigma)
 
         self._prior = model.prior
@@ -25,18 +25,90 @@ class BaseModel(pymc.Sampler):
         name = type(self).__name__
         super(BaseModel, self).__init__(input=self.model, name=name)
 
-        self._funs_to_tally['logS'] = self.model['logS'].get_logp
-        self._funs_to_tally['logp'] = self.get_logp
+        self._funs_to_tally['log_S'] = self.model['log_S'].get_logp
+        self._funs_to_tally['log_dZ_dR'] = self.get_log_dZ_dR
 
-    def get_logp(self):
-        return self.logp
+    ##################################################################
+    # Overwritten PyMC sampling methods
 
     def _loop(self):
-        self.tally()
+        if self._current_iter == 0:
+            self.tally()
         super(BaseModel, self)._loop()
 
-    def integrate(self):
+    ##################################################################
+    # Sampled R_i
+
+    @property
+    def R_i(self):
+        R = self.trace('R')[:]
+        R[R < 0] += 2 * np.pi
+        return R
+
+    ##################################################################
+    # Sampled S_i and the estimated S
+
+    @property
+    def log_S_i(self):
+        log_S = self.trace('log_S')[:]
+        return log_S
+
+    @property
+    def S_i(self):
+        return np.exp(self.log_S_i)
+
+    def log_S(self, R):
         raise NotImplementedError
+
+    def S(self, R):
+        raise NotImplementedError
+
+    ##################################################################
+    # Sampled dZ_dR (which is just S_i*p(R_i)) and full estimate of Z
+
+    def get_log_dZ_dR(self):
+        return self.model['log_S'].logp + self.model['R'].logp
+
+    @property
+    def log_dZ_dR_i(self):
+        log_p = self.trace('log_dZ_dR')[:]
+        return log_p
+
+    @property
+    def dZ_dR_i(self):
+        return np.exp(self.log_dZ_dR_i)
+
+    def log_dZ_dR(self, R):
+        raise NotImplementedError
+
+    def dZ_dR(self, R):
+        raise NotImplementedError
+
+    @property
+    def log_Z(self):
+        raise NotImplementedError
+
+    @property
+    def Z(self):
+        raise NotImplementedError
+
+    ##################################################################
+    # Log likelihoods for each hypothesis
+
+    @property
+    def log_lh_h0(self):
+        p_Xa = self.model['Xa'].logp
+        p_Xb = self.model['Xb'].logp
+        return p_Xa + p_Xb
+
+    @property
+    def log_lh_h1(self):
+        log_Z = self.log_Z
+        p_Xa = self.model['Xa'].logp
+        return log_Z + p_Xa
+
+    ##################################################################
+    # Plotting methods
 
     @staticmethod
     def _plot(ax, x, y, xi, yi, xo, yo_mean, yo_var, **kwargs):
@@ -121,23 +193,3 @@ class BaseModel(pymc.Sampler):
 
     def plot(self, ax):
         raise NotImplementedError
-
-    @property
-    def S(self):
-        raise NotImplementedError
-
-    @property
-    def R_i(self):
-        R = self.trace('R')[:]
-        R[R < 0] += 2 * np.pi
-        return R
-
-    @property
-    def S_i(self):
-        S = np.exp(self.trace('logS')[:])
-        return S
-
-    @property
-    def p_i(self):
-        p = np.exp(self.trace('logp')[:])
-        return p
