@@ -134,7 +134,8 @@ class Stimulus2D(object):
         ax.set_yticks([])
         ax.set_yticklabels([])
         ax.axis([-1, 1, -1, 1])
-        plt.box('off')
+        ax.set_aspect('equal')
+        ax.axis('off')
 
     def copy_from_state(self):
         state = self.__getstate__()
