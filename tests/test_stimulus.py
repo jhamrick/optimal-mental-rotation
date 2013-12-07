@@ -146,5 +146,4 @@ def test_plot():
     stim = util.make_stim()
     fig, ax = plt.subplots()
     stim.plot(ax)
-    plt.show()
     plt.close('all')

@@ -43,7 +43,6 @@ class TestBaseModel(object):
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
         m.plot(ax)
-        plt.show()
         plt.close('all')
 
     def test_R_i(self):
