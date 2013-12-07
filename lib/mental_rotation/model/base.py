@@ -28,8 +28,12 @@ class BaseModel(pymc.Sampler):
         self._funs_to_tally['logS'] = self.model['logS'].get_logp
         self._funs_to_tally['logp'] = self.get_logp
 
-    # handle to the getter for logp
-    get_logp = pymc.Sampler.logp.__get__
+    def get_logp(self):
+        return self.logp
+
+    def _loop(self):
+        self.tally()
+        super(BaseModel, self)._loop()
 
     def integrate(self):
         raise NotImplementedError
@@ -104,6 +108,9 @@ class BaseModel(pymc.Sampler):
 
         if opt['legend']:
             ax.legend(loc=0, fontsize=12, frameon=False)
+
+    def plot(self, ax):
+        raise NotImplementedError
 
     @property
     def S(self):

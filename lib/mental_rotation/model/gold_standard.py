@@ -9,7 +9,7 @@ class GoldStandardModel(BaseModel):
         self.model['R'].value = self.model['R'].value + np.radians(1)
 
     def sample(self, verbose=0):
-        super(BaseModel, self).sample(iter=359, verbose=verbose)
+        super(BaseModel, self).sample(iter=360, verbose=verbose)
 
     def integrate(self):
         R = np.linspace(0, 2*np.pi, 360)
@@ -38,4 +38,3 @@ class GoldStandardModel(BaseModel):
             ax, R, S, None, None, None, None, None,
             title="Likelihood function",
             legend=False)
-        #ax.set_ylim(0, 1.45)

@@ -118,13 +118,12 @@ class Stimulus2D(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def plot(self, **kwargs):
+    def plot(self, ax, **kwargs):
         v = self.vertices
         X = np.empty((v.shape[0] + 1, 2))
         X[:-1] = v
         X[-1] = v[0]
 
-        fig, ax = plt.subplots()
         ax.plot(
             X[:, 0], X[:, 1],
             color='k',
@@ -136,8 +135,6 @@ class Stimulus2D(object):
         ax.set_yticklabels([])
         ax.axis([-1, 1, -1, 1])
         plt.box('off')
-        fig.set_figwidth(4)
-        fig.set_figheight(4)
 
     def copy_from_state(self):
         state = self.__getstate__()

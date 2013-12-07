@@ -74,4 +74,3 @@ class HillClimbingModel(BaseModel):
         self._plot(
             ax, None, None, Ri, Si, R, S, None,
             title="Linear interpolation for $S$")
-        #ax.set_ylim(0, 1.45)
