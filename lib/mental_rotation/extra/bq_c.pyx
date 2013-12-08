@@ -445,71 +445,43 @@ def int_dK(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE
         for j in xrange(d):
             out[i, j] = int_K_vec[i] * ((S[j, j] + m[j] ** 2 / w[j]**3) - (1.0 / w[j]))
 
-# def dtheta_consts(x, w1, w2, mu, L):
-#     n, d = x.shape
-#     I = np.eye(d)
-#     Wl = (w1 ** 2) * I
-#     Wtl = (w2 ** 2) * I
-#     iWtl = inv(Wtl)
+def Z_mean(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=2] x_sc, np.ndarray[DTYPE_t, ndim=1] alpha_l, np.ndarray[DTYPE_t, ndim=1] alpha_del, DTYPE_t h_s, np.ndarray[DTYPE_t, ndim=1] w_s, DTYPE_t h_dc, np.ndarray[DTYPE_t, ndim=1] w_dc, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov, gamma):
 
-#     A = dot(L, inv(Wtl + L))
-#     B = L - dot(A, L)
-#     C = dot(B, inv(B + Wl))
-#     CA = dot(C, A)
-#     BCB = B - dot(C, B)
+    cdef np.ndarray[DTYPE_t, ndim=1] int_K_l
+    cdef np.ndarray[DTYPE_t, ndim=1] int_K_del
+    cdef np.ndarray[DTYPE_t, ndim=2] int_K_del_K_l
+    cdef int ns, nc, d
+    cdef DTYPE_t E_m_l, E_m_l_m_del, E_m_del, m_Z
 
-#     xsubmu = x - mu
-#     mat_const = np.empty((n, n, d))
-#     vec_const = np.empty((n, d))
-#     c = -0.5*iWtl
+    ns = x_s.shape[0]
+    nc = x_sc.shape[0]
+    d = x_s.shape[1]
 
-#     m1 = dot(A - I, xsubmu.T).T
-#     m2a = dot(A - CA - I, xsubmu.T).T
-#     m2b = dot(C, xsubmu.T).T
+    ## First term
+    # E[m_l | x_s] = (int K_l(x, x_s) p(x) dx) alpha_l(x_s)
+    int_K_l = np.empty(ns, dtype=DTYPE)
+    int_K(int_K_l, x_s, h_s, w_s, mu, cov)
+    E_m_l = float(dot(int_K_l, alpha_l))
+    assert E_m_l > 0
+
+    ## Second term
+    # E[m_l*m_del | x_s, x_c] = alpha_del(x_sc)' *
+    #     int K_del(x_sc, x) K_l(x, x_s) p(x) dx *
+    #     alpha_l(x_s)
+    int_K_del_K_l = np.empty((nc, ns), dtype=DTYPE)
+    int_K1_K2(int_K_del_K_l, x_sc, x_s, h_dc, w_dc, h_s, w_s, mu, cov)
+    E_m_l_m_del = float(dot(dot(alpha_del, int_K_del_K_l), alpha_l))
     
-#     for i in xrange(n):
-#         vec_const[i] = np.diag(
-#             c * (I + dot(B - dot(m1[i], m1[i].T), iWtl)))
-
-#         for j in xrange(n):
-#             m2 = m2a[i] + m2b[j]
-#             mat_const[i, j] = np.diag(
-#                 c * (I + dot(BCB - dot(m2, m2.T), iWtl)))
-            
-#     return mat_const, vec_const
-
-# def Z_mean(x_s, x_sc, alpha_l, alpha_del, h_s, w_s, h_dc, w_dc, mu, cov, gamma):
-
-#     ns, d = x_s.shape
-#     nc, d = x_sc.shape
-
-#     cdef np.ndarray[DTYPE_t, ndim=1] int_K_l = np.empty(ns, dtype=DTYPE)
-#     cdef np.ndarray[DTYPE_t, ndim=1] int_K_del = np.empty(nc, dtype=DTYPE)
-
-#     ## First term
-#     # E[m_l | x_s] = (int K_l(x, x_s) p(x) dx) alpha_l(x_s)
-#     int_K(int_K_l, x_s, h_s, w_s, mu, cov)
-#     E_m_l = float(dot(int_K_l, alpha_l))
-#     assert E_m_l > 0
-
-#     ## Second term
-#     # E[m_l*m_del | x_s, x_c] = alpha_del(x_sc)' *
-#     #     int K_del(x_sc, x) K_l(x, x_s) p(x) dx *
-#     #     alpha_l(x_s)
-#     int_K_del_K_l = int_K1_K2(
-#         x_sc, x_s, h_dc, w_dc, h_s, w_s, mu, cov)
-#     E_m_l_m_del = float(dot(dot(
-#         alpha_del.T, int_K_del_K_l), alpha_l))
+    ## Third term
+    # E[m_del | x_sc] = (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
+    int_K_del = np.empty(nc, dtype=DTYPE)
+    int_K(int_K_del, x_sc, h_dc, w_dc, mu, cov)
+    E_m_del = float(dot(int_K_del, alpha_del))
     
-#     ## Third term
-#     # E[m_del | x_sc] = (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
-#     int_K(int_K_del, x_sc, h_dc, w_dc, mu, cov)
-#     E_m_del = float(dot(int_K_del, alpha_del))
-    
-#     # put the three terms together
-#     m_Z = E_m_l + E_m_l_m_del + gamma * E_m_del
+    # put the three terms together
+    m_Z = E_m_l + E_m_l_m_del + (gamma * E_m_del)
 
-#     return m_Z
+    return m_Z
 
 
 # def Z_var(x_s, alpha_l, alpha_tl, inv_L_tl, inv_K_tl, dK_tl_dw, Cw, h_l, w_l, h_tl, w_tl, mu, cov, gamma):
