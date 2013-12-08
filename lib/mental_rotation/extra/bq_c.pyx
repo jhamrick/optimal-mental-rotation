@@ -55,7 +55,7 @@ def improve_covariance_conditioning(np.ndarray[DTYPE_t, ndim=2] M):
         M[i, i] += sqd_jitters
 
 
-def gaussint1(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h, DTYPE_t w, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
+def int_K(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h, DTYPE_t w, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
     """Computes integrals of the form:
 
     int K(x', x) N(x' | mu, cov) dx'
@@ -89,7 +89,7 @@ def gaussint1(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DT
         out[i] = h_2 * exp(out[i])
 
 
-def gaussint2(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x1, np.ndarray[DTYPE_t, ndim=2] x2, DTYPE_t h1, DTYPE_t w1, DTYPE_t h2, DTYPE_t w2, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
+def int_K1_K2(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x1, np.ndarray[DTYPE_t, ndim=2] x2, DTYPE_t h1, DTYPE_t w1, DTYPE_t h2, DTYPE_t w2, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
     """Computes integrals of the form:
 
     int K_1(x1, x') K_2(x', x2) N(x' | mu, cov) dx'
@@ -152,7 +152,7 @@ def gaussint2(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x1, n
             out[i, j] = h1_2_h2_2 * exp(out[i, j])
 
 
-def gaussint3(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h1, DTYPE_t w1, DTYPE_t h2, DTYPE_t w2, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
+def int_int_K1_K2_K1(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h1, DTYPE_t w1, DTYPE_t h2, DTYPE_t w2, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
     """Computes integrals of the form:
 
     int int K_1(x, x1') K_2(x1', x2') K_1(x2', x) N(x1' | mu, cov) N(x2' | mu, cov) dx1' dx2'
@@ -217,7 +217,7 @@ def gaussint3(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x, DT
             out[i, j] = h1_4_h2_2 * exp(Gdeti + N1[i] + N1[j] + N2[i, j])
 
 
-def gaussint4(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h1, DTYPE_t w1, DTYPE_t h2, DTYPE_t w2, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
+def int_int_K1_K2(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h1, DTYPE_t w1, DTYPE_t h2, DTYPE_t w2, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
     """Computes integrals of the form:
 
     int int K_1(x2', x1') K_2(x1', x) N(x1' | mu, cov) N(x2' | mu, cov) dx1' dx2'
@@ -236,6 +236,8 @@ def gaussint4(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DT
     cdef np.ndarray[DTYPE_t, ndim=2] C
     cdef np.ndarray[DTYPE_t, ndim=1] N1
     cdef np.ndarray[DTYPE_t, ndim=2] N2
+    cdef np.ndarray[DTYPE_t, ndim=2] zx
+    cdef np.ndarray[DTYPE_t, ndim=1] zm
     cdef int n, d, i, j
     cdef DTYPE_t h1_2, h2_2
 
@@ -267,16 +269,40 @@ def gaussint4(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DT
     mvn_logpdf(N2, x, mu, C, False, 0)
 
     for i in xrange(n):
-        out[i] = h1_2_h2_2 * exp(N1[i] + N2[i])
+        out[i] = h1_2_h2_2 * exp(N1[0] + N2[i])
 
-# def gaussint5(d, h, w, mu, cov):
-#     h2 = h ** 2
-#     W = (np.array(w) * np.eye(d)) ** 2
-#     const = float(h2 * np.exp(mvn_logpdf(
-#         np.zeros((1, d)),
-#         np.zeros(d),
-#         W + 2*cov)))
-#     return const
+def int_int_K(int d, DTYPE_t h, DTYPE_t w, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
+    """Computes integrals of the form:
+
+    int int K(x1', x2') N(x1' | mu, cov) N(x2' | mu, cov) dx1' dx2'
+
+    where K is a Gaussian kernel parameterized by `h` and `w`.
+
+    The result is:
+
+    out = h^2 N(0 | 0, W + 2*cov)
+
+    """
+
+    cdef np.ndarray[DTYPE_t, ndim=2] W_2cov
+    cdef np.ndarray[DTYPE_t, ndim=1] N
+    cdef np.ndarray[DTYPE_t, ndim=2] zx
+    cdef np.ndarray[DTYPE_t, ndim=1] zm
+    cdef int i, j
+
+    # compute W + 2*cov
+    W_2cov = np.empty((d, d), dtype=DTYPE)
+    for i in xrange(d):
+        for j in xrange(d):
+            W_2cov[i, j] = 2*cov[i, j] + w
+
+    # compute N(0 | 0, W1 + 2*cov)
+    N = np.empty(1, dtype=DTYPE)
+    zx = np.zeros((1, d), dtype=DTYPE)
+    zm = np.zeros(d, dtype=DTYPE)
+    mvn_logpdf(N, zx, zm, W_2cov, False, 0)
+
+    return (h ** 2) * exp(N[0])
 
 # def dtheta_consts(x, w1, w2, mu, L):
 #     n, d = x.shape
@@ -321,7 +347,7 @@ def gaussint4(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DT
 
 #     ## First term
 #     # E[m_l | x_s] = (int K_l(x, x_s) p(x) dx) alpha_l(x_s)
-#     gaussint1(int_K_l, x_s, h_s, w_s, mu, cov)
+#     int_K(int_K_l, x_s, h_s, w_s, mu, cov)
 #     E_m_l = float(dot(int_K_l, alpha_l))
 #     assert E_m_l > 0
 
@@ -329,14 +355,14 @@ def gaussint4(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DT
 #     # E[m_l*m_del | x_s, x_c] = alpha_del(x_sc)' *
 #     #     int K_del(x_sc, x) K_l(x, x_s) p(x) dx *
 #     #     alpha_l(x_s)
-#     int_K_del_K_l = gaussint2(
+#     int_K_del_K_l = int_K1_K2(
 #         x_sc, x_s, h_dc, w_dc, h_s, w_s, mu, cov)
 #     E_m_l_m_del = float(dot(dot(
 #         alpha_del.T, int_K_del_K_l), alpha_l))
     
 #     ## Third term
 #     # E[m_del | x_sc] = (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
-#     gaussint1(int_K_del, x_sc, h_dc, w_dc, mu, cov)
+#     int_K(int_K_del, x_sc, h_dc, w_dc, mu, cov)
 #     E_m_del = float(dot(int_K_del, alpha_del))
     
 #     # put the three terms together
@@ -358,9 +384,9 @@ def gaussint4(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DT
 #     # beta(x_s) = inv(L_tl(x_s, x_s)) *
 #     #    int K_tl(x_s, x) K_l(x, x_s) p(x) dx *
 #     #    alpha_l(x_s)
-#     int_K_l_K_tl_K_l = gaussint3(
+#     int_K_l_K_tl_K_l = int_int_K1_K2_K1(
 #         x_s, h_l, w_l, h_tl, w_tl, mu, cov)
-#     int_K_tl_K_l_mat = gaussint2(
+#     int_K_tl_K_l_mat = int_K1_K2(
 #         x_s, x_s, h_tl, w_tl, h_l, w_l, mu, cov)
 #     beta = dot(dot(inv_L_tl, int_K_tl_K_l_mat), alpha_l)
 #     beta2 = dot(beta.T, beta)
@@ -376,8 +402,8 @@ def gaussint4(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DT
 #     #        int K_tl(x_s, x) K_l(x, x_s) p(x) dx
 #     #      )
 #     #    ] alpha_l(x_s)
-#     int_K_tl_K_l_vec = gaussint4(x_s, h_tl, w_tl, h_l, w_l, mu, cov)
-#     gaussint1(int_K_tl_vec, x_s, h_tl, w_tl, mu, cov)
+#     int_K_tl_K_l_vec = int_int_K1_K2(x_s, h_tl, w_tl, h_l, w_l, mu, cov)
+#     int_K(int_K_tl_vec, x_s, h_tl, w_tl, mu, cov)
 #     int_inv_int = dot(dot(int_K_tl_vec, inv_K_tl), int_K_tl_K_l_mat)
 #     E_m_l_C_tl = float(dot(int_K_tl_K_l_vec - int_inv_int, alpha_l))
 #     if E_m_l_C_tl <= 0:
@@ -393,7 +419,7 @@ def gaussint4(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DT
 #     #    )
 #     # Where eta is defined as:
 #     # eta(x_s) = inv(L_tl(x_s, x_s)) int K_tl(x_s, x) p(x) dx
-#     int_K_tl_scalar = gaussint5(d, h_tl, w_tl, mu, cov)
+#     int_K_tl_scalar = int_int_K(d, h_tl, w_tl, mu, cov)
 #     int_inv_int_tl = dot(dot(int_K_tl_vec, inv_K_tl), int_K_tl_vec.T)
 #     E_C_tl = float(int_K_tl_scalar - int_inv_int_tl)
 #     assert E_C_tl > 0
