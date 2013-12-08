@@ -1,185 +1,17 @@
 import numpy as np
 
-from collections import OrderedDict
-from gp import GP, GaussianKernel
-
 import matplotlib.pyplot as plt
 import snippets.graphing as sg
 import logging
 
-from .. import SEED, config
+from .. import config
+from ..extra import BQ
 from .base import BaseModel
 
 logger = logging.getLogger("mental_rotation.model.bq")
 
-DTYPE = np.float64
+DTYPE = np.dtype(config.get("global", "dtype"))
 EPS = np.finfo(DTYPE).eps
-
-
-def mdot(*args):
-    return reduce(np.dot, args)
-
-
-def improve_covariance_conditioning(M):
-    sqd_jitters = np.max([EPS, np.max(M)]) * 1e-4
-    M += np.eye(M.shape[0]) * sqd_jitters
-
-
-class BQ(object):
-    """Estimate a likelihood function, S(y|x) using Gaussian Process
-    regressions, as in Osborne et al. (2012):
-
-    1) Estimate S using a GP
-    2) Estimate log(S) using second GP
-    3) Estimate delta_C using a third GP
-
-    References
-    ----------
-    Osborne, M. A., Duvenaud, D., Garnett, R., Rasmussen, C. E.,
-        Roberts, S. J., & Ghahramani, Z. (2012). Active Learning of
-        Model Evidence Using Bayesian Quadrature. *Advances in Neural
-        Information Processing Systems*, 25.
-
-    """
-
-    def __init__(self, R, S, **opt):
-
-        self.gamma = DTYPE(opt['gamma'])
-
-        self.R = np.array(R, dtype=DTYPE, copy=True)
-        self.S = np.array(S, dtype=DTYPE, copy=True)
-        self.log_S = self.log_transform(self.S)
-
-        # default kernel parameter values
-        self.default_params = OrderedDict()
-        self.default_params['h'] = opt.get('h', None)
-        self.default_params['w'] = opt.get('w', None)
-        self.default_params['s'] = opt.get('s', None)
-
-        self.ntry = opt['ntry']
-        self.loglevel = opt['loglevel']
-        self.n_candidate = opt['n_candidate']
-
-    def log_transform(self, x):
-        return np.log((x / self.gamma) + 1)
-
-    def _fit_gp(self, x, y, name, **kwargs):
-        logger.info("Fitting parameters for GP over %s" % name)
-
-        # figure out which parameters we are fitting and how to
-        # generate them
-        randf = []
-        fitmask = np.empty(3, dtype=bool)
-        for i, p in enumerate(['h', 'w', 's']):
-            # are we fitting the parameter?
-            p_v = kwargs.get(p, self.default_params.get(p, None))
-            if p_v is None:
-                fitmask[i] = True
-
-            # what should we use as an initial parameter?
-            p0 = kwargs.get('%s0' % p, p_v)
-            if p0 is None:
-                randf.append(lambda: np.abs(np.random.normal()))
-            else:
-                # need to use keyword argument, because python does
-                # not assign new values to closure variables in loop
-                def f(p=p0):
-                    return p
-                randf.append(f)
-
-        # generate initial parameter values
-        randf = np.array(randf)
-        h, w, s = [f() for f in randf]
-
-        # number of restarts
-        ntry = kwargs.get('ntry', self.ntry)
-
-        # create the GP object
-        gp = GP(GaussianKernel(h, w), x, y, s=s)
-
-        # fit the parameters
-        gp.fit_MLII(fitmask, randf=randf[fitmask], nrestart=ntry)
-        return gp
-
-    def choose_candidates(self):
-        ns, = self.R.shape
-        d = 1
-        nc = self.n_candidate
-        idx = np.random.randint(0, ns, nc)
-        direction = (np.random.randint(0, 2, (nc, d)) * 2) - 1
-        w = self.gp_S.params[1]
-        Rc = (self.R[idx] + (direction * w)) % 2 * np.pi
-        Rc_no_s = np.setdiff1d(
-            np.round(Rc, decimals=8),
-            np.round(self.R, decimals=8))
-        Rsc = np.concatenate([self.R, Rc_no_s], axis=0)
-        return Rsc
-
-    def compute_delta(self, R):
-        # use a crude thresholding here as our tilde transformation
-        # will fail if the mean goes below zero
-        m_S = np.clip(self.gp_S.mean(R), EPS, np.inf)
-        mls = self.gp_log_S.mean(R)
-        lms = self.log_transform(m_S)
-        delta = mls - lms
-        return delta
-
-    def fit(self):
-        """Run the GP regressions to fit the likelihood function.
-
-        References
-        ----------
-        Osborne, M. A., Duvenaud, D., Garnett, R., Rasmussen, C. E.,
-            Roberts, S. J., & Ghahramani, Z. (2012). Active Learning of
-            Model Evidence Using Bayesian Quadrature. *Advances in Neural
-            Information Processing Systems*, 25.
-
-        """
-
-        logger.info("Fitting likelihood")
-        np.random.seed(SEED)
-
-        # first figure out some sane parameters for h and w
-        self.gp_S = self._fit_gp(self.R, self.S, "S")
-        # then refit just w using the h we found
-        self.gp_S = self._fit_gp(
-            self.R, self.S, "S", h=self.gp_S.params[0], ntry=1)
-        K_l = self.gp_S.Kxx
-        improve_covariance_conditioning(K_l)
-        assert (K_l == self.gp_S.Kxx).all()
-
-        # use h based on the one we found for S
-        logh = np.log(self.gp_S.params[0] + 1)
-        self.gp_log_S = self._fit_gp(
-            self.R, self.log_S, "log(S)", h=logh, ntry=1,
-            p0=(self.gp_S.params[1],))
-        K_tl = self.gp_log_S.Kxx
-        improve_covariance_conditioning(K_tl)
-        assert (K_tl == self.gp_log_S.Kxx).all()
-
-        # fit delta, the difference between S and log_S
-        self.Rc = self.choose_candidates()
-        self.Dc = self.compute_delta(self.Rc)
-
-        self.gp_Dc = self._fit_gp(self.Rc, self.Dc, "Delta_c", h=None, s=0)
-        K_del = self.gp_Dc.Kxx
-        improve_covariance_conditioning(K_del)
-        assert (K_del == self.gp_Dc.Kxx).all()
-
-    def S_mean(self, R):
-        # the estimated mean of S
-        m_S = self.gp_S.mean(R)
-        m_Dc = self.gp_Dc.mean(R)
-        S_mean = np.clip(m_S, EPS, np.inf) + (m_S + self.gamma) * m_Dc
-        return S_mean
-
-    def S_cov(self, R):
-        # the estimated variance of S
-        C_log_S = self.gp_log_S.cov(R)
-        # dm_dw, Cw = self.dm_dw(R), self.Cw(self.gp_log_S)
-        S_cov = C_log_S# + mdot(dm_dw, Cw, dm_dw.T)
-        S_cov[np.abs(S_cov) < np.sqrt(EPS)] = EPS
-        return S_cov
 
 
 class BayesianQuadratureModel(BaseModel):
@@ -206,7 +38,6 @@ class BayesianQuadratureModel(BaseModel):
             'w': None,
             's': config.getfloat("bq", "s"),
             'ntry': config.getint("bq", "ntry"),
-            'loglevel': config.get("global", "loglevel"),
             'n_candidate': config.getint("bq", "n_candidate")
         }
 
