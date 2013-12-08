@@ -2,7 +2,9 @@ import numpy as np
 import scipy.stats
 import pytest
 
+from mental_rotation import config
 from mental_rotation.extra import BQ
+import mental_rotation.extra.bq_c as bq_c
 from . import util
 
 import logging
@@ -10,9 +12,11 @@ logger = logging.getLogger("mental_rotation.extra.bq")
 logger.setLevel("DEBUG")
 
 
-gamma = 1
-ntry = 10
-n_candidate = 10
+gamma = config.getfloat("bq", "gamma")
+ntry = config.getint("bq", "ntry")
+n_candidate = config.getint("bq", "n_candidate")
+R_mean = config.getfloat("model", "R_mu")
+R_var = 1. / config.getfloat("model", "R_kappa")
 
 
 def make_1d_gaussian(x=None, seed=True):
@@ -26,7 +30,7 @@ def make_1d_gaussian(x=None, seed=True):
 
 def make_bq(seed=True):
     x, y = make_1d_gaussian(seed=seed)
-    bq = BQ(x, y, gamma, ntry, n_candidate, s=0)
+    bq = BQ(x, y, gamma, ntry, n_candidate, R_mean, R_var, s=0)
     return bq
 
 
@@ -35,41 +39,41 @@ def test_improve_covariance_conditioning():
     bq.fit()
 
     K_l = bq.gp_S.Kxx
-    bq._improve_covariance_conditioning(K_l)
+    bq_c.improve_covariance_conditioning(K_l)
     assert (K_l == bq.gp_S.Kxx).all()
     assert K_l is bq.gp_S.Kxx
 
     K_tl = bq.gp_log_S.Kxx
-    bq._improve_covariance_conditioning(K_tl)
+    bq_c.improve_covariance_conditioning(K_tl)
     assert (K_tl == bq.gp_log_S.Kxx).all()
     assert K_tl is bq.gp_log_S.Kxx
 
     K_del = bq.gp_Dc.Kxx
-    bq._improve_covariance_conditioning(K_del)
+    bq_c.improve_covariance_conditioning(K_del)
     assert (K_del == bq.gp_Dc.Kxx).all()
     assert K_del is bq.gp_Dc.Kxx
 
 
 def test_init():
     x, y = make_1d_gaussian()
-    bq = BQ(x, y, gamma, ntry, n_candidate, s=0)
+    bq = BQ(x, y, gamma, ntry, n_candidate, R_mean, R_var, s=0)
     assert (x == bq.R).all()
     assert (y == bq.S).all()
 
     with pytest.raises(ValueError):
-        BQ(x[:, None], y, gamma, ntry, n_candidate, s=0)
+        BQ(x[:, None], y, gamma, ntry, n_candidate, R_mean, R_var, s=0)
     with pytest.raises(ValueError):
-        BQ(x, y[:, None], gamma, ntry, n_candidate, s=0)
+        BQ(x, y[:, None], gamma, ntry, n_candidate, R_mean, R_var, s=0)
     with pytest.raises(ValueError):
-        BQ(x[:-1], y, gamma, ntry, n_candidate, s=0)
+        BQ(x[:-1], y, gamma, ntry, n_candidate, R_mean, R_var, s=0)
     with pytest.raises(ValueError):
-        BQ(x, y[:-1], gamma, ntry, n_candidate, s=0)
+        BQ(x, y[:-1], gamma, ntry, n_candidate, R_mean, R_var, s=0)
 
 
 def test_log_transform():
     x, y = make_1d_gaussian()
     log_y = np.log((y / float(gamma)) + 1)
-    bq = BQ(x, y, gamma, ntry, n_candidate, s=0)
+    bq = BQ(x, y, gamma, ntry, n_candidate, R_mean, R_var, s=0)
     assert np.allclose(bq.log_S, log_y)
 
 
@@ -97,4 +101,55 @@ def test_S_mean():
 
 
 def test_S_cov():
+    raise NotImplementedError
+
+
+def test_mvn_logpdf():
+    raise NotImplementedError
+
+
+def test_gaussint1():
+    raise NotImplementedError
+
+
+def test_gaussint2():
+    raise NotImplementedError
+    assert mat.shape == (n1, n2)
+
+
+def test_gaussint3():
+    raise NotImplementedError
+    assert mat.shape == (n, n)
+
+
+def test_gaussint4():
+    raise NotImplementedError
+    assert vec.shape == (1, n)
+
+
+def test_gaussint5():
+    raise NotImplementedError
+
+
+def test_dtheta_consts():
+    raise NotImplementedError
+
+
+def test_Z_mean():
+    raise NotImplementedError
+
+
+def test_Z_var():
+    raise NotImplementedError
+
+
+def test_dm_dw():
+    raise NotImplementedError
+
+
+def test_Cw():
+    raise NotImplementedError
+
+
+def test_expected_uncertainty_evidence():
     raise NotImplementedError

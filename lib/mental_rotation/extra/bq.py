@@ -1,8 +1,14 @@
 import numpy as np
+
+import pyximport
+pyximport.install(setup_args={'include_dirs': [np.get_include()]})
+
 import logging
 
 from gp import GP, GaussianKernel
 from .. import config
+
+import bq_c
 
 logger = logging.getLogger("mental_rotation.extra.bq")
 
@@ -29,12 +35,15 @@ class BQ(object):
 
     def __init__(self, R, S,
                  gamma, ntry, n_candidate,
+                 R_mean, R_var,
                  h=None, w=None, s=None):
 
         # save the given parameters
         self.gamma = float(gamma)
         self.ntry = int(ntry)
         self.n_candidate = int(n_candidate)
+        self.R_mean = float(R_mean)
+        self.R_cov = np.array([[R_var]], dtype=DTYPE)
 
         # default kernel parameter values
         self.default_params = dict(h=h, w=w, s=s)
@@ -133,7 +142,7 @@ class BQ(object):
             ntry=1)
 
         # try to improve the kernel matrix conditioning
-        self._improve_covariance_conditioning(self.gp_S.Kxx)
+        bq_c.improve_covariance_conditioning(self.gp_S.Kxx)
 
     def _fit_log_S(self):
         # use h based on the one we found for S
@@ -145,7 +154,7 @@ class BQ(object):
             ntry=1)
 
         # try to improve the kernel matrix conditioning
-        self._improve_covariance_conditioning(self.gp_log_S.Kxx)
+        bq_c.improve_covariance_conditioning(self.gp_log_S.Kxx)
 
     def _fit_Dc(self):
         # choose candidate locations and compute delta, the difference
@@ -159,12 +168,7 @@ class BQ(object):
             self.Rc, self.Dc, h=None, s=0)
 
         # try to improve the kernel matrix conditioning
-        self._improve_covariance_conditioning(self.gp_Dc.Kxx)
-
-    @staticmethod
-    def _improve_covariance_conditioning(M):
-        sqd_jitters = np.max([EPS, np.max(M)]) * 1e-4
-        M += np.eye(M.shape[0]) * sqd_jitters
+        bq_c.improve_covariance_conditioning(self.gp_Dc.Kxx)
 
     def fit(self):
         """Run the GP regressions to fit the likelihood function.
@@ -235,3 +239,33 @@ class BQ(object):
         m_Z = E_m_l + E_m_l_m_del + self.gamma * E_m_del
 
         return m_Z
+
+    def _gaussint1(self, x, gp):
+        return bq_c.gaussint1(
+            x, gp.K.h, gp.K.w, self.R_mean, self.R_cov)
+
+    def _gaussint2(self, x1, x2, gp1, gp2):
+        return bq_c.gaussint2(
+            x1, x2,
+            gp1.K.h, gp1.K.w,
+            gp2.K.h, gp2.K.w,
+            self.R_mean, self.R_cov)
+
+    def _gaussint3(self, x, gp1, gp2):
+        return bq_c.gaussint3(
+            x, gp1.K.h, gp1.K.w, gp2.K.h, gp2.K.w,
+            self.R_mean, self.R_cov)
+
+    def _gaussint4(self, x, gp1, gp2):
+        return bq_c.gaussint4(
+            x, gp1.K.h, gp1.K.w, gp2.K.h, gp2.K.w,
+            self.R_mean, self.R_cov)
+
+    def _gaussint5(self, d, gp):
+        return bq_c.gaussint5(
+            d, gp.K.h, gp.K.w, self.R_mean, self.R_cov)
+
+    def _dtheta_consts(self, x):
+        return bq_c.dtheta_consts(
+            x, self.gp_S.K.w, self.gp_log_S.K.w,
+            self.R_mean, self.R_cov)

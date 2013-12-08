@@ -38,7 +38,9 @@ class BayesianQuadratureModel(BaseModel):
             'w': None,
             's': config.getfloat("bq", "s"),
             'ntry': config.getint("bq", "ntry"),
-            'n_candidate': config.getint("bq", "n_candidate")
+            'n_candidate': config.getint("bq", "n_candidate"),
+            'R_mean': config.getfloat("model", "R_mu"),
+            'R_var': 1. / config.getfloat("model", "R_kappa")
         }
 
         if 'bq_opts' in kwargs:
