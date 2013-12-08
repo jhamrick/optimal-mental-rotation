@@ -198,74 +198,73 @@ class BQ(object):
     def S_cov(self, R):
         # the estimated variance of S
         C_log_S = self.gp_log_S.cov(R)
-        # dm_dw, Cw = self.dm_dw(R), self.Cw(self.gp_log_S)
-        S_cov = C_log_S# + mdot(dm_dw, Cw, dm_dw.T)
+        dm_dw, Cw = self.dm_dw(R), self.Cw(self.gp_log_S)
+        S_cov = C_log_S + np.dot(np.dot(dm_dw, Cw), dm_dw.T)
         S_cov[np.abs(S_cov) < np.sqrt(EPS)] = EPS
         return S_cov
 
     def Z_mean(self):
-        x_s = self.gp_S.x
-        x_sc = self.gp_Dc.x
-        ns, d = x_s.shape
-        nc, d = x_sc.shape
 
         # values for the GP over l(x)
+        x_s = self.gp_S.x
         alpha_l = self.gp_S.inv_Kxx_y
+        h_s, w_s = self.gp_S.K.params
 
         # values for the GP of Delta(x)
+        x_sc = self.gp_Dc.x
         alpha_del = self.gp_Dc.inv_Kxx_y
+        h_dc, w_dc = self.gp_Dc.K.params
 
-        ## First term
-        # E[m_l | x_s] = (int K_l(x, x_s) p(x) dx) alpha_l(x_s)
-        int_K_l = self._gaussint1(x_s, self.gp_S)
-        E_m_l = float(np.dot(int_K_l, alpha_l))
-        assert E_m_l > 0
-
-        ## Second term
-        # E[m_l*m_del | x_s, x_c] = alpha_del(x_sc)' *
-        #     int K_del(x_sc, x) K_l(x, x_s) p(x) dx *
-        #     alpha_l(x_s)
-        int_K_del_K_l = self._gaussint2(
-            x_sc, x_s, self.gp_Dc, self.gp_S)
-        E_m_l_m_del = float(np.dot(np.dot(
-            alpha_del.T, int_K_del_K_l), alpha_l))
-
-        ## Third term
-        # E[m_del | x_sc] = (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
-        int_K_del = self._gaussint1(x_sc, self.gp_Dc)
-        E_m_del = float(np.dot(int_K_del, alpha_del))
-
-        # put the three terms together
-        m_Z = E_m_l + E_m_l_m_del + self.gamma * E_m_del
+        m_Z = bq_c.Z_mean(
+            x_s, x_sc, alpha_l, alpha_del,
+            h_s, w_s, h_dc, w_dc,
+            self.R_mean, self.R_cov, self.gamma)
 
         return m_Z
 
-    def _gaussint1(self, x, gp):
-        return bq_c.gaussint1(
-            x, gp.K.h, gp.K.w, self.R_mean, self.R_cov)
+    def Z_var(self):
+        # values for the GPs over l(x) and log(l(x))
+        x_s = self.gp_S.x
 
-    def _gaussint2(self, x1, x2, gp1, gp2):
-        return bq_c.gaussint2(
-            x1, x2,
-            gp1.K.h, gp1.K.w,
-            gp2.K.h, gp2.K.w,
-            self.R_mean, self.R_cov)
+        alpha_l = self.gp_S.inv_Kxx_y
+        alpha_tl = self.gp_logS.inv_Kxx_y
+        inv_L_tl = self.gp_logS.inv_Lxx
+        inv_K_tl = self.gp_logS.inv_Kxx
 
-    def _gaussint3(self, x, gp1, gp2):
-        return bq_c.gaussint3(
-            x, gp1.K.h, gp1.K.w, gp2.K.h, gp2.K.w,
-            self.R_mean, self.R_cov)
+        h_l, w_l = self.gp_S.K.params
+        h_tl, w_tl = self.gp_log_S.K.params
 
-    def _gaussint4(self, x, gp1, gp2):
-        return bq_c.gaussint4(
-            x, gp1.K.h, gp1.K.w, gp2.K.h, gp2.K.w,
-            self.R_mean, self.R_cov)
+        dK_tl_dw = self.gp_logS.K.dK_dw(x_s, x_s)
+        Cw = self.Cw(self.gp_logS)
 
-    def _gaussint5(self, d, gp):
-        return bq_c.gaussint5(
-            d, gp.K.h, gp.K.w, self.R_mean, self.R_cov)
+        V_Z = bq_c.Z_var(
+            x_s, alpha_l, alpha_tl,
+            inv_L_tl, inv_K_tl, dK_tl_dw, Cw,
+            h_l, w_l, h_tl, w_tl,
+            self.R_mean, self.R_cov, self.gamma)
 
-    def _dtheta_consts(self, x):
-        return bq_c.dtheta_consts(
-            x, self.gp_S.K.w, self.gp_log_S.K.w,
-            self.R_mean, self.R_cov)
+        return V_Z
+
+    def dm_dw(self, x):
+        """Compute the partial derivative of a GP mean with respect to
+        w, the input scale parameter.
+
+        """
+        dm_dtheta = self.gp_log_S.dm_dtheta(x)
+        # XXX: fix this slicing
+        dm_dw = dm_dtheta[1]
+        return dm_dw
+
+    def Cw(self, gp):
+        """The variances of our posteriors over our input scale. We assume the
+        covariance matrix has zero off-diagonal elements; the posterior
+        is spherical.
+
+        """
+        # H_theta is the diagonal of the hessian of the likelihood of
+        # the GP over the log-likelihood with respect to its log input
+        # scale.
+        H_theta = gp.d2lh_dtheta2
+        # XXX: fix this slicing
+        Cw = np.diagflat(-1. / H_theta[1, 1])
+        return Cw

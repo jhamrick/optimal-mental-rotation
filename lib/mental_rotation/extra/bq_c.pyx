@@ -7,6 +7,7 @@ from libc.math cimport exp, log, fmax, copysign, fabs, M_PI
 
 cdef inv = np.linalg.inv
 cdef slogdet = np.linalg.slogdet
+cdef dot = np.dot
 
 DTYPE = np.float64
 ctypedef np.float64_t DTYPE_t
@@ -110,15 +111,15 @@ def gaussint3(x, h1, w1, h2, w2, mu, cov):
     Wa = (np.array(w1) * np.eye(d)) ** 2
     Wb = (np.array(w2) * np.eye(d)) ** 2
 
-    G = np.dot(cov, inv(Wa + cov))
+    G = dot(cov, inv(Wa + cov))
     Gi = inv(G)
-    C = Wb + 2*cov - 2*np.dot(G, cov)
+    C = Wb + 2*cov - 2*dot(G, cov)
 
     N1 = np.exp(mvn_logpdf(x, mu, cov + Wa))
 
     x2 = x[:, None] - x[None, :]
     mu2 = np.zeros(d)
-    cov2 = np.dot(np.dot(Gi, C), Gi)
+    cov2 = dot(dot(Gi, C), Gi)
     Z = slogdet(C)[1] * -0.5
     N2 = np.exp(mvn_logpdf(x2.reshape((-1, mu2.size)), mu2, cov2, Z=Z)).reshape(x2.shape[:-1])
 
@@ -134,7 +135,7 @@ def gaussint4(x, h1, w1, h2, w2, mu, cov):
     Wb = (np.array(w2) * np.eye(d)) ** 2
     
     C0 = Wa + 2*cov
-    C1 = Wb + cov - np.dot(np.dot(cov, inv(C0)), cov)
+    C1 = Wb + cov - dot(dot(cov, inv(C0)), cov)
 
     N0 = np.exp(mvn_logpdf(np.zeros((1, d)), np.zeros(d), C0))
     N1 = np.exp(mvn_logpdf(x, mu, C1))
@@ -158,28 +159,143 @@ def dtheta_consts(x, w1, w2, mu, L):
     Wtl = (w2 ** 2) * I
     iWtl = inv(Wtl)
 
-    A = np.dot(L, inv(Wtl + L))
-    B = L - np.dot(A, L)
-    C = np.dot(B, inv(B + Wl))
-    CA = np.dot(C, A)
-    BCB = B - np.dot(C, B)
+    A = dot(L, inv(Wtl + L))
+    B = L - dot(A, L)
+    C = dot(B, inv(B + Wl))
+    CA = dot(C, A)
+    BCB = B - dot(C, B)
 
     xsubmu = x - mu
     mat_const = np.empty((n, n, d))
     vec_const = np.empty((n, d))
     c = -0.5*iWtl
 
-    m1 = np.dot(A - I, xsubmu.T).T
-    m2a = np.dot(A - CA - I, xsubmu.T).T
-    m2b = np.dot(C, xsubmu.T).T
+    m1 = dot(A - I, xsubmu.T).T
+    m2a = dot(A - CA - I, xsubmu.T).T
+    m2b = dot(C, xsubmu.T).T
     
     for i in xrange(n):
         vec_const[i] = np.diag(
-            c * (I + np.dot(B - np.dot(m1[i], m1[i].T), iWtl)))
+            c * (I + dot(B - dot(m1[i], m1[i].T), iWtl)))
 
         for j in xrange(n):
             m2 = m2a[i] + m2b[j]
             mat_const[i, j] = np.diag(
-                c * (I + np.dot(BCB - np.dot(m2, m2.T), iWtl)))
+                c * (I + dot(BCB - dot(m2, m2.T), iWtl)))
             
     return mat_const, vec_const
+
+def Z_mean(x_s, x_sc, alpha_l, alpha_del, h_s, w_s, h_dc, w_dc, mu, cov, gamma):
+    ns, d = x_s.shape
+    nc, d = x_sc.shape
+
+    ## First term
+    # E[m_l | x_s] = (int K_l(x, x_s) p(x) dx) alpha_l(x_s)
+    int_K_l = gaussint1(x_s, h_s, w_s, mu, cov)
+    E_m_l = float(dot(int_K_l, alpha_l))
+    assert E_m_l > 0
+
+    ## Second term
+    # E[m_l*m_del | x_s, x_c] = alpha_del(x_sc)' *
+    #     int K_del(x_sc, x) K_l(x, x_s) p(x) dx *
+    #     alpha_l(x_s)
+    int_K_del_K_l = gaussint2(
+        x_sc, x_s, h_dc, w_dc, h_s, w_s, mu, cov)
+    E_m_l_m_del = float(dot(dot(
+        alpha_del.T, int_K_del_K_l), alpha_l))
+    
+    ## Third term
+    # E[m_del | x_sc] = (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
+    int_K_del = gaussint1(x_sc, h_dc, w_dc, mu, cov)
+    E_m_del = float(dot(int_K_del, alpha_del))
+    
+    # put the three terms together
+    m_Z = E_m_l + E_m_l_m_del + gamma * E_m_del
+
+    return m_Z
+
+
+def Z_var(x_s, alpha_l, alpha_tl, inv_L_tl, inv_K_tl, dK_tl_dw, Cw, h_l, w_l, h_tl, w_tl, mu, cov, gamma):
+    ns, d = x_s.shape
+
+    ## First term
+    # E[m_l C_tl m_l | x_s] = alpha_l(x_s)' *
+    #    int int K_l(x_s, x) K_tl(x, x') K_l(x', x_s) p(x) p(x') dx dx' *
+    #    alpha_l(x_s) - beta(x_s)'beta(x_s)
+    # Where beta is defined as:
+    # beta(x_s) = inv(L_tl(x_s, x_s)) *
+    #    int K_tl(x_s, x) K_l(x, x_s) p(x) dx *
+    #    alpha_l(x_s)
+    int_K_l_K_tl_K_l = gaussint3(
+        x_s, h_l, w_l, h_tl, w_tl, mu, cov)
+    int_K_tl_K_l_mat = gaussint2(
+        x_s, x_s, h_tl, w_tl, h_l, w_l, mu, cov)
+    beta = dot(dot(inv_L_tl, int_K_tl_K_l_mat), alpha_l)
+    beta2 = dot(beta.T, beta)
+    alpha_int_alpha = dot(dot(alpha_l.T, int_K_l_K_tl_K_l), alpha_l)
+    E_m_l_C_tl_m_l = float(alpha_int_alpha - beta2)
+    assert E_m_l_C_tl_m_l > 0
+
+    ## Second term
+    # E[m_l C_tl | x_s] =
+    #    [ int int K_tl(x', x) K_l(x, x_s) p(x) p(x') dx dx' -
+    #      ( int K_tl(x, x_s) p(x) dx) *
+    #        inv(K_tl(x_s, x_s)) *
+    #        int K_tl(x_s, x) K_l(x, x_s) p(x) dx
+    #      )
+    #    ] alpha_l(x_s)
+    int_K_tl_K_l_vec = gaussint4(x_s, h_tl, w_tl, h_l, w_l, mu, cov)
+    int_K_tl_vec = gaussint1(x_s, h_tl, w_tl, mu, cov)
+    int_inv_int = dot(dot(int_K_tl_vec, inv_K_tl), int_K_tl_K_l_mat)
+    E_m_l_C_tl = float(dot(int_K_tl_K_l_vec - int_inv_int, alpha_l))
+    if E_m_l_C_tl <= 0:
+        print "E[m_l C_tl] = %f" % E_m_l_C_tl
+        assert False
+
+    ## Third term
+    # E[C_tl | x_s] =
+    #    int int K_tl(x, x') p(x) p(x') dx dx' -
+    #    ( int K_tl(x, x_s) p(x) dx *
+    #      inv(K_tl(x_s, x_s)) *
+    #      [int K_tl(x, x_s) p(x) dx]'
+    #    )
+    # Where eta is defined as:
+    # eta(x_s) = inv(L_tl(x_s, x_s)) int K_tl(x_s, x) p(x) dx
+    int_K_tl_scalar = gaussint5(d, h_tl, w_tl, mu, cov)
+    int_inv_int_tl = dot(dot(int_K_tl_vec, inv_K_tl), int_K_tl_vec.T)
+    E_C_tl = float(int_K_tl_scalar - int_inv_int_tl)
+    assert E_C_tl > 0
+
+    term1 = E_m_l_C_tl_m_l
+    term2 = 2 * gamma * E_m_l_C_tl
+    term3 = gamma ** 2 * E_C_tl
+    V_Z = term1 + term2 + term3
+
+    ##############################################################
+    ## Variance correction
+
+    zeta = dot(inv_K_tl, dK_tl_dw)
+    dK_const1, dK_const2 = dtheta_consts(x_s, w_l, w_tl, mu, cov)
+
+    term1 = np.zeros((1, 1))
+    term2 = np.zeros((1, 1))
+    for i in xrange(d):
+            
+        ## First term of nu
+        int_K_tl_dK_l_mat = int_K_tl_K_l_mat * dK_const1[:, :, i]
+        term1a = dot(dot(alpha_l.T, int_K_tl_dK_l_mat), alpha_tl)
+        term1b = dot(dot(alpha_l.T, int_K_tl_K_l_mat, zeta, alpha_tl))
+        term1 += term1a - term1b
+
+        ## Second term of nu
+        int_dK_tl_vec = int_K_tl_vec * dK_const2[None, :, i]
+        term2a = dot(int_dK_tl_vec, alpha_tl)
+        term2b = dot(dot(int_K_tl_vec, zeta, alpha_tl))
+        term2 += term2a - term2b
+
+    nu = term1 + gamma * term2
+    V_Z_correction = float(dot(dot(nu, Cw), nu.T))
+    V_Z += V_Z_correction
+    assert V_Z > 0
+
+    return V_Z
