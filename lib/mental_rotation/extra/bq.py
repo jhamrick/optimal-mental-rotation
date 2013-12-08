@@ -198,3 +198,40 @@ class BQ(object):
         S_cov = C_log_S# + mdot(dm_dw, Cw, dm_dw.T)
         S_cov[np.abs(S_cov) < np.sqrt(EPS)] = EPS
         return S_cov
+
+    def Z_mean(self):
+        x_s = self.gp_S.x
+        x_sc = self.gp_Dc.x
+        ns, d = x_s.shape
+        nc, d = x_sc.shape
+
+        # values for the GP over l(x)
+        alpha_l = self.gp_S.inv_Kxx_y
+
+        # values for the GP of Delta(x)
+        alpha_del = self.gp_Dc.inv_Kxx_y
+
+        ## First term
+        # E[m_l | x_s] = (int K_l(x, x_s) p(x) dx) alpha_l(x_s)
+        int_K_l = self._gaussint1(x_s, self.gp_S)
+        E_m_l = float(np.dot(int_K_l, alpha_l))
+        assert E_m_l > 0
+
+        ## Second term
+        # E[m_l*m_del | x_s, x_c] = alpha_del(x_sc)' *
+        #     int K_del(x_sc, x) K_l(x, x_s) p(x) dx *
+        #     alpha_l(x_s)
+        int_K_del_K_l = self._gaussint2(
+            x_sc, x_s, self.gp_Dc, self.gp_S)
+        E_m_l_m_del = float(np.dot(np.dot(
+            alpha_del.T, int_K_del_K_l), alpha_l))
+
+        ## Third term
+        # E[m_del | x_sc] = (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
+        int_K_del = self._gaussint1(x_sc, self.gp_Dc)
+        E_m_del = float(np.dot(int_K_del, alpha_del))
+
+        # put the three terms together
+        m_Z = E_m_l + E_m_l_m_del + self.gamma * E_m_del
+
+        return m_Z
