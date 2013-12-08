@@ -55,7 +55,7 @@ def improve_covariance_conditioning(np.ndarray[DTYPE_t, ndim=2] M):
         M[i, i] += sqd_jitters
 
 
-def int_K(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h, DTYPE_t w, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
+def int_K(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h, np.ndarray[DTYPE_t, ndim=1] w, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
     """Computes integrals of the form:
 
     int K(x', x) N(x' | mu, cov) dx'
@@ -74,13 +74,13 @@ def int_K(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_
 
     n = x.shape[0]
     d = x.shape[1]
-    W = np.empty((d, d), dtype=DTYPE)
     h_2 = h ** 2
 
+    W = np.empty((d, d), dtype=DTYPE)
     for i in xrange(d):
         for j in xrange(d):
             if i == j:
-                W[i, j] = cov[i, j] + w ** 2
+                W[i, j] = cov[i, j] + w[i] ** 2
             else:
                 W[i, j] = cov[i, j]
 
@@ -89,7 +89,7 @@ def int_K(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_
         out[i] = h_2 * exp(out[i])
 
 
-def int_K1_K2(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x1, np.ndarray[DTYPE_t, ndim=2] x2, DTYPE_t h1, DTYPE_t w1, DTYPE_t h2, DTYPE_t w2, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
+def int_K1_K2(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x1, np.ndarray[DTYPE_t, ndim=2] x2, DTYPE_t h1, np.ndarray[DTYPE_t, ndim=1] w1, DTYPE_t h2, np.ndarray[DTYPE_t, ndim=1] w2, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
     """Computes integrals of the form:
 
     int K_1(x1, x') K_2(x', x2) N(x' | mu, cov) dx'
@@ -129,8 +129,8 @@ def int_K1_K2(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x1, n
     for i in xrange(d):
         for j in xrange(d):
             if i == j:
-                C[i, j] = w1 + cov[i, j]
-                C[i + d, j + d] = w2 + cov[i, j]
+                C[i, j] = w1[i] + cov[i, j]
+                C[i + d, j + d] = w2[i] + cov[i, j]
             else:
                 C[i, j] = cov[i, j]
                 C[i + d, j + d] = cov[i, j]
@@ -152,7 +152,7 @@ def int_K1_K2(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x1, n
             out[i, j] = h1_2_h2_2 * exp(out[i, j])
 
 
-def int_int_K1_K2_K1(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h1, DTYPE_t w1, DTYPE_t h2, DTYPE_t w2, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
+def int_int_K1_K2_K1(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h1, np.ndarray[DTYPE_t, ndim=1] w1, DTYPE_t h2, np.ndarray[DTYPE_t, ndim=1] w2, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
     """Computes integrals of the form:
 
     int int K_1(x, x1') K_2(x1', x2') K_1(x2', x) N(x1' | mu, cov) N(x2' | mu, cov) dx1' dx2'
@@ -187,7 +187,10 @@ def int_int_K1_K2_K1(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2
     W1_cov = np.empty((d, d), dtype=DTYPE)
     for i in xrange(d):
         for j in xrange(d):
-            W1_cov[i, j] = cov[i, j] + w1
+            if i == j:
+                W1_cov[i, j] = cov[i, j] + w1[i]
+            else:
+                W1_cov[i, j] = cov[i, j]
 
     # compute G = cov*(W1 + cov)^-1
     G = dot(cov, inv(W1_cov))
@@ -199,7 +202,11 @@ def int_int_K1_K2_K1(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2
     GWG = np.empty((d, d), dtype=DTYPE)
     for i in xrange(d):
         for j in xrange(d):
-            GWG[i, j] = w2 + 2*cov[i, j] - 2*Gcov[i, j]
+            if i == j:
+                GWG[i, j] = w2[i] + 2*cov[i, j] - 2*Gcov[i, j]
+            else:
+                GWG[i, j] = 2*cov[i, j] - 2*Gcov[i, j]
+
     GWG[:] = dot(dot(Gi, GWG), Gi)
 
     # compute N(x | mu, W1 + cov)
@@ -217,7 +224,7 @@ def int_int_K1_K2_K1(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2
             out[i, j] = h1_4_h2_2 * exp(Gdeti + N1[i] + N1[j] + N2[i, j])
 
 
-def int_int_K1_K2(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h1, DTYPE_t w1, DTYPE_t h2, DTYPE_t w2, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
+def int_int_K1_K2(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h1, np.ndarray[DTYPE_t, ndim=1] w1, DTYPE_t h2, np.ndarray[DTYPE_t, ndim=1] w2, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
     """Computes integrals of the form:
 
     int int K_1(x2', x1') K_2(x1', x) N(x1' | mu, cov) N(x2' | mu, cov) dx1' dx2'
@@ -250,7 +257,10 @@ def int_int_K1_K2(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x
     W1_2cov = np.empty((d, d), dtype=DTYPE)
     for i in xrange(d):
         for j in xrange(d):
-            W1_2cov[i, j] = 2*cov[i, j] + w1
+            if i == j:
+                W1_2cov[i, j] = 2*cov[i, j] + w1[i]
+            else:
+                W1_2cov[i, j] = 2*cov[i, j]
 
     # compute N(0 | 0, W1 + 2*cov)
     N1 = np.empty(1, dtype=DTYPE)
@@ -262,7 +272,10 @@ def int_int_K1_K2(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x
     C = dot(dot(cov, W1_2cov), inv(cov))
     for i in xrange(d):
         for j in xrange(d):
-            C[i, j] = w2 + cov[i, j] - C[i, j]
+            if i == j:
+                C[i, j] = w2[i] + cov[i, j] - C[i, j]
+            else:
+                C[i, j] = cov[i, j] - C[i, j]
 
     # compute N(x | mu, W2 + cov - cov*(W1 + 2*cov)^-1*cov)
     N2 = np.empty(1, dtype=DTYPE)
@@ -271,7 +284,7 @@ def int_int_K1_K2(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x
     for i in xrange(n):
         out[i] = h1_2_h2_2 * exp(N1[0] + N2[i])
 
-def int_int_K(int d, DTYPE_t h, DTYPE_t w, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
+def int_int_K(int d, DTYPE_t h, np.ndarray[DTYPE_t, ndim=1] w, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
     """Computes integrals of the form:
 
     int int K(x1', x2') N(x1' | mu, cov) N(x2' | mu, cov) dx1' dx2'
@@ -294,7 +307,10 @@ def int_int_K(int d, DTYPE_t h, DTYPE_t w, np.ndarray[DTYPE_t, ndim=1] mu, np.nd
     W_2cov = np.empty((d, d), dtype=DTYPE)
     for i in xrange(d):
         for j in xrange(d):
-            W_2cov[i, j] = 2*cov[i, j] + w
+            if i == j:
+                W_2cov[i, j] = 2*cov[i, j] + w[i]
+            else:
+                W_2cov[i, j] = 2*cov[i, j]
 
     # compute N(0 | 0, W1 + 2*cov)
     N = np.empty(1, dtype=DTYPE)
@@ -303,6 +319,131 @@ def int_int_K(int d, DTYPE_t h, DTYPE_t w, np.ndarray[DTYPE_t, ndim=1] mu, np.nd
     mvn_logpdf(N, zx, zm, W_2cov, False, 0)
 
     return (h ** 2) * exp(N[0])
+
+def int_K1_dK2(np.ndarray[DTYPE_t, ndim=3] out, np.ndarray[DTYPE_t, ndim=2] x1, np.ndarray[DTYPE_t, ndim=2] x2, DTYPE_t h1, np.ndarray[DTYPE_t, ndim=1] w1, DTYPE_t h2, np.ndarray[DTYPE_t, ndim=1] w2, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
+    """Computes integrals of the form:
+
+    int K1(x1, x') dK2(x', x2)/dw2 N(x' | mu, cov) dx'
+    
+    where K1 is a Gaussian kernel parameterized by `h1` and `w1`, and
+    K2 is a Gaussian kernel parameterized by `h2` and `w2`.
+
+    """
+
+    cdef np.ndarray[DTYPE_t, ndim=2] int_K1_K2_mat
+    cdef np.ndarray[DTYPE_t, ndim=2] W2_cov
+    cdef np.ndarray[DTYPE_t, ndim=2] A
+    cdef np.ndarray[DTYPE_t, ndim=2] B
+    cdef np.ndarray[DTYPE_t, ndim=2] C
+    cdef np.ndarray[DTYPE_t, ndim=2] D
+    cdef np.ndarray[DTYPE_t, ndim=2] x1submu
+    cdef np.ndarray[DTYPE_t, ndim=2] x2submu
+    cdef np.ndarray[DTYPE_t, ndim=2] S
+    cdef np.ndarray[DTYPE_t, ndim=2] m
+    cdef int n1, n2, d, i, j, k
+
+    n1 = x1.shape[0]
+    n2 = x2.shape[0]
+    d = x1.shape[1]
+
+    # compute int K_1(x1, x') K_2(x', x2) N(x' | mu, cov) dx'
+    int_K1_K2_mat = np.empty((n1, n2), dtype=DTYPE)
+    int_K1_K2(int_K1_K2_mat, x1, x2, h1, w1, h2, w2, mu, cov)
+
+    # compute W2 + cov
+    W2_cov = np.empty((d, d), dtype=DTYPE)
+    for i in xrange(d):
+        for j in xrange(d):
+            if i == j:
+                W2_cov[i, j] = w2[i] + cov[i, j]
+            else:
+                W2_cov[i, j] = cov[i, j]
+
+    # compute A = cov * (W2 + cov)^-1
+    A = dot(cov, inv(W2_cov))
+    # compute B = cov - A*cov
+    B = cov - dot(A, cov)
+    
+    # compute B + W1
+    B_W1 = np.empty((d, d), dtype=DTYPE)
+    for i in xrange(d):
+        for j in xrange(d):
+            if i == j:
+                B_W1[i, j] = B[i, j] + w1[i]
+            else:
+                B_W1[i, j] = B[i, j]
+
+    # compute C = B * (B + W1)^-1
+    C = dot(B, inv(B_W1))
+    # compute D = A - CA - 1
+    D = A - dot(C, A) - 1
+
+    # compute x1 - mu
+    x1submu = np.empty((n1, d), dtype=DTYPE)
+    for i in xrange(n1):
+        for j in xrange(d):
+            x1submu[i, j] = x1[i, j] - mu[j]
+
+    # compute x2 - mu
+    x2submu = np.empty((n2, d), dtype=DTYPE)
+    for i in xrange(n2):
+        for j in xrange(d):
+            x2submu[i, j] = x2[i, j] - mu[j]
+
+    # compute S = B - BC
+    S = B - dot(B, C)
+
+    # compute the final values
+    m = np.empty((d, 1), dtype=DTYPE)
+    for i in xrange(n1):
+        for j in xrange(n2):
+            m[:] = dot(D, x1submu[i]) + dot(C, x2submu[j])
+            for k in xrange(d):
+                out[i, j, k] = int_K1_K2_mat[i, j] * ((S[k, k] + m[k] ** 2 / w2[k]**3) - (1.0 / w2[k]))
+    
+
+def int_dK(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h, np.ndarray[DTYPE_t, ndim=1] w, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
+
+    cdef np.ndarray[DTYPE_t, ndim=1] int_K_vec
+    cdef np.ndarray[DTYPE_t, ndim=2] Wcovi
+    cdef np.ndarray[DTYPE_t, ndim=2] xsubmu
+    cdef np.ndarray[DTYPE_t, ndim=2] m
+    cdef np.ndarray[DTYPE_t, ndim=2] S
+    cdef int n1, n2, d, i, j
+
+    n = x.shape[0]
+    d = x.shape[1]
+
+    # compute int K(x', x) N(x' | mu, cov) dx'
+    int_K_vec = np.empty(n, dtype=DTYPE)
+    int_K(int_K_vec, x, h, w, mu, cov)
+
+    # compute (W + cov)^-1
+    Wcovi = np.empty((d, d), dtype=DTYPE)
+    for i in xrange(d):
+        for j in xrange(d):
+            if i == j:
+                Wcovi = w[i] + cov[i, j]
+            else:
+                Wcovi = cov[i, j]
+    Wcovi[:] = inv(Wcovi)
+
+    # compute x - mu
+    xsubmu = np.empty((n, d), dtype=DTYPE)
+    for i in xrange(n):
+        for j in xrange(d):
+            xsubmu[i, j] = x[i, j] - mu[j]
+
+    # compute m = (cov*(w + cov)^-1 - 1)(x - mu)
+    m = np.empty((d, 1), dtype=DTYPE)
+    m[:, 0] = dot(dot(cov, Wcovi) - 1, xsubmu)
+    # compute S = cov - cov*(W + cov)^-1*cov
+    S = cov - dot(dot(cov, Wcovi), cov)
+
+    # compute final values
+    for i in xrange(n):
+        for j in xrange(d):
+            out[i, j] = int_K_vec[i] * ((S[j, j] + m[j] ** 2 / w[j]**3) - (1.0 / w[j]))
 
 # def dtheta_consts(x, w1, w2, mu, L):
 #     n, d = x.shape
