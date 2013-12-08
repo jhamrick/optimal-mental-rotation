@@ -19,17 +19,17 @@ R_mean = config.getfloat("model", "R_mu")
 R_var = 1. / config.getfloat("model", "R_kappa")
 
 
-def make_1d_gaussian(x=None, seed=True):
+def make_1d_gaussian(x=None, seed=True, n=20):
     if seed:
         util.seed()
     if x is None:
-        x = np.random.uniform(-5, 5, 20)
+        x = np.random.uniform(-5, 5, n)
     y = scipy.stats.norm.pdf(x, 0, 1)
     return x, y
 
 
-def make_bq(seed=True):
-    x, y = make_1d_gaussian(seed=seed)
+def make_bq(seed=True, n=20):
+    x, y = make_1d_gaussian(seed=seed, n=n)
     bq = BQ(x, y, gamma, ntry, n_candidate, R_mean, R_var, s=0)
     return bq
 
@@ -100,56 +100,101 @@ def test_S_mean():
         assert np.percentile(np.abs(diff), 50) < 1e-3
 
 
-def test_S_cov():
-    raise NotImplementedError
+# def test_S_cov():
+#     raise NotImplementedError
 
 
 def test_mvn_logpdf():
-    raise NotImplementedError
+    util.seed()
+    x = np.random.uniform(-5, 5, 20)
+    y = scipy.stats.norm.pdf(x, R_mean, np.sqrt(R_var))
+    pdf = np.empty_like(y)
+    mu = np.array([R_mean])
+    cov = np.array([[R_var]])
+    bq_c.mvn_logpdf(pdf, x[:, None], mu, cov)
+    assert np.allclose(np.log(y), pdf)
 
 
-def test_gaussint1():
-    raise NotImplementedError
+def test_int_K():
+    bq = make_bq()
+    bq.fit()
+
+    xo = np.linspace(-10, 10, 10000)
+
+    Kxxo = bq.gp_S.Kxxo(xo)
+    p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
+    approx_int = np.trapz(Kxxo * p_xo, xo)
+    int_K = np.empty(bq.R.shape[0])
+    bq_c.int_K(
+        int_K, bq.R[:, None],
+        bq.gp_S.K.h, np.array([bq.gp_S.K.w]),
+        bq.R_mean, bq.R_cov)
+    assert np.allclose(int_K, approx_int)
+
+    Kxxo = bq.gp_log_S.Kxxo(xo)
+    p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
+    approx_int = np.trapz(Kxxo * p_xo, xo)
+    bq_c.int_K(
+        int_K, bq.R[:, None],
+        bq.gp_log_S.K.h, np.array([bq.gp_log_S.K.w]),
+        bq.R_mean, bq.R_cov)
+    assert np.allclose(int_K, approx_int)
 
 
-def test_gaussint2():
-    raise NotImplementedError
-    assert mat.shape == (n1, n2)
+def test_int_K1_K2():
+    bq = make_bq(n=10)
+    bq.fit()
+
+    xo = np.linspace(-10, 10, 10000)
+
+    Kx1xo = bq.gp_S.Kxxo(xo)
+    Kx2xo = bq.gp_log_S.Kxxo(xo)
+    p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
+    approx_int = np.trapz(Kx1xo[:, None] * Kx2xo[None, :] * p_xo, xo)
+
+    int_K1_K2 = np.empty((bq.R.shape[0], bq.R.shape[0]))
+    bq_c.int_K1_K2(
+        int_K1_K2, bq.gp_S.x[:, None], bq.gp_log_S.x[:, None],
+        bq.gp_S.K.h, np.array([bq.gp_S.K.w]),
+        bq.gp_log_S.K.h, np.array([bq.gp_log_S.K.w]),
+        bq.R_mean, bq.R_cov)
+
+    assert np.allclose(int_K1_K2, approx_int, rtol=1e-5, atol=1e-4)
 
 
-def test_gaussint3():
-    raise NotImplementedError
-    assert mat.shape == (n, n)
+# def test_gaussint3():
+#     raise NotImplementedError
+#     assert mat.shape == (n, n)
 
 
-def test_gaussint4():
-    raise NotImplementedError
-    assert vec.shape == (1, n)
+# def test_gaussint4():
+#     raise NotImplementedError
+#     assert vec.shape == (1, n)
 
 
-def test_gaussint5():
-    raise NotImplementedError
+# def test_gaussint5():
+#     raise NotImplementedError
 
 
-def test_dtheta_consts():
-    raise NotImplementedError
+# def test_dtheta_consts():
+#     raise NotImplementedError
 
 
-def test_Z_mean():
-    raise NotImplementedError
+# def test_Z_mean():
+#     raise NotImplementedError
 
 
-def test_Z_var():
-    raise NotImplementedError
+# def test_Z_var():
+#     raise NotImplementedError
 
 
-def test_dm_dw():
-    raise NotImplementedError
+# def test_dm_dw():
+#     raise NotImplementedError
 
 
-def test_Cw():
-    raise NotImplementedError
+# def test_Cw():
+#     raise NotImplementedError
 
 
-def test_expected_uncertainty_evidence():
-    raise NotImplementedError
+# def test_expected_uncertainty_evidence():
+#     raise NotImplementedError

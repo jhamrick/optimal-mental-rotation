@@ -17,34 +17,24 @@ cdef DTYPE_t MIN = log(np.exp2(DTYPE(np.finfo(DTYPE).minexp + 4)))
 cdef DTYPE_t EPS = np.finfo(DTYPE).eps
 
 
-def mvn_logpdf(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, np.ndarray[DTYPE_t, ndim=1] m, np.ndarray[DTYPE_t, ndim=2] C, bool use_Z, DTYPE_t Z):
+def mvn_logpdf(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, np.ndarray[DTYPE_t, ndim=1] m, np.ndarray[DTYPE_t, ndim=2] C):
     """Computes the logpdf for a multivariate normal distribution:
 
     out[i] = N(x_i | m, C)
-           = -0.5*log(2*pi)*d - 0.5*(x_i-m)*C^-1*(x_i-m) + Z
-
-    where Z is either provided (i.e. `use_Z` is True) or Z = -0.5*log(|C|)
+           = -0.5*log(2*pi)*d - 0.5*(x_i-m)*C^-1*(x_i-m) - 0.5*log(|C|)
 
     """
     cdef np.ndarray[DTYPE_t, ndim=2] Ci
     cdef int n, d, i, j, k
-    cdef DTYPE_t t0, t1
+    cdef DTYPE_t c
 
     n = x.shape[0]
     d = x.shape[1]
     Ci = inv(C)
-
-    if not use_Z:
-        Z = -0.5 * slogdet(C)[1]        
-
-    t0 = log(2 * M_PI) * (-d / 2.) + Z
+    c = log(2 * M_PI) * (-d / 2.) -0.5 * slogdet(C)[1]
 
     for i in xrange(n):
-        t1 = 0
-        for j in xrange(d):
-            for k in xrange(d):
-                t1 += (x[i] - m[j]) * Ci[j, k] * (x[i] - m[k])
-        out[i] = t0 - 0.5 * t1
+        out[i] = c - 0.5 * dot(dot(x[i] - m, Ci), x[i] - m)
 
 
 def improve_covariance_conditioning(np.ndarray[DTYPE_t, ndim=2] M):
@@ -84,7 +74,7 @@ def int_K(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_
             else:
                 W[i, j] = cov[i, j]
 
-    mvn_logpdf(out, x, mu, W, False, 0)
+    mvn_logpdf(out, x, mu, W)
     for i in xrange(n):
         out[i] = h_2 * exp(out[i])
 
@@ -114,7 +104,7 @@ def int_K1_K2(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x1, n
     n2 = x2.shape[0]
     d = x1.shape[1]
 
-    x = np.empty(2 * d, dtype=DTYPE)
+    x = np.empty((n1, n2, 2 * d), dtype=DTYPE)
     m = np.empty(2 * d, dtype=DTYPE)
     C = np.empty((2 * d, 2 * d), dtype=DTYPE)
 
@@ -147,7 +137,7 @@ def int_K1_K2(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x1, n
 
     # compute pdf
     for i in xrange(n1):
-        mvn_logpdf(out[i], x[i], m, C, False, 0)
+        mvn_logpdf(out[i], x[i], m, C)
         for j in xrange(n2):
             out[i, j] = h1_2_h2_2 * exp(out[i, j])
 
@@ -211,12 +201,12 @@ def int_int_K1_K2_K1(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2
 
     # compute N(x | mu, W1 + cov)
     N1 = np.empty(n, dtype=DTYPE)
-    mvn_logpdf(N1, x, mu, W1_cov, False, 0)
+    mvn_logpdf(N1, x, mu, W1_cov)
 
     # compute N(x_i | x_j, G^-1 (W2 + 2*cov - 2*G*cov) G^-1)
     N2 = np.empty((n, n), dtype=DTYPE)
     for j in xrange(n):
-        mvn_logpdf(N2[i], x, x[j], GWG, False, 0)
+        mvn_logpdf(N2[i], x, x[j], GWG)
 
     # put it all together
     for i in xrange(n):
@@ -266,7 +256,7 @@ def int_int_K1_K2(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x
     N1 = np.empty(1, dtype=DTYPE)
     zx = np.zeros((1, d), dtype=DTYPE)
     zm = np.zeros(d, dtype=DTYPE)
-    mvn_logpdf(N1, zx, zm, W1_2cov, False, 0)
+    mvn_logpdf(N1, zx, zm, W1_2cov)
 
     # compute W2 + cov - cov*(W1 + 2*cov)^-1*cov
     C = dot(dot(cov, W1_2cov), inv(cov))
@@ -279,7 +269,7 @@ def int_int_K1_K2(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x
 
     # compute N(x | mu, W2 + cov - cov*(W1 + 2*cov)^-1*cov)
     N2 = np.empty(1, dtype=DTYPE)
-    mvn_logpdf(N2, x, mu, C, False, 0)
+    mvn_logpdf(N2, x, mu, C)
 
     for i in xrange(n):
         out[i] = h1_2_h2_2 * exp(N1[0] + N2[i])
@@ -316,7 +306,7 @@ def int_int_K(int d, DTYPE_t h, np.ndarray[DTYPE_t, ndim=1] w, np.ndarray[DTYPE_
     N = np.empty(1, dtype=DTYPE)
     zx = np.zeros((1, d), dtype=DTYPE)
     zm = np.zeros(d, dtype=DTYPE)
-    mvn_logpdf(N, zx, zm, W_2cov, False, 0)
+    mvn_logpdf(N, zx, zm, W_2cov)
 
     return (h ** 2) * exp(N[0])
 

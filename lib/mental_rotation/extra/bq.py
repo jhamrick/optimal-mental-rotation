@@ -42,7 +42,7 @@ class BQ(object):
         self.gamma = float(gamma)
         self.ntry = int(ntry)
         self.n_candidate = int(n_candidate)
-        self.R_mean = float(R_mean)
+        self.R_mean = np.array([R_mean], dtype=DTYPE)
         self.R_cov = np.array([[R_var]], dtype=DTYPE)
 
         # default kernel parameter values
@@ -206,14 +206,16 @@ class BQ(object):
     def Z_mean(self):
 
         # values for the GP over l(x)
-        x_s = self.gp_S.x
+        x_s = self.gp_S.x[:, None]
         alpha_l = self.gp_S.inv_Kxx_y
         h_s, w_s = self.gp_S.K.params
+        w_s = np.array([w_s])
 
         # values for the GP of Delta(x)
-        x_sc = self.gp_Dc.x
+        x_sc = self.gp_Dc.x[:, None]
         alpha_del = self.gp_Dc.inv_Kxx_y
         h_dc, w_dc = self.gp_Dc.K.params
+        w_dc = np.array([w_dc])
 
         m_Z = bq_c.Z_mean(
             x_s, x_sc, alpha_l, alpha_del,
