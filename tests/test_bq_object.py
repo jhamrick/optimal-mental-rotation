@@ -134,7 +134,7 @@ def test_fit_Dc_same():
 def test_S_mean():
     util.seed()
 
-    for i in xrange(10):
+    for i in xrange(100):
         bq = make_bq(seed=False)
         bq.fit()
 
@@ -200,7 +200,7 @@ def test_int_K_same():
     bq = make_bq()
     bq.fit()
 
-    vals = np.empty((10, bq.R.shape[0]))
+    vals = np.empty((100, bq.R.shape[0]))
     for i in xrange(vals.shape[0]):
         bq_c.int_K(
             vals[i], bq.R[:, None],
@@ -235,7 +235,7 @@ def test_int_K1_K2_same():
     bq = make_bq()
     bq.fit()
 
-    vals = np.empty((10, bq.R.shape[0], bq.R.shape[0]))
+    vals = np.empty((100, bq.R.shape[0], bq.R.shape[0]))
     for i in xrange(vals.shape[0]):
         bq_c.int_K1_K2(
             vals[i], bq.gp_S.x[:, None], bq.gp_log_S.x[:, None],
@@ -271,7 +271,7 @@ def test_int_int_K1_K2_K1_same():
     bq = make_bq()
     bq.fit()
 
-    vals = np.empty((10, bq.R.shape[0], bq.R.shape[0]))
+    vals = np.empty((100, bq.R.shape[0], bq.R.shape[0]))
     for i in xrange(vals.shape[0]):
         bq_c.int_int_K1_K2_K1(
             vals[i], bq.gp_S.x[:, None],
@@ -308,7 +308,7 @@ def test_int_int_K1_K2_same():
     bq = make_bq()
     bq.fit()
 
-    vals = np.empty((10, bq.R.shape[0]))
+    vals = np.empty((100, bq.R.shape[0]))
     for i in xrange(vals.shape[0]):
         bq_c.int_int_K1_K2(
             vals[i], bq.gp_log_S.x[:, None],
@@ -346,7 +346,7 @@ def test_int_int_K_same():
     bq = make_bq()
     bq.fit()
 
-    vals = np.empty(10)
+    vals = np.empty(100)
     for i in xrange(vals.shape[0]):
         vals[i] = bq_c.int_int_K(
             1, bq.gp_S.K.h, np.array([bq.gp_S.K.w]),
