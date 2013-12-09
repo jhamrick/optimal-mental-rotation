@@ -124,21 +124,21 @@ def test_int_K():
     Kxxo = bq.gp_S.Kxxo(xo)
     p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
     approx_int = np.trapz(Kxxo * p_xo, xo)
-    int_K = np.empty(bq.R.shape[0])
+    calc_int = np.empty(bq.R.shape[0])
     bq_c.int_K(
-        int_K, bq.R[:, None],
+        calc_int, bq.R[:, None],
         bq.gp_S.K.h, np.array([bq.gp_S.K.w]),
         bq.R_mean, bq.R_cov)
-    assert np.allclose(int_K, approx_int)
+    assert np.allclose(calc_int, approx_int)
 
     Kxxo = bq.gp_log_S.Kxxo(xo)
     p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
     approx_int = np.trapz(Kxxo * p_xo, xo)
     bq_c.int_K(
-        int_K, bq.R[:, None],
+        calc_int, bq.R[:, None],
         bq.gp_log_S.K.h, np.array([bq.gp_log_S.K.w]),
         bq.R_mean, bq.R_cov)
-    assert np.allclose(int_K, approx_int)
+    assert np.allclose(calc_int, approx_int)
 
 
 def test_int_K1_K2():
@@ -147,41 +147,106 @@ def test_int_K1_K2():
 
     xo = np.linspace(-10, 10, 10000)
 
-    Kx1xo = bq.gp_S.Kxxo(xo)
-    Kx2xo = bq.gp_log_S.Kxxo(xo)
+    K1xxo = bq.gp_S.Kxxo(xo)
+    K2xxo = bq.gp_log_S.Kxxo(xo)
     p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
-    approx_int = np.trapz(Kx1xo[:, None] * Kx2xo[None, :] * p_xo, xo)
+    approx_int = np.trapz(K1xxo[:, None] * K2xxo[None, :] * p_xo, xo)
 
-    int_K1_K2 = np.empty((bq.R.shape[0], bq.R.shape[0]))
+    calc_int = np.empty((bq.R.shape[0], bq.R.shape[0]))
     bq_c.int_K1_K2(
-        int_K1_K2, bq.gp_S.x[:, None], bq.gp_log_S.x[:, None],
+        calc_int, bq.gp_S.x[:, None], bq.gp_log_S.x[:, None],
         bq.gp_S.K.h, np.array([bq.gp_S.K.w]),
         bq.gp_log_S.K.h, np.array([bq.gp_log_S.K.w]),
         bq.R_mean, bq.R_cov)
 
-    assert np.allclose(int_K1_K2, approx_int, rtol=1e-5, atol=1e-4)
+    assert np.allclose(calc_int, approx_int, rtol=1e-5, atol=1e-4)
 
 
-# def test_gaussint3():
+def test_int_K1_K2_K1():
+    bq = make_bq(n=10)
+    bq.fit()
+
+    xo = np.linspace(-10, 10, 1000)
+    K1xxo = bq.gp_S.Kxxo(xo)
+    K2xoxo = bq.gp_log_S.Kxoxo(xo)
+    p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
+    int1 = np.trapz(K1xxo[:, :, None] * K2xoxo * p_xo, xo)
+    approx_int = np.trapz(K1xxo[:, None] * int1[None, :] * p_xo, xo)
+
+    calc_int = np.empty((bq.R.shape[0], bq.R.shape[0]))
+    bq_c.int_int_K1_K2_K1(
+        calc_int, bq.gp_S.x[:, None],
+        bq.gp_S.K.h, np.array([bq.gp_S.K.w]),
+        bq.gp_log_S.K.h, np.array([bq.gp_log_S.K.w]),
+        bq.R_mean, bq.R_cov)
+
+    assert np.allclose(calc_int, approx_int, rtol=1e-5, atol=1e-4)
+
+
+def test_int_int_K1_K2():
+    bq = make_bq(n=10)
+    bq.fit()
+
+    xo = np.linspace(-10, 10, 1000)
+
+    K1xoxo = bq.gp_S.Kxoxo(xo)
+    K2xxo = bq.gp_log_S.Kxxo(xo)
+    p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
+    int1 = np.trapz(K1xoxo * K2xxo[:, :, None] * p_xo, xo)
+    approx_int = np.trapz(int1 * p_xo, xo)
+
+    calc_int = np.empty(bq.R.shape[0])
+    bq_c.int_int_K1_K2(
+        calc_int, bq.gp_log_S.x[:, None],
+        bq.gp_S.K.h, np.array([bq.gp_S.K.w]),
+        bq.gp_log_S.K.h, np.array([bq.gp_log_S.K.w]),
+        bq.R_mean, bq.R_cov)
+
+    assert np.allclose(calc_int, approx_int, rtol=1e-5, atol=1e-4)
+
+
+def test_int_int_K():
+    bq = make_bq()
+    bq.fit()
+
+    xo = np.linspace(-10, 10, 1000)
+
+    Kxoxo = bq.gp_S.Kxoxo(xo)
+    p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
+    approx_int = np.trapz(np.trapz(Kxoxo * p_xo, xo) * p_xo, xo)
+    calc_int = bq_c.int_int_K(
+        1, bq.gp_S.K.h, np.array([bq.gp_S.K.w]),
+        bq.R_mean, bq.R_cov)
+    assert np.allclose(calc_int, approx_int, rtol=1e-5, atol=1e-4)
+
+    Kxoxo = bq.gp_log_S.Kxoxo(xo)
+    p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
+    approx_int = np.trapz(np.trapz(Kxoxo * p_xo, xo) * p_xo, xo)
+    calc_int = bq_c.int_int_K(
+        1, bq.gp_log_S.K.h, np.array([bq.gp_log_S.K.w]),
+        bq.R_mean, bq.R_cov)
+    assert np.allclose(calc_int, approx_int, rtol=1e-5, atol=1e-4)
+
+
+# def test_int_K1_dK2():
 #     raise NotImplementedError
-#     assert mat.shape == (n, n)
 
 
-# def test_gaussint4():
-#     raise NotImplementedError
-#     assert vec.shape == (1, n)
-
-
-# def test_gaussint5():
+# def test_int_dK():
 #     raise NotImplementedError
 
 
-# def test_dtheta_consts():
-#     raise NotImplementedError
+def test_Z_mean():
+    bq = make_bq()
+    bq.fit()
 
+    xo = np.linspace(-10, 10, 1000)
+    p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
+    S = bq.S_mean(xo)
+    approx_Z = np.trapz(S * p_xo, xo)
+    calc_Z = bq.Z_mean()
 
-# def test_Z_mean():
-#     raise NotImplementedError
+    assert np.allclose(approx_Z, calc_Z, rtol=1e-5, atol=1e-3)
 
 
 # def test_Z_var():
