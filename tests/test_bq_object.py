@@ -386,6 +386,7 @@ def test_Z_mean_same():
     assert (means[0] == means).all()
 
 
+@pytest.mark.xfail(reason="https://github.com/numpy/numpy/issues/661")
 def test_Z_var_same():
     bq = make_bq()
     bq.fit()
@@ -394,6 +395,16 @@ def test_Z_var_same():
     for i in xrange(100):
         vars[i] = bq.Z_var()
     assert (vars[0] == vars).all()
+
+
+def test_Z_var_close():
+    bq = make_bq()
+    bq.fit()
+
+    vars = np.empty(100)
+    for i in xrange(100):
+        vars[i] = bq.Z_var()
+    assert np.allclose(vars[0], vars)
 
 
 # def test_Z_var():
