@@ -88,6 +88,49 @@ def test_choose_candidates():
     assert ((diff > 1e-4) | (diff == 0)).all()
 
 
+@pytest.mark.xfail
+def test_fit_S_same():
+    params = None
+    for i in xrange(10):
+        x, y = make_1d_gaussian(seed=True, n=10)
+        bq = BQ(x, y, gamma, ntry, n_candidate, R_mean, R_var, s=0)
+        util.seed()
+        bq.fit()
+        if params is None:
+            params = bq.gp_S.params.copy()
+        assert (params == bq.gp_S.params).all()
+
+
+@pytest.mark.xfail
+def test_fit_log_S_same():
+    params = None
+    for i in xrange(10):
+        x, y = make_1d_gaussian(seed=True, n=10)
+        bq = BQ(x, y, gamma, ntry, n_candidate, R_mean, R_var, s=0)
+        util.seed()
+        bq.fit()
+        if params is None:
+            params = bq.gp_log_S.params.copy()
+        assert (params == bq.gp_log_S.params).all()
+
+
+@pytest.mark.xfail
+def test_fit_Dc_same():
+    params = None
+    candidates = None
+    for i in xrange(10):
+        x, y = make_1d_gaussian(seed=True, n=10)
+        bq = BQ(x, y, gamma, ntry, n_candidate, R_mean, R_var, s=0)
+        util.seed()
+        bq.fit()
+        if params is None:
+            params = bq.gp_Dc.params.copy()
+        if candidates is None:
+            candidates = bq.Rc.copy()
+        assert (params == bq.gp_Dc.params).all()
+        assert (candidates == bq.Rc).all()
+
+
 def test_S_mean():
     util.seed()
 
