@@ -229,18 +229,20 @@ class BQ(object):
         x_s = self.gp_S.x
 
         alpha_l = self.gp_S.inv_Kxx_y
-        alpha_tl = self.gp_logS.inv_Kxx_y
-        inv_L_tl = self.gp_logS.inv_Lxx
-        inv_K_tl = self.gp_logS.inv_Kxx
+        alpha_tl = self.gp_log_S.inv_Kxx_y
+        inv_L_tl = self.gp_log_S.inv_Lxx
+        inv_K_tl = self.gp_log_S.inv_Kxx
 
         h_l, w_l = self.gp_S.K.params
+        w_l = np.array([w_l])
         h_tl, w_tl = self.gp_log_S.K.params
+        w_tl = np.array([w_tl])
 
-        dK_tl_dw = self.gp_logS.K.dK_dw(x_s, x_s)
-        Cw = self.Cw(self.gp_logS)
+        dK_tl_dw = self.gp_log_S.K.dK_dw(x_s, x_s)[..., None]
+        Cw = np.array([self.Cw(self.gp_log_S)])
 
         V_Z = bq_c.Z_var(
-            x_s, alpha_l, alpha_tl,
+            x_s[:, None], alpha_l, alpha_tl,
             inv_L_tl, inv_K_tl, dK_tl_dw, Cw,
             h_l, w_l, h_tl, w_tl,
             self.R_mean, self.R_cov, self.gamma)
@@ -268,5 +270,5 @@ class BQ(object):
         # scale.
         H_theta = gp.d2lh_dtheta2
         # XXX: fix this slicing
-        Cw = np.diagflat(-1. / H_theta[1, 1])
+        Cw = -1. / H_theta[1, 1]
         return Cw

@@ -163,6 +163,7 @@ def int_int_K1_K2_K1(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2
     cdef np.ndarray[DTYPE_t, ndim=2] G
     cdef np.ndarray[DTYPE_t, ndim=2] Gi
     cdef np.ndarray[DTYPE_t, ndim=2] GWG
+    cdef np.ndarray[DTYPE_t, ndim=2] GiGWGGi
     cdef np.ndarray[DTYPE_t, ndim=1] N1
     cdef np.ndarray[DTYPE_t, ndim=2] N2
     cdef int n, d, i, j
@@ -197,7 +198,7 @@ def int_int_K1_K2_K1(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2
             else:
                 GWG[i, j] = 2*cov[i, j] - 2*Gcov[i, j]
 
-    GWG[:] = dot(dot(Gi, GWG), Gi)
+    GiGWGGi = dot(dot(Gi, GWG), Gi)
 
     # compute N(x | mu, W1 + cov)
     N1 = np.empty(n, dtype=DTYPE)
@@ -206,7 +207,7 @@ def int_int_K1_K2_K1(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2
     # compute N(x_i | x_j, G^-1 (W2 + 2*cov - 2*G*cov) G^-1)
     N2 = np.empty((n, n), dtype=DTYPE)
     for j in xrange(n):
-        mvn_logpdf(N2[i], x, x[j], GWG)
+        mvn_logpdf(N2[:, j], x, x[j], GiGWGGi)
 
     # put it all together
     for i in xrange(n):
@@ -475,63 +476,75 @@ def Z_mean(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=2] x_sc, np
     return m_Z
 
 
-# def Z_var(x_s, alpha_l, alpha_tl, inv_L_tl, inv_K_tl, dK_tl_dw, Cw, h_l, w_l, h_tl, w_tl, mu, cov, gamma):
-#     ns, d = x_s.shape
+def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, np.ndarray[DTYPE_t, ndim=1] alpha_tl, np.ndarray[DTYPE_t, ndim=2] inv_L_tl, np.ndarray[DTYPE_t, ndim=2] inv_K_tl, np.ndarray[DTYPE_t, ndim=3] dK_tl_dw, np.ndarray[DTYPE_t, ndim=1] Cw, DTYPE_t h_l, np.ndarray[DTYPE_t, ndim=1] w_l, DTYPE_t h_tl, np.ndarray[DTYPE_t, ndim=1] w_tl, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov, DTYPE_t gamma):
 
-#     cdef np.ndarray[DTYPE_t, ndim=1] int_K_tl_vec = np.empty(ns, dtype=DTYPE)
+    cdef np.ndarray[DTYPE_t, ndim=2] int_K_l_K_tl_K_l
+    cdef np.ndarray[DTYPE_t, ndim=2] int_K_tl_K_l_mat
+    cdef np.ndarray[DTYPE_t, ndim=1] int_K_tl_K_l_vec
+    cdef np.ndarray[DTYPE_t, ndim=1] int_K_tl_vec
+    cdef np.ndarray[DTYPE_t, ndim=1] beta
+    cdef np.ndarray[DTYPE_t, ndim=1] int_inv_int
+    cdef DTYPE_t beta2, alpha_int_alpha, E_m_l_C_tl_m_l, E_m_l_C_tl
+    cdef DTYPE_t int_K_tl_scalar, int_inv_int_tl, E_C_tl, V_Z
+    cdef int ns, d
 
-#     ## First term
-#     # E[m_l C_tl m_l | x_s] = alpha_l(x_s)' *
-#     #    int int K_l(x_s, x) K_tl(x, x') K_l(x', x_s) p(x) p(x') dx dx' *
-#     #    alpha_l(x_s) - beta(x_s)'beta(x_s)
-#     # Where beta is defined as:
-#     # beta(x_s) = inv(L_tl(x_s, x_s)) *
-#     #    int K_tl(x_s, x) K_l(x, x_s) p(x) dx *
-#     #    alpha_l(x_s)
-#     int_K_l_K_tl_K_l = int_int_K1_K2_K1(
-#         x_s, h_l, w_l, h_tl, w_tl, mu, cov)
-#     int_K_tl_K_l_mat = int_K1_K2(
-#         x_s, x_s, h_tl, w_tl, h_l, w_l, mu, cov)
-#     beta = dot(dot(inv_L_tl, int_K_tl_K_l_mat), alpha_l)
-#     beta2 = dot(beta.T, beta)
-#     alpha_int_alpha = dot(dot(alpha_l.T, int_K_l_K_tl_K_l), alpha_l)
-#     E_m_l_C_tl_m_l = float(alpha_int_alpha - beta2)
-#     assert E_m_l_C_tl_m_l > 0
+    ns = x_s.shape[0]
+    d = x_s.shape[1]
 
-#     ## Second term
-#     # E[m_l C_tl | x_s] =
-#     #    [ int int K_tl(x', x) K_l(x, x_s) p(x) p(x') dx dx' -
-#     #      ( int K_tl(x, x_s) p(x) dx) *
-#     #        inv(K_tl(x_s, x_s)) *
-#     #        int K_tl(x_s, x) K_l(x, x_s) p(x) dx
-#     #      )
-#     #    ] alpha_l(x_s)
-#     int_K_tl_K_l_vec = int_int_K1_K2(x_s, h_tl, w_tl, h_l, w_l, mu, cov)
-#     int_K(int_K_tl_vec, x_s, h_tl, w_tl, mu, cov)
-#     int_inv_int = dot(dot(int_K_tl_vec, inv_K_tl), int_K_tl_K_l_mat)
-#     E_m_l_C_tl = float(dot(int_K_tl_K_l_vec - int_inv_int, alpha_l))
-#     if E_m_l_C_tl <= 0:
-#         print "E[m_l C_tl] = %f" % E_m_l_C_tl
-#         assert False
+    ## First term
+    # E[m_l C_tl m_l | x_s] = alpha_l(x_s)' *
+    #    int int K_l(x_s, x) K_tl(x, x') K_l(x', x_s) p(x) p(x') dx dx' *
+    #    alpha_l(x_s) - beta(x_s)'beta(x_s)
+    # Where beta is defined as:
+    # beta(x_s) = inv(L_tl(x_s, x_s)) *
+    #    int K_tl(x_s, x) K_l(x, x_s) p(x) dx *
+    #    alpha_l(x_s)
+    int_K_l_K_tl_K_l = np.empty((ns, ns), dtype=DTYPE)
+    int_int_K1_K2_K1(int_K_l_K_tl_K_l, x_s, h_l, w_l, h_tl, w_tl, mu, cov)
 
-#     ## Third term
-#     # E[C_tl | x_s] =
-#     #    int int K_tl(x, x') p(x) p(x') dx dx' -
-#     #    ( int K_tl(x, x_s) p(x) dx *
-#     #      inv(K_tl(x_s, x_s)) *
-#     #      [int K_tl(x, x_s) p(x) dx]'
-#     #    )
-#     # Where eta is defined as:
-#     # eta(x_s) = inv(L_tl(x_s, x_s)) int K_tl(x_s, x) p(x) dx
-#     int_K_tl_scalar = int_int_K(d, h_tl, w_tl, mu, cov)
-#     int_inv_int_tl = dot(dot(int_K_tl_vec, inv_K_tl), int_K_tl_vec.T)
-#     E_C_tl = float(int_K_tl_scalar - int_inv_int_tl)
-#     assert E_C_tl > 0
+    int_K_tl_K_l_mat = np.empty((ns, ns), dtype=DTYPE)
+    int_K1_K2(int_K_tl_K_l_mat, x_s, x_s, h_tl, w_tl, h_l, w_l, mu, cov)
 
-#     term1 = E_m_l_C_tl_m_l
-#     term2 = 2 * gamma * E_m_l_C_tl
-#     term3 = gamma ** 2 * E_C_tl
-#     V_Z = term1 + term2 + term3
+    beta = dot(dot(inv_L_tl, int_K_tl_K_l_mat), alpha_l)
+    beta2 = float(dot(beta, beta))
+    alpha_int_alpha = float(dot(dot(alpha_l, int_K_l_K_tl_K_l), alpha_l))
+    E_m_l_C_tl_m_l = alpha_int_alpha - beta2
+    assert E_m_l_C_tl_m_l > 0
+
+    ## Second term
+    # E[m_l C_tl | x_s] =
+    #    [ int int K_tl(x', x) K_l(x, x_s) p(x) p(x') dx dx' -
+    #      ( int K_tl(x, x_s) p(x) dx) *
+    #        inv(K_tl(x_s, x_s)) *
+    #        int K_tl(x_s, x) K_l(x, x_s) p(x) dx
+    #      )
+    #    ] alpha_l(x_s)
+    int_K_tl_K_l_vec = np.empty(ns, dtype=DTYPE)
+    int_int_K1_K2(int_K_tl_K_l_vec, x_s, h_tl, w_tl, h_l, w_l, mu, cov)
+
+    int_K_tl_vec = np.empty(ns, dtype=DTYPE)
+    int_K(int_K_tl_vec, x_s, h_tl, w_tl, mu, cov)
+
+    int_inv_int = dot(dot(int_K_tl_vec, inv_K_tl), int_K_tl_K_l_mat)
+    E_m_l_C_tl = float(dot(int_K_tl_K_l_vec - int_inv_int, alpha_l))
+    assert E_m_l_C_tl > 0
+
+    ## Third term
+    # E[C_tl | x_s] =
+    #    int int K_tl(x, x') p(x) p(x') dx dx' -
+    #    ( int K_tl(x, x_s) p(x) dx *
+    #      inv(K_tl(x_s, x_s)) *
+    #      [int K_tl(x, x_s) p(x) dx]'
+    #    )
+    # Where eta is defined as:
+    # eta(x_s) = inv(L_tl(x_s, x_s)) int K_tl(x_s, x) p(x) dx
+    int_K_tl_scalar = int_int_K(d, h_tl, w_tl, mu, cov)
+    int_inv_int_tl = float(dot(dot(int_K_tl_vec, inv_K_tl), int_K_tl_vec))
+    E_C_tl = int_K_tl_scalar - int_inv_int_tl
+    assert E_C_tl > 0
+
+    V_Z = E_m_l_C_tl_m_l + (2 * gamma * E_m_l_C_tl) + (gamma ** 2 * E_C_tl)
+    return V_Z
 
 #     ##############################################################
 #     ## Variance correction
