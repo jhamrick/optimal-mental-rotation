@@ -5,6 +5,7 @@ cimport numpy as np
 
 from libc.math cimport exp, log, fmax, copysign, fabs, M_PI
 from cpython cimport bool
+from warnings import warn
 
 cdef inv = np.linalg.inv
 cdef slogdet = np.linalg.slogdet
@@ -454,7 +455,8 @@ def Z_mean(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=2] x_sc, np
     int_K_l = np.empty(ns, dtype=DTYPE)
     int_K(int_K_l, x_s, h_s, w_s, mu, cov)
     E_m_l = float(dot(int_K_l, alpha_l))
-    assert E_m_l > 0, "E_m_l = %s" % E_m_l
+    if E_m_l <= 0:
+        warn("E_m_l = %s" % E_m_l)
 
     ## Second term
     # E[m_l*m_del | x_s, x_c] = alpha_del(x_sc)' *
@@ -463,14 +465,16 @@ def Z_mean(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=2] x_sc, np
     int_K_del_K_l = np.empty((nc, ns), dtype=DTYPE)
     int_K1_K2(int_K_del_K_l, x_sc, x_s, h_dc, w_dc, h_s, w_s, mu, cov)
     E_m_l_m_del = float(dot(dot(alpha_del, int_K_del_K_l), alpha_l))
-    assert E_m_l_m_del > 0, "E_m_l_m_del = %s" % E_m_l_m_del
+    if E_m_l_m_del <= 0:
+        warn("E_m_l_m_del = %s" % E_m_l_m_del)
     
     ## Third term
     # E[m_del | x_sc] = (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
     int_K_del = np.empty(nc, dtype=DTYPE)
     int_K(int_K_del, x_sc, h_dc, w_dc, mu, cov)
     E_m_del = float(dot(int_K_del, alpha_del))
-    assert E_m_del > 0, "E_m_del = %s" % E_m_del
+    if E_m_del <= 0:
+        warn("E_m_del = %s" % E_m_del)
     
     # put the three terms together
     m_Z = E_m_l + E_m_l_m_del + (gamma * E_m_del)
@@ -511,7 +515,8 @@ def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, 
     beta2 = float(dot(beta, beta))
     alpha_int_alpha = float(dot(dot(alpha_l, int_K_l_K_tl_K_l), alpha_l))
     E_m_l_C_tl_m_l = alpha_int_alpha - beta2
-    assert E_m_l_C_tl_m_l > 0, "E_m_l_C_tl_m_l = %s" % E_m_l_C_tl_m_l
+    if E_m_l_C_tl_m_l <= 0:
+        warn("E_m_l_C_tl_m_l = %s" % E_m_l_C_tl_m_l)
 
     ## Second term
     # E[m_l C_tl | x_s] =
@@ -529,7 +534,8 @@ def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, 
 
     int_inv_int = dot(dot(int_K_tl_vec, inv_K_tl), int_K_tl_K_l_mat)
     E_m_l_C_tl = float(dot(int_K_tl_K_l_vec - int_inv_int, alpha_l))
-    assert E_m_l_C_tl > 0, "E_m_l_C_tl = %s" % E_m_l_C_tl
+    if E_m_l_C_tl < 0:
+        warn("E_m_l_C_tl = %s" % E_m_l_C_tl)
 
     ## Third term
     # E[C_tl | x_s] =
@@ -543,7 +549,8 @@ def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, 
     int_K_tl_scalar = int_int_K(d, h_tl, w_tl, mu, cov)
     int_inv_int_tl = float(dot(dot(int_K_tl_vec, inv_K_tl), int_K_tl_vec))
     E_C_tl = int_K_tl_scalar - int_inv_int_tl
-    assert E_C_tl > 0, "E_C_tl = %s" % E_C_tl
+    if E_C_tl <= 0:
+        warn("E_C_tl = %s" % E_C_tl)
 
     V_Z = E_m_l_C_tl_m_l + (2 * gamma * E_m_l_C_tl) + (gamma ** 2 * E_C_tl)
     return V_Z
