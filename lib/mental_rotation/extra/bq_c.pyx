@@ -232,7 +232,7 @@ def int_int_K1_K2(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x
     cdef np.ndarray[DTYPE_t, ndim=2] W1_2cov
     cdef np.ndarray[DTYPE_t, ndim=2] C
     cdef np.ndarray[DTYPE_t, ndim=1] N1
-    cdef np.ndarray[DTYPE_t, ndim=2] N2
+    cdef np.ndarray[DTYPE_t, ndim=1] N2
     cdef np.ndarray[DTYPE_t, ndim=2] zx
     cdef np.ndarray[DTYPE_t, ndim=1] zm
     cdef int n, d, i, j
@@ -259,7 +259,7 @@ def int_int_K1_K2(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x
     mvn_logpdf(N1, zx, zm, W1_2cov)
 
     # compute W2 + cov - cov*(W1 + 2*cov)^-1*cov
-    C = dot(dot(cov, W1_2cov), inv(cov))
+    C = dot(dot(cov, inv(W1_2cov)), cov)
     for i in xrange(d):
         for j in xrange(d):
             if i == j:
@@ -268,7 +268,7 @@ def int_int_K1_K2(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x
                 C[i, j] = cov[i, j] - C[i, j]
 
     # compute N(x | mu, W2 + cov - cov*(W1 + 2*cov)^-1*cov)
-    N2 = np.empty(1, dtype=DTYPE)
+    N2 = np.empty(n, dtype=DTYPE)
     mvn_logpdf(N2, x, mu, C)
 
     for i in xrange(n):
@@ -434,6 +434,7 @@ def int_dK(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE
     for i in xrange(n):
         for j in xrange(d):
             out[i, j] = int_K_vec[i] * ((S[j, j] + m[j] ** 2 / w[j]**3) - (1.0 / w[j]))
+
 
 def Z_mean(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=2] x_sc, np.ndarray[DTYPE_t, ndim=1] alpha_l, np.ndarray[DTYPE_t, ndim=1] alpha_del, DTYPE_t h_s, np.ndarray[DTYPE_t, ndim=1] w_s, DTYPE_t h_dc, np.ndarray[DTYPE_t, ndim=1] w_dc, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov, gamma):
 
