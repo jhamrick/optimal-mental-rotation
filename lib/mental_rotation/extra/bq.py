@@ -110,7 +110,7 @@ class BQ(object):
         idx = np.random.randint(0, ns, nc)
 
         # compute the candidate points
-        eps = np.random.choice([-1, 1], (nc, 1)) * self.gp_S.params[1]
+        eps = np.random.choice([-1, 1], (nc, 1)) * self.gp_S.K.w
         Rc = (self.R[idx] + eps) % (2 * np.pi)
 
         # make sure they don't overlap with points we already have
@@ -140,25 +140,17 @@ class BQ(object):
         logger.info("Fitting w parameter for GP over S")
         self.gp_S = self._fit_gp(
             self.R, self.S,
-            h=self.gp_S.params[0],
+            h=self.gp_S.K.h,
             ntry=1)
-
-        # try to improve the kernel matrix conditioning
-        if self.improve_covariance_conditioning:
-            bq_c.improve_covariance_conditioning(self.gp_S.Kxx)
 
     def _fit_log_S(self):
         # use h based on the one we found for S
         logger.info("Fitting parameters for GP over log(S)")
         self.gp_log_S = self._fit_gp(
             self.R, self.log_S,
-            h=np.log(self.gp_S.params[0] + 1),
-            w0=self.gp_S.params[1],
+            h=np.log(self.gp_S.K.h + 1),
+            w0=self.gp_S.K.w,
             ntry=1)
-
-        # try to improve the kernel matrix conditioning
-        if self.improve_covariance_conditioning:
-            bq_c.improve_covariance_conditioning(self.gp_log_S.Kxx)
 
     def _fit_Dc(self):
         # choose candidate locations and compute delta, the difference
@@ -170,10 +162,6 @@ class BQ(object):
         logger.info("Fitting parameters for GP over Delta_c")
         self.gp_Dc = self._fit_gp(
             self.Rc, self.Dc, h=None, s=0)
-
-        # try to improve the kernel matrix conditioning
-        if self.improve_covariance_conditioning:
-            bq_c.improve_covariance_conditioning(self.gp_Dc.Kxx)
 
     def fit(self):
         """Run the GP regressions to fit the likelihood function.
@@ -211,7 +199,7 @@ class BQ(object):
     def Z_mean(self):
 
         # values for the GP over l(x)
-        x_s = self.gp_S.x[:, None]
+        x_s = self.R[:, None]
         alpha_l = self.gp_S.inv_Kxx_y
         h_s, w_s = self.gp_S.K.params
         w_s = np.array([w_s])
@@ -229,9 +217,9 @@ class BQ(object):
 
         return m_Z
 
-    def Z_var(self):
+    def _Z_var_and_eps(self):
         # values for the GPs over l(x) and log(l(x))
-        x_s = self.gp_S.x
+        x_s = self.R
 
         alpha_l = self.gp_S.inv_Kxx_y
         alpha_tl = self.gp_log_S.inv_Kxx_y
@@ -246,13 +234,17 @@ class BQ(object):
         dK_tl_dw = self.gp_log_S.K.dK_dw(x_s, x_s)[..., None]
         Cw = np.array([[self.Cw(self.gp_log_S)]])
 
-        V_Z = bq_c.Z_var(
+        V_Z, V_Z_eps = bq_c.Z_var(
             x_s[:, None], alpha_l, alpha_tl,
             inv_L_tl, inv_K_tl, dK_tl_dw, Cw,
             h_l, w_l, h_tl, w_tl,
             self.R_mean, self.R_cov, self.gamma)
 
-        return V_Z
+        return V_Z, V_Z_eps
+
+    def Z_var(self):
+        V_Z, V_Z_eps = self._Z_var_and_eps()
+        return V_Z + V_Z_eps
 
     def dm_dw(self, x):
         """Compute the partial derivative of a GP mean with respect to
