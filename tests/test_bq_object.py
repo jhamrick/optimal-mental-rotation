@@ -2,7 +2,7 @@ import numpy as np
 import scipy.stats
 import pytest
 
-from mental_rotation import config
+from mental_rotation import config, DTYPE
 from mental_rotation.extra import BQ
 import mental_rotation.extra.bq_c as bq_c
 from . import util
@@ -69,17 +69,17 @@ def test_improve_covariance_conditioning():
     bq = make_bq_and_fit()
 
     K_l = bq.gp_S.Kxx
-    bq_c.improve_covariance_conditioning(K_l)
+    bq_c.improve_covariance_conditioning(K_l, np.arange(K_l.shape[0], dtype=DTYPE))
     assert (K_l == bq.gp_S.Kxx).all()
     assert K_l is bq.gp_S.Kxx
 
     K_tl = bq.gp_log_S.Kxx
-    bq_c.improve_covariance_conditioning(K_tl)
+    bq_c.improve_covariance_conditioning(K_tl, np.arange(K_l.shape[0], dtype=DTYPE))
     assert (K_tl == bq.gp_log_S.Kxx).all()
     assert K_tl is bq.gp_log_S.Kxx
 
     K_del = bq.gp_Dc.Kxx
-    bq_c.improve_covariance_conditioning(K_del)
+    bq_c.improve_covariance_conditioning(K_del, np.arange(K_l.shape[0], dtype=DTYPE))
     assert (K_del == bq.gp_Dc.Kxx).all()
     assert K_del is bq.gp_Dc.Kxx
 
@@ -481,18 +481,8 @@ def test_Z_var():
 
     assert np.allclose(approx_var, calc_var, atol=1e-4)
     assert np.allclose(approx_eps, calc_eps)
-
-
-# def test_dm_dw():
-#     raise NotImplementedError
-
-
-# def test_Cw():
-#     raise NotImplementedError
-
-
-# def test_expected_uncertainty_evidence():
-#     raise NotImplementedError
+    assert approx_eps > 0
+    assert calc_eps > 0
 
 
 @pytest.mark.xfail(reason="https://github.com/numpy/numpy/issues/661")
