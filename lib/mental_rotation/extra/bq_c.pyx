@@ -113,8 +113,8 @@ def int_K1_K2(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x1, n
 
     # compute concatenated means [mu, mu]
     for i in xrange(d):
-        m[i] = mu[k]
-        m[i + d] = mu[k]
+        m[i] = mu[i]
+        m[i + d] = mu[i]
 
     # compute concatenated covariances [W1 + cov, cov; cov; W2 + cov]
     for i in xrange(d):
@@ -485,7 +485,7 @@ def Z_mean(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=2] x_sc, np
     return m_Z
 
 
-def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, np.ndarray[DTYPE_t, ndim=1] alpha_tl, np.ndarray[DTYPE_t, ndim=2] inv_L_tl, np.ndarray[DTYPE_t, ndim=2] inv_K_tl, np.ndarray[DTYPE_t, ndim=3] dK_tl_dw, np.ndarray[DTYPE_t, ndim=1] Cw, DTYPE_t h_l, np.ndarray[DTYPE_t, ndim=1] w_l, DTYPE_t h_tl, np.ndarray[DTYPE_t, ndim=1] w_tl, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov, DTYPE_t gamma):
+def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, np.ndarray[DTYPE_t, ndim=1] alpha_tl, np.ndarray[DTYPE_t, ndim=2] inv_L_tl, np.ndarray[DTYPE_t, ndim=2] inv_K_tl, np.ndarray[DTYPE_t, ndim=3] dK_tl_dw, np.ndarray[DTYPE_t, ndim=2] Cw, DTYPE_t h_l, np.ndarray[DTYPE_t, ndim=1] w_l, DTYPE_t h_tl, np.ndarray[DTYPE_t, ndim=1] w_tl, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov, DTYPE_t gamma):
 
     cdef np.ndarray[DTYPE_t, ndim=2] int_K_l_K_tl_K_l
     cdef np.ndarray[DTYPE_t, ndim=2] int_K_tl_K_l_mat
@@ -494,7 +494,7 @@ def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, 
     cdef np.ndarray[DTYPE_t, ndim=1] beta
     cdef np.ndarray[DTYPE_t, ndim=1] int_inv_int
     cdef DTYPE_t beta2, alpha_int_alpha, E_m_l_C_tl_m_l, E_m_l_C_tl
-    cdef DTYPE_t int_K_tl_scalar, int_inv_int_tl, E_C_tl, V_Z
+    cdef DTYPE_t int_K_tl_scalar, int_inv_int_tl, E_C_tl, V_Z, V_eps
     cdef int ns, d
 
     ns = x_s.shape[0]
@@ -560,14 +560,18 @@ def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, 
     ##############################################################
     ## Variance correction
 
-    cdef np.ndarray[DTYPE_t, ndim=3] int_K_tl_dK_l_mat
+    cdef np.ndarray[DTYPE_t, ndim=2] int_K_l_K_tl_mat
+    cdef np.ndarray[DTYPE_t, ndim=3] int_K_l_dK_tl_mat
     cdef np.ndarray[DTYPE_t, ndim=2] int_dK_tl_vec
     cdef np.ndarray[DTYPE_t, ndim=3] zeta
     cdef np.ndarray[DTYPE_t, ndim=1] nu
     cdef DTYPE_t term1a, term1b, term2a, term2b
 
-    int_K_tl_dK_l_mat = np.empty((ns, ns, d), dtype=DTYPE)
-    int_K1_dK2(int_K_tl_dK_l_mat, x_s, x_s, h_tl, w_tl, h_l, w_l, mu, cov)
+    int_K_l_K_tl_mat = np.empty((ns, ns), dtype=DTYPE)
+    int_K1_K2(int_K_l_K_tl_mat, x_s, x_s, h_l, w_l, h_tl, w_tl, mu, cov)
+
+    int_K_l_dK_tl_mat = np.empty((ns, ns, d), dtype=DTYPE)
+    int_K1_dK2(int_K_l_dK_tl_mat, x_s, x_s, h_l, w_l, h_tl, w_tl, mu, cov)
 
     int_dK_tl_vec = np.empty((ns, d), dtype=DTYPE)
     int_dK(int_dK_tl_vec, x_s, h_tl, w_tl, mu, cov)
@@ -577,8 +581,8 @@ def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, 
     for i in xrange(d):
 
         # First term of nu
-        term1a = dot(dot(alpha_l, int_K_tl_dK_l_mat[:, :, i].T), alpha_tl)
-        term1b = dot(dot(dot(alpha_l, int_K_tl_K_l_mat.T), zeta[:, :, i]), alpha_tl)
+        term1a = dot(dot(alpha_l, int_K_l_dK_tl_mat[:, :, i].T), alpha_tl)
+        term1b = dot(dot(dot(alpha_l, int_K_l_K_tl_mat.T), zeta[:, :, i]), alpha_tl)
 
         # Second term of nu
         term2a = dot(int_dK_tl_vec[:, i], alpha_tl)
@@ -587,34 +591,8 @@ def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, 
         nu[i] = (term1a - term1b) + gamma * (term2a - term2b)
 
     # compute the correction
-    V_Z += dot(dot(nu, Cw), nu)
-    if V_Z <= 0:
-        warn("V_Z = %s" % V_Z)
+    V_eps = dot(dot(nu, Cw), nu)
+    if V_Z + V_eps <= 0:
+        warn("V_Z = %s, V_eps = %s" % (V_Z, V_eps))
 
-    return V_Z
-
-    
-    # dK_const1, dK_const2 = dtheta_consts(x_s, w_l, w_tl, mu, cov)
-
-    # term1 = np.zeros((1, 1))
-    # term2 = np.zeros((1, 1))
-    # for i in xrange(d):
-            
-    #     ## First term of nu
-    #     int_K_tl_dK_l_mat = int_K_tl_K_l_mat * dK_const1[:, :, i]
-    #     term1a = dot(dot(alpha_l.T, int_K_tl_dK_l_mat), alpha_tl)
-    #     term1b = dot(dot(alpha_l.T, int_K_tl_K_l_mat, zeta, alpha_tl))
-    #     term1 += term1a - term1b
-
-    #     ## Second term of nu
-    #     int_dK_tl_vec = int_K_tl_vec * dK_const2[None, :, i]
-    #     term2a = dot(int_dK_tl_vec, alpha_tl)
-    #     term2b = dot(dot(int_K_tl_vec, zeta, alpha_tl))
-    #     term2 += term2a - term2b
-
-    # nu = term1 + gamma * term2
-    # V_Z_correction = float(dot(dot(nu, Cw), nu.T))
-    # V_Z += V_Z_correction
-    # assert V_Z > 0
-
-    # return V_Z
+    return V_Z, V_eps

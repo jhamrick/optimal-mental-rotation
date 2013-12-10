@@ -272,7 +272,6 @@ def test_int_K1_K2_same():
     assert (vals[0] == vals).all()
 
 
-@pytest.mark.xfail
 def test_int_int_K1_K2_K1():
     bq = make_bq_and_fit()
     xo = make_xo()
@@ -280,8 +279,8 @@ def test_int_int_K1_K2_K1():
     K1xxo = bq.gp_S.Kxxo(xo)
     K2xoxo = bq.gp_log_S.Kxoxo(xo)
     p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
-    int1 = np.trapz(K1xxo[:, :, None] * K2xoxo * p_xo, xo)
-    approx_int = np.trapz(K1xxo[:, None] * int1[None, :] * p_xo, xo)
+    int1 = np.trapz(K1xxo[:, None, :] * K2xoxo * p_xo, xo)
+    approx_int = np.trapz(K1xxo[:, None] * int1[None] * p_xo, xo)
 
     calc_int = np.empty((bq.R.shape[0], bq.R.shape[0]))
     bq_c.int_int_K1_K2_K1(
@@ -290,7 +289,7 @@ def test_int_int_K1_K2_K1():
         bq.gp_log_S.K.h, np.array([bq.gp_log_S.K.w]),
         bq.R_mean, bq.R_cov)
 
-    assert np.allclose(calc_int, approx_int, atol=1e-7)
+    assert np.allclose(calc_int, approx_int, atol=1e-6)
 
 
 def test_int_int_K1_K2_K1_same():
@@ -445,35 +444,43 @@ def test_Z_var_same():
     bq = make_bq_and_fit(n=10)
 
     vars = np.empty(100)
+    eps = np.empty(100)
     for i in xrange(100):
-        vars[i] = bq.Z_var()
+        vars[i], eps[i] = bq.Z_var()
     assert (vars[0] == vars).all()
+    assert (eps[0] == eps).all()
 
 
 def test_Z_var_close():
     bq = make_bq_and_fit(n=10)
 
     vars = np.empty(100)
+    eps = np.empty(100)
     for i in xrange(100):
-        vars[i] = bq.Z_var()
+        vars[i], eps[i] = bq.Z_var()
     assert np.allclose(vars[0], vars)
+    assert np.allclose(eps[0], eps)
 
 
-@pytest.mark.xfail
 def test_Z_var():
     # int int m_l(x) m_l(x') (C_tl(x, x') + dm_dw*C_w*dm_dw) dx dx'
     bq = make_bq_and_fit()
     xo = make_xo()
 
-    m_l = bq.gp_S.mean(xo)[:, None]
+    p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
+    m_l = bq.gp_S.mean(xo) + gamma
     C_tl = bq.gp_log_S.cov(xo)
-    dm_dw = bq.dm_dw(xo)[:, None]
-    Cw = np.array([[bq.Cw(bq.gp_log_S)]])
-    i = np.dot(m_l, m_l.T) * (C_tl + np.dot(np.dot(dm_dw, Cw), dm_dw.T))
-    approx_var = np.trapz(np.trapz(i, xo), xo)
-    calc_var = bq.Z_var()
+    approx_var = np.trapz(np.trapz(C_tl * m_l * p_xo, xo) * m_l * p_xo, xo)
 
-    assert np.allclose(approx_var, calc_var)
+    dm_dw = bq.dm_dw(xo)
+    nu = np.trapz(m_l * dm_dw * p_xo, xo)
+    Cw = bq.Cw(bq.gp_log_S)
+    approx_eps = nu ** 2 + Cw
+
+    calc_var, calc_eps = bq.Z_var()
+
+    assert np.allclose(approx_var, calc_var, atol=1e-4)
+    assert np.allclose(approx_eps, calc_eps)
 
 
 # def test_dm_dw():

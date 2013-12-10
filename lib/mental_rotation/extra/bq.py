@@ -61,6 +61,8 @@ class BQ(object):
         self.log_S = self.log_transform(self.S)
         self.n_sample = self.R.size
 
+        self.improve_covariance_conditioning = True
+
     def log_transform(self, x):
         return np.log((x / self.gamma) + 1)
 
@@ -142,7 +144,8 @@ class BQ(object):
             ntry=1)
 
         # try to improve the kernel matrix conditioning
-        bq_c.improve_covariance_conditioning(self.gp_S.Kxx)
+        if self.improve_covariance_conditioning:
+            bq_c.improve_covariance_conditioning(self.gp_S.Kxx)
 
     def _fit_log_S(self):
         # use h based on the one we found for S
@@ -154,7 +157,8 @@ class BQ(object):
             ntry=1)
 
         # try to improve the kernel matrix conditioning
-        bq_c.improve_covariance_conditioning(self.gp_log_S.Kxx)
+        if self.improve_covariance_conditioning:
+            bq_c.improve_covariance_conditioning(self.gp_log_S.Kxx)
 
     def _fit_Dc(self):
         # choose candidate locations and compute delta, the difference
@@ -168,7 +172,8 @@ class BQ(object):
             self.Rc, self.Dc, h=None, s=0)
 
         # try to improve the kernel matrix conditioning
-        bq_c.improve_covariance_conditioning(self.gp_Dc.Kxx)
+        if self.improve_covariance_conditioning:
+            bq_c.improve_covariance_conditioning(self.gp_Dc.Kxx)
 
     def fit(self):
         """Run the GP regressions to fit the likelihood function.
@@ -239,7 +244,7 @@ class BQ(object):
         w_tl = np.array([w_tl])
 
         dK_tl_dw = self.gp_log_S.K.dK_dw(x_s, x_s)[..., None]
-        Cw = np.array([self.Cw(self.gp_log_S)])
+        Cw = np.array([[self.Cw(self.gp_log_S)]])
 
         V_Z = bq_c.Z_var(
             x_s[:, None], alpha_l, alpha_tl,
