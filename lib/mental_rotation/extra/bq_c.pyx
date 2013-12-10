@@ -38,12 +38,11 @@ def mvn_logpdf(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, n
         out[i] = c - 0.5 * dot(dot(x[i] - m, Ci), x[i] - m)
 
 
-def improve_covariance_conditioning(np.ndarray[DTYPE_t, ndim=2] M):
-    cdef DTYPE_t sqd_jitters = fmax(EPS, np.max(M)) * 1e-4
+def improve_covariance_conditioning(np.ndarray[DTYPE_t, ndim=2] M, np.ndarray[DTYPE_t, ndim=1] idx):
+    cdef DTYPE_t sqd_jitter = fmax(EPS, np.max(M)) * 1e-4
     cdef int n, i
-    n = M.shape[0]
-    for i in xrange(n):
-        M[i, i] += sqd_jitters
+    for i in xrange(len(idx)):
+        M[idx[i], idx[i]] += sqd_jitter
 
 
 def int_K(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h, np.ndarray[DTYPE_t, ndim=1] w, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
@@ -596,3 +595,56 @@ def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, 
         warn("V_Z = %s, V_eps = %s" % (V_Z, V_eps))
 
     return V_Z, V_eps
+
+
+def expected_squared_mean(np.ndarray[DTYPE_t, ndim=2] x_sa, np.ndarray[DTYPE_t, ndim=2] x_sca, np.ndarray[DTYPE_t, ndim=1] l_s, np.ndarray[DTYPE_t, ndim=1] alpha_del, np.ndarray[DTYPE_t, ndim=2] inv_K_l, DTYPE_t tm_a, DTYPE_t tC_a, DTYPE_t h_l, np.ndarray[DTYPE_t, ndim=1] w_l, DTYPE_t h_d, np.ndarray[DTYPE_t, ndim=1] w_d, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov, DTYPE_t gamma):
+
+    cdef np.ndarray[DTYPE_t, ndim=1] int_K_l
+    cdef np.ndarray[DTYPE_t, ndim=2] int_K_del_K_l
+    cdef np.ndarray[DTYPE_t, ndim=1] int_K_del
+    cdef np.ndarray[DTYPE_t, ndim=1] A, B
+    cdef np.ndarray[DTYPE_t, ndim=1] nlsa
+    cdef DTYPE_t C, nla, nls, e, e2, nlsnla, nla2, expected_sqd_mean
+    cdef int nsa, nsca
+
+    nsa = x_sa.shape[0]
+    nsca = x_sca.shape[0]
+    
+    ## First term
+    # int K_l(x, x_s) p(x) dx inv(K_l(x_s, x_s))
+    int_K_l = np.empty(nsa, dtype=DTYPE)
+    int_K(int_K_l, x_sa, h_l, w_l, mu, cov)
+    
+    A = dot(int_K_l, inv_K_l)
+
+    ## Second term
+    # alpha_del(x_sc)' *
+    # int K_del(x_sc, x) K_l(x, x_s) p(x) dx *
+    # inv(K_l(x_s, x_s))
+    int_K_del_K_l = np.empty((nsca, nsa), dtype=DTYPE)
+    int_K1_K2(int_K_del_K_l, x_sca, x_sa, h_d, w_d, h_l, w_l, mu, cov)
+    
+    B = dot(dot(alpha_del, int_K_del_K_l), inv_K_l)
+
+    ## Third term
+    # (int K_del(x, x_sc) p(x) dx) alpha_del(x_c)
+    int_K_del = np.empty(nsca, dtype=DTYPE)
+    int_K(int_K_del, x_sca, h_d, w_d, mu, cov)
+    
+    C = dot(int_K_del, alpha_del)
+
+    # nlsa is the vector of weights, which, when multipled with
+    # the likelihoods, gives us our mean estimate for the evidence
+    nlsa = A + B
+    nla = nlsa[-1]
+    nls = dot(nlsa[:-1], l_s) + gamma * C
+
+    # put it all together
+    e = exp(tm_a + 0.5*tC_a)
+    e2 = exp(2*tm_a + 2*tC_a)
+    nlsnla = 2*nls*nla * gamma * (e - 1)
+    nla2 = (nla * gamma) ** 2 * (e2 - 2*e + 1)
+    expected_sqd_mean = nls ** 2 + nlsnla + nla2
+
+    return expected_sqd_mean
+

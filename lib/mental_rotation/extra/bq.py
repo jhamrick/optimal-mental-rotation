@@ -269,3 +269,99 @@ class BQ(object):
         # XXX: fix this slicing
         Cw = -1. / H_theta[1, 1]
         return Cw
+
+    def expected_squared_mean(self, x_a):
+        x_s = self.R
+        x_c = self.Rc
+
+        ns, = x_s.shape
+
+        # include new x_a
+        x_sa = np.concatenate([x_s, x_a])
+
+        l_a = self.gp_S.mean(x_a)
+        l_s = self.S
+
+        tl_a = self.gp_log_S.mean(x_a)
+        tl_s = self.log_S
+
+        # update gp over S
+        gp_Sa = self.gp_S.copy()
+        gp_Sa.x = x_sa
+        gp_Sa.y = np.concatenate([l_s, l_a])
+
+        # update gp over log(S)
+        gp_log_Sa = self.gp_log_S.copy()
+        gp_log_Sa.x = x_sa
+        gp_log_Sa.y = np.concatenate([tl_s, tl_a])
+
+        # add jitter to the covariance matrix where our new point is,
+        # because if it's close to other x_s then it will cause problems
+        if self.improve_covariance_conditioning:
+            idx = np.array([ns], dtype=DTYPE)
+
+            gp_Sa._memoized = {}
+            bq_c.improve_covariance_conditioning(gp_Sa.Kxx, idx=idx)
+
+            gp_log_Sa._memoized = {}
+            bq_c.improve_covariance_conditioning(gp_log_Sa.Kxx, idx=idx)
+
+        try:
+            inv_K_l = gp_Sa.inv_Kxx
+        except np.linalg.LinAlgError:
+            return self.Z_mean() ** 2
+
+        # update gp over delta
+        del_sc = self.Dc
+        if (np.abs(x_c - x_a) < 1e-3).any():
+            x_sca = x_c.copy()
+            del_sca = del_sc.copy()
+            gp_Dca = self.gp_Dc.copy()
+
+        else:
+            x_sca = np.concatenate([x_c, x_a])
+            del_sca = np.concatenate([del_sc, [0]])
+            gp_Dca = self.gp_Dc.copy()
+            gp_Dca.x = x_sca
+            gp_Dca.y = del_sca
+
+            # the delta_c (not delta_s) will probably change with
+            # the addition of x_a. We can't recompute them
+            # (because we don't know l_a) but we can add noise
+            # to the diagonal of the covariance matrix to allow room
+            # for error for the x_c closest to x_a
+            gp_Dca._memoized = {}
+            K_del = gp_Dca.Kxx
+            bq_c.improve_covariance_conditioning(
+                K_del, idx=np.array([x_sca.shape[0] - 1], dtype=DTYPE))
+
+        try:
+            alpha_del = gp_Dca.inv_Kxx_y
+        except np.linalg.LinAlgError:
+            return self.mean() ** 2
+
+        # compute expected transformed mean
+        tm_a = float(self.gp_log_S.mean(x_a))
+
+        # compute expected transformed covariance
+        dm_dw = self.dm_dw(x_a)
+        Cw = self.Cw(gp_log_Sa)
+        C_a = float(self.gp_log_S.cov(x_a))
+        tC_a = C_a + float(dm_dw ** 2 * Cw)
+
+        expected_sqd_mean = bq_c.expected_squared_mean(
+            x_sa[:, None], x_sca[:, None], l_s,
+            alpha_del,
+            inv_K_l,
+            tm_a, tC_a,
+            gp_Sa.K.h, np.array([gp_Sa.K.w]),
+            gp_Dca.K.h, np.array([gp_Dca.K.w]),
+            self.R_mean, self.R_cov, self.gamma)
+
+        return expected_sqd_mean
+
+    def expected_Z_var(self, x_a):
+        mean_second_moment = self.Z_mean() ** 2 + self.Z_var()
+        expected_sqd_mean = self.expected_squared_mean(x_a)
+        expected_var = mean_second_moment - expected_sqd_mean
+        return expected_var

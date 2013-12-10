@@ -446,7 +446,7 @@ def test_Z_var_same():
     vars = np.empty(100)
     eps = np.empty(100)
     for i in xrange(100):
-        vars[i], eps[i] = bq.Z_var()
+        vars[i], eps[i] = bq._Z_var_and_eps()
     assert (vars[0] == vars).all()
     assert (eps[0] == eps).all()
 
@@ -457,7 +457,7 @@ def test_Z_var_close():
     vars = np.empty(100)
     eps = np.empty(100)
     for i in xrange(100):
-        vars[i], eps[i] = bq.Z_var()
+        vars[i], eps[i] = bq._Z_var_and_eps()
     assert np.allclose(vars[0], vars)
     assert np.allclose(eps[0], eps)
 
@@ -477,7 +477,7 @@ def test_Z_var():
     Cw = bq.Cw(bq.gp_log_S)
     approx_eps = nu ** 2 + Cw
 
-    calc_var, calc_eps = bq.Z_var()
+    calc_var, calc_eps = bq._Z_var_and_eps()
 
     assert np.allclose(approx_var, calc_var, atol=1e-4)
     assert np.allclose(approx_eps, calc_eps)
@@ -493,3 +493,20 @@ def test_Z_var():
 
 # def test_expected_uncertainty_evidence():
 #     raise NotImplementedError
+
+
+@pytest.mark.xfail(reason="https://github.com/numpy/numpy/issues/661")
+def test_expected_Z_var_same():
+    bq = make_bq_and_fit()
+    Z_var = bq.Z_var()
+    for x in bq.R:
+        E_Z_var = bq.expected_Z_var(np.array([x]))
+        assert E_Z_var == Z_var
+
+
+def test_expected_Z_var_close():
+    bq = make_bq_and_fit()
+    Z_var = bq.Z_var()
+    for x in bq.R:
+        E_Z_var = bq.expected_Z_var(np.array([x]))
+        assert np.allclose(E_Z_var, Z_var)
