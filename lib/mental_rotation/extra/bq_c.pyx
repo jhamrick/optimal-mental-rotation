@@ -559,15 +559,11 @@ def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, 
     ##############################################################
     ## Variance correction
 
-    cdef np.ndarray[DTYPE_t, ndim=2] int_K_l_K_tl_mat
     cdef np.ndarray[DTYPE_t, ndim=3] int_K_l_dK_tl_mat
     cdef np.ndarray[DTYPE_t, ndim=2] int_dK_tl_vec
     cdef np.ndarray[DTYPE_t, ndim=3] zeta
     cdef np.ndarray[DTYPE_t, ndim=1] nu
     cdef DTYPE_t term1a, term1b, term2a, term2b
-
-    int_K_l_K_tl_mat = np.empty((ns, ns), dtype=DTYPE)
-    int_K1_K2(int_K_l_K_tl_mat, x_s, x_s, h_l, w_l, h_tl, w_tl, mu, cov)
 
     int_K_l_dK_tl_mat = np.empty((ns, ns, d), dtype=DTYPE)
     int_K1_dK2(int_K_l_dK_tl_mat, x_s, x_s, h_l, w_l, h_tl, w_tl, mu, cov)
@@ -580,8 +576,8 @@ def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, 
     for i in xrange(d):
 
         # First term of nu
-        term1a = dot(dot(alpha_l, int_K_l_dK_tl_mat[:, :, i].T), alpha_tl)
-        term1b = dot(dot(dot(alpha_l, int_K_l_K_tl_mat.T), zeta[:, :, i]), alpha_tl)
+        term1a = dot(dot(alpha_l, int_K_l_dK_tl_mat[:, :, i]), alpha_tl)
+        term1b = dot(dot(dot(alpha_l, int_K_tl_K_l_mat.T), zeta[:, :, i]), alpha_tl)
 
         # Second term of nu
         term2a = dot(int_dK_tl_vec[:, i], alpha_tl)
@@ -591,8 +587,6 @@ def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, 
 
     # compute the correction
     V_eps = dot(dot(nu, Cw), nu)
-    if V_eps < 0:
-        warn("V_Z = %s, V_eps = %s" % (V_Z, V_eps))
 
     return V_Z, V_eps
 
