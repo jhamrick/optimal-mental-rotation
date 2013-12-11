@@ -119,8 +119,8 @@ def int_K1_K2(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x1, n
     for i in xrange(d):
         for j in xrange(d):
             if i == j:
-                C[i, j] = w1[i] + cov[i, j]
-                C[i + d, j + d] = w2[i] + cov[i, j]
+                C[i, j] = w1[i] ** 2 + cov[i, j]
+                C[i + d, j + d] = w2[i] ** 2 + cov[i, j]
             else:
                 C[i, j] = cov[i, j]
                 C[i + d, j + d] = cov[i, j]
@@ -179,7 +179,7 @@ def int_int_K1_K2_K1(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2
     for i in xrange(d):
         for j in xrange(d):
             if i == j:
-                W1_cov[i, j] = cov[i, j] + w1[i]
+                W1_cov[i, j] = cov[i, j] + w1[i] ** 2
             else:
                 W1_cov[i, j] = cov[i, j]
 
@@ -194,7 +194,7 @@ def int_int_K1_K2_K1(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2
     for i in xrange(d):
         for j in xrange(d):
             if i == j:
-                GWG[i, j] = w2[i] + 2*cov[i, j] - 2*Gcov[i, j]
+                GWG[i, j] = w2[i] ** 2 + 2*cov[i, j] - 2*Gcov[i, j]
             else:
                 GWG[i, j] = 2*cov[i, j] - 2*Gcov[i, j]
 
@@ -249,7 +249,7 @@ def int_int_K1_K2(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x
     for i in xrange(d):
         for j in xrange(d):
             if i == j:
-                W1_2cov[i, j] = 2*cov[i, j] + w1[i]
+                W1_2cov[i, j] = 2*cov[i, j] + w1[i] ** 2
             else:
                 W1_2cov[i, j] = 2*cov[i, j]
 
@@ -264,7 +264,7 @@ def int_int_K1_K2(np.ndarray[DTYPE_t, ndim=1] out, np.ndarray[DTYPE_t, ndim=2] x
     for i in xrange(d):
         for j in xrange(d):
             if i == j:
-                C[i, j] = w2[i] + cov[i, j] - C[i, j]
+                C[i, j] = w2[i] ** 2 + cov[i, j] - C[i, j]
             else:
                 C[i, j] = cov[i, j] - C[i, j]
 
@@ -299,7 +299,7 @@ def int_int_K(int d, DTYPE_t h, np.ndarray[DTYPE_t, ndim=1] w, np.ndarray[DTYPE_
     for i in xrange(d):
         for j in xrange(d):
             if i == j:
-                W_2cov[i, j] = 2*cov[i, j] + w[i]
+                W_2cov[i, j] = 2*cov[i, j] + w[i] ** 2
             else:
                 W_2cov[i, j] = 2*cov[i, j]
 
@@ -346,7 +346,7 @@ def int_K1_dK2(np.ndarray[DTYPE_t, ndim=3] out, np.ndarray[DTYPE_t, ndim=2] x1, 
     for i in xrange(d):
         for j in xrange(d):
             if i == j:
-                W2_cov[i, j] = w2[i] + cov[i, j]
+                W2_cov[i, j] = w2[i] ** 2 + cov[i, j]
             else:
                 W2_cov[i, j] = cov[i, j]
 
@@ -360,7 +360,7 @@ def int_K1_dK2(np.ndarray[DTYPE_t, ndim=3] out, np.ndarray[DTYPE_t, ndim=2] x1, 
     for i in xrange(d):
         for j in xrange(d):
             if i == j:
-                B_W1[i, j] = B[i, j] + w1[i]
+                B_W1[i, j] = B[i, j] + w1[i] ** 2
             else:
                 B_W1[i, j] = B[i, j]
 
@@ -390,7 +390,7 @@ def int_K1_dK2(np.ndarray[DTYPE_t, ndim=3] out, np.ndarray[DTYPE_t, ndim=2] x1, 
         for j in xrange(n2):
             m[:] = dot(D, x1submu[i]) + dot(C, x2submu[j])
             for k in xrange(d):
-                out[i, j, k] = int_K1_K2_mat[i, j] * ((S[k, k] + m[k] ** 2 / w2[k]**3) - (1.0 / w2[k]))
+                out[i, j, k] = int_K1_K2_mat[i, j] * (((S[k, k] + m[k] ** 2) / w2[k]**3) - (1.0 / w2[k]))
     
 
 def int_dK(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE_t h, np.ndarray[DTYPE_t, ndim=1] w, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov):
@@ -416,7 +416,7 @@ def int_dK(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE
     for i in xrange(d):
         for j in xrange(d):
             if i == j:
-                Wcov[i, j] = w[i] + cov[i, j]
+                Wcov[i, j] = w[i] ** 2 + cov[i, j]
             else:
                 Wcov[i, j] = cov[i, j]
     Wcovi = inv(Wcov)
@@ -437,7 +437,7 @@ def int_dK(np.ndarray[DTYPE_t, ndim=2] out, np.ndarray[DTYPE_t, ndim=2] x, DTYPE
     for i in xrange(n):
         m[:] = dot(A, xsubmu[i])
         for j in xrange(d):
-            out[i, j] = int_K_vec[i] * ((S[j, j] + m[j] ** 2 / w[j]**3) - (1.0 / w[j]))
+            out[i, j] = int_K_vec[i] * (((S[j, j] + m[j] ** 2) / w[j]**3) - (1.0 / w[j]))
 
 
 def Z_mean(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=2] x_sc, np.ndarray[DTYPE_t, ndim=1] alpha_l, np.ndarray[DTYPE_t, ndim=1] alpha_del, DTYPE_t h_s, np.ndarray[DTYPE_t, ndim=1] w_s, DTYPE_t h_dc, np.ndarray[DTYPE_t, ndim=1] w_dc, np.ndarray[DTYPE_t, ndim=1] mu, np.ndarray[DTYPE_t, ndim=2] cov, gamma):
@@ -591,7 +591,7 @@ def Z_var(np.ndarray[DTYPE_t, ndim=2] x_s, np.ndarray[DTYPE_t, ndim=1] alpha_l, 
 
     # compute the correction
     V_eps = dot(dot(nu, Cw), nu)
-    if V_Z + V_eps <= 0:
+    if V_eps < 0:
         warn("V_Z = %s, V_eps = %s" % (V_Z, V_eps))
 
     return V_Z, V_eps
