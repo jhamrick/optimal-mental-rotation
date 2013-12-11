@@ -51,13 +51,10 @@ def make_bq(n=30):
 
 def make_bq_and_fit(n=30):
     bq = make_bq(n=n)
-    bq._fit_S()
-    bq.gp_S.params = (1, 1, 0)
-    bq._fit_log_S()
     try:
-        bq._fit_Dc()
+        bq.fit()
     except RuntimeError:
-        bq._fit_Dc()
+        bq.fit()
     return bq
 
 
@@ -69,17 +66,20 @@ def test_improve_covariance_conditioning():
     bq = make_bq_and_fit()
 
     K_l = bq.gp_S.Kxx
-    bq_c.improve_covariance_conditioning(K_l, np.arange(K_l.shape[0], dtype=DTYPE))
+    bq_c.improve_covariance_conditioning(
+        K_l, np.arange(K_l.shape[0], dtype=DTYPE))
     assert (K_l == bq.gp_S.Kxx).all()
     assert K_l is bq.gp_S.Kxx
 
     K_tl = bq.gp_log_S.Kxx
-    bq_c.improve_covariance_conditioning(K_tl, np.arange(K_l.shape[0], dtype=DTYPE))
+    bq_c.improve_covariance_conditioning(
+        K_tl, np.arange(K_l.shape[0], dtype=DTYPE))
     assert (K_tl == bq.gp_log_S.Kxx).all()
     assert K_tl is bq.gp_log_S.Kxx
 
     K_del = bq.gp_Dc.Kxx
-    bq_c.improve_covariance_conditioning(K_del, np.arange(K_l.shape[0], dtype=DTYPE))
+    bq_c.improve_covariance_conditioning(
+        K_del, np.arange(K_l.shape[0], dtype=DTYPE))
     assert (K_del == bq.gp_Dc.Kxx).all()
     assert K_del is bq.gp_Dc.Kxx
 
@@ -255,7 +255,7 @@ def test_int_K1_K2():
         bq.gp_log_S.K.h, np.array([bq.gp_log_S.K.w]),
         bq.R_mean, bq.R_cov)
 
-    assert np.allclose(calc_int, approx_int, atol=1e-5)
+    assert np.allclose(calc_int, approx_int, atol=1e-7)
 
 
 def test_int_K1_K2_same():
@@ -289,7 +289,7 @@ def test_int_int_K1_K2_K1():
         bq.gp_log_S.K.h, np.array([bq.gp_log_S.K.w]),
         bq.R_mean, bq.R_cov)
 
-    assert np.allclose(calc_int, approx_int, atol=1e-6)
+    assert np.allclose(calc_int, approx_int, atol=1e-7)
 
 
 def test_int_int_K1_K2_K1_same():
@@ -323,7 +323,7 @@ def test_int_int_K1_K2():
         bq.gp_log_S.K.h, np.array([bq.gp_log_S.K.w]),
         bq.R_mean, bq.R_cov)
 
-    assert np.allclose(calc_int, approx_int, atol=1e-5)
+    assert np.allclose(calc_int, approx_int, atol=1e-7)
 
 
 def test_int_int_K1_K2_same():
@@ -350,7 +350,7 @@ def test_int_int_K():
     calc_int = bq_c.int_int_K(
         1, bq.gp_S.K.h, np.array([bq.gp_S.K.w]),
         bq.R_mean, bq.R_cov)
-    assert np.allclose(calc_int, approx_int, atol=1e-3)
+    assert np.allclose(calc_int, approx_int, atol=1e-5)
 
     Kxoxo = bq.gp_log_S.Kxoxo(xo)
     p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
@@ -358,7 +358,7 @@ def test_int_int_K():
     calc_int = bq_c.int_int_K(
         1, bq.gp_log_S.K.h, np.array([bq.gp_log_S.K.w]),
         bq.R_mean, bq.R_cov)
-    assert np.allclose(calc_int, approx_int, atol=1e-3)
+    assert np.allclose(calc_int, approx_int, atol=1e-5)
 
 
 def test_int_int_K_same():
@@ -390,7 +390,7 @@ def test_int_K1_dK2():
         bq.gp_log_S.K.h, np.array([bq.gp_log_S.K.w]),
         bq.R_mean, bq.R_cov)
 
-    assert np.allclose(calc_int, approx_int, atol=1e-4)
+    assert np.allclose(calc_int, approx_int, atol=1e-5)
 
 
 def test_int_dK():
@@ -405,7 +405,7 @@ def test_int_dK():
         calc_int, bq.R[:, None],
         bq.gp_S.K.h, np.array([bq.gp_S.K.w]),
         bq.R_mean, bq.R_cov)
-    assert np.allclose(calc_int, approx_int, atol=1e-3)
+    assert np.allclose(calc_int, approx_int, atol=1e-4)
 
     dKxxo = bq.gp_log_S.K.dK_dw(bq.gp_log_S._x, xo)
     p_xo = scipy.stats.norm.pdf(xo, bq.R_mean[0], np.sqrt(bq.R_cov[0, 0]))
@@ -415,7 +415,7 @@ def test_int_dK():
         calc_int, bq.R[:, None],
         bq.gp_log_S.K.h, np.array([bq.gp_log_S.K.w]),
         bq.R_mean, bq.R_cov)
-    assert np.allclose(calc_int, approx_int, atol=1e-3)
+    assert np.allclose(calc_int, approx_int, atol=1e-4)
 
 
 def test_Z_mean():
@@ -479,7 +479,7 @@ def test_Z_var():
 
     calc_var, calc_eps = bq._Z_var_and_eps()
 
-    assert np.allclose(approx_var, calc_var, atol=1e-4)
+    assert np.allclose(approx_var, calc_var)
     assert np.allclose(approx_eps, calc_eps)
     assert approx_eps > 0
     assert calc_eps > 0
