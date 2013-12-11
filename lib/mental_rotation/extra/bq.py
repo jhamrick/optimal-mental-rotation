@@ -271,6 +271,9 @@ class BQ(object):
         return Cw
 
     def expected_squared_mean(self, x_a):
+        if x_a < 0 or x_a > 2 * np.pi:
+            raise ValueError("invalid x_a: %s" % x_a)
+
         x_s = self.R
         x_c = self.Rc
 
