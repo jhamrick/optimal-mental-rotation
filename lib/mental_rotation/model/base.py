@@ -42,6 +42,7 @@ class BaseModel(pymc.Sampler):
     def _loop(self):
         if self._current_iter == 0:
             self.tally()
+            self._current_iter += 1
         super(BaseModel, self)._loop()
 
     ##################################################################
@@ -49,7 +50,7 @@ class BaseModel(pymc.Sampler):
 
     @property
     def R_i(self):
-        R = self.trace('R')[:]
+        R = self.trace('R')[:self._current_iter]
         R[R < 0] += 2 * np.pi
         return R
 
@@ -58,7 +59,7 @@ class BaseModel(pymc.Sampler):
 
     @property
     def log_S_i(self):
-        log_S = self.trace('log_S')[:]
+        log_S = self.trace('log_S')[:self._current_iter]
         return log_S
 
     @property
@@ -79,7 +80,7 @@ class BaseModel(pymc.Sampler):
 
     @property
     def log_dZ_dR_i(self):
-        log_p = self.trace('log_dZ_dR')[:]
+        log_p = self.trace('log_dZ_dR')[:self._current_iter]
         return log_p
 
     @property
