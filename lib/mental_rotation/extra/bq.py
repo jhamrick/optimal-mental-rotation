@@ -61,7 +61,7 @@ class BQ(object):
         self.log_S = self.log_transform(self.S)
         self.n_sample = self.R.size
 
-        self.improve_covariance_conditioning = True
+        self.improve_covariance_conditioning = False
 
     def log_transform(self, x):
         return np.log((x / self.gamma) + 1)
@@ -110,16 +110,14 @@ class BQ(object):
         idx = np.random.randint(0, ns, nc)
 
         # compute the candidate points
-        eps = np.random.choice([-1, 1], (nc, 1)) * self.gp_S.K.w
+        eps = np.random.choice([-1, 1], nc) * self.gp_S.K.w
         Rc = (self.R[idx] + eps) % (2 * np.pi)
 
         # make sure they don't overlap with points we already have
-        Rc_no_s = np.setdiff1d(
-            np.round(Rc, decimals=4),
-            np.round(self.R, decimals=4))
+        idx = (np.abs(Rc[:, None] - self.R[None, :]) < 1e-2).any(axis=1)
 
         # make the array of old points + new points
-        Rsc = np.concatenate([self.R, Rc_no_s])
+        Rsc = np.concatenate([self.R, Rc[idx]])
         return Rsc
 
     def compute_delta(self, R):
@@ -140,8 +138,7 @@ class BQ(object):
         logger.info("Fitting w parameter for GP over S")
         self.gp_S = self._fit_gp(
             self.R, self.S,
-            h=self.gp_S.K.h,
-            ntry=1)
+            h=self.gp_S.K.h)
 
     def _fit_log_S(self):
         # use h based on the one we found for S
@@ -149,8 +146,7 @@ class BQ(object):
         self.gp_log_S = self._fit_gp(
             self.R, self.log_S,
             h=np.log(self.gp_S.K.h + 1),
-            w0=self.gp_S.K.w,
-            ntry=1)
+            w0=self.gp_S.K.w)
 
     def _fit_Dc(self):
         # choose candidate locations and compute delta, the difference
