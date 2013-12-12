@@ -268,6 +268,9 @@ class BQ(object):
         return Cw
 
     def expected_squared_mean(self, x_a):
+        if np.abs((x_a - self.Rc) < 1e-3).any():
+            return self.Z_mean() ** 2
+
         x_s = self.R
         x_c = self.Rc
 
@@ -354,6 +357,10 @@ class BQ(object):
             gp_Sa.K.h, np.array([gp_Sa.K.w]),
             gp_Dca.K.h, np.array([gp_Dca.K.w]),
             self.R_mean, self.R_cov, self.gamma)
+
+        if np.isnan(expected_sqd_mean) or expected_sqd_mean < 0:
+            raise RuntimeError(
+                "invalid expected squared mean: %s" % expected_sqd_mean)
 
         return expected_sqd_mean
 

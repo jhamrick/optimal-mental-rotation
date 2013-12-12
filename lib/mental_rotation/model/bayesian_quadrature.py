@@ -66,7 +66,7 @@ class BayesianQuadratureModel(BaseModel):
         self.bq = BQ(Ri[ix], Si[ix], **self.bq_opts)
 
     def sample(self, verbose=0):
-        super(BaseModel, self).sample(iter=14, verbose=verbose)
+        super(BaseModel, self).sample(iter=12, verbose=verbose)
 
     def _cost(self, x):
         nesm = -self.bq.expected_squared_mean(x)
