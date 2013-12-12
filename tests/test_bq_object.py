@@ -494,3 +494,10 @@ def test_expected_Z_var_close():
     for x in bq.R:
         E_Z_var = bq.expected_Z_var(np.array([x]))
         assert np.allclose(E_Z_var, Z_var)
+
+
+def test_expected_squared_mean():
+    bq = make_bq_and_fit()
+    x_a = np.random.uniform(-10, 10)
+    esm = bq.expected_squared_mean(np.array([x_a]))
+    assert esm >= 0
