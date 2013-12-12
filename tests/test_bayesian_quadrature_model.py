@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pymc
 import pytest
 
 from mental_rotation.model import BayesianQuadratureModel
