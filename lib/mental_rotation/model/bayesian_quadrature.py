@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import snippets.graphing as sg
 import logging
+import scipy.optimize as optim
 
 from .. import config
 from ..extra import BQ
@@ -12,6 +13,15 @@ logger = logging.getLogger("mental_rotation.model.bq")
 
 DTYPE = np.dtype(config.get("global", "dtype"))
 EPS = np.finfo(DTYPE).eps
+
+
+def circdiff(x, y):
+    diff = x - y
+    if np.abs(diff) > np.pi:
+        out = diff - np.sign(diff) * 2 * np.pi
+    else:
+        out = diff
+    return out
 
 
 class BayesianQuadratureModel(BaseModel):
@@ -49,18 +59,62 @@ class BayesianQuadratureModel(BaseModel):
 
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
 
-    def sample(self, verbose=0):
-        super(BaseModel, self).sample(iter=7, verbose=verbose)
-
+    def _init_bq(self):
         Ri = self.R_i
         Si = self.S_i
         ix = np.argsort(Ri)
-
         self.bq = BQ(Ri[ix], Si[ix], **self.bq_opts)
-        self.bq.fit()
+
+    def sample(self, verbose=0):
+        super(BaseModel, self).sample(iter=14, verbose=verbose)
+
+    def _cost(self, x):
+        nesm = -self.bq.expected_squared_mean(x)
+        R = float(self.model['R'].value)
+        if R < 0:
+            R += 2 * np.pi
+        dist = circdiff(R, x)
+        return nesm / np.exp(dist ** 2)
 
     def draw(self):
-        self.model['R'].value = self.model['R'].value + np.radians(20)
+        self._init_bq()
+        self.bq.fit()
+
+        x = np.empty(5)
+        value = np.empty(5)
+        for i in xrange(5):
+            res = optim.minimize(
+                fun=self._cost,
+                x0=np.array([np.random.uniform(0, 2 * np.pi)]),
+                method='L-BFGS-B',
+                bounds=[(0, (2 * np.pi) - np.radians(1))],
+                tol=1e-10)
+            x[i] = res['x']
+            value[i] = res['fun']
+
+        target = x[np.argmin(value)] - np.pi
+        print "target = %s" % target
+
+        direction = -np.sign(circdiff(self.model['R'].value, target))
+        step = direction * np.radians(10)
+        self.model['R'].value = self.model['R'].value + step
+        thresh = np.abs(step / 2.0)
+        while np.abs(circdiff(self.model['R'].value, target)) > thresh:
+            print "R = %s" % self.model['R'].value
+            self.tally()
+            self._current_iter += 1
+
+            if self._current_iter >= self._iter:
+                break
+
+            self.model['R'].value = self.model['R'].value + step
+
+        self._init_bq()
+        self.bq.fit()
+        hyp = self.hypothesis_test()
+        self.print_stats()
+        if hyp == 0 or hyp == 1:
+            self.status = 'halt'
 
     ##################################################################
     # The estimated S function
@@ -74,19 +128,18 @@ class BayesianQuadratureModel(BaseModel):
     ##################################################################
     # Estimated dZ_dR and full estimate of Z
 
-    def log_dZ_dR(self, R):
-        return np.log(self.dZ_dR(R))
-
-    def dZ_dR(self, R):
-        raise NotImplementedError
-
     @property
     def log_Z(self):
         return np.log(self.Z)
 
     @property
     def Z(self):
-        raise NotImplementedError
+        mean = self.bq.Z_mean()
+        var = self.bq.Z_var()
+        lower = mean - 1.96 * np.sqrt(var)
+        upper = mean + 1.96 * np.sqrt(var)
+        out = np.array([mean, lower, upper])
+        return out
 
     ##################################################################
     # Plotting methods
@@ -166,3 +219,35 @@ class BayesianQuadratureModel(BaseModel):
         # overall figure settings
         sg.set_figsize(9, 5)
         plt.tight_layout()
+
+    ##################################################################
+    # Misc
+
+    def hypothesis_test(self):
+        llh0 = self.log_lh_h0
+        llh1 = self.log_lh_h1
+        if llh0 < llh1[1]: # pragma: no cover
+            return 1
+        elif llh0 > llh1[2]: # pragma: no cover
+            return 0
+        else:
+            return None
+
+    def print_stats(self):
+        Z, lower, upper = self.Z
+        llh0 = self.log_lh_h0
+        llh1 = self.log_lh_h1
+        print "Z = %f [%f, %f]" % (Z, lower, upper)
+        print "log LH(h0) = %f" % llh0
+        print "log LH(h1) = %f [%f, %f]" % tuple(llh1)
+
+        llr = self.log_lh_h0 - self.log_lh_h1
+        print "LH(h0) / LH(h1) = %f [%f, %f]" % tuple(llr)
+
+        hyp = self.hypothesis_test()
+        if hyp == 1: # pragma: no cover
+            print "--> ACCEPT hypothesis 1"
+        elif hyp == 0: # pragma: no cover
+            print "--> REJECT hypothesis 1"
+        else: # pragma: no cover
+            print "--> UNDECIDED"
