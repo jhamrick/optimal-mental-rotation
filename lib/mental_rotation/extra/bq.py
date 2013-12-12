@@ -114,10 +114,14 @@ class BQ(object):
         Rc = (self.R[idx] + eps) % (2 * np.pi)
 
         # make sure they don't overlap with points we already have
-        idx = (np.abs(Rc[:, None] - self.R[None, :]) < 1e-2).any(axis=1)
+        idx = ~((np.abs(Rc[:, None] - self.R[None, :]) < 1e-1).any(axis=1))
 
-        # make the array of old points + new points
-        Rsc = np.concatenate([self.R, Rc[idx]])
+        if idx.any():
+            # make the array of old points + new points
+            Rsc = np.union1d(self.R, Rc[idx])
+        else:
+            Rsc = self.R.copy()
+
         return Rsc
 
     def compute_delta(self, R):
