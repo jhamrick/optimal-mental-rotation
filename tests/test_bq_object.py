@@ -167,16 +167,12 @@ def test_S_mean():
     x, y = make_1d_gaussian(np.linspace(-8, 8, 30))
     xo, yo = make_1d_gaussian(make_xo())
     bq = BQ(x, y, gamma, ntry, n_candidate, R_mean, R_var, s=0)
-    bq.fit()
-    bq.gp_S.params = (1, 1, 0)
+    bq._fit_S()
+    bq.gp_S.params = (0.4, 1.1, 0)
     bq._fit_log_S()
     bq._fit_Dc()
     S = bq.S_mean(xo)
-    assert np.allclose(S, yo, atol=1e-5)
-
-
-# def test_S_cov():
-#     raise NotImplementedError
+    assert np.allclose(S, yo, atol=1e-4)
 
 
 def test_mvn_logpdf():

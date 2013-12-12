@@ -111,17 +111,14 @@ class BQ(object):
 
         # compute the candidate points
         eps = np.random.choice([-1, 1], nc) * self.gp_S.K.w
-        Rc = (self.R[idx] + eps) % (2 * np.pi)
+        Rc = self.R[idx] + eps
 
         # make sure they don't overlap with points we already have
-        idx = ~((np.abs(Rc[:, None] - self.R[None, :]) < 1e-1).any(axis=1))
-
-        if idx.any():
-            # make the array of old points + new points
-            Rsc = np.union1d(self.R, Rc[idx])
-        else:
-            Rsc = self.R.copy()
-
+        Rsc = list(self.R.copy())
+        for i in xrange(nc):
+            if (np.abs(Rc[i] - np.array(Rsc)) > np.radians(1)).all():
+                Rsc.append(Rc[i])
+        Rsc = np.array(Rsc)
         return Rsc
 
     def compute_delta(self, R):
@@ -271,9 +268,6 @@ class BQ(object):
         return Cw
 
     def expected_squared_mean(self, x_a):
-        if x_a < 0 or x_a > 2 * np.pi:
-            raise ValueError("invalid x_a: %s" % x_a)
-
         x_s = self.R
         x_c = self.Rc
 
