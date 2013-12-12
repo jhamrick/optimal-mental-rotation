@@ -68,6 +68,15 @@ class BayesianQuadratureModel(BaseModel):
     def sample(self, verbose=0):
         super(BaseModel, self).sample(iter=12, verbose=verbose)
 
+    def _loop(self):
+        if self._current_iter == 0:
+            self.tally()
+            self.model['R'].value = (2 * np.pi) - 1e-6
+            self.tally()
+            self.model['R'].value = 0
+            self._current_iter += 2
+        super(BaseModel, self)._loop()
+
     def _cost(self, x):
         nesm = -self.bq.expected_squared_mean(x)
         R = float(self.model['R'].value)
@@ -123,6 +132,10 @@ class BayesianQuadratureModel(BaseModel):
         return np.log(self.S(R))
 
     def S(self, R):
+        try:
+            len(R)
+        except TypeError:
+            R = np.array([R], dtype=DTYPE)
         return self.bq.S_mean(R)
 
     ##################################################################
