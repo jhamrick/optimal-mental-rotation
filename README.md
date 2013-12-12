@@ -44,8 +44,9 @@ The models for the project are part of the Python package, accessible
 from `mental_rotation.model` in Python or `lib/mental_rotation/model/`
 in the directory structure.
 
-All models are subclasses of the `pymc.Sampler` class and take samples
-of `log_S` in the following model:
+All models are subclasses of `mental_rotation.model.BaseModel`, which
+is a subclass of the `pymc.Sampler` class. The models take samples of
+`log_S` in the following Bayes' net:
 
 ![](figures/mental_rotation_model.png)
 
@@ -147,6 +148,11 @@ which is implemented using Cython in the extension module
 `lib/mental_rotation/extra/bq_c.pyx`). For the most part, these
 functions compute various analytical solutions to integrals of
 Gaussians.
+
+Additionally, the `BQ` object relies heavily on the
+[Gaussian process](https://github.com/jhamrick/gaussian_processes)
+library written by Jessica Hamrick. This library also implements most
+of its functionality in Cython.
 
 
 ## Tests
