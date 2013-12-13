@@ -50,13 +50,14 @@ var Instructions = function() {
         STATE.set_hash();
 
         this.example = this.examples[STATE.index];
-
-        // Draw the examples
-        draw_shape($("#example1_left_image")[0], this.example[0].v0);
-        draw_shape($("#example1_right_image")[0], this.example[0].v1);
-        draw_shape($("#example2_left_image")[0], this.example[1].v0);
-        draw_shape($("#example2_right_image")[0], this.example[1].v1);
-
+	if (this.example) {
+            // Draw the examples
+            draw_shape($("#example1_left_image")[0], this.example[0].v0);
+            draw_shape($("#example1_right_image")[0], this.example[0].v1);
+            draw_shape($("#example2_left_image")[0], this.example[1].v0);
+            draw_shape($("#example2_right_image")[0], this.example[1].v1);
+	}
+	    
         // Bind a handler to the "next" button. We have to wrap it in
         // an anonymous function to preserve the scope.
         var that = this;

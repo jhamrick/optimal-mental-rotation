@@ -48,7 +48,7 @@ var Config = function (condition, counterbalance) {
     // Lists of pages and examples for each instruction page.  We know
     // the list of pages we want to display a priori.
     this.instructions = {
-        pages: ["instructions"]
+        pages: ["instructions1", "instructions2"]
     };
 
     // The list of all the HTML pages that need to be loaded
@@ -63,7 +63,7 @@ var Config = function (condition, counterbalance) {
         this.trials = _.shuffle(data["trials"]);
 
         console.log(data.examples);
-        this.instructions.examples = [data.examples];
+        this.instructions.examples = [data.examples, null];
     };
 
     // Load the experiment configuration from the server
