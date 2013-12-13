@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 import snippets.graphing as sg
 import logging
 import scipy.optimize as optim
+from bayesian_quadrature import BQ
 
 from .. import config
-from ..extra import BQ
-from .base import BaseModel
+from . import BaseModel
 
 logger = logging.getLogger("mental_rotation.model.bq")
 

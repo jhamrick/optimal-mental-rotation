@@ -1,9 +1,13 @@
 import numpy as np
 
-from .base import BaseModel
+from . import BaseModel
 
 
-class GoldStandardModel(BaseModel):
+class HillClimbingModel(BaseModel):
+
+    def __init__(self, *args, **kwargs):
+        super(HillClimbingModel, self).__init__(*args, **kwargs)
+        self.direction = None
 
     ##################################################################
     # Overwritten PyMC sampling methods
@@ -11,8 +15,38 @@ class GoldStandardModel(BaseModel):
     def sample(self, verbose=0):
         super(BaseModel, self).sample(iter=360, verbose=verbose)
 
+        if self._current_iter == self._iter: # pragma: no cover
+            raise RuntimeError(
+                "exhausted all iterations, this shouldn't have happened!")
+
     def draw(self):
-        self.model['R'].value = self.model['R'].value + np.radians(1)
+        R = self.model['R'].value
+        log_S = self.model['log_S'].logp
+
+        if self.direction is None:
+            self.direction = np.random.choice([1, -1])
+            step = self.direction * np.radians(10)
+
+            self.model['R'].value = R + step
+            new_log_S = self.model['log_S'].logp
+            if new_log_S < log_S or np.allclose(new_log_S, log_S):
+                self.tally()
+                self.model['R'].value = R
+                self.direction *= -1
+
+            else: # pragma: no cover
+                pass
+
+        else:
+            step = self.direction * np.radians(10)
+
+            self.model['R'].value = R + step
+            new_log_S = self.model['log_S'].logp
+            if new_log_S < log_S or np.allclose(new_log_S, log_S):
+                self.status = 'halt'
+
+            else: # pragma: no cover
+                pass
 
     ##################################################################
     # The estimated S function
@@ -64,7 +98,7 @@ class GoldStandardModel(BaseModel):
 
     @property
     def Z(self):
-        R = np.linspace(0, 2 * np.pi, 361)
+        R = np.linspace(0, 2 * np.pi, 360)
         dZ_dR = self.dZ_dR(R)
         Z = np.trapz(dZ_dR, R)
         return Z
@@ -73,9 +107,10 @@ class GoldStandardModel(BaseModel):
     # Plotting methods
 
     def plot(self, ax):
-        R = np.linspace(0, 2 * np.pi, 361)
+        Ri = self.R_i
+        Si = self.S_i
+        R = np.linspace(0, 2 * np.pi, 360)
         S = self.S(R)
         self._plot(
-            ax, R, S, None, None, None, None, None,
-            title="Likelihood function",
-            legend=False)
+            ax, None, None, Ri, Si, R, S, None,
+            title="Linear interpolation for $S$")
