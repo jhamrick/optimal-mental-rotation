@@ -178,6 +178,8 @@ var TestPhase = function() {
             debug("Show PRESTIM");
 
             setTimeout(function () {
+		$("#fixation").hide()
+		$("#prestim").find("div.question").show()
                 $("#prestim").show();
                 $("#phase-container").show();
                 // Listen for a response to show the stimulus
@@ -189,12 +191,18 @@ var TestPhase = function() {
     // Phase 2: show the stimulus
     this.phases[TRIAL.stim] = function (that) {
         debug("Show STIMULUS");
-            
-        // Hide prestim and show stim
-        show_phase("stim");
+           
+	$("#prestim").find("div.question").hide();
+	$("#fixation").show();
 
-        draw_shape($("#left_image")[0], that.trialinfo.v0);
-        draw_shape($("#right_image")[0], that.trialinfo.v1);
+	var draw = function () {
+            // Hide prestim and show stim
+            show_phase("stim");
+            draw_shape($("#left_image")[0], that.trialinfo.v0);
+            draw_shape($("#right_image")[0], that.trialinfo.v1);
+	};
+
+	setTimeout(draw, 750);
 
         // Listen for a response
         that.listening = true;
