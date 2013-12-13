@@ -6,6 +6,7 @@ import numpy as np
 from mental_rotation import EXP_PATH, STIM_PATH
 from mental_rotation.stimulus import Stimulus2D
 import logging
+import pandas as pd
 
 logger = logging.getLogger("mental_rotation.experiment")
 
@@ -45,19 +46,47 @@ def save_configs(exp, force=False):
     all_stims = STIM_PATH.joinpath(exp).listdir()
     all_stims = [x for x in all_stims if x.name.split("_")[0] != "example"]
 
-    stim_pairs = np.array([get_stiminfo(stim) for stim in all_stims])
+    stim_pairs = {stim.name: get_stiminfo(stim) for stim in all_stims}
     examples = [
         get_stiminfo(STIM_PATH.joinpath(exp, "example_320_0.json")),
         get_stiminfo(STIM_PATH.joinpath(exp, "example_320_1.json"))
     ]
 
-    stim_pairs = np.array(stim_pairs)
-    np.random.shuffle(stim_pairs)
-    conds = stim_pairs.reshape((10, -1))
+    stim_pairs = pd.DataFrame.from_dict(stim_pairs).T
 
-    for i, cond in enumerate(conds):
+    stims = stim_pairs['stimulus']\
+        .drop_duplicates()
+    stims = sorted(stims.tolist()) * 9
+    thetas = stim_pairs[['theta', 'flipped']]\
+        .drop_duplicates()\
+        .sort(['theta', 'flipped'])
+    flipped = thetas['flipped'].tolist() * 5
+    thetas = thetas['theta'].tolist() * 5
+
+    trials = []
+    for i in xrange(4):
+        stims_i = stims
+        if i > 0:
+            flipped_i = flipped[-i:] + flipped[:-i]
+            thetas_i = thetas[-i:] + thetas[:-i]
+        else:
+            flipped_i = flipped
+            thetas_i = thetas
+
+        full_block = zip(stims_i, thetas_i, flipped_i)
+        if len(full_block) % 2 != 0:
+            raise ValueError("blocks are not divisible by two")
+
+        n = len(full_block) / 2
+        trials.append(full_block[:n])
+        trials.append(full_block[n:])
+
+    stim_pairs = stim_pairs.set_index(['stimulus', 'theta', 'flipped'])
+    for i, block in enumerate(trials):
+        t = stim_pairs.ix[trials[i]].reset_index()
+
         config = {}
-        config['trials'] = cond.tolist()
+        config['trials'] = sorted(t.T.to_dict().values())
         config['examples'] = examples
 
         config_path = EXP_PATH.joinpath(
