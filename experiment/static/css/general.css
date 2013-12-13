@@ -52,8 +52,8 @@ button:active, .next:active {
 div.slide {
     width: 650px; /* should be the width of the video */
     position: relative;
-    margin-left: 0.5%;
     padding: 1% 2% 1% 2%;
+    margin: 0 auto;
 }
 
 div.spacer { clear: both; }
