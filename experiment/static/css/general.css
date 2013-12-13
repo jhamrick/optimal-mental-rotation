@@ -146,16 +146,20 @@ canvas.stim_canvas {
     text-align: center;
 }
 
+#choices {
+    text-align: center;
+    margin: 0 auto;
+}
+
 /* Trial phases */
 
 #phase-container {
     margin-top: 1em;
-    padding-top: 1em;
     margin-bottom: 1em;
+    padding: 1em;
     position: relative;
     overflow: hidden;
     width: 617px;
-    height: 450px;
 }
 
 .phase {
@@ -170,8 +174,10 @@ canvas.stim_canvas {
     font-size: 1.5em;
 }
 
-#fixation {
-    display: none;
+#prestim-area {
+    text-align: center;
+    line-height: 300px;
+    font-size: 1.5em;
 }
 
 /********************************************************************/

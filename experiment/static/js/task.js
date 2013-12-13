@@ -171,7 +171,7 @@ var TestPhase = function() {
         return true;
     };
 
-    // Phase 1: show the fixation
+    // Phase 1: show the prompt
     this.phases[TRIAL.prestim] = function(that) {
         $("#phase-container").hide();
 
@@ -180,38 +180,42 @@ var TestPhase = function() {
             // Actually show the prestim element
             debug("Show PRESTIM");
 
-            setTimeout(function () {
-		$("#fixation").hide()
-		$("#prestim").find("div.question").show()
-                $("#prestim").show();
-                $("#phase-container").show();
-                // Listen for a response to show the stimulus
-                that.listening = true;
-            }, 100);
+	    $("#fixation").hide()
+	    $("#prestim").find("div.question").show()
+            $("#prestim").show();
+            $("#phase-container").show();
+            // Listen for a response to show the stimulus
+            that.listening = true;
         }
     };
 
-    // Phase 2: show the stimulus
+    // Phase 2: show the fixation
+    this.phases[TRIAL.fixation] = function(that) {
+        // Actually show the prestim element
+        debug("Show FIXATION");
+
+	show_phase("fixation");
+
+        setTimeout(function () {
+            STATE.set_trial_phase(STATE.trial_phase + 1);
+            that.show();
+        }, 750);
+    };
+
+    // Phase 3: show the stimulus
     this.phases[TRIAL.stim] = function (that) {
         debug("Show STIMULUS");
-           
-	$("#prestim").find("div.question").hide();
-	$("#fixation").show();
 
-	var draw = function () {
-            // Hide prestim and show stim
-            show_phase("stim");
-            draw_shape($("#left_image")[0], that.trialinfo.v0);
-            draw_shape($("#right_image")[0], that.trialinfo.v1);
-	};
-
-	setTimeout(draw, 750);
+        // Hide prestim and show stim
+        show_phase("stim");
+        draw_shape($("#left_image")[0], that.trialinfo.v0);
+        draw_shape($("#right_image")[0], that.trialinfo.v1);
 
         // Listen for a response
         that.listening = true;
     };
 
-    // Phase 3: show feedback
+    // Phase 4: show feedback
     this.phases[TRIAL.feedback] = function (that) {
         debug("Show FEEDBACK");
 
@@ -365,7 +369,7 @@ var TestPhase = function() {
     // Load the trial html page
     $(".slide").hide();
     // Draw the fixation cross
-    draw_fixation($("#fixation")[0]);
+    draw_fixation($("#fixation_canvas")[0]);
     // Show the slide
     $("#trial").fadeIn($c.fade);
 
@@ -399,7 +403,6 @@ $(document).ready(function() {
     // Record various unstructured data
     psiTurk.recordUnstructuredData("condition", condition);
     psiTurk.recordUnstructuredData("counterbalance", counterbalance);
-    psiTurk.recordUnstructuredData("question", $("#question-text").html());
     psiTurk.recordUnstructuredData("choices", $("#choices").html());
 
     // Start the experiment

@@ -8,16 +8,18 @@
 // order that the phases should be presented.
 var EXPERIMENT = Object.freeze({
     training: 0,
-    experiment: 1
+    experiment: 1,
+    length: 2
 });
 
 // Enum-like object mapping trial phase names to ids, in the order
 // that the phases should be presented.
 var TRIAL = Object.freeze({
     prestim: 0,
-    stim: 1,
-    feedback: 2,
-    length: 3
+    fixation: 1,
+    stim: 2,
+    feedback: 3,
+    length: 4
 });
 
 // Enum-like object for representing key names.

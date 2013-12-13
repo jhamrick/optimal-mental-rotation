@@ -84,11 +84,12 @@
   
   <div id="phase-container" class="blue">
     <div id="prestim" class="phase">
+      <p id="prestim-area" class="canvas-container">When you are ready to begin, press <b>b</b>.</p>
+    </div>
+
+    <div id="fixation" class="phase">
       <div class="canvas-container">
-	<canvas id="fixation" width="600" height="300"></canvas>
-      </div>
-      <div class="question">
-	<p>When you are ready to begin, press <b>b</b>.</p>
+	<canvas id="fixation_canvas" width="600" height="300"></canvas>
       </div>
     </div>
 
@@ -98,14 +99,6 @@
 	<canvas id="right_image" class="stim_canvas" width="300" height="300"></canvas>
 	<div class="spacer"></div>
       </div>
-
-      <div class="question">
-	<p id="question-text">Do these images show the same object?</p>
-	<div id="choices">
-	  <p>Press <b>s</b> for "same"</p>
-	  <p>Press <b>f</b> for "flipped"</p>
-	</div>
-      </div>
     </div>
 
     <div id="feedback" class="phase">
@@ -113,4 +106,7 @@
     </div>
   </div>
 
+  <div id="choices">
+    <p>Press <b>s</b> for "same"</p><p>Press <b>f</b> for "flipped"</p>
+  </div>
 </div>
