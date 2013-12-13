@@ -43,17 +43,15 @@ def get_stiminfo(stim_path):
 
 
 def save_configs(exp, force=False):
-    all_stims = STIM_PATH.joinpath(exp).listdir()
-    all_stims = [x for x in all_stims if x.name.split("_")[0] != "example"]
+    example_path = STIM_PATH.joinpath("%s-example" % exp)
+    training_path = STIM_PATH.joinpath("%s-training" % exp)
+    exp_path = STIM_PATH.joinpath(exp)
 
-    stim_pairs = {stim.name: get_stiminfo(stim) for stim in all_stims}
-    examples = [
-        get_stiminfo(STIM_PATH.joinpath(exp, "example_320_0.json")),
-        get_stiminfo(STIM_PATH.joinpath(exp, "example_320_1.json"))
-    ]
+    examples = map(get_stiminfo, example_path.listdir())
+    training = map(get_stiminfo, training_path.listdir())
+    exp_stims = {stim.name: get_stiminfo(stim) for stim in exp_path.listdir()}
 
-    stim_pairs = pd.DataFrame.from_dict(stim_pairs).T
-
+    stim_pairs = pd.DataFrame.from_dict(exp_stims).T
     stims = stim_pairs['stimulus']\
         .drop_duplicates()
     stims = sorted(stims.tolist()) * 9
@@ -86,7 +84,8 @@ def save_configs(exp, force=False):
         t = stim_pairs.ix[trials[i]].reset_index()
 
         config = {}
-        config['trials'] = sorted(t.T.to_dict().values())
+        config['training'] = training
+        config['experiment'] = sorted(t.T.to_dict().values())
         config['examples'] = examples
 
         config_path = EXP_PATH.joinpath(
