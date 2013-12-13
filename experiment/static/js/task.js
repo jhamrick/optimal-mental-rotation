@@ -217,7 +217,7 @@ var TestPhase = function() {
         show_phase("feedback");
 
         var correct;
-        if (that.trialinfo.flipped && that.response == "different") {
+        if (that.trialinfo.flipped && that.response == "flipped") {
             correct = true;
         } else if (!that.trialinfo.flipped && that.response == "same") {
             correct = true;
@@ -232,7 +232,7 @@ var TestPhase = function() {
         } else {
             var answer;
             if (that.trialinfo.flipped) {
-                answer = "different";
+                answer = "flipped";
             } else {
                 answer = "same";
             }

@@ -20,7 +20,7 @@ KEYS[TRIAL.prestim] = {
 };
 KEYS[TRIAL.stim] = {
     83: "same",      // s
-    68: "different", // d
+    70: "flipped",   // f
 };
 KEYS[TRIAL.feedback] = {};
 
