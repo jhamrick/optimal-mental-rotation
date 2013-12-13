@@ -10,12 +10,23 @@
 // details).
 var State = function () {
 
+    // One of the phases defined in EXPERIMENT
+    this.experiment_phase;
     // 0 (false) or 1 (true)
     this.instructions;
     // Trial index
     this.index;
     // One of the phases defined in TRIAL
     this.trial_phase;
+
+    // Update the experiment phase. Defaults to EXPERIMENT.training.
+    this.set_experiment_phase = function (experiment_phase) {
+        if (experiment_phase != undefined) {
+            this.experiment_phase = experiment_phase;
+        } else {
+            this.experiment_phase = EXPERIMENT.training;
+        }
+    };
 
     // Update the instructions flag. Defaults to 1.
     this.set_instructions = function (instructions) {
@@ -51,15 +62,16 @@ var State = function () {
     // Set the URL hash based on the current state. If
     // this.instructions is 1, then it will look like:
     //
-    //     <instructions>-<index>
+    //     <experiment_phase>-<instructions>-<index>
     // 
     // Otherwise, if this.instructions is 0, it will be:
     //
-    //     <instructions>-<index>-<trial_phase>
+    //     <experiment_phase>-<instructions>-<index>-<trial_phase>
     //
     // Returns the URL hash string.
     this.set_hash = function () {
         var parts = [
+            this.experiment_phase,
             this.instructions,
             this.index
         ];
@@ -80,6 +92,7 @@ var State = function () {
 
         if (window.location.hash == "") {
             // no hash is present, so use the defaults
+            this.set_experiment_phase();
             this.set_instructions();
             this.set_index();
             this.set_trial_phase();
@@ -90,19 +103,29 @@ var State = function () {
                 function (item) {
                     return parseInt(item);
                 });
-            this.set_instructions(parts[0]);
-            this.set_index(parts[1]);
-            this.set_trial_phase(parts[2]);
+            this.set_experiment_phase(parts[0]);
+            this.set_instructions(parts[1]);
+            this.set_index(parts[2]);
+            this.set_trial_phase(parts[3]);
         }
     };
 
     // Return a list of the state's properties in human-readable form,
     // to be recorded as data in the database
     this.as_data = function () {
+        var experiment_phase;
         var instructions = Boolean(this.instructions);
         var index = this.index;
         var trial_phase;
         
+        // Find the name of the experiment phase
+        for (item in EXPERIMENT) {
+            if (EXPERIMENT[item] == this.experiment_phase) {
+                experiment_phase = item;
+                break;
+            }
+        }
+
         // Find the name of the trial phase (or just use
         // an empty string if instructions is true)
         if (!instructions) {
@@ -117,6 +140,7 @@ var State = function () {
         }
 
         return {
+            'experiment_phase': experiment_phase, 
             'instructions': instructions,
             'index': index, 
             'trial_phase': trial_phase
@@ -130,6 +154,7 @@ var State = function () {
 // Object to properly format rows of data
 var DataRecord = function () {
     this.fields = [
+	"experiment_phase",
         "instructions",
         "index",
         "trial_phase",

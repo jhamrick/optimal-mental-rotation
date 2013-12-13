@@ -29,9 +29,9 @@ var STATE;
 var Instructions = function() {
 
     // The list of pages for this set of instructions
-    this.pages = $c.instructions.pages;
+    this.pages = $c.instructions[STATE.experiment_phase].pages;
     // The list of examples on each page of instructions
-    this.examples = $c.instructions.examples;
+    this.examples = $c.instructions[STATE.experiment_phase].examples;
     // Time when a page of instructions is presented
     this.timestamp;
 
@@ -102,8 +102,10 @@ var Instructions = function() {
         // Record that the user has finished the instructions and
         // moved on to the experiment. This changes their status
         // code in the database.
-        // TODO: uncomment finishinstructions
-        // psiTurk.finishInstructions();
+	if (STATE.experiment_phase == EXPERIMENT.training) {
+	    // TODO: uncomment finishinstructions
+            // psiTurk.finishInstructions();
+	}
 
         // Reset the state object for the test phase
         STATE.set_instructions(0);
@@ -132,7 +134,7 @@ var TestPhase = function() {
     this.listening = false;
 
     // List of trials in this block of the experiment
-    this.trials = $c.trials;
+    this.trials = $c.trials[STATE.experiment_phase];
     // Information about the current trial
     this.trialinfo;    
     // The response they gave
@@ -306,48 +308,58 @@ var TestPhase = function() {
         debug("Finish test phase");
 
         // Reset the state object for the next experiment phase
+	STATE.set_experiment_phase(STATE.experiment_phase + 1);
         STATE.set_instructions();
         STATE.set_index();
         STATE.set_trial_phase();
 
-        // Send them to the debriefing form, but delay a bit, so
-        // they know what's happening
-        var debrief = function() {
-            setTimeout(function () {
-                window.location = "/debrief?uniqueId=" + psiTurk.taskdata.id;
-            }, 2000);
-        };
+        // If we're at the end of the experiment, submit the data to
+        // mechanical turk, otherwise go on to the next experiment
+        // phase and show the relevant instructions
+        if (STATE.experiment_phase >= EXPERIMENT.length) {
 
-        // Prompt them to resubmit the HIT, because it failed the first time
-        var prompt_resubmit = function() {
-            $("#resubmit_slide").click(resubmit);
-            $(".slide").hide();
-            $("#submit_error_slide").fadeIn($c.fade);
-        };
+            // Send them to the debriefing form, but delay a bit, so
+            // they know what's happening
+            var debrief = function() {
+                setTimeout(function () {
+                    window.location = "/debrief?uniqueId=" + psiTurk.taskdata.id;
+                }, 2000);
+            };
 
-        // Show a page saying that the HIT is resubmitting, and
-        // show the error page again if it times out or error
-        var resubmit = function() {
-            $(".slide").hide();
-            $("#resubmit_slide").fadeIn($c.fade);
+            // Prompt them to resubmit the HIT, because it failed the first time
+            var prompt_resubmit = function() {
+                $("#resubmit_slide").click(resubmit);
+                $(".slide").hide();
+                $("#submit_error_slide").fadeIn($c.fade);
+            };
 
-            var reprompt = setTimeout(prompt_resubmit, 10000);
+            // Show a page saying that the HIT is resubmitting, and
+            // show the error page again if it times out or error
+            var resubmit = function() {
+                $(".slide").hide();
+                $("#resubmit_slide").fadeIn($c.fade);
+
+                var reprompt = setTimeout(prompt_resubmit, 10000);
+                psiTurk.saveData({
+                    success: function() {
+                        clearInterval(reprompt); 
+                        finish();
+                    }, 
+                    error: prompt_resubmit
+                });
+            };
+
+            // Render a page saying it's submitting
+            psiTurk.showPage("submit.html")
+            psiTurk.teardownTask();
             psiTurk.saveData({
-                success: function() {
-                    clearInterval(reprompt); 
-                    finish();
-                }, 
+                success: debrief, 
                 error: prompt_resubmit
             });
-        };
 
-        // Render a page saying it's submitting
-        psiTurk.showPage("submit.html")
-        psiTurk.teardownTask();
-        psiTurk.saveData({
-            success: debrief, 
-            error: prompt_resubmit
-        });
+        } else {
+            CURRENTVIEW = new Instructions();
+        }
     };
 
     // Load the trial html page

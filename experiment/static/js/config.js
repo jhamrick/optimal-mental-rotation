@@ -4,6 +4,13 @@
  * for the experiment.
  */
 
+// Enum-like object mapping experiment phase names to ids, in the
+// order that the phases should be presented.
+var EXPERIMENT = Object.freeze({
+    training: 0,
+    experiment: 1
+});
+
 // Enum-like object mapping trial phase names to ids, in the order
 // that the phases should be presented.
 var TRIAL = Object.freeze({
@@ -39,7 +46,7 @@ var Config = function (condition, counterbalance) {
     // The amount of time to fade HTML elements in/out
     this.fade = 200;
     // List of trial information object for each experiment phase
-    this.trials = null;
+    this.trials = new Object();
 
     // Canvas width and height
     this.canvas_width = 300;
@@ -47,8 +54,14 @@ var Config = function (condition, counterbalance) {
 
     // Lists of pages and examples for each instruction page.  We know
     // the list of pages we want to display a priori.
-    this.instructions = {
-        pages: ["instructions1", "instructions2"]
+    this.instructions = new Object();
+    this.instructions[EXPERIMENT.training] = {
+        pages: ["instructions-training-1", 
+		"instructions-training-2"]
+    };
+    this.instructions[EXPERIMENT.experiment] = {
+	pages: ["instructions-experiment"],
+	examples: [null]
     };
 
     // The list of all the HTML pages that need to be loaded
@@ -60,10 +73,14 @@ var Config = function (condition, counterbalance) {
     // Parse the JSON object that we've requested and load it into the
     // configuration
     this.parse_config = function (data) {
-        this.trials = _.shuffle(data["trials"]);
+        this.trials[EXPERIMENT.training] = _.shuffle(data["training"]);
+        this.trials[EXPERIMENT.experiment] = _.shuffle(data["experiment"]);
 
         console.log(data.examples);
-        this.instructions.examples = [data.examples, null];
+        this.instructions[EXPERIMENT.training].examples = [
+	    data.examples, 
+	    null
+	];
     };
 
     // Load the experiment configuration from the server
