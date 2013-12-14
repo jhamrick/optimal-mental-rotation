@@ -117,6 +117,19 @@ def find_bad_participants(exp, data):
                 info['note'] = "repeat_worker"
                 continue
 
+        # check their accuracy
+        exp_data = df.groupby('trial_phase')\
+                     .get_group('stim')\
+                     .groupby('mode')\
+                     .get_group('experiment')
+        accuracy = exp_data['flipped'] == exp_data['response']
+        thresh = 0.25
+        if accuracy.mean() <= (1 - thresh):
+            logger.warning(
+                "%s failed %d%% or more trials", pid, 100 * thresh)
+            info['note'] = "failed"
+            continue
+
     return participants
 
 
