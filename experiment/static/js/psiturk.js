@@ -15,22 +15,24 @@
 Backbone.Notifications = {};
 _.extend(Backbone.Notifications, Backbone.Events);
 
+var optoutmessage = "By leaving this page, you opt out of the experiment.";
 var startTask = function () {
-    // psiTurk.saveData();
+    psiTurk.saveData();
     
-    // $.ajax("inexp", {
-    // 	type: "POST",
-    // 	data: {uniqueId: uniqueId}
-    // });    
+    $.ajax("inexp", {
+	type: "POST",
+	data: {uniqueId: uniqueId}
+    });
+    
+    // Provide opt-out 
+    $(window).on("beforeunload", function(){
+	Backbone.Notifications.trigger('_psiturk_refreshed');
+	psiTurk.saveData();
+	return optoutmessage;
+    });
 };
 Backbone.Notifications.on('_psiturk_finishedinstructions', startTask);
 Backbone.Notifications.on('_psiturk_finishedtask', function(msg) { $(window).off("beforeunload"); });
-
-// $(window).bind("beforeunload", function(){
-//     Backbone.Notifications.trigger('_psiturk_refreshed');
-//     psiTurk.saveData();
-//     return "After refreshing, the experiment will resume where you left off.";
-// });
 
 $(window).blur( function() {
     Backbone.Notifications.trigger('_psiturk_lostfocus');
