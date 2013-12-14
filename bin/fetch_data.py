@@ -6,7 +6,7 @@ from path import path
 import logging
 import urllib2
 
-logger = logging.getLogger('mass.experiment')
+logger = logging.getLogger('mental_rotation.experiment')
 
 
 def add_auth(url, username, password):
