@@ -99,7 +99,7 @@ def find_bad_participants(exp, data):
             .groupby(['trial_phase'])\
             .get_group('prestim')
         # TODO: use the correct number of trials
-        incomplete = len(prestim) != 62
+        incomplete = len(prestim) != 100
         if incomplete:
             logger.warning("%s is incomplete", pid)
             info['note'] = "incomplete"
@@ -107,15 +107,16 @@ def find_bad_participants(exp, data):
 
         # see if they already did (a version of) the experiment
         dbpath = DATA_PATH.joinpath("human", "workers.db")
-        tbl = dbtools.Table(dbpath, "workers")
-        datasets = tbl.select("dataset", where=("pid=?", pid))['dataset']
-        exps = map(lambda x: path(x).namebase, datasets)
-        if exp in exps:
-            exps.remove(exp)
-        if len(exps) > 0:
-            logger.warning("%s is a repeat worker", pid)
-            info['note'] = "repeat_worker"
-            continue
+        if dbtools.Table.exists(dbpath, "workers"):
+            tbl = dbtools.Table(dbpath, "workers")
+            datasets = tbl.select("dataset", where=("pid=?", pid))['dataset']
+            exps = map(lambda x: path(x).namebase, datasets)
+            if exp in exps:
+                exps.remove(exp)
+            if len(exps) > 0:
+                logger.warning("%s is a repeat worker", pid)
+                info['note'] = "repeat_worker"
+                continue
 
     return participants
 
@@ -175,8 +176,11 @@ def load_data(data_path, conds, fields):
     data['instructions'] = map(str2bool, data['instructions'])
     data['response_time'] = data['response_time'].astype('float') / 1e3
     data['flipped'] = map(str2bool, data['flipped'])
+    data['flipped'] = data['flipped'].replace(
+        {True: "flipped",
+         False: "same"})
     data['theta'] = data['theta'].astype('float')
-    data['response'] = data['response'].astype('float')
+    data['response'] = data['response']
     data['trial_phase'] = data['trial_phase'].fillna('prestim')
 
     # remove instructions rows
@@ -185,7 +189,10 @@ def load_data(data_path, conds, fields):
         .get_group(False)
 
     # rename some columns
-    data = data.rename(columns={'index': 'trial'})
+    data = data.rename(columns={
+        'index': 'trial',
+        'experiment_phase': 'mode'
+    })
     # make trials be 1-indexed
     data['trial'] += 1
 
@@ -200,7 +207,9 @@ def load_data(data_path, conds, fields):
         .DataFrame\
         .from_dict(conds).T\
         .reset_index()\
-        .rename(columns={'index': 'pid'})
+        .rename(columns={
+            'index': 'pid',
+        })
     p_info = pd\
         .DataFrame\
         .from_dict(find_bad_participants(data_path.namebase, data))
@@ -246,7 +255,6 @@ def load_data(data_path, conds, fields):
         # sanity check -- make sure assignment and counterbalance
         # fields match
         assert (df['assignment'] == info['assignment']).all()
-        assert (df['counterbalance'] == info['counterbalance']).all()
         return df
 
     # add a column for the condition code
