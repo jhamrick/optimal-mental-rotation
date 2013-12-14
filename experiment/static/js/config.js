@@ -43,8 +43,7 @@ var Config = function (condition, counterbalance) {
     this.counterbalance = counterbalance;
 
     // Whether debug information should be printed out
-    // TODO: set debug to false
-    this.debug = true;
+    this.debug = false;
     // The amount of time to fade HTML elements in/out
     this.fade = 200;
     // List of trial information object for each experiment phase

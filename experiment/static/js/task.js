@@ -103,8 +103,7 @@ var Instructions = function() {
         // moved on to the experiment. This changes their status
         // code in the database.
 	if (STATE.experiment_phase == EXPERIMENT.training) {
-	    // TODO: uncomment finishinstructions
-            // psiTurk.finishInstructions();
+            psiTurk.finishInstructions();
 	}
 
         // Reset the state object for the test phase
