@@ -2,7 +2,6 @@
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import json
-import numpy as np
 from mental_rotation import EXP_PATH, STIM_PATH
 from mental_rotation.stimulus import Stimulus2D
 import logging
@@ -52,12 +51,19 @@ def save_configs(exp, force=False):
     exp_stims = {stim.name: get_stiminfo(stim) for stim in exp_path.listdir()}
 
     stim_pairs = pd.DataFrame.from_dict(exp_stims).T
+
     stims = stim_pairs['stimulus']\
         .drop_duplicates()
-    stims = sorted(stims.tolist()) * 9
+    stims = sorted(stims.tolist()) * 10
+
+    # overrepresent theta=0 and theta=180 so they are shown the same
+    # number of times as the other angles
     thetas = stim_pairs[['theta', 'flipped']]\
         .drop_duplicates()\
         .sort(['theta', 'flipped'])
+    theta0 = thetas.ix[thetas['theta'] == 0]
+    theta180 = thetas.ix[thetas['theta'] == 180]
+    thetas = thetas.append(theta0).append(theta180)
     flipped = thetas['flipped'].tolist() * 5
     thetas = thetas['theta'].tolist() * 5
 
