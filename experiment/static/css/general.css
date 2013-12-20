@@ -73,7 +73,7 @@ div.continue {
 
 span.warn {
     font-weight: bold;
-    color: red;
+    color: blue;
 }
 
 /********************************************************************/
@@ -111,7 +111,7 @@ span.consent {
 #indicator-container {
     position: relative;
     float: right;
-    width: 82%;
+    width: 80%;
     margin-bottom: .2em;
 }
 
