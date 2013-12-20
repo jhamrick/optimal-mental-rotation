@@ -72,7 +72,8 @@ div.continue {
 }
 
 span.warn {
-    font-style: italic;
+    font-weight: bold;
+    color: red;
 }
 
 /********************************************************************/
@@ -149,6 +150,13 @@ canvas.stim_canvas {
 #choices {
     text-align: center;
     margin: 0 auto;
+}
+
+#score {
+    text-align: center;
+    margin: 0 auto;
+    font-size: 1.5em;
+    margin-bottom: 1em;
 }
 
 /* Trial phases */
