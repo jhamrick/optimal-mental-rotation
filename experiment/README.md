@@ -15,10 +15,10 @@ Collected data for 16 participants.
 
 ### Notes/Issues
 
-* high error rate (9/16 subjects had at least 75% accuracy, 7/16 have
-  at least 85% accuracy, and 4/16 have at least 90% accuracy)
-* fewer data points for 0-degree and 180-degree rotations, because all
-  other rotations have a corresponding angle (e.g. 20 and 340)
+* High error rate (9/16 subjects had at least 75% accuracy, 7/16 have
+  at least 85% accuracy, and 4/16 have at least 90% accuracy).
+* Fewer data points for 0-degree and 180-degree rotations, because all
+  other rotations have a corresponding angle (e.g. 20 and 340).
 
 ## Version B
 
@@ -31,5 +31,10 @@ flipped), giving a block of 200 trials, which is then split in half.
 
 ### Data
 
+Collected data for 20 participants.
+
 ### Notes/Issues
 
+* Much better error rates (only 5 had less than 75% accuracy)
+* But, there was an issue where people could not submit the HIT. Still
+  investigating why this was the case.
