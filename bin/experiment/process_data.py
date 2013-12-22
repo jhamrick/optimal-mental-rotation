@@ -98,7 +98,7 @@ def find_bad_participants(exp, data):
         prestim = df\
             .groupby(['trial_phase'])\
             .get_group('prestim')
-        incomplete = len(prestim) != 100
+        incomplete = len(prestim) != 110
         if incomplete:
             logger.warning("%s is incomplete", pid)
             info['note'] = "incomplete"
