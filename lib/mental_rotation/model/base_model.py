@@ -51,7 +51,6 @@ class BaseModel(pymc.Sampler):
     @property
     def R_i(self):
         R = self.trace('R')[:self._current_iter]
-        R[R < 0] += 2 * np.pi
         return R
 
     ##################################################################
@@ -136,17 +135,12 @@ class BaseModel(pymc.Sampler):
         if x is not None:
             ix = np.argsort(x)
             xn = x.copy()
-            xn[xn < 0] += 2 * np.pi
             ax.plot(xn[ix], y[ix], 'k-', label="actual", linewidth=2)
         if xi is not None:
-            xin = xi.copy()
-            xin[xin < 0] += 2 * np.pi
             ax.plot(xi, yi, 'ro', label="samples")
 
         if xo is not None:
             ix = np.argsort(xo)
-            xon = xo.copy()
-            xon[xon < 0] += 2 * np.pi
 
             if yo_var is not None:
                 # hack, for if there are zero or negative variances
@@ -156,15 +150,16 @@ class BaseModel(pymc.Sampler):
                 # compute upper and lower bounds
                 lower = yo_mean[ix] - ys
                 upper = yo_mean[ix] + ys
-                ax.fill_between(xon[ix], lower, upper, color='r', alpha=0.25)
+                ax.fill_between(xo[ix], lower, upper, color='r', alpha=0.25)
 
-            ax.plot(xon[ix], yo_mean[ix], 'r-', label="estimate", linewidth=2)
+            ax.plot(xo[ix], yo_mean[ix], 'r-', label="estimate", linewidth=2)
 
         # customize x-axis
-        ax.set_xlim(0, 2 * np.pi)
-        ax.set_xticks([0, np.pi / 2., np.pi, 3 * np.pi / 2., 2 * np.pi])
+        ax.set_xlim(-np.pi, np.pi)
+        ax.set_xticks([-np.pi, -np.pi / 2., 0, np.pi / 2., np.pi])
         ax.set_xticklabels(
-            ["0", r"$\frac{\pi}{2}$", "$\pi$", r"$\frac{3\pi}{2}$", "$2\pi$"])
+            [r"$-\pi$", r"$\frac{-\pi}{2}$", r"$0$",
+             r"$\frac{\pi}{2}$", r"$\pi$"])
 
         # axis styling
         sg.outward_ticks(ax=ax)
@@ -212,3 +207,11 @@ class BaseModel(pymc.Sampler):
             print "--> REJECT hypothesis 1"
         else: # pragma: no cover
             print "--> UNDECIDED"
+
+    def _wrap(self, x):
+        return x % (2 * np.pi)
+
+    def _unwrap(self, x):
+        x_ = x % (2 * np.pi)
+        x_[x_ > np.pi] -= 2 * np.pi
+        return x_

@@ -5,11 +5,16 @@ from . import BaseModel
 
 class GoldStandardModel(BaseModel):
 
+    def __init__(self, *args, **kwargs):
+        super(GoldStandardModel, self).__init__(*args, **kwargs)
+        self.model['R'].value = -np.pi
+
     ##################################################################
     # Overwritten PyMC sampling methods
 
     def sample(self, verbose=0):
-        super(BaseModel, self).sample(iter=360, verbose=verbose)
+        self.model['R'].value = -np.pi
+        super(BaseModel, self).sample(iter=361, verbose=verbose)
 
     def draw(self):
         self.model['R'].value = self.model['R'].value + np.radians(1)
@@ -21,19 +26,10 @@ class GoldStandardModel(BaseModel):
         return np.log(self.S(R))
 
     def S(self, R):
-        Ri = self.R_i
-        Si = self.S_i
-        ix = np.argsort(Ri)
-
-        sRi = np.empty(Ri.size + 1)
-        sRi[:-1] = Ri[ix]
-        sRi[-1] = 2 * np.pi
-
-        sSi = np.empty(Si.size + 1)
-        sSi[:-1] = Si[ix]
-        sSi[-1] = sSi[0]
-
-        S = np.interp(R, sRi, sSi)
+        ix = np.argsort(self.R_i)
+        Ri = self.R_i[ix]
+        Si = self.S_i[ix]
+        S = np.interp(self._unwrap(R), Ri, Si)
         return S
 
     ##################################################################
@@ -43,19 +39,10 @@ class GoldStandardModel(BaseModel):
         return np.log(self.dZ_dR(R))
 
     def dZ_dR(self, R):
-        Ri = self.R_i
-        dZ_dRi = self.dZ_dR_i
-        ix = np.argsort(Ri)
-
-        sRi = np.empty(Ri.size + 1)
-        sRi[:-1] = Ri[ix]
-        sRi[-1] = 2 * np.pi
-
-        sdZ_dRi = np.empty(dZ_dRi.size + 1)
-        sdZ_dRi[:-1] = dZ_dRi[ix]
-        sdZ_dRi[-1] = sdZ_dRi[0]
-
-        dZ_dR = np.interp(R, sRi, sdZ_dRi)
+        ix = np.argsort(self.R_i)
+        Ri = self.R_i[ix]
+        dZ_dRi = self.dZ_dR_i[ix]
+        dZ_dR = np.interp(self._unwrap(R), Ri, dZ_dRi)
         return dZ_dR
 
     @property
@@ -64,7 +51,7 @@ class GoldStandardModel(BaseModel):
 
     @property
     def Z(self):
-        R = np.linspace(0, 2 * np.pi, 361)
+        R = np.linspace(-np.pi, np.pi, 361)
         dZ_dR = self.dZ_dR(R)
         Z = np.trapz(dZ_dR, R)
         return Z
@@ -73,7 +60,7 @@ class GoldStandardModel(BaseModel):
     # Plotting methods
 
     def plot(self, ax):
-        R = np.linspace(0, 2 * np.pi, 361)
+        R = np.linspace(-np.pi, np.pi, 361)
         S = self.S(R)
         self._plot(
             ax, R, S, None, None, None, None, None,

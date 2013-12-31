@@ -55,7 +55,9 @@ class HillClimbingModel(BaseModel):
         return np.log(self.S(R))
 
     def S(self, R):
-        Ri = self.R_i
+        R_ = self._wrap(R)
+        Ri = self._wrap(self.R_i)
+
         Si = self.S_i
         ix = np.argsort(Ri)
 
@@ -67,7 +69,7 @@ class HillClimbingModel(BaseModel):
         sSi[:-1] = Si[ix]
         sSi[-1] = sSi[0]
 
-        S = np.interp(R, sRi, sSi)
+        S = np.interp(R_, sRi, sSi)
         return S
 
     ##################################################################
@@ -77,7 +79,9 @@ class HillClimbingModel(BaseModel):
         return np.log(self.dZ_dR(R))
 
     def dZ_dR(self, R):
-        Ri = self.R_i
+        R_ = self._wrap(R)
+        Ri = self._wrap(self.R_i)
+
         dZ_dRi = self.dZ_dR_i
         ix = np.argsort(Ri)
 
@@ -89,7 +93,7 @@ class HillClimbingModel(BaseModel):
         sdZ_dRi[:-1] = dZ_dRi[ix]
         sdZ_dRi[-1] = sdZ_dRi[0]
 
-        dZ_dR = np.interp(R, sRi, sdZ_dRi)
+        dZ_dR = np.interp(R_, sRi, sdZ_dRi)
         return dZ_dR
 
     @property
@@ -98,7 +102,7 @@ class HillClimbingModel(BaseModel):
 
     @property
     def Z(self):
-        R = np.linspace(0, 2 * np.pi, 360)
+        R = np.linspace(-np.pi, np.pi, 360)
         dZ_dR = self.dZ_dR(R)
         Z = np.trapz(dZ_dR, R)
         return Z
@@ -109,7 +113,7 @@ class HillClimbingModel(BaseModel):
     def plot(self, ax):
         Ri = self.R_i
         Si = self.S_i
-        R = np.linspace(0, 2 * np.pi, 360)
+        R = np.linspace(-np.pi, np.pi, 360)
         S = self.S(R)
         self._plot(
             ax, None, None, Ri, Si, R, S, None,
