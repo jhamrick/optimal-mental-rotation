@@ -74,7 +74,30 @@ def make_Xi(name, X):
 
 
 def make_R(R_mu, R_kappa):
-    R = pymc.CircVonMises("R", R_mu, R_kappa, value=0)
+
+    def R_logp(value, mu=R_mu, kappa=R_kappa):
+        return pymc.distributions.von_mises_like(value, R_mu, R_kappa)
+
+    def random(mu, kappa, size=1):
+        return pymc.distributions.rvon_mises(mu, kappa, size=size)
+
+    # we can't use the stochastic decorator because PyMC does weird
+    # things with the system trace which screws up code coverage.
+    R = pymc.Stochastic(
+        logp=R_logp,
+        doc='Rotation',
+        name='R',
+        parents={'mu': R_mu, 'kappa': R_kappa},
+        random=random,
+        trace=True,
+        value=0,
+        dtype=float,
+        rseed=1.,
+        observed=False,
+        cache_depth=2,
+        plot=False,
+        verbose=0)
+
     return R
 
 
