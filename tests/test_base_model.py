@@ -52,9 +52,7 @@ class TestBaseModel(object):
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
         Ri = m.R_i
-        assert sorted(Ri)[0] == 0
-        assert (Ri >= 0).all()
-        assert (Ri < 2 * np.pi).all()
+        assert np.isclose(Ri, 0).sum() == 1
 
     def test_log_S_i(self):
         if self.cls is BaseModel:

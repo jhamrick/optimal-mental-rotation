@@ -15,13 +15,13 @@ class TestGoldStandardModel(TestBaseModel):
 
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
-        R = np.arange(0, 2 * np.pi, np.radians(1))
+        R = np.linspace(-np.pi, np.pi, 361)
         assert np.allclose(R, m.R_i)
 
     def test_log_S_i(self):
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
-        R = np.arange(0, 2 * np.pi, np.radians(1))
+        R = np.linspace(-np.pi, np.pi, 361)
         log_S = np.empty_like(R)
         Xr = Xa.copy_from_vertices()
         for i, r in enumerate(R):
@@ -34,7 +34,7 @@ class TestGoldStandardModel(TestBaseModel):
     def test_log_S(self):
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
-        R = np.arange(0, 2 * np.pi, np.radians(1))
+        R = np.linspace(-np.pi, np.pi, 361)
         assert np.allclose(m.log_S_i, m.log_S(m.R_i))
         assert np.allclose(m.log_S_i, m.log_S(R))
         assert m.log_S(0) == m.log_S(2 * np.pi)
@@ -42,7 +42,7 @@ class TestGoldStandardModel(TestBaseModel):
     def test_log_dZ_dR_i(self):
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
-        R = np.arange(0, 2 * np.pi, np.radians(1))
+        R = np.linspace(-np.pi, np.pi, 361)
         log_dZ_dR = np.empty_like(R)
         Xr = Xa.copy_from_vertices()
         for i, r in enumerate(R):
@@ -58,7 +58,7 @@ class TestGoldStandardModel(TestBaseModel):
     def test_log_dZ_dR(self):
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
-        R = np.arange(0, 2 * np.pi, np.radians(1))
+        R = np.linspace(-np.pi, np.pi, 361)
         assert np.allclose(m.log_dZ_dR_i, m.log_dZ_dR(m.R_i))
         assert np.allclose(m.log_dZ_dR_i, m.log_dZ_dR(R))
 
@@ -74,6 +74,6 @@ class TestGoldStandardModel(TestBaseModel):
     def test_log_Z(self):
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
-        R = np.linspace(0, 2 * np.pi, 360)
+        R = np.linspace(-np.pi, np.pi, 360)
         log_Z = np.log(np.trapz(m.dZ_dR(R), R))
         assert np.allclose(log_Z, m.log_Z)

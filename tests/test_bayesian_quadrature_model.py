@@ -54,6 +54,6 @@ class TestBayesianQuadratureModel(TestBaseModel):
     def test_plot(self):
         Xa, Xb, m = util.make_model(BayesianQuadratureModel)
         m.sample()
-        fig, axes = plt.subplots(2, 2)
+        fig, axes = plt.subplots(1, 3)
         m.plot(axes)
         plt.close('all')

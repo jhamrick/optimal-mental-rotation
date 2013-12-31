@@ -214,5 +214,9 @@ class BaseModel(pymc.Sampler):
 
     def _unwrap(self, x):
         x_ = x % (2 * np.pi)
-        x_[x_ > np.pi] -= 2 * np.pi
+        try:
+            x_[x_ > np.pi] -= 2 * np.pi
+        except TypeError:
+            if x_ > np.pi:
+                x_ -= 2 * np.pi
         return x_

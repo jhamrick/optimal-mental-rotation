@@ -7,7 +7,6 @@ class GoldStandardModel(BaseModel):
 
     def __init__(self, *args, **kwargs):
         super(GoldStandardModel, self).__init__(*args, **kwargs)
-        self.model['R'].value = -np.pi
 
     ##################################################################
     # Overwritten PyMC sampling methods

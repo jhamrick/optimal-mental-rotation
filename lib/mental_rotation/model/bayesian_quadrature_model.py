@@ -94,7 +94,7 @@ class BayesianQuadratureModel(BaseModel):
             len(R)
         except TypeError:
             R = np.array([R], dtype=DTYPE)
-        return self.bq.S_mean(R)
+        return self.bq.l_mean(R)
 
     ##################################################################
     # Estimated dZ_dR and full estimate of Z
