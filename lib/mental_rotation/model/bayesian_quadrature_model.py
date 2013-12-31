@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import snippets.graphing as sg
 import logging
-import scipy.optimize as optim
 from bayesian_quadrature import BQ
 
 from .. import config
@@ -13,15 +12,6 @@ logger = logging.getLogger("mental_rotation.model.bq")
 
 DTYPE = np.dtype(config.get("global", "dtype"))
 EPS = np.finfo(DTYPE).eps
-
-
-def circdiff(x, y):
-    diff = x - y
-    if np.abs(diff) > np.pi:
-        out = diff - np.sign(diff) * 2 * np.pi
-    else:
-        out = diff
-    return out
 
 
 class BayesianQuadratureModel(BaseModel):
@@ -43,14 +33,14 @@ class BayesianQuadratureModel(BaseModel):
 
     def __init__(self, *args, **kwargs):
         self.bq_opts = {
-            'gamma': config.getfloat("bq", "gamma"),
-            'h': None,
-            'w': None,
+            'h': config.getfloat("bq", "h"),
+            'w': config.getfloat("bq", "w"),
             's': config.getfloat("bq", "s"),
             'ntry': config.getint("bq", "ntry"),
             'n_candidate': config.getint("bq", "n_candidate"),
-            'R_mean': config.getfloat("model", "R_mu"),
-            'R_var': 1. / config.getfloat("model", "R_kappa")
+            'x_mean': config.getfloat("model", "R_mu"),
+            'x_var': 1. / config.getfloat("model", "R_kappa"),
+            'candidate_thresh': config.getfloat("model", "step"),
         }
 
         if 'bq_opts' in kwargs:
@@ -60,68 +50,36 @@ class BayesianQuadratureModel(BaseModel):
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
 
     def _init_bq(self):
-        Ri = self.R_i
-        Si = self.S_i
-        ix = np.argsort(Ri)
-        self.bq = BQ(Ri[ix], Si[ix], **self.bq_opts)
+        Ri, ix = np.unique(self.R_i, return_index=True)
+        self.bq = BQ(Ri, self.S_i[ix], **self.bq_opts)
+        self.bq._fit_log_l(params=(np.sqrt(7), np.pi / 3., 0))
+        self.bq._fit_l(params=(np.sqrt(0.15), np.pi / 4., 0))
 
     def sample(self, verbose=0):
-        super(BaseModel, self).sample(iter=12, verbose=verbose)
+        #niter = int(4 * np.pi / self.opts['step'])
+        niter = 7
+        super(BaseModel, self).sample(iter=niter, verbose=verbose)
 
     def _loop(self):
         if self._current_iter == 0:
             self.tally()
-            self.model['R'].value = (2 * np.pi) - 1e-6
-            self.tally()
-            self.model['R'].value = 0
-            self._current_iter += 2
+            self._current_iter += 1
+            self._init_bq()
         super(BaseModel, self)._loop()
 
-    def _cost(self, x):
-        nesm = -self.bq.expected_squared_mean(x)
+    def _dist_cost(self, x, B=2):
         R = float(self.model['R'].value)
-        if R < 0:
-            R += 2 * np.pi
-        dist = circdiff(R, x)
-        return nesm / np.exp(dist ** 2)
+        dist = 1. / np.exp(B * (R - x) ** 2)
+        return dist
 
     def draw(self):
+        target = self.bq.choose_next(n=1)
+        print "[%d] target = %s" % (self._current_iter, target)
+
+        self.model['R'].value = target
         self._init_bq()
-        self.bq.fit()
 
-        x = np.empty(5)
-        value = np.empty(5)
-        for i in xrange(5):
-            res = optim.minimize(
-                fun=self._cost,
-                x0=np.array([np.random.uniform(0, 2 * np.pi)]),
-                method='L-BFGS-B',
-                bounds=[(0, (2 * np.pi) - np.radians(1))],
-                tol=1e-10)
-            x[i] = res['x']
-            value[i] = res['fun']
-
-        target = x[np.argmin(value)] - np.pi
-        print "target = %s" % target
-
-        direction = -np.sign(circdiff(self.model['R'].value, target))
-        step = direction * np.radians(10)
-        self.model['R'].value = self.model['R'].value + step
-        thresh = np.abs(step / 2.0)
-        while np.abs(circdiff(self.model['R'].value, target)) > thresh:
-            print "R = %s" % self.model['R'].value
-            self.tally()
-            self._current_iter += 1
-
-            if self._current_iter >= self._iter:
-                break
-
-            self.model['R'].value = self.model['R'].value + step
-
-        self._init_bq()
-        self.bq.fit()
         hyp = self.hypothesis_test()
-        self.print_stats()
         if hyp == 0 or hyp == 1:
             self.status = 'halt'
 
@@ -143,7 +101,11 @@ class BayesianQuadratureModel(BaseModel):
 
     @property
     def log_Z(self):
-        return np.log(self.Z)
+        Z = self.Z
+        out = np.empty_like(Z)
+        out[Z == 0] = -np.inf
+        out[Z != 0] = np.log(Z[Z != 0])
+        return out
 
     @property
     def Z(self):
@@ -152,85 +114,50 @@ class BayesianQuadratureModel(BaseModel):
         lower = mean - 1.96 * np.sqrt(var)
         upper = mean + 1.96 * np.sqrt(var)
         out = np.array([mean, lower, upper])
+        out[out < 0] = 0
         return out
 
     ##################################################################
     # Plotting methods
 
-    def plot_S_gp(self, ax):
-        Ri = self.R_i
-        Si = self.S_i
-        R = np.linspace(0, 2 * np.pi, 360)
+    xmin = -3 * np.pi
+    xmax = 3 * np.pi
 
+    def plot_log_S_gp(self, ax, f_S=None):
         # plot the regression for S
-        self._plot(
-            ax, None, None, Ri, Si,
-            R, self.bq.gp_S.mean(R), np.diag(self.bq.gp_S.cov(R)),
-            title="GPR for $S$",
-            xlabel=None,
-            legend=False)
-        sg.no_xticklabels(ax=ax)
+        self.bq.plot_gp_log_l(ax, f_l=f_S, xmin=self.xmin, xmax=self.xmax)
+        ax.set_title(r"GPR for $\log(S)$")
+        ax.set_ylabel(r"Similarity ($\log(S)$)")
 
-    def plot_log_S_gp(self, ax):
-        Ri = self.R_i
-        log_Si = self.bq.log_transform(self.S_i)
-        R = np.linspace(0, 2 * np.pi, 360)
+    def plot_S_gp(self, ax, f_S=None):
+        # plot the regression for S
+        self.bq.plot_gp_l(ax, f_l=f_S, xmin=self.xmin, xmax=self.xmax)
+        ax.set_title(r"GPR for $S$")
+        ax.set_xlabel("")
+        ax.set_ylabel(r"Similarity ($S$)")
 
-        # plot the regression for log S
-        self._plot(
-            ax, None, None, Ri, log_Si,
-            R, self.bq.gp_log_S.mean(R), np.diag(self.bq.gp_log_S.cov(R)),
-            title=r"GPR for $\log(S+1)$",
-            ylabel=r"Similarity ($\log(S+1)$)",
-            legend=False)
+    def plot_S(self, ax, f_S=None):
+        # plot the regression for S
+        self.bq.plot_l(ax, f_l=f_S, xmin=self.xmin, xmax=self.xmax)
+        ax.set_title(r"Final GPR for $S$")
+        ax.set_xlabel("")
+        ax.set_ylabel("")
 
-    def plot_S(self, ax):
-        Ri = self.R_i
-        Si = self.S_i
-        R = np.linspace(0, 2 * np.pi, 360)
-
-        # combine the two regression means
-        self._plot(
-            ax, None, None, Ri, Si,
-            R, self.bq.S_mean(R), np.diag(self.bq.S_cov(R)),
-            title=r"Final GPR for $S$",
-            xlabel=None,
-            ylabel=None,
-            legend=True)
-        sg.no_xticklabels(ax=ax)
-
-    def plot_Dc_gp(self, ax):
-        R = np.linspace(0, 2 * np.pi, 360)
-        delta = self.bq.compute_delta(R)
-        Rc = self.bq.Rc
-        Dc = self.bq.Dc
-
-        # plot the regression for mu_log_S - log_muS
-        self._plot(
-            ax, R, delta, Rc, Dc,
-            R, self.bq.gp_Dc.mean(R), np.diag(self.bq.gp_Dc.cov(R)),
-            title=r"GPR for $\Delta_c$",
-            ylabel=r"Difference ($\Delta_c$)",
-            legend=False)
-        yt, ytl = plt.yticks()
-
-    def plot(self, axes):
-        self.plot_S_gp(axes[0, 0])
-        self.plot_S(axes[0, 1])
-        self.plot_log_S_gp(axes[1, 0])
-        self.plot_Dc_gp(axes[1, 1])
+    def plot(self, axes, f_S=None):
+        self.plot_log_S_gp(axes[0], f_S=f_S)
+        self.plot_S_gp(axes[1], f_S=f_S)
+        self.plot_S(axes[2], f_S=f_S)
 
         # align y-axis labels
-        sg.align_ylabels(-0.12, axes[0, 0], axes[1, 0])
-        sg.set_ylabel_coords(-0.16, ax=axes[1, 1])
+        sg.align_ylabels(-0.12, axes[0], axes[1])
+
         # sync y-axis limits
-        lim = (-0.2, 0.5)
-        axes[0, 0].set_ylim(*lim)
-        axes[0, 1].set_ylim(*lim)
-        axes[1, 0].set_ylim(*lim)
+        lim = (-0.05, 0.2)
+        axes[1].set_ylim(*lim)
+        axes[2].set_ylim(*lim)
 
         # overall figure settings
-        sg.set_figsize(9, 5)
+        sg.set_figsize(12, 4)
         plt.tight_layout()
 
     ##################################################################
