@@ -25,7 +25,7 @@ class HillClimbingModel(BaseModel):
 
         if self.direction is None:
             self.direction = np.random.choice([1, -1])
-            step = self.direction * np.radians(10)
+            step = self.direction * self.opts['step']
 
             self.model['R'].value = R + step
             new_log_S = self.model['log_S'].logp
@@ -38,7 +38,7 @@ class HillClimbingModel(BaseModel):
                 pass
 
         else:
-            step = self.direction * np.radians(10)
+            step = self.direction * self.opts['step']
 
             self.model['R'].value = R + step
             new_log_S = self.model['log_S'].logp

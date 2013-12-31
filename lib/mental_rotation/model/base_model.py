@@ -13,7 +13,8 @@ class BaseModel(pymc.Sampler):
         self.opts = {
             'R_mu': config.getfloat("model", "R_mu"),
             'R_kappa': config.getfloat("model", "R_kappa"),
-            'S_sigma': config.getfloat("model", "S_sigma")
+            'S_sigma': config.getfloat("model", "S_sigma"),
+            'step': config.getfloat("model", "step")
         }
         self.opts.update(opts)
 
