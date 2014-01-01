@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import snippets.graphing as sg
 import logging
 from bayesian_quadrature import BQ
+from gp import PeriodicKernel
 
 from .. import config
 from . import BaseModel
@@ -33,14 +34,11 @@ class BayesianQuadratureModel(BaseModel):
 
     def __init__(self, *args, **kwargs):
         self.bq_opts = {
-            'h': config.getfloat("bq", "h"),
-            'w': config.getfloat("bq", "w"),
-            's': config.getfloat("bq", "s"),
-            'ntry': config.getint("bq", "ntry"),
             'n_candidate': config.getint("bq", "n_candidate"),
             'x_mean': config.getfloat("model", "R_mu"),
             'x_var': 1. / config.getfloat("model", "R_kappa"),
             'candidate_thresh': config.getfloat("model", "step"),
+            'kernel': PeriodicKernel
         }
 
         if 'bq_opts' in kwargs:
@@ -50,10 +48,15 @@ class BayesianQuadratureModel(BaseModel):
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
 
     def _init_bq(self):
-        Ri, ix = np.unique(self.R_i, return_index=True)
-        self.bq = BQ(Ri, self.S_i[ix], **self.bq_opts)
-        self.bq._fit_log_l(params=(np.sqrt(7), np.pi / 3., 0))
-        self.bq._fit_l(params=(np.sqrt(0.15), np.pi / 4., 0))
+        Ri = self._unwrap(self.R_i)
+
+        ix = np.argsort(Ri)
+        Ri = Ri[ix]
+        Si = self.S_i[ix]
+
+        self.bq = BQ(Ri, Si, **self.bq_opts)
+        self.bq.fit_log_l((np.sqrt(7), np.pi / 3., 1, 0))
+        self.bq.fit_l((np.sqrt(0.15), np.pi / 4., 1, 0))
 
     def sample(self, verbose=0):
         #niter = int(4 * np.pi / self.opts['step'])
@@ -120,8 +123,8 @@ class BayesianQuadratureModel(BaseModel):
     ##################################################################
     # Plotting methods
 
-    xmin = -3 * np.pi
-    xmax = 3 * np.pi
+    xmin = -np.pi
+    xmax = np.pi
 
     def plot_log_S_gp(self, ax, f_S=None):
         # plot the regression for S
