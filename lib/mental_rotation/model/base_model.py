@@ -216,7 +216,7 @@ class BaseModel(pymc.Sampler):
         x_ = x % (2 * np.pi)
         try:
             x_[x_ > np.pi] -= 2 * np.pi
-        except TypeError:
+        except (TypeError, IndexError):
             if x_ > np.pi:
                 x_ -= 2 * np.pi
         return x_
