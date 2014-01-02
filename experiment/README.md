@@ -38,7 +38,10 @@ Collected data for 20 participants.
 
 * Somewhat better error rates (only 5 had less than 75% accuracy)
 * But, there was an issue where people could not submit the HIT. Still
-  investigating why this was the case.
+  investigating why this was the case. Update: I *think* this is
+  because I had the "use_sandbox" option set in PsiTurk, whch means
+  that it tried to submit to the worker sandbox rather than Turk
+  itself.
 * Also, it appears that you only ever get one flipped/same version of
   each stimulus -- i.e., there are different rotations, but each
   participant only sees each stimulus as flipped or same.
