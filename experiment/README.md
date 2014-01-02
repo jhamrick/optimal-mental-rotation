@@ -20,6 +20,7 @@ Collected data for 16 participants.
 * Fewer data points for 0-degree and 180-degree rotations, because all
   other rotations have a corresponding angle (e.g. 20 and 340).
 
+
 ## Version B
 
 ### Design
@@ -41,3 +42,22 @@ Collected data for 20 participants.
 * Also, it appears that you only ever get one flipped/same version of
   each stimulus -- i.e., there are different rotations, but each
   participant only sees each stimulus as flipped or same.
+
+
+## Version C
+
+### Design
+
+8 conditions with 100 trials each (plus 10 training trials). Each of
+the 20 stimuli is repeated 10 times and each rotation (0-340, plus
+another repetition of 0 and 180) is repeated 10 times (5 same, 5
+flipped), giving a block of 200 trials, which is then split in half.
+
+Fixed the bug with trial balancing that was in Version B.
+
+### Data
+
+
+
+### Notes/Issues
+
