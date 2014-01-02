@@ -48,43 +48,63 @@ class BayesianQuadratureModel(BaseModel):
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
 
     def _init_bq(self):
-        Ri = self._unwrap(self.R_i)
-
-        ix = np.argsort(Ri)
-        Ri = Ri[ix]
-        Si = self.S_i[ix]
+        Ri = np.array([self.model['R'].value])
+        Si = np.array([np.exp(self.model['log_S'].logp)])
 
         self.bq = BQ(Ri, Si, **self.bq_opts)
-        self.bq.fit_log_l((np.sqrt(7), np.pi / 3., 1, 0))
-        self.bq.fit_l((np.sqrt(0.15), np.pi / 4., 1, 0))
+        self.bq.fit_log_l((2, 3 * np.pi / 4., 1, 0))
+        self.bq.fit_l((0.2, np.pi / 6., 1, 0))
 
     def sample(self, verbose=0):
-        #niter = int(4 * np.pi / self.opts['step'])
-        niter = 7
-        super(BaseModel, self).sample(iter=niter, verbose=verbose)
+        super(BaseModel, self).sample(iter=10, verbose=verbose)
 
     def _loop(self):
-        if self._current_iter == 0:
-            self.tally()
-            self._current_iter += 1
-            self._init_bq()
         super(BaseModel, self)._loop()
 
-    def _dist_cost(self, x, B=2):
-        R = float(self.model['R'].value)
-        dist = 1. / np.exp(B * (R - x) ** 2)
+    def _dist_cost(self, x, B=3):
+        R = self.model['R'].value
+        diff = self._unwrap(x - R)
+        dist = 1. / np.exp(B * diff ** 2)
         return dist
 
     def draw(self):
-        target = self.bq.choose_next(n=1)
+        if self._current_iter == 0:
+            self._init_bq()
+
+            # hyp = self.hypothesis_test()
+            # if hyp == 0 or hyp == 1:
+            #     self.status = 'halt'
+
+            return
+
+        target = self._unwrap(
+            self.bq.choose_next(cost_fun=self._dist_cost, n=1))
         print "[%d] target = %s" % (self._current_iter, target)
 
-        self.model['R'].value = target
-        self._init_bq()
+        curr = self.model['R'].value
+        diff = self._unwrap(target - curr)
 
-        hyp = self.hypothesis_test()
-        if hyp == 0 or hyp == 1:
-            self.status = 'halt'
+        nstep = int(np.abs(diff) / self.opts['step'])
+        steps = self._unwrap(np.linspace(curr, curr + diff, nstep + 1)[1:])
+
+        for R in steps:
+            self.model['R'].value = R
+            print "R = %s" % self.model['R'].value
+
+            self.bq.add_observation(
+                np.array([self._unwrap(self.model['R'].value)]),
+                np.array([np.exp(self.model['log_S'].logp)]))
+
+            if self._current_iter >= (self._iter - 1):
+                break
+
+            # hyp = self.hypothesis_test()
+            # if hyp == 0 or hyp == 1:
+            #     self.status = 'halt'
+            #     break
+
+            self.tally()
+            self._current_iter += 1
 
     ##################################################################
     # The estimated S function
