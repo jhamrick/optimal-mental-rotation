@@ -126,7 +126,7 @@ def find_bad_participants(exp, data):
         thresh = 0.25
         if accuracy.mean() <= (1 - thresh):
             logger.warning(
-                "%s failed %d%% or more trials", pid, 100 * thresh)
+                "%s failed %d%% of trials", pid, 100 * accuracy.mean())
             info['note'] = "failed"
             continue
 
