@@ -35,6 +35,9 @@ Collected data for 20 participants.
 
 ### Notes/Issues
 
-* Much better error rates (only 5 had less than 75% accuracy)
+* Somewhat better error rates (only 5 had less than 75% accuracy)
 * But, there was an issue where people could not submit the HIT. Still
   investigating why this was the case.
+* Also, it appears that you only ever get one flipped/same version of
+  each stimulus -- i.e., there are different rotations, but each
+  participant only sees each stimulus as flipped or same.
