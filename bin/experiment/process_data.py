@@ -233,10 +233,16 @@ def load_data(data_path, conds, fields):
     all_pids = p_info.set_index(['assignment', 'pid'])
     bad_pids = all_pids.dropna()
     n_subj = len(all_pids)
-    n_good = n_subj - len(bad_pids)
+    n_bad = len(bad_pids)
+    n_failed = (p_info['note'] == 'failed').sum()
+    n_good = n_subj - n_bad
+    n_complete = n_good + n_failed
+    logger.info(
+        "%d/%d (%.1f%%) participants complete",
+        n_complete, n_subj, n_complete * 100. / n_subj)
     logger.info(
         "%d/%d (%.1f%%) participants OK",
-        n_good, n_subj, n_good * 100. / n_subj)
+        n_good, n_complete, n_good * 100. / n_complete)
     data = data\
         .set_index(['assignment', 'pid'])\
         .drop(bad_pids.index)\
