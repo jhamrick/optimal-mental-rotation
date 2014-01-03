@@ -6,6 +6,7 @@ from mental_rotation import EXP_PATH, STIM_PATH
 from mental_rotation.stimulus import Stimulus2D
 import logging
 import pandas as pd
+from itertools import product
 
 logger = logging.getLogger("mental_rotation.experiment")
 
@@ -51,39 +52,53 @@ def save_configs(exp, force=False):
     exp_stims = {stim.name: get_stiminfo(stim) for stim in exp_path.listdir()}
 
     stim_pairs = pd.DataFrame.from_dict(exp_stims).T
+    stim_pairs['theta'] = stim_pairs['theta'].astype(int)
 
-    stims = stim_pairs['stimulus']\
+    stims = sorted(
+        stim_pairs['stimulus']
         .drop_duplicates()
-    stims = sorted(stims.tolist()) * 10
+        .tolist())
 
     # overrepresent theta=0 and theta=180 so they are shown the same
     # number of times as the other angles
-    thetas = stim_pairs[['theta', 'flipped']]\
-        .drop_duplicates()\
-        .sort(['theta', 'flipped'])
-    theta0 = thetas.ix[thetas['theta'] == 0]
-    theta180 = thetas.ix[thetas['theta'] == 180]
-    thetas = thetas.append(theta0).append(theta180)
-    flipped = thetas['flipped'].tolist() * 5
-    thetas = thetas['theta'].tolist() * 5
+    thetas = sorted((
+        stim_pairs['theta']
+        .drop_duplicates()
+        .tolist() + [-180, 360]))
 
-    trials = []
-    for i in xrange(4):
-        stims_i = stims
-        if i > 0:
-            flipped_i = flipped[-i:] + flipped[:-i]
-            thetas_i = thetas[-i:] + thetas[:-i]
+    # combine the stimuli and rotations
+    items = []
+    for i in xrange(20):
+        s = stims[:]
+        if i == 0:
+            t = thetas[:]
         else:
-            flipped_i = flipped
-            thetas_i = thetas
+            t = thetas[-i:] + thetas[:-i]
+        items.extend([[s[i], t[i]] for i in xrange(len(s))])
 
-        full_block = zip(stims_i, thetas_i, flipped_i)
-        if len(full_block) % 2 != 0:
-            raise ValueError("blocks are not divisible by two")
+    # now add in flip/same and separate into blocks
+    trials = []
+    for i in xrange(8):
+        st = items[(i * 50):((i + 1) * 50)]
+        block = []
+        block.extend([x + [True] for x in st])
+        block.extend([x + [False] for x in st])
+        trials.append(block)
 
-        n = len(full_block) / 2
-        trials.append(full_block[:n])
-        trials.append(full_block[n:])
+    # sanity check, to make sure we got all the combinations
+    all_trials = reduce(lambda x, y: x + y, trials, [])
+    assert len(all_trials) == 800
+    all_trials = pd.DataFrame(sorted(all_trials)).drop_duplicates()
+    assert len(all_trials) == 800
+
+    # go back through and rename -180 to 180 and 360 to 0
+    for block in trials:
+        for i in xrange(len(block)):
+            if block[i][1] == -180:
+                block[i][1] = 180
+            elif block[i][1] == 360:
+                block[i][1] = 0
+            block[i] = tuple(block[i])
 
     stim_pairs = stim_pairs.set_index(['stimulus', 'theta', 'flipped'])
     for i, block in enumerate(trials):

@@ -122,11 +122,14 @@ def find_bad_participants(exp, data):
                      .get_group('stim')\
                      .groupby('mode')\
                      .get_group('experiment')
-        accuracy = exp_data['flipped'] == exp_data['response']
-        thresh = 0.25
-        if accuracy.mean() <= (1 - thresh):
+
+        smallrot = lambda x: (x <= 40) or (x >= 320)
+        theta0 = exp_data.set_index('theta').groupby(smallrot).get_group(True)
+        accuracy = (theta0['flipped'] == theta0['response']).mean()
+
+        if accuracy <= 0.85:
             logger.warning(
-                "%s failed %d%% or more trials", pid, 100 * thresh)
+                "%s failed %d%% of easy trials", pid, 100 * (1 - accuracy))
             info['note'] = "failed"
             continue
 
@@ -233,10 +236,16 @@ def load_data(data_path, conds, fields):
     all_pids = p_info.set_index(['assignment', 'pid'])
     bad_pids = all_pids.dropna()
     n_subj = len(all_pids)
-    n_good = n_subj - len(bad_pids)
+    n_bad = len(bad_pids)
+    n_incomplete = (p_info['note'] == 'incomplete').sum()
+    n_good = n_subj - n_bad
+    n_complete = n_subj - n_incomplete
+    logger.info(
+        "%d/%d (%.1f%%) participants complete",
+        n_complete, n_subj, n_complete * 100. / n_subj)
     logger.info(
         "%d/%d (%.1f%%) participants OK",
-        n_good, n_subj, n_good * 100. / n_subj)
+        n_good, n_complete, n_good * 100. / n_complete)
     data = data\
         .set_index(['assignment', 'pid'])\
         .drop(bad_pids.index)\
