@@ -1,0 +1,66 @@
+{
+  "description": null, 
+  "last_modified": "2013-12-22 13:04:26.906298", 
+  "title": null, 
+  "image": null, 
+  "datapackage_version": "1.0-beta.5", 
+  "sources": [], 
+  "contributors": [
+    {
+      "email": "jhamrick@berkeley.edu", 
+      "name": "Jessica B. Hamrick"
+    }, 
+    {
+      "email": "tom_griffiths@berkeley.edu", 
+      "name": "Thomas L. Griffiths"
+    }
+  ], 
+  "version": "1.0.0", 
+  "keywords": null, 
+  "licenses": [
+    {
+      "url": "http://opendefinition.org/licenses/odc-by", 
+      "id": "odc-by"
+    }
+  ], 
+  "homepage": null, 
+  "resources": [
+    {
+      "hash": "c76cb76a78691faa81193131c3d97d95", 
+      "name": "experiment.csv", 
+      "format": "csv", 
+      "bytes": 147575, 
+      "modified": "2013-12-22 13:04:26.885243", 
+      "mediaformat": "text/csv", 
+      "path": "./experiment.csv"
+    }, 
+    {
+      "format": "json", 
+      "data": {
+        "choices": "\n    <p>Press <b>s</b> for \"same\"</p><p>Press <b>f</b> for \"flipped\"</p>\n  "
+      }, 
+      "name": "metadata", 
+      "mediaformat": "application/json", 
+      "modified": "2013-12-22 13:04:26.903238"
+    }, 
+    {
+      "hash": "98f4c0fa9b359538d60db962fc961a60", 
+      "name": "events.csv", 
+      "format": "csv", 
+      "bytes": 11512, 
+      "modified": "2013-12-22 13:04:26.903255", 
+      "mediaformat": "text/csv", 
+      "path": "./events.csv"
+    }, 
+    {
+      "hash": "7883076c3cb9e3374a944332798547af", 
+      "name": "participants.csv", 
+      "format": "csv", 
+      "bytes": 1689, 
+      "modified": "2013-12-22 13:04:26.905433", 
+      "mediaformat": "text/csv", 
+      "path": "./participants.csv"
+    }
+  ], 
+  "name": "B.dpkg"
+}

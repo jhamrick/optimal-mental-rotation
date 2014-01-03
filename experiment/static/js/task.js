@@ -138,6 +138,8 @@ var TestPhase = function() {
     this.trialinfo;    
     // The response they gave
     this.response;
+    // The number they've gotten correct, so far
+    this.num_correct = 0;
 
     // Handlers to setup each phase of a trial
     this.phases = new Object();
@@ -160,6 +162,13 @@ var TestPhase = function() {
 
         // Update progress bar
         update_progress(STATE.index, this.trials.length);
+
+	// Update the score
+	if (STATE.experiment_phase == EXPERIMENT.experiment) {
+	    update_score(STATE.index, this.num_correct, true);
+	} else {
+	    update_score(STATE.index, this.num_correct, false);
+	}
 
         // Register the response handler to record responses
         var that = this;
@@ -233,6 +242,7 @@ var TestPhase = function() {
         var timeout;
         if (correct) {
             $("#feedback-area").html("Correct!");
+	    that.num_correct = that.num_correct + 1;
             timeout = 500;
         } else {
             var answer;

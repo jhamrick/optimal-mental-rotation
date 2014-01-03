@@ -226,6 +226,32 @@ function update_progress(num, num_trials) {
     $("#progress-text").html("Progress " + (num + 1) + "/" + num_trials);
 }
 
+// Update the score based on the current trial and total they've
+// gotten correct.
+function update_score(num, num_correct, emph) {
+    debug("update score");
+    var pct;
+    if (num == 0) {
+	$("#score").html("");
+
+    } else {
+	pct = Math.round(num_correct * 100 / num);
+
+	if (emph) {
+	    if (pct < 85) {
+		$("#score").css({"color": "red"});
+	    } else {
+		$("#score").css({"color": "green"});
+	    }
+
+	} else {
+	    $("#score").css({"color": "inherit"});
+	}	    
+
+	$("#score").html("SCORE: " + num_correct + "/" + num + " (" + pct + "%)");
+    }
+}
+
 // Show new_elems, and then hide everything else
 function show_phase(new_elem, callback) {
     $(".phase").removeClass("current-phase");
