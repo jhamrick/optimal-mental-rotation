@@ -73,6 +73,11 @@ def make_Xi(name, X):
     return Xi
 
 
+def make_F():
+    F = pymc.Bernoulli("F", p=0.5, value=0, observed=False)
+    return F
+
+
 def make_R(R_mu, R_kappa):
 
     def R_logp(value, mu=R_mu, kappa=R_kappa):
@@ -101,10 +106,12 @@ def make_R(R_mu, R_kappa):
     return R
 
 
-def make_Xr(Xa, R):
+def make_Xr(Xa, R, F):
     @pymc.deterministic
-    def Xr(Xa=Xa, R=R):
+    def Xr(Xa=Xa, R=R, F=F):
         Xr = Xa.copy()
+        if F == 1:
+            Stimulus2D._flip(Xr, np.array([0, 1]))
         Stimulus2D._rotate(Xr, np.degrees(R))
         return Xr
     return Xr

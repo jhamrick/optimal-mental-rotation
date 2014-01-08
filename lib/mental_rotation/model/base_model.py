@@ -23,8 +23,9 @@ class BaseModel(pymc.Sampler):
         self.model['Xb'] = model.make_Xi('Xb', X_b)
         self.model['R'] = model.make_R(
             self.opts['R_mu'], self.opts['R_kappa'])
+        self.model['F'] = model.make_F()
         self.model['Xr'] = model.make_Xr(
-            self.model['Xa'], self.model['R'])
+            self.model['Xa'], self.model['R'], self.model['F'])
         self.model['log_S'] = model.make_log_S(
             self.model['Xb'], self.model['Xr'], self.opts['S_sigma'])
 
@@ -55,6 +56,14 @@ class BaseModel(pymc.Sampler):
         return R
 
     ##################################################################
+    # Sampled F_i
+
+    @property
+    def F_i(self):
+        F = self.trace('F')[:self._current_iter]
+        return F
+
+    ##################################################################
     # Sampled S_i and the estimated S
 
     @property
@@ -66,17 +75,20 @@ class BaseModel(pymc.Sampler):
     def S_i(self):
         return np.exp(self.log_S_i)
 
-    def log_S(self, R):
+    def log_S(self, R, F):
         raise NotImplementedError
 
-    def S(self, R):
+    def S(self, R, F):
         raise NotImplementedError
 
     ##################################################################
     # Sampled dZ_dR (which is just S_i*p(R_i)) and full estimate of Z
 
     def get_log_dZ_dR(self):
-        return self.model['log_S'].logp + self.model['R'].logp
+        p_log_S = self.model['log_S'].logp
+        p_R = self.model['R'].logp
+        p_F = self.model['F'].logp
+        return p_log_S + p_R + p_F
 
     @property
     def log_dZ_dR_i(self):
@@ -87,18 +99,16 @@ class BaseModel(pymc.Sampler):
     def dZ_dR_i(self):
         return np.exp(self.log_dZ_dR_i)
 
-    def log_dZ_dR(self, R):
+    def log_dZ_dR(self, R, F):
         raise NotImplementedError
 
-    def dZ_dR(self, R):
+    def dZ_dR(self, R, F):
         raise NotImplementedError
 
-    @property
-    def log_Z(self):
+    def log_Z(self, F):
         raise NotImplementedError
 
-    @property
-    def Z(self):
+    def Z(self, F):
         raise NotImplementedError
 
     ##################################################################
@@ -106,13 +116,13 @@ class BaseModel(pymc.Sampler):
 
     @property
     def log_lh_h0(self):
+        log_Z = self.log_Z(0)
         p_Xa = self.model['Xa'].logp
-        p_Xb = self.model['Xb'].logp
-        return p_Xa + p_Xb
+        return log_Z + p_Xa
 
     @property
     def log_lh_h1(self):
-        log_Z = self.log_Z
+        log_Z = self.log_Z(1)
         p_Xa = self.model['Xa'].logp
         return log_Z + p_Xa
 
@@ -196,16 +206,15 @@ class BaseModel(pymc.Sampler):
     # Misc
 
     def print_stats(self):
-        print "log Z = %f" % self.log_Z
         print "log LH(h0) = %f" % self.log_lh_h0
         print "log LH(h1) = %f" % self.log_lh_h1
 
         llr = self.log_lh_h0 - self.log_lh_h1
         print "log LH(h0) / LH(h1) = %f" % llr
         if llr < 0: # pragma: no cover
-            print "--> ACCEPT hypothesis 1"
+            print "--> STOP and accept hypothesis 1 (flipped)"
         elif llr > 0: # pragma: no cover
-            print "--> REJECT hypothesis 1"
+            print "--> STOP and accept hypothesis 0 (same)"
         else: # pragma: no cover
             print "--> UNDECIDED"
 
