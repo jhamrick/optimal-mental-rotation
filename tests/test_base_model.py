@@ -52,7 +52,19 @@ class TestBaseModel(object):
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
         Ri = m.R_i
-        assert np.isclose(Ri, 0).sum() == 1
+        # once for F=0, once for F=1
+        assert np.isclose(Ri, 0).sum() == 2
+
+    def test_F_i(self):
+        if self.cls is BaseModel:
+            return
+
+        Xa, Xb, m = util.make_model(self.cls)
+        m.sample()
+        Fi = m.F_i
+        assert ((Fi == 0) | (Fi == 1)).all()
+        assert (Fi == 0).any()
+        assert (Fi == 1).any()
 
     def test_log_S_i(self):
         if self.cls is BaseModel:
@@ -79,7 +91,9 @@ class TestBaseModel(object):
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
         R = np.linspace(0, 2 * np.pi, 361)
-        assert np.allclose(m.log_S(R), np.log(m.S(R)))
+        assert np.allclose(m.log_S(R, 0), np.log(m.S(R, 0)))
+        assert np.allclose(m.log_S(R, 1), np.log(m.S(R, 1)))
+        assert not np.allclose(m.S(R, 0), m.S(R, 1))
 
     def test_log_dZ_dR_i(self):
         if self.cls is BaseModel:
@@ -106,7 +120,9 @@ class TestBaseModel(object):
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
         R = np.linspace(0, 2 * np.pi, 361)
-        assert np.allclose(m.log_dZ_dR(R), np.log(m.dZ_dR(R)))
+        assert np.allclose(m.log_dZ_dR(R, 0), np.log(m.dZ_dR(R, 0)))
+        assert np.allclose(m.log_dZ_dR(R, 1), np.log(m.dZ_dR(R, 1)))
+        assert not np.allclose(m.dZ_dR(R, 0), m.dZ_dR(R, 1))
 
     def test_log_Z(self):
         if self.cls is BaseModel:
@@ -119,16 +135,18 @@ class TestBaseModel(object):
 
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
-        assert np.allclose(m.log_Z, np.log(m.Z))
+        assert np.allclose(m.log_Z(0), np.log(m.Z(0)))
+        assert np.allclose(m.log_Z(1), np.log(m.Z(1)))
 
     def test_log_lh_h0(self):
         if self.cls is BaseModel:
             return
 
         Xa, Xb, m = util.make_model(self.cls)
+        m.sample()
         log_p_Xa = m.model['Xa'].logp
-        log_p_Xb = m.model['Xb'].logp
-        assert m.log_lh_h0 == (log_p_Xa + log_p_Xb)
+        log_Z = m.log_Z(0)
+        assert m.log_lh_h0 == (log_p_Xa + log_Z)
 
     def test_log_lh_h1(self):
         if self.cls is BaseModel:
@@ -137,7 +155,7 @@ class TestBaseModel(object):
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
         log_p_Xa = m.model['Xa'].logp
-        log_Z = m.log_Z
+        log_Z = m.log_Z(1)
         assert m.log_lh_h1 == (log_p_Xa + log_Z)
 
     def test_print_stats(self):

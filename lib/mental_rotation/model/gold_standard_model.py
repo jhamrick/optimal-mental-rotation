@@ -14,14 +14,14 @@ class GoldStandardModel(BaseModel):
     def sample(self, verbose=0):
         self.model['R'].value = -np.pi
         self.model['F'].value = 0
-        super(BaseModel, self).sample(iter=721, verbose=verbose)
+        super(BaseModel, self).sample(iter=722, verbose=verbose)
 
     def draw(self):
-        self.model['F'].value = 0
-        self.model['R'].value = self.model['R'].value + np.radians(1)
-        self.tally()
-        self._current_iter += 1
-        self.model['F'].value = 1
+        if self._current_iter % 2 == 0:
+            self.model['F'].value = 0
+            self.model['R'].value = self.model['R'].value + np.radians(1)
+        else:
+            self.model['F'].value = 1
 
     ##################################################################
     # The estimated S function
