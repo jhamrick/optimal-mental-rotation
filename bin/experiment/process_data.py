@@ -98,7 +98,7 @@ def find_bad_participants(exp, data):
         prestim = df\
             .groupby(['trial_phase'])\
             .get_group('prestim')
-        incomplete = len(prestim) != 110
+        incomplete = len(prestim) != 210
         if incomplete:
             logger.warning("%s is incomplete", pid)
             info['note'] = "incomplete"
@@ -121,7 +121,7 @@ def find_bad_participants(exp, data):
         exp_data = df.groupby('trial_phase')\
                      .get_group('stim')\
                      .groupby('mode')\
-                     .get_group('experiment')
+                     .get_group('experimentB')
 
         smallrot = lambda x: (x <= 40) or (x >= 320)
         theta0 = exp_data.set_index('theta').groupby(smallrot).get_group(True)
