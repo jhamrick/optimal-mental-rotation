@@ -164,7 +164,7 @@ var TestPhase = function() {
         update_progress(STATE.index, this.trials.length);
 
 	// Update the score
-	if (STATE.experiment_phase == EXPERIMENT.experiment) {
+	if (STATE.experiment_phase > EXPERIMENT.training) {
 	    update_score(STATE.index, this.num_correct, true);
 	} else {
 	    update_score(STATE.index, this.num_correct, false);
