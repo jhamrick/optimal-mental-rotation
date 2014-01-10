@@ -102,11 +102,16 @@ def save_configs(exp, force=False):
 
     stim_pairs = stim_pairs.set_index(['stimulus', 'theta', 'flipped'])
     for i, block in enumerate(trials):
-        t = stim_pairs.ix[trials[i]].reset_index()
+        tA = stim_pairs.ix[trials[i]].reset_index()
+        if i < (len(trials) - 1):
+            tB = stim_pairs.ix[trials[i+1]].reset_index()
+        else:
+            tB = stim_pairs.ix[trials[0]].reset_index()
 
         config = {}
         config['training'] = training
-        config['experiment'] = sorted(t.T.to_dict().values())
+        config['experimentA'] = sorted(tA.T.to_dict().values())
+        config['experimentB'] = sorted(tB.T.to_dict().values())
         config['examples'] = examples
 
         config_path = EXP_PATH.joinpath(
