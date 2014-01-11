@@ -1,6 +1,7 @@
 import pymc
 import numpy as np
 import snippets.graphing as sg
+from path import path
 
 from . import model
 from .. import config
@@ -8,7 +9,7 @@ from .. import config
 
 class BaseModel(pymc.Sampler):
 
-    def __init__(self, X_a, X_b, **opts):
+    def __init__(self, X_a, X_b, name=None, **opts):
 
         self.opts = {
             'R_mu': config.getfloat("model", "R_mu"),
@@ -32,8 +33,17 @@ class BaseModel(pymc.Sampler):
         self._prior = model.prior
         self._log_similarity = model.log_similarity
 
-        name = type(self).__name__
-        super(BaseModel, self).__init__(input=self.model, name=name)
+        if name is None:
+            name = type(self).__name__
+            db_args = dict(db='ram')
+        else:
+            db_args = dict(db='txt', dbmode='w')
+            if path(name + ".txt").exists():
+                raise IOError(
+                    "Database already exists! Use `load` instead to load it.")
+
+        super(BaseModel, self).__init__(
+            input=self.model, name=name, **db_args)
 
         self._funs_to_tally['log_S'] = self.model['log_S'].get_logp
         self._funs_to_tally['log_dZ_dR'] = self.get_log_dZ_dR
@@ -229,3 +239,25 @@ class BaseModel(pymc.Sampler):
             if x_ > np.pi:
                 x_ -= 2 * np.pi
         return x_
+
+    ##################################################################
+    # Copying/Saving
+    
+    def get_state(self):
+        state = super(BaseModel, self).get_state()
+        state['opts'] = self.opts
+        state['Xa'] = self.Xa.value
+        state['Xb'] = self.Xb.value
+        return state
+
+    @classmethod
+    def load(cls, dbname):
+        db = pymc.database.txt.load(dbname + ".txt")
+        state = db.getstate()
+        model = cls(state['Xa'], state['Xb'], **state['opts'])
+        model.db = db
+        model.restore_sampler_state()
+        return model
+
+    def save(self):
+        self.db.close()

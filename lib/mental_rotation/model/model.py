@@ -62,7 +62,7 @@ def make_Xi(name, X):
         parents={},
         random=None,
         trace=False,
-        value=X.vertices,
+        value=X,
         dtype=object,
         rseed=1.,
         observed=True,
