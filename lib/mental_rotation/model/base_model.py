@@ -37,8 +37,8 @@ class BaseModel(pymc.Sampler):
             name = type(self).__name__
             db_args = dict(db='ram')
         else:
-            db_args = dict(db='txt', dbmode='w')
-            if path(name + ".txt").exists():
+            db_args = dict(db='hdf5', dbmode='w')
+            if path(name + ".hdf5").exists():
                 raise IOError(
                     "Database already exists! Use `load` instead to load it.")
 
@@ -252,7 +252,7 @@ class BaseModel(pymc.Sampler):
 
     @classmethod
     def load(cls, dbname):
-        db = pymc.database.txt.load(dbname + ".txt")
+        db = pymc.database.hdf5.load(dbname + ".hdf5")
         state = db.getstate()
         model = cls(state['Xa'], state['Xb'], **state['opts'])
         model.db = db
