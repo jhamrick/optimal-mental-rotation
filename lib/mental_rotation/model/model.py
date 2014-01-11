@@ -1,5 +1,4 @@
 import numpy as np
-import pymc
 import scipy
 
 from .. import Stimulus2D
@@ -49,76 +48,93 @@ def log_similarity(X0, X1, S_sigma):
     return log_S
 
 
-def make_Xi(name, X):
-    def Xa_logp(value):
-        return prior(value)
+class Xi(object):
+    """Shape"""
 
-    # we can't use the stochastic decorator because PyMC does weird
-    # things with the system trace which screws up code coverage.
-    Xi = pymc.Stochastic(
-        logp=Xa_logp,
-        doc='Stimulus %s' % name,
-        name=name,
-        parents={},
-        random=None,
-        trace=False,
-        value=X,
-        dtype=object,
-        rseed=1.,
-        observed=True,
-        cache_depth=2,
-        plot=False,
-        verbose=0)
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+        self.observed = True
 
-    return Xi
+    @property
+    def logp(self):
+        return prior(self.value)
 
 
-def make_F():
-    F = pymc.Bernoulli("F", p=0.5, value=0, observed=False)
-    return F
+class F(object):
+    """Flipped"""
+
+    def __init__(self):
+        self.name = "F"
+        self.p = 0.5
+        self.value = 0
+        self.observed = False
+
+    @property
+    def logp(self):
+        return np.log(self.p * self.value + (1 - self.p) * (1 - self.value))
 
 
-def make_R(R_mu, R_kappa):
+class R(object):
+    """Rotation"""
 
-    def R_logp(value, mu=R_mu, kappa=R_kappa):
-        return pymc.distributions.von_mises_like(value, R_mu, R_kappa)
+    def __init__(self, mu, kappa):
+        self.name = "R"
+        self.mu = mu
+        self.kappa = kappa
+        self.value= 0
+        self.observed = False
 
-    def random(mu, kappa, size=1):
-        return pymc.distributions.rvon_mises(mu, kappa, size=size)
+        self._C = -np.log(2 * np.pi * scipy.special.iv(0, self.kappa))
 
-    # we can't use the stochastic decorator because PyMC does weird
-    # things with the system trace which screws up code coverage.
-    R = pymc.Stochastic(
-        logp=R_logp,
-        doc='Rotation',
-        name='R',
-        parents={'mu': R_mu, 'kappa': R_kappa},
-        random=random,
-        trace=True,
-        value=0,
-        dtype=float,
-        rseed=1.,
-        observed=False,
-        cache_depth=2,
-        plot=False,
-        verbose=0)
+    @property
+    def logp(self):
+        logp = self._C + (self.kappa * np.cos(self.value - self.mu))
+        return logp
+        
 
-    return R
+class Xr(object):
+    """Mental image"""
+    
+    def __init__(self, Xa, R, F):
+        self.name = "Xr"
+        self.Xa = Xa
+        self.R = R
+        self.F = F
 
-
-def make_Xr(Xa, R, F):
-    @pymc.deterministic
-    def Xr(Xa=Xa, R=R, F=F):
-        Xr = Xa.copy()
-        if F == 1:
+    @property
+    def value(self):
+        Xr = self.Xa.value.copy()
+        if self.F.value == 1:
             Stimulus2D._flip(Xr, np.array([0, 1]))
-        Stimulus2D._rotate(Xr, np.degrees(R))
+        Stimulus2D._rotate(Xr, np.degrees(self.R.value))
         return Xr
-    return Xr
 
 
-def make_log_S(Xb, Xr, S_sigma):
-    @pymc.potential
-    def log_S(Xb=Xb, Xr=Xr):
-        return log_similarity(Xb, Xr, S_sigma)
-    return log_S
+class log_S(object):
+    """Log similarity"""
+
+    def __init__(self, Xb, Xr, sigma):
+        self.name = "log_S"
+        self.Xb = Xb
+        self.Xr = Xr
+        self.sigma = sigma
+
+    @property
+    def logp(self):
+        return log_similarity(self.Xb.value, self.Xr.value, self.sigma)
+
+
+class log_dZ_dR(object):
+    def __init__(self, log_S, R, F):
+        self.name = "log_dZ_dR"
+        self.log_S = log_S
+        self.R = R
+        self.F = F
+        
+    @property
+    def logp(self):
+        p_log_S = self.log_S.logp
+        p_R = self.R.logp
+        p_F = self.F.logp
+        return p_log_S + p_R + p_F

@@ -5,21 +5,19 @@ from . import BaseModel
 
 class GoldStandardModel(BaseModel):
 
-    def __init__(self, *args, **kwargs):
-        super(GoldStandardModel, self).__init__(*args, **kwargs)
-
-    ##################################################################
-    # Overwritten PyMC sampling methods
-
-    def sample(self, verbose=0):
-        self.model['R'].value = -np.pi
-        self.model['F'].value = 0
-        super(BaseModel, self).sample(iter=722, verbose=verbose)
+    def sample(self):
+        super(GoldStandardModel, self).sample(niter=722)
 
     def draw(self):
+        if self._current_iter == 0:
+            self.model['R'].value = -np.pi
+            self.model['F'].value = 0
+            return
+
         if self._current_iter % 2 == 0:
             self.model['F'].value = 0
             self.model['R'].value = self.model['R'].value + np.radians(1)
+
         else:
             self.model['F'].value = 1
 

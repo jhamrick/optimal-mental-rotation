@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mental_rotation.model import BaseModel
+from path import path
+from mental_rotation.model import BaseModel, model
 from . import util
 
 
@@ -13,8 +14,8 @@ class TestBaseModel(object):
         assert np.allclose(m.model['Xa'].value, Xa.vertices)
         assert np.allclose(m.model['Xb'].value, Xb.vertices)
         assert m.model['Xa'].logp == m.model['Xb'].logp
-        assert m.model['Xa'].logp == m._prior(Xa.vertices)
-        assert m.model['Xb'].logp == m._prior(Xb.vertices)
+        assert m.model['Xa'].logp == model.prior(Xa.vertices)
+        assert m.model['Xb'].logp == model.prior(Xb.vertices)
 
     def test_Xr(self):
         Xa, Xb, m = util.make_model(self.cls)
@@ -23,13 +24,13 @@ class TestBaseModel(object):
 
     def test_similarity(self):
         Xa, Xb, m = util.make_model(self.cls)
-        log_S = m._log_similarity(
+        log_S = model.log_similarity(
             Xb.vertices,
             Xa.vertices,
             m.opts['S_sigma'])
         assert log_S == m.model['log_S'].logp
 
-        log_S = m._log_similarity(
+        log_S = model.log_similarity(
             m.model['Xb'].value,
             m.model['Xr'].value,
             m.opts['S_sigma'])
@@ -165,3 +166,70 @@ class TestBaseModel(object):
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
         m.print_stats()
+
+    # def test_sample_and_close(self):
+    #     if self.cls is BaseModel:
+    #         return
+
+    #     try:
+    #         Xa, Xb, m = util.make_model(self.cls, name='test')
+    #         m.sample()
+    #         m.close()
+    #     except:
+    #         raise
+    #     finally:
+    #         pth = path("test.hdf5")
+    #         print pth.abspath()
+    #         if pth.exists():
+    #             pth.remove()
+
+    # def test_close(self):
+    #     if self.cls is BaseModel:
+    #         return
+
+    #     try:
+    #         Xa, Xb, m = util.make_model(self.cls, name='test')
+    #         m.close()
+    #     except:
+    #         raise
+    #     finally:
+    #         pth = path("test.hdf5")
+    #         print pth.abspath()
+    #         if pth.exists():
+    #             pth.remove()
+
+    # def test_load(self):
+    #     if self.cls is BaseModel:
+    #         return
+
+    #     try:
+    #         Xa, Xb, m = util.make_model(self.cls, name='test')
+    #         m.sample()
+    #         m.close()
+    #         m2 = self.cls.load('test')
+    #         m2.print_stats()
+    #         m2.close()
+    #     except:
+    #         raise
+    #     finally:
+    #         pth = path("test.hdf5")
+    #         if pth.exists():
+    #             pth.remove()
+
+    # def test_load_and_sample(self):
+    #     if self.cls is BaseModel:
+    #         return
+
+    #     try:
+    #         Xa, Xb, m = util.make_model(self.cls, name='test')
+    #         m.close()
+    #         m2 = self.cls.load('test')
+    #         m2.sample()
+    #         m2.print_stats()
+    #         m2.close()
+    #     except:
+    #         raise
+    #     finally:
+    #         pth = path("test.hdf5")
+    #         if pth.exists():
+    #             pth.remove()

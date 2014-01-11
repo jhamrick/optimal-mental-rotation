@@ -1,4 +1,3 @@
-import pymc
 import numpy as np
 import snippets.graphing as sg
 from path import path
@@ -7,9 +6,9 @@ from . import model
 from .. import config
 
 
-class BaseModel(pymc.Sampler):
+class BaseModel(object):
 
-    def __init__(self, X_a, X_b, name=None, **opts):
+    def __init__(self, Xa, Xb, name=None, **opts):
 
         self.opts = {
             'R_mu': config.getfloat("model", "R_mu"),
@@ -19,50 +18,97 @@ class BaseModel(pymc.Sampler):
         }
         self.opts.update(opts)
 
+        self._make_model(Xa, Xb)
+
+        self._current_iter = 0
+        self._iter = 0
+        self._traces = None
+
+        self.status = "ready"
+
+    def _make_model(self, Xa, Xb):
         self.model = {}
-        self.model['Xa'] = model.make_Xi('Xa', X_a)
-        self.model['Xb'] = model.make_Xi('Xb', X_b)
-        self.model['R'] = model.make_R(
+        self.model['Xa'] = model.Xi('Xa', Xa)
+        self.model['Xb'] = model.Xi('Xb', Xb)
+        self.model['F'] = model.F()
+        self.model['R'] = model.R(
             self.opts['R_mu'], self.opts['R_kappa'])
-        self.model['F'] = model.make_F()
-        self.model['Xr'] = model.make_Xr(
+        self.model['Xr'] = model.Xr(
             self.model['Xa'], self.model['R'], self.model['F'])
-        self.model['log_S'] = model.make_log_S(
+        self.model['log_S'] = model.log_S(
             self.model['Xb'], self.model['Xr'], self.opts['S_sigma'])
+        self.model['log_dZ_dR'] = model.log_dZ_dR(
+            self.model['log_S'], self.model['R'], self.model['F'])
 
-        self._prior = model.prior
-        self._log_similarity = model.log_similarity
+    def _init_traces(self):
+        n = self._iter
+        self._traces = {}
+        self._traces['F'] = np.empty(n)
+        self._traces['R'] = np.empty(n)
+        self._traces['Xr'] = np.empty((n,) + self.model['Xr'].value.shape)
+        self._traces['log_S'] = np.empty(n)
+        self._traces['log_dZ_dR'] = np.empty(n)
 
-        if name is None:
-            name = type(self).__name__
-            db_args = dict(db='ram')
-        else:
-            db_args = dict(db='hdf5', dbmode='w')
-            if path(name + ".hdf5").exists():
-                raise IOError(
-                    "Database already exists! Use `load` instead to load it.")
+    def trace(self, var):
+        return self._traces[var][:self._current_iter]
 
-        super(BaseModel, self).__init__(
-            input=self.model, name=name, **db_args)
+    def _finish(self):
+        i = self._current_iter
+        for v in self._traces:
+            self._traces[v] = self._traces[v][:i]
 
-        self._funs_to_tally['log_S'] = self.model['log_S'].get_logp
-        self._funs_to_tally['log_dZ_dR'] = self.get_log_dZ_dR
+    def tally(self):
+        i = self._current_iter
+        self._traces['F'][i] = self.model['F'].value
+        self._traces['R'][i] = self.model['R'].value
+        self._traces['Xr'][i] = self.model['Xr'].value.copy()
+        self._traces['log_S'][i] = self.model['log_S'].logp
+        self._traces['log_dZ_dR'][i] = self.model['log_dZ_dR'].logp
 
-    ##################################################################
-    # Overwritten PyMC sampling methods
+    def sample(self, niter):
+        if self.status == "done":
+            return
 
-    def _loop(self):
-        if self._current_iter == 0:
+        if self.status == "ready":
+            self._iter = niter
+            self._current_iter = 0
+            self._init_traces()
+
+        self.status = "running"
+
+        try:
+            self.loop()
+        except KeyboardInterrupt:
+            self.status = "paused"
+
+        if self.status == "paused":
+            self._restore(self._current_iter - 1)
+
+        elif self._current_iter == self._iter:
+            self.status = "done"
+
+        elif self.status == "done":
+            self._finish()
+            
+    def loop(self):
+        while self._current_iter < self._iter and self.status == 'running':
+            self.draw()
             self.tally()
             self._current_iter += 1
-        super(BaseModel, self)._loop()
+
+    def draw(self):
+        pass
+
+    def _restore(self, i):
+        self.model['F'].value = self._traces['F'][i]
+        self.model['R'].value = self._traces['R'][i]
 
     ##################################################################
     # Sampled R_i
 
     @property
     def R_i(self):
-        R = self.trace('R')[:self._current_iter]
+        R = self.trace('R')
         return R
 
     ##################################################################
@@ -70,7 +116,7 @@ class BaseModel(pymc.Sampler):
 
     @property
     def F_i(self):
-        F = self.trace('F')[:self._current_iter]
+        F = self.trace('F')
         return F
 
     ##################################################################
@@ -78,7 +124,7 @@ class BaseModel(pymc.Sampler):
 
     @property
     def log_S_i(self):
-        log_S = self.trace('log_S')[:self._current_iter]
+        log_S = self.trace('log_S')
         return log_S
 
     @property
@@ -94,15 +140,9 @@ class BaseModel(pymc.Sampler):
     ##################################################################
     # Sampled dZ_dR (which is just S_i*p(R_i)) and full estimate of Z
 
-    def get_log_dZ_dR(self):
-        p_log_S = self.model['log_S'].logp
-        p_R = self.model['R'].logp
-        p_F = self.model['F'].logp
-        return p_log_S + p_R + p_F
-
     @property
     def log_dZ_dR_i(self):
-        log_p = self.trace('log_dZ_dR')[:self._current_iter]
+        log_p = self.trace('log_dZ_dR')
         return log_p
 
     @property
@@ -136,78 +176,19 @@ class BaseModel(pymc.Sampler):
         p_Xa = self.model['Xa'].logp
         return log_Z + p_Xa
 
+    def hypothesis_test(self):
+        llh0 = self.log_lh_h0
+        llh1 = self.log_lh_h1
+
+        if np.isclose(llh0, llh1):
+            return None
+        elif llh0 > llh1:
+            return 0
+        else:
+            return 1
+
     ##################################################################
-    # Plotting methods
-
-    @staticmethod
-    def _plot(ax, x, y, xi, yi, xo, yo_mean, yo_var, **kwargs):
-        """Plot the original function and the regression estimate.
-
-        """
-
-        opt = {
-            'title': None,
-            'xlabel': "Rotation ($R$)",
-            'ylabel': "Similarity ($S$)",
-            'legend': True,
-        }
-        opt.update(kwargs)
-
-        if x is not None:
-            ix = np.argsort(x)
-            xn = x.copy()
-            ax.plot(xn[ix], y[ix], 'k-', label="actual", linewidth=2)
-        if xi is not None:
-            ax.plot(xi, yi, 'ro', label="samples")
-
-        if xo is not None:
-            ix = np.argsort(xo)
-
-            if yo_var is not None:
-                # hack, for if there are zero or negative variances
-                yv = np.abs(yo_var)[ix]
-                ys = np.zeros(yv.shape)
-                ys[yv != 0] = np.sqrt(yv[yv != 0])
-                # compute upper and lower bounds
-                lower = yo_mean[ix] - ys
-                upper = yo_mean[ix] + ys
-                ax.fill_between(xo[ix], lower, upper, color='r', alpha=0.25)
-
-            ax.plot(xo[ix], yo_mean[ix], 'r-', label="estimate", linewidth=2)
-
-        # customize x-axis
-        ax.set_xlim(-np.pi, np.pi)
-        ax.set_xticks([-np.pi, -np.pi / 2., 0, np.pi / 2., np.pi])
-        ax.set_xticklabels(
-            [r"$-\pi$", r"$\frac{-\pi}{2}$", r"$0$",
-             r"$\frac{\pi}{2}$", r"$\pi$"])
-
-        # axis styling
-        sg.outward_ticks(ax=ax)
-        sg.clear_right(ax=ax)
-        sg.clear_top(ax=ax)
-        sg.set_scientific(-2, 3, axis='y', ax=ax)
-
-        # title and axis labels
-        if opt['title']:
-            ax.set_title(opt['title'])
-        else: # pragma: no cover
-            ax.set_title("")
-
-        if opt['xlabel']:
-            ax.set_xlabel(opt['xlabel'])
-        else: # pragma: no cover
-            ax.set_xlabel("")
-
-        if opt['ylabel']:
-            ax.set_ylabel(opt['ylabel'])
-        else: # pragma: no cover
-            ax.set_ylabel("")
-
-        if opt['legend']:
-            ax.legend(loc=0, fontsize=12, frameon=False)
-        else: # pragma: no cover
-            pass
+    # Plotting 
 
     def plot(self, ax):
         raise NotImplementedError
@@ -243,21 +224,21 @@ class BaseModel(pymc.Sampler):
     ##################################################################
     # Copying/Saving
     
-    def get_state(self):
-        state = super(BaseModel, self).get_state()
+    def __getstate__(self):
+        state = {}
         state['opts'] = self.opts
-        state['Xa'] = self.Xa.value
-        state['Xb'] = self.Xb.value
+        state['Xa'] = self.model['Xa'].value
+        state['Xb'] = self.model['Xb'].value
+        state['_current_iter'] = self._current_iter
+        state['_iter'] = self._iter
+        state['_traces'] = self._traces
+        state['status'] = self.status
         return state
 
-    @classmethod
-    def load(cls, dbname):
-        db = pymc.database.hdf5.load(dbname + ".hdf5")
-        state = db.getstate()
-        model = cls(state['Xa'], state['Xb'], **state['opts'])
-        model.db = db
-        model.restore_sampler_state()
-        return model
-
-    def save(self):
-        self.db.close()
+    def __setstate__(self, state):
+        self.opts = state['opts']
+        self._make_model(state['Xa'], state['Xb'])
+        self._current_iter = state['_current_iter']
+        self._iter = state['iter']
+        self._traces = state['_traces']
+        self.status = state['status']

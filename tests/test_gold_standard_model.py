@@ -1,12 +1,12 @@
 import numpy as np
 import pymc
 
-from mental_rotation.model import GoldStandardModel
-from .test_base_model import TestBaseModel
+from mental_rotation.model import GoldStandardModel, model
+from .test_base_model import TestBaseModel as BaseModel
 from . import util
 
 
-class TestGoldStandardModel(TestBaseModel):
+class TestGoldStandardModel(BaseModel):
 
     cls = GoldStandardModel
 
@@ -38,13 +38,13 @@ class TestGoldStandardModel(TestBaseModel):
         for i, r in enumerate(R):
             Xr = Xa.copy_from_vertices()
             Xr.rotate(np.degrees(r))
-            log_S[2*i] = m._log_similarity(
+            log_S[2*i] = model.log_similarity(
                 Xr.vertices, Xb.vertices, m.opts['S_sigma'])
 
             Xr = Xa.copy_from_vertices()
             Xr.flip(np.array([0, 1]))
             Xr.rotate(np.degrees(r))
-            log_S[2*i + 1] = m._log_similarity(
+            log_S[2*i + 1] = model.log_similarity(
                 Xr.vertices, Xb.vertices, m.opts['S_sigma'])
 
         assert np.allclose(log_S, m.log_S_i)
@@ -69,7 +69,7 @@ class TestGoldStandardModel(TestBaseModel):
         for i, r in enumerate(R):
             Xr = Xa.copy_from_vertices()
             Xr.rotate(np.degrees(r))
-            log_S = m._log_similarity(
+            log_S = model.log_similarity(
                 Xr.vertices, Xb.vertices, m.opts['S_sigma'])
             log_p_R = pymc.distributions.von_mises_like(
                 r, m.opts['R_mu'], m.opts['R_kappa'])
@@ -79,7 +79,7 @@ class TestGoldStandardModel(TestBaseModel):
             Xr = Xa.copy_from_vertices()
             Xr.flip(np.array([0, 1]))
             Xr.rotate(np.degrees(r))
-            log_S = m._log_similarity(
+            log_S = model.log_similarity(
                 Xr.vertices, Xb.vertices, m.opts['S_sigma'])
             log_p_R = pymc.distributions.von_mises_like(
                 r, m.opts['R_mu'], m.opts['R_kappa'])
@@ -120,3 +120,13 @@ class TestGoldStandardModel(TestBaseModel):
         assert np.allclose(log_Z, m.log_Z(0))
         log_Z = np.log(np.trapz(m.dZ_dR(R, 1), R))
         assert np.allclose(log_Z, m.log_Z(1))
+
+    def test_flip(self):
+        Xa, Xb, m = util.make_model(self.cls, flip=True)
+        m.sample()
+        assert m.hypothesis_test() == 1
+
+    def test_same(self):
+        Xa, Xb, m = util.make_model(self.cls, flip=False)
+        m.sample()
+        assert m.hypothesis_test() == 0
