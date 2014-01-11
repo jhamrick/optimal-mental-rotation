@@ -12,14 +12,19 @@ class HillClimbingModel(BaseModel):
     ##################################################################
     # Overwritten PyMC sampling methods
 
-    def sample(self, verbose=0):
-        super(BaseModel, self).sample(iter=720, verbose=verbose)
+    def sample(self):
+        super(HillClimbingModel, self).sample(niter=720)
 
         if self._current_iter == self._iter: # pragma: no cover
             raise RuntimeError(
                 "exhausted all iterations, this shouldn't have happened!")
 
     def draw(self):
+        if self._current_iter == 0:
+            self.model['R'].value = 0
+            self.model['F'].value = 0
+            return
+
         R = self.model['R'].value
         F = self.model['F'].value
         log_S = self.model['log_S'].logp

@@ -1,12 +1,12 @@
 import numpy as np
 import pymc
 
-from mental_rotation.model import HillClimbingModel
-from .test_base_model import TestBaseModel
+from mental_rotation.model import HillClimbingModel, model
+from .test_base_model import TestBaseModel as BaseModel
 from . import util
 
 
-class TestHillClimbingModel(TestBaseModel):
+class TestHillClimbingModel(BaseModel):
 
     cls = HillClimbingModel
 
@@ -22,7 +22,7 @@ class TestHillClimbingModel(TestBaseModel):
             if f == 1:
                 Xr.flip(np.array([0, 1]))
             Xr.rotate(np.degrees(r))
-            log_S[i] = m._log_similarity(
+            log_S[i] = model.log_similarity(
                 Xr.vertices, Xb.vertices, m.opts['S_sigma'])
 
         assert np.allclose(log_S, m.log_S_i)
@@ -51,7 +51,7 @@ class TestHillClimbingModel(TestBaseModel):
             if f == 1:
                 Xr.flip(np.array([0, 1]))
             Xr.rotate(np.degrees(r))
-            log_S = m._log_similarity(
+            log_S = model.log_similarity(
                 Xr.vertices, Xb.vertices, m.opts['S_sigma'])
             log_p_R = pymc.distributions.von_mises_like(
                 r, m.opts['R_mu'], m.opts['R_kappa'])
