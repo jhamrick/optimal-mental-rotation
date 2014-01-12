@@ -28,7 +28,7 @@ def memoprop(f):
     return prop
 
 
-def prior(X):
+def log_prior(X):
     # the beginning is the same as the end, so ignore the last vertex
     n = X.shape[0] - 1
     # n points picked at random angles around the circle
@@ -109,7 +109,7 @@ class Xi(Variable):
 
     @memoprop
     def logp(self):
-        return prior(self.value)
+        return log_prior(self.value)
 
 
 class F(Variable):

@@ -14,8 +14,8 @@ class TestBaseModel(object):
         assert np.allclose(m.model['Xa'].value, Xa.vertices)
         assert np.allclose(m.model['Xb'].value, Xb.vertices)
         assert m.model['Xa'].logp == m.model['Xb'].logp
-        assert m.model['Xa'].logp == model.prior(Xa.vertices)
-        assert m.model['Xb'].logp == model.prior(Xb.vertices)
+        assert m.model['Xa'].logp == model.log_prior(Xa.vertices)
+        assert m.model['Xb'].logp == model.log_prior(Xb.vertices)
 
     def test_Xr(self):
         Xa, Xb, m = util.make_model(self.cls)
