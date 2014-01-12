@@ -51,6 +51,9 @@ def slow_log_similarity(X0, X1, S_sigma):
     # covariance matrix
     Sigma = np.eye(D) * S_sigma
     invSigma = np.eye(D) * (1. / S_sigma)
+    # constants
+    Z0 = D * np.log(2 * np.pi)
+    Z1 = np.linalg.slogdet(Sigma)[1]
     # iterate through all permutations of the vertices -- but if
     # two vertices are connected, they are next to each other in
     # the list (or on the ends), so we really only need to cycle
@@ -60,16 +63,17 @@ def slow_log_similarity(X0, X1, S_sigma):
     for i in xrange(n):
         idx = np.arange(i, i+n) % n
         d = X0 - X1[idx]
-        e[i] = -0.5 * np.sum(np.dot(d, invSigma) * d)
+        e[i] = 0
+        for j in xrange(n):
+            e[i] += -0.5 * (np.dot(d[j], np.dot(invSigma, d[j])) + Z0 + Z1)
     for i in xrange(n):
         idx = np.arange(i, i+n)[::-1] % n
         d = X0 - X1[idx]
-        e[i+n] = -0.5 * np.sum(np.dot(d, invSigma) * d)
-    # constants
-    Z0 = (D / 2.) * np.log(2 * np.pi)
-    Z1 = 0.5 * np.linalg.slogdet(Sigma)[1]
+        e[i+n] = 0
+        for j in xrange(n):
+            e[i+n] += -0.5 * (np.dot(d[j], np.dot(invSigma, d[j])) + Z0 + Z1)
     # overall similarity, marginalizing out order
-    log_S = np.log(np.sum(np.exp(e + Z0 + Z1 - np.log(n))))
+    log_S = np.log(np.sum(np.exp(e - np.log(n))))
     return log_S
 
 

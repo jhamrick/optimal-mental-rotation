@@ -60,11 +60,9 @@ def log_similarity(float64_t[:, ::1] X0, float64_t[:, ::1] X1, float64_t S_sigma
     cdef int n = X0.shape[0]
     cdef int D = X0.shape[1]
 
-    cdef float64_t[::1] diff = np.empty(D, dtype=float64)
-    cdef float64_t[::1] m = np.zeros(D, dtype=float64)
     cdef float64_t[::1, :] S = np.empty((D, D), dtype=float64, order='F')
     cdef float64_t logp, log_S
-    cdef int i, j, k
+    cdef int i, j, k, idx
 
     # covariance matrix
     S[:, :] = 0
@@ -82,17 +80,13 @@ def log_similarity(float64_t[:, ::1] X0, float64_t[:, ::1] X1, float64_t S_sigma
     for i in xrange(n):
         logp = 0
         for j in xrange(n):
-            for k in xrange(D):
-                diff[k] = X0[i, k] - X1[(i + j) % n, k]
-            logp += ga.mvn_logpdf(diff, m, S, logdet)
+            logp += ga.mvn_logpdf(X0[j], X1[(j + i) % n], S, logdet)
         log_S += exp(logp - log(n))
 
         logp = 0
-        for j in xrange(1, n):
-            for k in xrange(D):
-                diff[k] = X0[i, k] - X1[(i - j) % n, k]
-            logp += ga.mvn_logpdf(diff, m, S, logdet)
-        log_S += exp(logp - log(n - 1))
+        for j in xrange(n):
+            logp += ga.mvn_logpdf(X0[j], X1[(n - j + i - 1) % n], S, logdet)
+        log_S += exp(logp - log(n))
 
     log_S = log(log_S)
     return log_S
