@@ -159,12 +159,17 @@ def find_bad_participants(exp, data):
             inaccurate = accuracy < 0.85
 
         elif exp == 'D':
-            exp_data = df.groupby('trial_phase')\
+            exp_dataA = df.groupby('trial_phase')\
+                         .get_group('stim')\
+                         .groupby('mode')\
+                         .get_group('experimentA')
+            exp_dataB = df.groupby('trial_phase')\
                          .get_group('stim')\
                          .groupby('mode')\
                          .get_group('experimentB')
+            exp_data = pd.concat([exp_dataA, exp_dataB])
             accuracy = (exp_data['flipped'] == exp_data['response']).mean()
-            inaccurate = accuracy < 0.85
+            inaccurate = accuracy < 0.8
 
         else:
             raise ValueError("unhandled experiment: %s" % exp)
