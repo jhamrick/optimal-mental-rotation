@@ -1,7 +1,8 @@
 import numpy as np
 import snippets.graphing as sg
-from path import path
+import json
 
+from path import path
 from . import model
 from .. import config
 
@@ -28,8 +29,8 @@ class BaseModel(object):
 
     def _make_model(self, Xa, Xb):
         self.model = {}
-        self.model['Xa'] = model.Xi('Xa', Xa)
-        self.model['Xb'] = model.Xi('Xb', Xb)
+        self.model['Xa'] = model.Xi('Xa', np.array(Xa))
+        self.model['Xb'] = model.Xi('Xb', np.array(Xb))
         self.model['F'] = model.F()
         self.model['R'] = model.R(
             self.opts['R_mu'], self.opts['R_kappa'])
@@ -227,8 +228,8 @@ class BaseModel(object):
     def __getstate__(self):
         state = {}
         state['opts'] = self.opts
-        state['Xa'] = self.model['Xa'].value
-        state['Xb'] = self.model['Xb'].value
+        state['Xa'] = self.model['Xa'].value.tolist()
+        state['Xb'] = self.model['Xb'].value.tolist()
         state['_current_iter'] = self._current_iter
         state['_iter'] = self._iter
         state['_traces'] = self._traces
@@ -239,6 +240,50 @@ class BaseModel(object):
         self.opts = state['opts']
         self._make_model(state['Xa'], state['Xb'])
         self._current_iter = state['_current_iter']
-        self._iter = state['iter']
+        self._iter = state['_iter']
         self._traces = state['_traces']
         self.status = state['status']
+
+    def save(self, loc, force=False):
+        loc = path(loc)
+        if loc.exists() and not force:
+            raise IOError("path %s already exists" % loc.abspath())
+        elif loc.exists() and force:
+            loc.rmdir_p()
+
+        loc.mkdir_p()
+        tloc = loc.joinpath("traces")
+        tloc.mkdir_p()
+
+        state = self.__getstate__()
+        traces = state['_traces']
+        del state['_traces']
+
+        with open(loc.joinpath("state.json"), "w") as fh:
+            json.dump(state, fh)
+
+        for name in traces:
+            trace = traces[name]
+            np.save(tloc.joinpath(name + ".npy"), trace)
+
+    @classmethod
+    def load(cls, loc):
+        loc = path(loc)
+        if not loc.exists():
+            raise IOError("path does not exist: %s" % loc.abspath())
+
+        tloc = loc.joinpath("traces")
+        if not tloc.exists():
+            raise IOError("trace path does not exist: %s" % tloc.abspath())
+
+        with open(loc.joinpath("state.json"), "r") as fh:
+            state = json.load(fh)
+
+        traces = {}
+        for trace in tloc.listdir():
+            traces[trace.namebase] = np.load(trace)
+        state['_traces'] = traces
+
+        model = cls.__new__(cls)
+        model.__setstate__(state)
+        return model
