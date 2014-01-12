@@ -4,6 +4,30 @@ import scipy
 from .. import Stimulus2D
 
 
+def memoprop(f):
+    """
+    Memoized property.
+
+    When the property is accessed for the first time, the return value
+    is stored and that value is given on subsequent calls. The memoized
+    value can be cleared by calling 'del prop', where prop is the name
+    of the property.
+
+    """
+    fname = f.__name__
+
+    def fget(self):
+        if fname not in self._memoized:
+            self._memoized[fname] = f(self)
+        return self._memoized[fname]
+
+    def fdel(self):
+        del self._memoized[fname]
+
+    prop = property(fget=fget, fdel=fdel, doc=f.__doc__)
+    return prop
+
+
 def prior(X):
     # the beginning is the same as the end, so ignore the last vertex
     n = X.shape[0] - 1
@@ -48,61 +72,109 @@ def log_similarity(X0, X1, S_sigma):
     return log_S
 
 
-class Xi(object):
+class Variable(object):
+
+    def __init__(self, name, parents):
+        self.name = name
+        self.parents = parents
+        self.children = []
+        self._memoized = {}
+
+        for p in self.parents:
+            p.children.append(self)
+
+    def clear(self):
+        self._memoized = {}
+        for child in self.children:
+            child.clear()
+
+
+class Xi(Variable):
     """Shape"""
 
     def __init__(self, name, value):
-        self.name = name
-        self.value = value
+        super(Xi, self).__init__(name, [])
+
         self.observed = True
+        self._value = value
 
     @property
+    def value(self):
+        return self._value
+    
+    @value.setter
+    def value(self, val):
+        self._value = val
+        self.clear()
+
+    @memoprop
     def logp(self):
         return prior(self.value)
 
 
-class F(object):
+class F(Variable):
     """Flipped"""
 
     def __init__(self):
-        self.name = "F"
+        super(F, self).__init__("F", [])
+
         self.p = 0.5
-        self.value = 0
         self.observed = False
+        self._value = 0
 
     @property
+    def value(self):
+        return self._value
+    
+    @value.setter
+    def value(self, val):
+        self._value = val
+        self.clear()
+        
+    @memoprop
     def logp(self):
         return np.log(self.p * self.value + (1 - self.p) * (1 - self.value))
 
 
-class R(object):
+class R(Variable):
     """Rotation"""
 
     def __init__(self, mu, kappa):
-        self.name = "R"
+        super(R, self).__init__("R", [])
+
         self.mu = mu
         self.kappa = kappa
-        self.value= 0
         self.observed = False
+        self._value = 0
 
         self._C = -np.log(2 * np.pi * scipy.special.iv(0, self.kappa))
 
     @property
+    def value(self):
+        return self._value
+    
+    @value.setter
+    def value(self, val):
+        self._value = val
+        self.clear()
+        
+    @memoprop
     def logp(self):
         logp = self._C + (self.kappa * np.cos(self.value - self.mu))
         return logp
         
 
-class Xr(object):
+class Xr(Variable):
     """Mental image"""
     
     def __init__(self, Xa, R, F):
-        self.name = "Xr"
+        super(Xr, self).__init__("Xr", [Xa, R, F])
+
         self.Xa = Xa
         self.R = R
         self.F = F
 
-    @property
+    @memoprop
     def value(self):
         Xr = self.Xa.value.copy()
         if self.F.value == 1:
@@ -111,28 +183,32 @@ class Xr(object):
         return Xr
 
 
-class log_S(object):
+class log_S(Variable):
     """Log similarity"""
 
     def __init__(self, Xb, Xr, sigma):
-        self.name = "log_S"
+        super(log_S, self).__init__("log_S", [Xb, Xr])
+
         self.Xb = Xb
         self.Xr = Xr
         self.sigma = sigma
 
-    @property
+    @memoprop
     def logp(self):
         return log_similarity(self.Xb.value, self.Xr.value, self.sigma)
 
 
-class log_dZ_dR(object):
+class log_dZ_dR(Variable):
+
     def __init__(self, log_S, R, F):
-        self.name = "log_dZ_dR"
+        super(log_dZ_dR, self).__init__(
+            "log_dZ_dR", [log_S, R, F])
+
         self.log_S = log_S
         self.R = R
         self.F = F
         
-    @property
+    @memoprop
     def logp(self):
         p_log_S = self.log_S.logp
         p_R = self.R.logp
