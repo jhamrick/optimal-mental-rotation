@@ -2,6 +2,7 @@ import numpy as np
 import scipy
 
 from .. import Stimulus2D
+from .model_c import log_prior, log_similarity
 
 
 def memoprop(f):
@@ -28,7 +29,7 @@ def memoprop(f):
     return prop
 
 
-def log_prior(X):
+def slow_log_prior(X):
     # the beginning is the same as the end, so ignore the last vertex
     n = X.shape[0] - 1
     # n points picked at random angles around the circle
@@ -43,7 +44,7 @@ def log_prior(X):
     return logp
 
 
-def log_similarity(X0, X1, S_sigma):
+def slow_log_similarity(X0, X1, S_sigma):
     """Computes the similarity between sets of vertices `X0` and `X1`."""
     # number of points and number of dimensions
     n, D = X0.shape
