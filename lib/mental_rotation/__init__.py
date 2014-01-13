@@ -26,9 +26,11 @@ SIM_SCRIPT_PATH = get_path("sim_scripts")
 
 import logging
 FORMAT = '%(levelname)s -- %(processName)s/%(filename)s -- %(message)s'
-logging.basicConfig(format=FORMAT)
-logger = logging.getLogger("mental_rotation")
-logger.setLevel(config.get("global", "loglevel").upper())
+LOGLEVEL = config.get("global", "loglevel").upper()
+logging.basicConfig(format=FORMAT, level=LOGLEVEL)
+import multiprocessing
+mplogger = multiprocessing.log_to_stderr()
+mplogger.setLevel(LOGLEVEL)
 
 import numpy as np
 DTYPE = np.dtype(config.get("global", "dtype"))
