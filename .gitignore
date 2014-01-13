@@ -33,3 +33,4 @@ experiment/participants.db
 experiment/config.txt
 .coverage
 htmlcov
+lib/mental_rotation/model/*.c
