@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from path import path
 from mental_rotation.model import BaseModel, model
 from . import util
+from copy import deepcopy
+import pytest
 
 
 class TestBaseModel(object):
@@ -188,9 +190,9 @@ class TestBaseModel(object):
             return
 
         pth = path("/tmp/test_model")
+        Xa, Xb, m = util.make_model(self.cls, name='test')
 
         try:
-            Xa, Xb, m = util.make_model(self.cls, name='test')
             m.save(pth)
         except:
             raise
@@ -206,8 +208,11 @@ class TestBaseModel(object):
         if not pth.exists():
             pth.mkdir_p()
 
+        Xa, Xb, m = util.make_model(self.cls, name='test')
+        with pytest.raises(IOError):
+            m.save(pth)
+
         try:
-            Xa, Xb, m = util.make_model(self.cls, name='test')
             m.save(pth, force=True)
         except:
             raise
@@ -220,9 +225,12 @@ class TestBaseModel(object):
             return
 
         pth = path("/tmp/test_model")
+        Xa, Xb, m = util.make_model(self.cls)
 
+        with pytest.raises(IOError):
+            self.cls.load(pth)
+            
         try:
-            Xa, Xb, m = util.make_model(self.cls)
             m.sample()
             m.save(pth)
             m2 = self.cls.load(pth)
@@ -238,9 +246,9 @@ class TestBaseModel(object):
             return
 
         pth = path("/tmp/test_model")
-
+        Xa, Xb, m = util.make_model(self.cls)
+            
         try:
-            Xa, Xb, m = util.make_model(self.cls)
             m.save(pth)
             m2 = self.cls.load(pth)
             m2.sample()
@@ -250,3 +258,23 @@ class TestBaseModel(object):
         finally:
             if pth.exists():
                 pth.rmtree_p()
+
+    def test_sample_again(self):
+        if self.cls is BaseModel:
+            return
+
+        Xa, Xb, m = util.make_model(self.cls)
+        m.sample()
+        state1 = deepcopy(m.__getstate__())
+        m.sample()
+        state2 = m.__getstate__()
+
+        assert len(state1) == len(state2)
+        for key in state1:
+            if isinstance(state1[key], np.ndarray):
+                assert (state1[key] == state2[key]).all()
+            elif key == "_traces":
+                for trace in state1[key]:
+                    assert (state1[key][trace] == state2[key][trace]).all()
+            else:
+                assert state1[key] == state2[key]

@@ -57,7 +57,7 @@ class HillClimbingModel(BaseModel):
                     self.model['F'].value = 1
                 
                 else:
-                    self.status = 'halt'
+                    self.status = 'done'
 
             else: # pragma: no cover
                 pass
