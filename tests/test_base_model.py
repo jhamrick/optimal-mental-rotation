@@ -167,69 +167,86 @@ class TestBaseModel(object):
         m.sample()
         m.print_stats()
 
-    # def test_sample_and_close(self):
-    #     if self.cls is BaseModel:
-    #         return
+    def test_sample_and_save(self):
+        if self.cls is BaseModel:
+            return
 
-    #     try:
-    #         Xa, Xb, m = util.make_model(self.cls, name='test')
-    #         m.sample()
-    #         m.close()
-    #     except:
-    #         raise
-    #     finally:
-    #         pth = path("test.hdf5")
-    #         print pth.abspath()
-    #         if pth.exists():
-    #             pth.remove()
+        pth = path("/tmp/test_model")
 
-    # def test_close(self):
-    #     if self.cls is BaseModel:
-    #         return
+        try:
+            Xa, Xb, m = util.make_model(self.cls)
+            m.sample()
+            m.save(pth)
+        except:
+            raise
+        finally:
+            if pth.exists():
+                pth.rmtree_p()
 
-    #     try:
-    #         Xa, Xb, m = util.make_model(self.cls, name='test')
-    #         m.close()
-    #     except:
-    #         raise
-    #     finally:
-    #         pth = path("test.hdf5")
-    #         print pth.abspath()
-    #         if pth.exists():
-    #             pth.remove()
+    def test_save(self):
+        if self.cls is BaseModel:
+            return
 
-    # def test_load(self):
-    #     if self.cls is BaseModel:
-    #         return
+        pth = path("/tmp/test_model")
 
-    #     try:
-    #         Xa, Xb, m = util.make_model(self.cls, name='test')
-    #         m.sample()
-    #         m.close()
-    #         m2 = self.cls.load('test')
-    #         m2.print_stats()
-    #         m2.close()
-    #     except:
-    #         raise
-    #     finally:
-    #         pth = path("test.hdf5")
-    #         if pth.exists():
-    #             pth.remove()
+        try:
+            Xa, Xb, m = util.make_model(self.cls, name='test')
+            m.save(pth)
+        except:
+            raise
+        finally:
+            if pth.exists():
+                pth.rmtree_p()
 
-    # def test_load_and_sample(self):
-    #     if self.cls is BaseModel:
-    #         return
+    def test_force_save(self):
+        if self.cls is BaseModel:
+            return
 
-    #     try:
-    #         Xa, Xb, m = util.make_model(self.cls, name='test')
-    #         m.close()
-    #         m2 = self.cls.load('test')
-    #         m2.sample()
-    #         m2.print_stats()
-    #         m2.close()
-    #     except:
-    #         raise
-    #     finally:
-    #         pth = path("test.hdf5")
-    #         if pth.exists():
-    #             pth.remove()
+        pth = path("/tmp/test_model")
+        if not pth.exists():
+            pth.mkdir_p()
+
+        try:
+            Xa, Xb, m = util.make_model(self.cls, name='test')
+            m.save(pth, force=True)
+        except:
+            raise
+        finally:
+            if pth.exists():
+                pth.rmtree_p()
+
+    def test_load(self):
+        if self.cls is BaseModel:
+            return
+
+        pth = path("/tmp/test_model")
+
+        try:
+            Xa, Xb, m = util.make_model(self.cls)
+            m.sample()
+            m.save(pth)
+            m2 = self.cls.load(pth)
+            m2.print_stats()
+        except:
+            raise
+        finally:
+            if pth.exists():
+                pth.rmtree_p()
+
+    def test_load_and_sample(self):
+        if self.cls is BaseModel:
+            return
+
+        pth = path("/tmp/test_model")
+
+        try:
+            Xa, Xb, m = util.make_model(self.cls)
+            m.save(pth)
+            m2 = self.cls.load(pth)
+            m2.sample()
+            m2.print_stats()
+        except:
+            raise
+        finally:
+            if pth.exists():
+                pth.rmtree_p()

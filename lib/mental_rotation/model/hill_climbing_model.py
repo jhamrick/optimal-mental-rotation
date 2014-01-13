@@ -142,3 +142,15 @@ class HillClimbingModel(BaseModel):
         ax.plot(R, S1, 'b-', label="Approx, F=1", lw=2)
         ax.plot(Ri1, Si1, 'bo', markersize=5)
         ax.legend()
+
+    ##################################################################
+    # Copying/Saving
+
+    def __getstate__(self):
+        state = super(HillClimbingModel, self).__getstate__()
+        state['direction'] = self.direction
+        return state
+
+    def __setstate__(self, state):
+        super(HillClimbingModel, self).__setstate__(state)
+        self.direction = state['direction']
