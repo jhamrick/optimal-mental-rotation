@@ -20,6 +20,9 @@ DATA_PATH = get_path("data")
 FIG_PATH = get_path("figures")
 BIN_PATH = get_path("bin")
 EXP_PATH = get_path("experiment")
+SIM_PATH = get_path("simulations")
+RESOURCE_PATH = get_path("resources")
+SIM_SCRIPT_PATH = get_path("sim_scripts")
 
 import logging
 FORMAT = '%(levelname)s -- %(processName)s/%(filename)s -- %(message)s'
