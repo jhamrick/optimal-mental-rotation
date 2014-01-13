@@ -5,19 +5,14 @@ from . import BaseModel
 
 class HillClimbingModel(BaseModel):
 
+    _iter = 720
+
     def __init__(self, *args, **kwargs):
         super(HillClimbingModel, self).__init__(*args, **kwargs)
         self.direction = None
 
     ##################################################################
-    # Overwritten PyMC sampling methods
-
-    def sample(self):
-        super(HillClimbingModel, self).sample(niter=720)
-
-        if self._current_iter == self._iter: # pragma: no cover
-            raise RuntimeError(
-                "exhausted all iterations, this shouldn't have happened!")
+    # Sampling
 
     def draw(self):
         if self._current_iter == 0:

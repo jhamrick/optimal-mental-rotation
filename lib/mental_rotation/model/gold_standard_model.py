@@ -5,8 +5,7 @@ from . import BaseModel
 
 class GoldStandardModel(BaseModel):
 
-    def sample(self):
-        super(GoldStandardModel, self).sample(niter=722)
+    _iter = 722
 
     def draw(self):
         if self._current_iter == 0:

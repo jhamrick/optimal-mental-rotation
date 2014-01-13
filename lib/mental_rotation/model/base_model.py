@@ -9,6 +9,8 @@ from .. import config
 
 class BaseModel(object):
 
+    _iter = None
+
     def __init__(self, Xa, Xb, **opts):
 
         self.opts = {
@@ -22,7 +24,6 @@ class BaseModel(object):
         self._make_model(Xa, Xb)
 
         self._current_iter = None
-        self._iter = None
         self._traces = None
 
         self.status = "ready"
@@ -66,12 +67,11 @@ class BaseModel(object):
         self._traces['log_S'][i] = self.model['log_S'].logp
         self._traces['log_dZ_dR'][i] = self.model['log_dZ_dR'].logp
 
-    def sample(self, niter):
+    def sample(self):
         if self.status == "done":
             return
 
         if self.status == "ready":
-            self._iter = niter
             self._current_iter = 0
             self._init_traces()
 
@@ -231,7 +231,6 @@ class BaseModel(object):
         state['Xa'] = self.model['Xa'].value.tolist()
         state['Xb'] = self.model['Xb'].value.tolist()
         state['_current_iter'] = self._current_iter
-        state['_iter'] = self._iter
         state['_traces'] = self._traces
         state['status'] = self.status
         return state
@@ -240,7 +239,6 @@ class BaseModel(object):
         self.opts = state['opts']
         self._make_model(state['Xa'], state['Xb'])
         self._current_iter = state['_current_iter']
-        self._iter = state['_iter']
         self._traces = state['_traces']
         if self._current_iter is not None:
             self._restore(self._current_iter - 1)
