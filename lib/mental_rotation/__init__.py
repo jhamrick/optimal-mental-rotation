@@ -28,5 +28,7 @@ import logging
 FORMAT = '%(levelname)s -- %(processName)s/%(filename)s -- %(message)s'
 LOGLEVEL = config.get("global", "loglevel").upper()
 logging.basicConfig(format=FORMAT, level=LOGLEVEL)
+logger = logging.getLogger("mental_rotation")
+logger.setLevel(LOGLEVEL)
 
 from .stimulus import Stimulus2D
