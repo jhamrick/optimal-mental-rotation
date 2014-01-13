@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from path import path
 from utils import parse_address, get_params
 from tasks import Tasks
+from mental_rotation import LOGLEVEL
 
 logger = logging.getLogger("mental_rotation.sims.server")
 
@@ -121,6 +122,9 @@ class ServerManager(BaseManager):
 
 def run_server(model, exp, **kwargs):
     """Run the simulation server manager."""
+
+    mplogger = mp.log_to_stderr()
+    mplogger.setLevel(LOGLEVEL)
 
     address = kwargs.get("address", ("127.0.0.1", 50000))
     authkey = kwargs.get("authkey", None)

@@ -28,9 +28,6 @@ import logging
 FORMAT = '%(levelname)s -- %(processName)s/%(filename)s -- %(message)s'
 LOGLEVEL = config.get("global", "loglevel").upper()
 logging.basicConfig(format=FORMAT, level=LOGLEVEL)
-import multiprocessing
-mplogger = multiprocessing.log_to_stderr()
-mplogger.setLevel(LOGLEVEL)
 
 import numpy as np
 DTYPE = np.dtype(config.get("global", "dtype"))

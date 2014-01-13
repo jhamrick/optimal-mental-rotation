@@ -6,6 +6,7 @@ from threading import Thread, current_thread
 from utils import parse_address
 from server import ServerManager
 from simulation import Simulation
+from mental_rotation import LOGLEVEL
 
 logger = logging.getLogger("mental_rotation.sims.client")
 
@@ -88,6 +89,9 @@ def worker_thread(mgr, info_lock, save=False, max_tries=3, timeout=1e5):
 
 def run_client(**kwargs):
     """Run the simulation client manager."""
+
+    mplogger = mp.log_to_stderr()
+    mplogger.setLevel(LOGLEVEL)
 
     save = kwargs.get("save", False)
     timeout = kwargs.get("timeout", 310)

@@ -7,7 +7,7 @@ import sys
 
 import mental_rotation
 from mental_rotation.stimulus import Stimulus2D
-from mental_rotation.model import GoldStandardModel
+import mental_rotation.model as m
 
 
 class Simulation(Process):
@@ -33,12 +33,13 @@ class Simulation(Process):
         Xb = X.copy_from_vertices().vertices
 
         model_name = self.task["model"]
-        if model_name == "GoldStandardModel":
-            model = GoldStandardModel(Xa, Xb)
-        else:
+        try:
+            model_class = getattr(m, model_name)
+        except AttributeError:
             raise ValueError("unhandled model: %s" % model_name)
 
         np.random.seed(self.task["seed"])
+        model = model_class(Xa, Xb)
         model.sample()
 
         if self.save:
