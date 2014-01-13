@@ -1,0 +1,38 @@
+{
+  "description": null, 
+  "last_modified": "2014-01-12 19:49:09.203421", 
+  "title": null, 
+  "image": null, 
+  "datapackage_version": "1.0-beta.5", 
+  "sources": [], 
+  "contributors": [
+    {
+      "email": "jhamrick@berkeley.edu", 
+      "name": "Jessica B. Hamrick"
+    }, 
+    {
+      "email": "tom_griffiths@berkeley.edu", 
+      "name": "Thomas L. Griffiths"
+    }
+  ], 
+  "version": "1.0.0", 
+  "keywords": null, 
+  "licenses": [
+    {
+      "url": "http://opendefinition.org/licenses/odc-by", 
+      "id": "odc-by"
+    }
+  ], 
+  "homepage": null, 
+  "resources": [
+    {
+      "hash": "544f42b5a97678b83d72af69324505f0", 
+      "name": "model.csv", 
+      "format": "csv", 
+      "bytes": 70310, 
+      "modified": "2014-01-12 19:49:09.193721", 
+      "path": "./model.csv"
+    }
+  ], 
+  "name": "GoldStandardModel_D.dpkg"
+}

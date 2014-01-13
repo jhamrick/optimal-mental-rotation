@@ -12,20 +12,26 @@ class HillClimbingModel(BaseModel):
     ##################################################################
     # Overwritten PyMC sampling methods
 
-    def sample(self, verbose=0):
-        super(BaseModel, self).sample(iter=360, verbose=verbose)
+    def sample(self):
+        super(HillClimbingModel, self).sample(niter=720)
 
         if self._current_iter == self._iter: # pragma: no cover
             raise RuntimeError(
                 "exhausted all iterations, this shouldn't have happened!")
 
     def draw(self):
+        if self._current_iter == 0:
+            self.model['R'].value = 0
+            self.model['F'].value = 0
+            return
+
         R = self.model['R'].value
+        F = self.model['F'].value
         log_S = self.model['log_S'].logp
 
         if self.direction is None:
             self.direction = np.random.choice([1, -1])
-            step = self.direction * np.radians(10)
+            step = self.direction * self.opts['step']
 
             self.model['R'].value = R + step
             new_log_S = self.model['log_S'].logp
@@ -38,12 +44,20 @@ class HillClimbingModel(BaseModel):
                 pass
 
         else:
-            step = self.direction * np.radians(10)
+            step = self.direction * self.opts['step']
 
             self.model['R'].value = R + step
             new_log_S = self.model['log_S'].logp
             if new_log_S < log_S or np.allclose(new_log_S, log_S):
-                self.status = 'halt'
+                if F == 0:
+                    self.tally()
+                    self._current_iter += 1
+                    self.direction = None
+                    self.model['R'].value = 0
+                    self.model['F'].value = 1
+                
+                else:
+                    self.status = 'halt'
 
             else: # pragma: no cover
                 pass
@@ -51,55 +65,63 @@ class HillClimbingModel(BaseModel):
     ##################################################################
     # The estimated S function
 
-    def log_S(self, R):
-        return np.log(self.S(R))
+    def log_S(self, R, F):
+        return np.log(self.S(R, F))
 
-    def S(self, R):
-        Ri = self.R_i
+    def S(self, R, F):
+        Fi = self.F_i
+        match = Fi == F
+        
+        R_ = self._wrap(R)
+        Ri = self._wrap(self.R_i)
+
         Si = self.S_i
-        ix = np.argsort(Ri)
+        ix = np.argsort(Ri[match])
 
-        sRi = np.empty(Ri.size + 1)
-        sRi[:-1] = Ri[ix]
+        sRi = np.empty(Ri[match].size + 1)
+        sRi[:-1] = Ri[match][ix]
         sRi[-1] = 2 * np.pi
 
-        sSi = np.empty(Si.size + 1)
-        sSi[:-1] = Si[ix]
+        sSi = np.empty(Si[match].size + 1)
+        sSi[:-1] = Si[match][ix]
         sSi[-1] = sSi[0]
 
-        S = np.interp(R, sRi, sSi)
+        S = np.interp(R_, sRi, sSi)
         return S
 
     ##################################################################
     # Estimated dZ_dR and full estimate of Z
 
-    def log_dZ_dR(self, R):
-        return np.log(self.dZ_dR(R))
+    def log_dZ_dR(self, R, F):
+        return np.log(self.dZ_dR(R, F))
 
-    def dZ_dR(self, R):
-        Ri = self.R_i
+    def dZ_dR(self, R, F):
+        Fi = self.F_i
+        match = Fi == F
+
+        R_ = self._wrap(R)
+        Ri = self._wrap(self.R_i)
+
         dZ_dRi = self.dZ_dR_i
-        ix = np.argsort(Ri)
+        ix = np.argsort(Ri[match])
 
-        sRi = np.empty(Ri.size + 1)
-        sRi[:-1] = Ri[ix]
+        sRi = np.empty(Ri[match].size + 1)
+        sRi[:-1] = Ri[match][ix]
         sRi[-1] = 2 * np.pi
 
-        sdZ_dRi = np.empty(dZ_dRi.size + 1)
-        sdZ_dRi[:-1] = dZ_dRi[ix]
+        sdZ_dRi = np.empty(dZ_dRi[match].size + 1)
+        sdZ_dRi[:-1] = dZ_dRi[match][ix]
         sdZ_dRi[-1] = sdZ_dRi[0]
 
-        dZ_dR = np.interp(R, sRi, sdZ_dRi)
+        dZ_dR = np.interp(R_, sRi, sdZ_dRi)
         return dZ_dR
 
-    @property
-    def log_Z(self):
-        return np.log(self.Z)
+    def log_Z(self, F):
+        return np.log(self.Z(F))
 
-    @property
-    def Z(self):
-        R = np.linspace(0, 2 * np.pi, 360)
-        dZ_dR = self.dZ_dR(R)
+    def Z(self, F):
+        R = np.linspace(-np.pi, np.pi, 360)
+        dZ_dR = self.dZ_dR(R, F)
         Z = np.trapz(dZ_dR, R)
         return Z
 
@@ -107,10 +129,16 @@ class HillClimbingModel(BaseModel):
     # Plotting methods
 
     def plot(self, ax):
-        Ri = self.R_i
-        Si = self.S_i
-        R = np.linspace(0, 2 * np.pi, 360)
-        S = self.S(R)
-        self._plot(
-            ax, None, None, Ri, Si, R, S, None,
-            title="Linear interpolation for $S$")
+        Fi = self.F_i
+        Ri0 = self.R_i[Fi == 0]
+        Si0 = self.S_i[Fi == 0]
+        Ri1 = self.R_i[Fi == 1]
+        Si1 = self.S_i[Fi == 1]
+        R = np.linspace(-np.pi, np.pi, 360)
+        S0 = self.S(R, F=0)
+        S1 = self.S(R, F=1)
+        ax.plot(R, S0, 'r-', label="Approx, F=0", lw=2)
+        ax.plot(Ri0, Si0, 'ro', markersize=5)
+        ax.plot(R, S1, 'b-', label="Approx, F=1", lw=2)
+        ax.plot(Ri1, Si1, 'bo', markersize=5)
+        ax.legend()

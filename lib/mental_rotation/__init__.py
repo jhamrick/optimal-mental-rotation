@@ -20,12 +20,14 @@ DATA_PATH = get_path("data")
 FIG_PATH = get_path("figures")
 BIN_PATH = get_path("bin")
 EXP_PATH = get_path("experiment")
+SIM_PATH = get_path("simulations")
+RESOURCE_PATH = get_path("resources")
+SIM_SCRIPT_PATH = get_path("sim_scripts")
 
 import logging
 FORMAT = '%(levelname)s -- %(processName)s/%(filename)s -- %(message)s'
-logging.basicConfig(format=FORMAT)
-logger = logging.getLogger("mental_rotation")
-logger.setLevel(config.get("global", "loglevel").upper())
+LOGLEVEL = config.get("global", "loglevel").upper()
+logging.basicConfig(format=FORMAT, level=LOGLEVEL)
 
 import numpy as np
 DTYPE = np.dtype(config.get("global", "dtype"))

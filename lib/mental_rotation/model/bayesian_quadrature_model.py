@@ -3,8 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import snippets.graphing as sg
 import logging
-import scipy.optimize as optim
+import scipy.stats
 from bayesian_quadrature import BQ
+from gp import PeriodicKernel
 
 from .. import config
 from . import BaseModel
@@ -13,15 +14,7 @@ logger = logging.getLogger("mental_rotation.model.bq")
 
 DTYPE = np.dtype(config.get("global", "dtype"))
 EPS = np.finfo(DTYPE).eps
-
-
-def circdiff(x, y):
-    diff = x - y
-    if np.abs(diff) > np.pi:
-        out = diff - np.sign(diff) * 2 * np.pi
-    else:
-        out = diff
-    return out
+MIN = np.log(np.exp2(np.float64(np.finfo(np.float64).minexp + 4)))
 
 
 class BayesianQuadratureModel(BaseModel):
@@ -43,224 +36,263 @@ class BayesianQuadratureModel(BaseModel):
 
     def __init__(self, *args, **kwargs):
         self.bq_opts = {
-            'gamma': config.getfloat("bq", "gamma"),
-            'h': None,
-            'w': None,
-            's': config.getfloat("bq", "s"),
-            'ntry': config.getint("bq", "ntry"),
             'n_candidate': config.getint("bq", "n_candidate"),
-            'R_mean': config.getfloat("model", "R_mu"),
-            'R_var': 1. / config.getfloat("model", "R_kappa")
+            'x_mean': config.getfloat("model", "R_mu"),
+            'x_var': 1. / config.getfloat("model", "R_kappa"),
+            'candidate_thresh': config.getfloat("model", "step"),
+            'kernel': PeriodicKernel
         }
 
         if 'bq_opts' in kwargs:
             self.bq_opts.update(kwargs['bq_opts'])
             del kwargs['bq_opts']
 
+        self.bqs = {}
+        self.direction = 0
+
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
 
-    def _init_bq(self):
-        Ri = self.R_i
-        Si = self.S_i
-        ix = np.argsort(Ri)
-        self.bq = BQ(Ri[ix], Si[ix], **self.bq_opts)
-
     def sample(self, verbose=0):
-        super(BaseModel, self).sample(iter=12, verbose=verbose)
+        niter = 4 * np.pi / self.opts['step']
+        super(BaseModel, self).sample(iter=niter, verbose=verbose)
 
     def _loop(self):
-        if self._current_iter == 0:
-            self.tally()
-            self.model['R'].value = (2 * np.pi) - 1e-6
-            self.tally()
-            self.model['R'].value = 0
-            self._current_iter += 2
         super(BaseModel, self)._loop()
 
-    def _cost(self, x):
-        nesm = -self.bq.expected_squared_mean(x)
-        R = float(self.model['R'].value)
-        if R < 0:
-            R += 2 * np.pi
-        dist = circdiff(R, x)
-        return nesm / np.exp(dist ** 2)
-
-    def draw(self):
-        self._init_bq()
-        self.bq.fit()
-
-        x = np.empty(5)
-        value = np.empty(5)
-        for i in xrange(5):
-            res = optim.minimize(
-                fun=self._cost,
-                x0=np.array([np.random.uniform(0, 2 * np.pi)]),
-                method='L-BFGS-B',
-                bounds=[(0, (2 * np.pi) - np.radians(1))],
-                tol=1e-10)
-            x[i] = res['x']
-            value[i] = res['fun']
-
-        target = x[np.argmin(value)] - np.pi
-        print "target = %s" % target
-
-        direction = -np.sign(circdiff(self.model['R'].value, target))
-        step = direction * np.radians(10)
-        self.model['R'].value = self.model['R'].value + step
-        thresh = np.abs(step / 2.0)
-        while np.abs(circdiff(self.model['R'].value, target)) > thresh:
-            print "R = %s" % self.model['R'].value
-            self.tally()
-            self._current_iter += 1
-
-            if self._current_iter >= self._iter:
-                break
-
-            self.model['R'].value = self.model['R'].value + step
-
-        self._init_bq()
-        self.bq.fit()
+    def _check_halt(self):
         hyp = self.hypothesis_test()
-        self.print_stats()
         if hyp == 0 or hyp == 1:
             self.status = 'halt'
+            return True
+        return False
+
+    def _add_observation(self, R, F):
+        diff = self._unwrap(R - self.model['R'].value)
+        step = self.opts['step']
+        if float(self.model['F'].value) == F and np.isclose(np.abs(diff), step):
+            self.direction = np.sign(diff)
+        else:
+            self.direction = np.sign(R)
+        
+        self.model['R'].value = R
+        self.model['F'].value = F
+        logger.debug(
+            "R = %s, F = %s",
+            self.model['R'].value, 
+            float(self.model['F'].value))
+
+        S = np.exp(self.model['log_S'].logp)
+        bq = self.bqs[F]
+        if not np.isclose(R, bq.x_s).any():
+            bq.add_observation(R, S)
+            if bq.gp_log_l.log_lh + bq.gp_l.log_lh < MIN:
+                bq.fit_hypers(['h', 'w'])
+
+    def _eval_actions(self):
+        R = self.model['R'].value
+        F = float(self.model['F'].value)
+        step = self.opts['step']
+
+        actions = np.array(sorted(set([
+            (F, R + step), # rotate right
+            (F, R - step), # rotate left 
+            (F, step),     # go to the beginning and rotate right
+            (F, -step),    # go to the beginning and rotate left
+            (1 - F, step), # go to the beginning, flip, and rotate right
+            (1 - F, -step) # go to the beginning, flip, and rotate right
+        ])), dtype=float)
+
+        actions[:, 1] = self._unwrap(actions[:, 1])
+        loss = np.empty(actions.shape[0])
+
+        logger.debug("Computing loss for F=0")
+        params = ['h', 'w']
+        F0 = actions[:, 0] == 0
+        x_a = actions[F0, 1]
+        fun = lambda: -self.bqs[0].expected_squared_mean(x_a)
+        l0 = self.bqs[0].marginalize([fun], 100, params=params)
+        loss[F0] = l0[0].mean(axis=0)
+
+        logger.debug("Computing loss for F=1")
+        params = ['h', 'w']
+        F1 = actions[:, 0] == 1
+        x_a = actions[F1, 1]
+        fun = lambda: -self.bqs[1].expected_squared_mean(x_a)
+        l1 = self.bqs[1].marginalize([fun], 100, params=params)
+        loss[F1] = l1[0].mean(axis=0)
+
+        return actions, loss
+
+    def _init_bq(self, F):
+        Ri = np.array([self.model['R'].value])
+        Si = np.array([np.exp(self.model['log_S'].logp)])
+
+        logger.debug("Initializing BQ object for F=%d", F)
+        self.bqs[F] = BQ(Ri, Si, **self.bq_opts)
+        self.bqs[F].init(
+            params_tl=(8, np.pi / 2., 1, 0.0),
+            params_l=(0.2, np.pi / 4., 1, 0.0))
+
+    def draw(self):
+        if self._current_iter == 0:
+            self.model['R'].value = 0
+            self.model['F'].value = 0
+            self._init_bq(0)
+            return
+
+        if self._current_iter == 1:
+            self.model['R'].value = 0
+            self.model['F'].value = 1
+            self._init_bq(1)
+            return
+
+        curr_R = self.model['R'].value
+        curr_F = float(self.model['F'].value)
+        
+        actions, losses = self._eval_actions()
+        minloss = np.min(losses)
+        choices = np.nonzero(np.isclose(losses, minloss))[0]
+
+        logger.debug("actions: \n%s", actions)
+        logger.debug("losses: \n%s", losses)
+
+        if self.direction != 0:
+            next_R = self._unwrap(curr_R + (self.direction * self.opts['step']))
+            logger.debug("next: %s", (curr_F, next_R))
+
+            for i in choices:
+                if tuple(actions[i]) == (curr_F, next_R):
+                    best = i
+                    break
+            else:
+                best = np.random.choice(choices)
+        else:
+            best = np.random.choice(choices)
+
+        self._add_observation(actions[best, 1], actions[best, 0])
+        self._check_halt()
+            
 
     ##################################################################
     # The estimated S function
 
-    def log_S(self, R):
-        return np.log(self.S(R))
+    def log_S(self, R, F):
+        return np.log(self.S(R, F))
 
-    def S(self, R):
+    def S(self, R, F):
         try:
             len(R)
         except TypeError:
             R = np.array([R], dtype=DTYPE)
-        return self.bq.S_mean(R)
+        return self.bqs[F].l_mean(R)
 
     ##################################################################
     # Estimated dZ_dR and full estimate of Z
 
-    @property
-    def log_Z(self):
-        return np.log(self.Z)
+    def log_Z(self, F):
+        Z = self.Z(F)
+        out = np.empty_like(Z)
+        out[Z == 0] = -np.inf
+        out[Z != 0] = np.log(Z[Z != 0])
+        return out
 
-    @property
-    def Z(self):
-        mean = self.bq.Z_mean()
-        var = self.bq.Z_var()
+    def Z(self, F):
+        mean = self.bqs[F].Z_mean()
+        var = self.bqs[F].Z_var()
         lower = mean - 1.96 * np.sqrt(var)
         upper = mean + 1.96 * np.sqrt(var)
         out = np.array([mean, lower, upper])
+        out[out < 0] = 0
         return out
 
     ##################################################################
     # Plotting methods
 
-    def plot_S_gp(self, ax):
-        Ri = self.R_i
-        Si = self.S_i
-        R = np.linspace(0, 2 * np.pi, 360)
+    xmin = -np.pi
+    xmax = np.pi
 
+    def plot_log_S_gp(self, ax, f_S=None):
         # plot the regression for S
-        self._plot(
-            ax, None, None, Ri, Si,
-            R, self.bq.gp_S.mean(R), np.diag(self.bq.gp_S.cov(R)),
-            title="GPR for $S$",
-            xlabel=None,
-            legend=False)
-        sg.no_xticklabels(ax=ax)
+        self.bq.plot_gp_log_l(ax, f_l=f_S, xmin=self.xmin, xmax=self.xmax)
+        ax.set_title(r"GPR for $\log(S)$")
+        ax.set_ylabel(r"Similarity ($\log(S)$)")
 
-    def plot_log_S_gp(self, ax):
-        Ri = self.R_i
-        log_Si = self.bq.log_transform(self.S_i)
-        R = np.linspace(0, 2 * np.pi, 360)
+    def plot_S_gp(self, ax, f_S=None):
+        # plot the regression for S
+        self.bq.plot_gp_l(ax, f_l=f_S, xmin=self.xmin, xmax=self.xmax)
+        ax.set_title(r"GPR for $S$")
+        ax.set_xlabel("")
+        ax.set_ylabel(r"Similarity ($S$)")
 
-        # plot the regression for log S
-        self._plot(
-            ax, None, None, Ri, log_Si,
-            R, self.bq.gp_log_S.mean(R), np.diag(self.bq.gp_log_S.cov(R)),
-            title=r"GPR for $\log(S+1)$",
-            ylabel=r"Similarity ($\log(S+1)$)",
-            legend=False)
+    def plot_S(self, ax, f_S=None):
+        # plot the regression for S
+        self.bq.plot_l(ax, f_l=f_S, xmin=self.xmin, xmax=self.xmax)
+        ax.set_title(r"Final GPR for $S$")
+        ax.set_xlabel("")
+        ax.set_ylabel("")
 
-    def plot_S(self, ax):
-        Ri = self.R_i
-        Si = self.S_i
-        R = np.linspace(0, 2 * np.pi, 360)
-
-        # combine the two regression means
-        self._plot(
-            ax, None, None, Ri, Si,
-            R, self.bq.S_mean(R), np.diag(self.bq.S_cov(R)),
-            title=r"Final GPR for $S$",
-            xlabel=None,
-            ylabel=None,
-            legend=True)
-        sg.no_xticklabels(ax=ax)
-
-    def plot_Dc_gp(self, ax):
-        R = np.linspace(0, 2 * np.pi, 360)
-        delta = self.bq.compute_delta(R)
-        Rc = self.bq.Rc
-        Dc = self.bq.Dc
-
-        # plot the regression for mu_log_S - log_muS
-        self._plot(
-            ax, R, delta, Rc, Dc,
-            R, self.bq.gp_Dc.mean(R), np.diag(self.bq.gp_Dc.cov(R)),
-            title=r"GPR for $\Delta_c$",
-            ylabel=r"Difference ($\Delta_c$)",
-            legend=False)
-        yt, ytl = plt.yticks()
-
-    def plot(self, axes):
-        self.plot_S_gp(axes[0, 0])
-        self.plot_S(axes[0, 1])
-        self.plot_log_S_gp(axes[1, 0])
-        self.plot_Dc_gp(axes[1, 1])
+    def plot(self, axes, f_S=None):
+        self.plot_log_S_gp(axes[0], f_S=f_S)
+        self.plot_S_gp(axes[1], f_S=f_S)
+        self.plot_S(axes[2], f_S=f_S)
 
         # align y-axis labels
-        sg.align_ylabels(-0.12, axes[0, 0], axes[1, 0])
-        sg.set_ylabel_coords(-0.16, ax=axes[1, 1])
+        sg.align_ylabels(-0.12, axes[0], axes[1])
+
         # sync y-axis limits
-        lim = (-0.2, 0.5)
-        axes[0, 0].set_ylim(*lim)
-        axes[0, 1].set_ylim(*lim)
-        axes[1, 0].set_ylim(*lim)
+        lim = (-0.05, 0.2)
+        axes[1].set_ylim(*lim)
+        axes[2].set_ylim(*lim)
 
         # overall figure settings
-        sg.set_figsize(9, 5)
+        sg.set_figsize(12, 4)
         plt.tight_layout()
 
     ##################################################################
     # Misc
 
     def hypothesis_test(self):
-        llh0 = self.log_lh_h0
-        llh1 = self.log_lh_h1
-        if llh0 < llh1[1]: # pragma: no cover
-            return 1
-        elif llh0 > llh1[2]: # pragma: no cover
+        m0 = self.bqs[0].Z_mean()
+        V0 = self.bqs[0].Z_var()
+        while V0 < 0:
+            self.bqs[0].fit_hypers(['h', 'w'])
+            m0 = self.bqs[0].Z_mean()
+            V0 = self.bqs[0].Z_var()
+
+        m1 = self.bqs[1].Z_mean()
+        V1 = self.bqs[1].Z_var()
+        while V1 < 0:
+            self.bqs[1].fit_hypers(['h', 'w'])
+            m1 = self.bqs[1].Z_mean()
+            V1 = self.bqs[1].Z_var()
+
+        N0 = scipy.stats.norm(m0, np.sqrt(V0))
+        N1 = scipy.stats.norm(m1, np.sqrt(V1))
+
+        test = N0.rvs(10000) > N1.rvs(10000)
+        m = np.mean(test)
+        s = scipy.stats.sem(test)
+
+        if (m - s) > 0.95:
             return 0
+        elif (m + s) < 0.05:
+            return 1
         else:
             return None
 
     def print_stats(self):
-        Z, lower, upper = self.Z
         llh0 = self.log_lh_h0
         llh1 = self.log_lh_h1
-        print "Z = %f [%f, %f]" % (Z, lower, upper)
-        print "log LH(h0) = %f" % llh0
+        print "log LH(h0) = %f [%f, %f]" % tuple(llh0)
         print "log LH(h1) = %f [%f, %f]" % tuple(llh1)
 
-        llr = self.log_lh_h0 - self.log_lh_h1
-        print "LH(h0) / LH(h1) = %f [%f, %f]" % tuple(llr)
+        llr = self.log_lh_h0[0] - self.log_lh_h1[0]
+        print "LH(h0) / LH(h1) = %f" % llr
 
         hyp = self.hypothesis_test()
         if hyp == 1: # pragma: no cover
-            print "--> ACCEPT hypothesis 1"
+            print "--> STOP and accept hypothesis 1 (flipped)"
         elif hyp == 0: # pragma: no cover
-            print "--> REJECT hypothesis 1"
+            print "--> STOP and accept hypothesis 0 (same)"
         else: # pragma: no cover
             print "--> UNDECIDED"
