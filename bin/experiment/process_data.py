@@ -65,6 +65,19 @@ def find_bad_participants(exp, data):
 
     """
 
+    order = ['A', 'B', 'C', 'D']
+
+    if exp == 'A':
+        ntrial = 100
+    elif exp == 'B':
+        ntrial = 110
+    elif exp == 'C':
+        ntrial = 110
+    elif exp == 'D':
+        ntrial = 210
+    else:
+        raise ValueError("unhandled experiment code: %s" % exp)
+
     participants = []
     for (assignment, pid), df in data.groupby(['assignment', 'pid']):
         info = {
@@ -86,6 +99,26 @@ def find_bad_participants(exp, data):
             datetime.fromtimestamp(times.irow(0) / 1e3))
         info['timestamp'] = start_time
 
+        # check to make sure they actually finished
+        prestim = df\
+            .groupby(['trial_phase'])\
+            .get_group('prestim')
+        incomplete = len(prestim) < ntrial
+        if incomplete:
+            logger.warning("%s is incomplete", pid)
+            info['note'] = "incomplete"
+            continue
+
+        # check to make sure they actually finished
+        prestim = df\
+            .groupby(['trial_phase'])\
+            .get_group('prestim')
+        incomplete = len(prestim) > ntrial
+        if incomplete:
+            logger.warning("%s has duplicate trials", pid)
+            info['note'] = "duplicate_trials"
+            continue
+
         # check for duplicated entries
         dupes = df.sort('psiturk_time')[['mode', 'trial', 'trial_phase']]\
                   .duplicated().any()
@@ -94,42 +127,56 @@ def find_bad_participants(exp, data):
             info['note'] = "duplicate_trials"
             continue
 
-        # check to make sure they actually finished
-        prestim = df\
-            .groupby(['trial_phase'])\
-            .get_group('prestim')
-        incomplete = len(prestim) != 110
-        if incomplete:
-            logger.warning("%s is incomplete", pid)
-            info['note'] = "incomplete"
-            continue
-
         # see if they already did (a version of) the experiment
         dbpath = DATA_PATH.joinpath("human", "workers.db")
         if dbtools.Table.exists(dbpath, "workers"):
             tbl = dbtools.Table(dbpath, "workers")
             datasets = tbl.select("dataset", where=("pid=?", pid))['dataset']
-            exps = map(lambda x: path(x).namebase, datasets)
-            if exp in exps:
-                exps.remove(exp)
-            if len(exps) > 0:
+            exps = np.array(
+                map(order.index, map(lambda x: path(x).namebase, datasets)))
+            if (exps < order.index(exp)).any():
                 logger.warning("%s is a repeat worker", pid)
                 info['note'] = "repeat_worker"
                 continue
 
         # check their accuracy
-        exp_data = df.groupby('trial_phase')\
-                     .get_group('stim')\
-                     .groupby('mode')\
-                     .get_group('experiment')
+        if exp == 'A' or exp == 'B':
+            exp_data = df.groupby('trial_phase')\
+                         .get_group('stim')\
+                         .groupby('mode')\
+                         .get_group('experiment')
+            accuracy = (exp_data['flipped'] == exp_data['response']).mean()
+            inaccurate = accuracy < 0.75
 
-        smallrot = lambda x: (x <= 40) or (x >= 320)
-        theta0 = exp_data.set_index('theta').groupby(smallrot).get_group(True)
-        accuracy = (theta0['flipped'] == theta0['response']).mean()
+        elif exp == 'C':
+            exp_data = df.groupby('trial_phase')\
+                         .get_group('stim')\
+                         .groupby('mode')\
+                         .get_group('experiment')
+            smallrot = lambda x: (x <= 40) or (x >= 320)
+            theta0 = exp_data.set_index('theta').groupby(smallrot).get_group(True)
+            accuracy = (theta0['flipped'] == theta0['response']).mean()
+            inaccurate = accuracy < 0.85
 
-        if accuracy <= 0.85:
+        elif exp == 'D':
+            exp_dataA = df.groupby('trial_phase')\
+                         .get_group('stim')\
+                         .groupby('mode')\
+                         .get_group('experimentA')
+            exp_dataB = df.groupby('trial_phase')\
+                         .get_group('stim')\
+                         .groupby('mode')\
+                         .get_group('experimentB')
+            exp_data = pd.concat([exp_dataA, exp_dataB])
+            accuracy = (exp_data['flipped'] == exp_data['response']).mean()
+            inaccurate = accuracy < 0.8
+
+        else:
+            raise ValueError("unhandled experiment: %s" % exp)
+
+        if inaccurate:
             logger.warning(
-                "%s failed %d%% of easy trials", pid, 100 * (1 - accuracy))
+                "%s failed %d%% of trials", pid, 100 * (1 - accuracy))
             info['note'] = "failed"
             continue
 
@@ -236,13 +283,24 @@ def load_data(data_path, conds, fields):
     all_pids = p_info.set_index(['assignment', 'pid'])
     bad_pids = all_pids.dropna()
     n_subj = len(all_pids)
-    n_bad = len(bad_pids)
+
     n_incomplete = (p_info['note'] == 'incomplete').sum()
-    n_good = n_subj - n_bad
-    n_complete = n_subj - n_incomplete
+    n_dupe = (p_info['note'] == 'duplicate_trials').sum()
+    n_failed = (p_info['note'] == 'failed').sum()
+    n_good = len(all_pids) - len(bad_pids)
+
+    n_bad = len(bad_pids) - n_failed - n_incomplete - n_dupe
+    n_complete = n_subj - n_incomplete - n_dupe
+
     logger.info(
         "%d/%d (%.1f%%) participants complete",
         n_complete, n_subj, n_complete * 100. / n_subj)
+    logger.info(
+        "%d/%d (%.1f%%) participants bad",
+        n_bad, n_complete, n_bad * 100. / n_complete)
+    logger.info(
+        "%d/%d (%.1f%%) participants failed",
+        n_failed, n_complete, n_failed * 100. / n_complete)
     logger.info(
         "%d/%d (%.1f%%) participants OK",
         n_good, n_complete, n_good * 100. / n_complete)

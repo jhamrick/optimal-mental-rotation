@@ -8,8 +8,9 @@
 // order that the phases should be presented.
 var EXPERIMENT = Object.freeze({
     training: 0,
-    experiment: 1,
-    length: 2
+    experimentA: 1,
+    experimentB: 2,
+    length: 3
 });
 
 // Enum-like object mapping trial phase names to ids, in the order
@@ -58,10 +59,15 @@ var Config = function (condition, counterbalance) {
     this.instructions = new Object();
     this.instructions[EXPERIMENT.training] = {
         pages: ["instructions-training-1", 
-		"instructions-training-2"]
+		"instructions-training-2",
+                "instructions-training-3"]
     };
-    this.instructions[EXPERIMENT.experiment] = {
-	pages: ["instructions-experiment"],
+    this.instructions[EXPERIMENT.experimentA] = {
+	pages: ["instructions-experiment-1"],
+	examples: [null]
+    };
+    this.instructions[EXPERIMENT.experimentB] = {
+	pages: ["instructions-experiment-2"],
 	examples: [null]
     };
 
@@ -75,10 +81,12 @@ var Config = function (condition, counterbalance) {
     // configuration
     this.parse_config = function (data) {
         this.trials[EXPERIMENT.training] = _.shuffle(data["training"]);
-        this.trials[EXPERIMENT.experiment] = _.shuffle(data["experiment"]);
+        this.trials[EXPERIMENT.experimentA] = _.shuffle(data["experimentA"]);
+        this.trials[EXPERIMENT.experimentB] = _.shuffle(data["experimentB"]);
 
         console.log(data.examples);
         this.instructions[EXPERIMENT.training].examples = [
+            null,
 	    data.examples, 
 	    null
 	];
