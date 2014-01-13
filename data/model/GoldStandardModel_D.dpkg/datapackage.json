@@ -1,5 +1,10 @@
 {
   "description": null, 
+  "last_modified": "2014-01-12 22:01:35.895779", 
+  "title": null, 
+  "image": null, 
+  "datapackage_version": "1.0-beta.5", 
+  "sources": [], 
   "contributors": [
     {
       "email": "jhamrick@berkeley.edu", 
@@ -10,10 +15,7 @@
       "name": "Thomas L. Griffiths"
     }
   ], 
-  "image": null, 
-  "datapackage_version": "1.0-beta.5", 
-  "sources": [], 
-  "last_modified": "2014-01-12 20:56:56.540136", 
+  "version": "1.0.0", 
   "keywords": null, 
   "licenses": [
     {
@@ -21,9 +23,6 @@
       "id": "odc-by"
     }
   ], 
-  "name": "GoldStandardModel_D.dpkg", 
-  "title": null, 
-  "version": "1.2.0", 
   "homepage": null, 
   "resources": [
     {
@@ -31,8 +30,9 @@
       "name": "model.csv", 
       "format": "csv", 
       "bytes": 85285, 
-      "modified": "2014-01-12 20:56:56.529581", 
+      "modified": "2014-01-12 22:01:35.883993", 
       "path": "./model.csv"
     }
-  ]
+  ], 
+  "name": "GoldStandardModel_D.dpkg"
 }
