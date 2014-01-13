@@ -29,10 +29,4 @@ FORMAT = '%(levelname)s -- %(processName)s/%(filename)s -- %(message)s'
 LOGLEVEL = config.get("global", "loglevel").upper()
 logging.basicConfig(format=FORMAT, level=LOGLEVEL)
 
-import numpy as np
-DTYPE = np.dtype(config.get("global", "dtype"))
-del np
-
-SEED = config.getint("global", "seed")
-
 from .stimulus import Stimulus2D

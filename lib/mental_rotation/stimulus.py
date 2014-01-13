@@ -2,7 +2,6 @@ import numpy as np
 import json
 from copy import copy
 from path import path
-from . import DTYPE
 
 
 class Stimulus2D(object):
@@ -17,9 +16,9 @@ class Stimulus2D(object):
         if sort:
             r = np.arctan2(vertices[:, 1], vertices[:, 0])
             idx = np.argsort(r)
-            self._v = np.array(vertices[idx], dtype=DTYPE, copy=True)
+            self._v = np.array(vertices[idx], copy=True)
         else:
-            self._v = np.array(vertices, dtype=DTYPE, copy=True)
+            self._v = np.array(vertices, copy=True)
 
         self.operations = []
 
@@ -37,7 +36,7 @@ class Stimulus2D(object):
         return state
 
     def __setstate__(self, state):
-        self._v = np.array(state['vertices'], dtype=DTYPE)
+        self._v = np.array(state['vertices'])
         self.operations = state['operations']
 
     @staticmethod
@@ -45,7 +44,7 @@ class Stimulus2D(object):
         theta_rad = np.radians(theta)
         M = np.array([
             [np.cos(theta_rad), -np.sin(theta_rad)],
-            [np.sin(theta_rad), np.cos(theta_rad)]], dtype=DTYPE)
+            [np.sin(theta_rad), np.cos(theta_rad)]])
         v[:] = np.dot(v, M.T)
 
     def rotate(self, theta):
@@ -56,7 +55,7 @@ class Stimulus2D(object):
     def _flip(v, axis):
         M = np.array([
             [axis[0]**2 - axis[1]**2, 2*axis[0]*axis[1]],
-            [2*axis[0]*axis[1], axis[1]**2 - axis[0]**2]], dtype=DTYPE)
+            [2*axis[0]*axis[1], axis[1]**2 - axis[0]**2]])
         M /= axis[0]**2 + axis[1]**2
         v[:] = np.dot(v, M.T)
 
