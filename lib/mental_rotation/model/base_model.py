@@ -9,7 +9,7 @@ from .. import config
 
 class BaseModel(object):
 
-    def __init__(self, Xa, Xb, name=None, **opts):
+    def __init__(self, Xa, Xb, **opts):
 
         self.opts = {
             'R_mu': config.getfloat("model", "R_mu"),
