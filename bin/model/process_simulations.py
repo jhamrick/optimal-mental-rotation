@@ -15,16 +15,21 @@ MODELS = ['GoldStandardModel', 'HillClimbingModel', 'BayesianQuadratureModel']
 
 logger = logging.getLogger('mental_rotation')
 
+hypotheses = {
+    0: "same",
+    1: "flipped"
+}
+
 
 def load(model_class, pth, taskname):
     model = model_class.load(pth)
     stim, rot, flip = taskname.split("_")
     rot = float(rot)
-    flip = int(flip)
+    flip = hypotheses[int(flip)]
 
     data = {}
     data['nstep'] = model.R_i.size
-    data['hypothesis'] = model.hypothesis_test()
+    data['hypothesis'] = hypotheses[model.hypothesis_test()]
     data['log_Z0'] = model.log_Z(0)
     data['log_Z1'] = model.log_Z(1)
     data['log_lh_h0'] = model.log_lh_h0
@@ -57,8 +62,13 @@ def process_all(model_type, exp, force=False):
         task = tasks[taskname]
         pth = path(task['data_path'])
         logger.info("Processing '%s'...", pth.abspath())
-        data[i] = load(model_class, pth, taskname)
-    df = pd.DataFrame.from_dict(data, orient='index')
+        data[taskname] = load(model_class, pth, taskname)
+
+        # overrepresent data points from 0 and 180
+        if data[taskname]['theta'] in (0, 180):
+            data[taskname + "_2"] = data[taskname].copy()
+
+    df = pd.DataFrame.from_dict(data, orient='index').reset_index(drop=True)
 
     # load the existing datapackage and bump the version
     if dp_path.exists():
