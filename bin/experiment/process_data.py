@@ -148,6 +148,12 @@ def find_bad_participants(exp, data):
             accuracy = (exp_data['flipped'] == exp_data['response']).mean()
             inaccurate = accuracy < 0.75
 
+            if inaccurate:
+                logger.warning(
+                    "%s failed %d%% of trials", pid, 100 * (1 - accuracy))
+                info['note'] = "failed"
+                continue
+
         elif exp == 'C':
             exp_data = df.groupby('trial_phase')\
                          .get_group('stim')\
@@ -158,27 +164,31 @@ def find_bad_participants(exp, data):
             accuracy = (theta0['flipped'] == theta0['response']).mean()
             inaccurate = accuracy < 0.85
 
+            if inaccurate:
+                logger.warning(
+                    "%s failed %d%% of easy trials", pid, 100 * (1 - accuracy))
+                info['note'] = "failed"
+                continue
+
         elif exp == 'D':
-            exp_dataA = df.groupby('trial_phase')\
-                         .get_group('stim')\
-                         .groupby('mode')\
-                         .get_group('experimentA')
-            exp_dataB = df.groupby('trial_phase')\
+            exp_data = df.groupby('trial_phase')\
                          .get_group('stim')\
                          .groupby('mode')\
                          .get_group('experimentB')
-            exp_data = pd.concat([exp_dataA, exp_dataB])
-            accuracy = (exp_data['flipped'] == exp_data['response']).mean()
-            inaccurate = accuracy < 0.8
+            smallrot = lambda x: (x <= 20) or (x >= 340)
+            theta0 = exp_data.set_index('theta').groupby(smallrot).get_group(True)
+            accuracy = (theta0['flipped'] == theta0['response']).mean()
+            inaccurate = accuracy < 0.85
+
+            if inaccurate:
+                logger.warning(
+                    "%s failed %d%% of easy trials", pid, 100 * (1 - accuracy))
+                info['note'] = "failed"
+                continue
 
         else:
             raise ValueError("unhandled experiment: %s" % exp)
 
-        if inaccurate:
-            logger.warning(
-                "%s failed %d%% of trials", pid, 100 * (1 - accuracy))
-            info['note'] = "failed"
-            continue
 
     return participants
 
