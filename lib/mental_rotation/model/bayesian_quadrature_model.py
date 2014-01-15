@@ -41,7 +41,7 @@ class BayesianQuadratureModel(BaseModel):
             'n_candidate': config.getint("bq", "n_candidate"),
             'x_mean': config.getfloat("model", "R_mu"),
             'x_var': 1. / config.getfloat("model", "R_kappa"),
-            'candidate_thresh': config.getfloat("model", "step"),
+            'candidate_thresh': config.getfloat("model", "step") / 2.,
             'kernel': PeriodicKernel
         }
 
@@ -81,10 +81,15 @@ class BayesianQuadratureModel(BaseModel):
         F = float(self.model['F'].value)
         step = self.opts['step']
 
-        N = scipy.stats.norm(0, np.sqrt(step))
+        N = scipy.stats.norm(0, np.sqrt(step / 2.))
+        def rand():
+            x = np.clip(N.rvs(), -step, step)
+            return x
+        
         actions = [
-            (1 - F, N.rvs()),
-            (F, N.rvs()),
+            (1 - F, 0),
+            (1 - F, R),
+            (F, 0),
             (F, R + np.abs(N.rvs())),
             (F, R - np.abs(N.rvs()))
         ]
@@ -157,6 +162,9 @@ class BayesianQuadratureModel(BaseModel):
 
             if f(res['x']) > MIN:
                 p0 = res['x']
+                break
+
+            if f(p0) > MIN:
                 break
 
             p0 = np.abs(np.random.randn(len(self.params)))
