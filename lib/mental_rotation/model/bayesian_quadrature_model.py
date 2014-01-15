@@ -6,6 +6,7 @@ import logging
 import scipy.stats
 from bayesian_quadrature import BQ
 from gp import PeriodicKernel
+import scipy.optimize as optim
 
 from .. import config
 from . import BaseModel
@@ -33,7 +34,7 @@ class BayesianQuadratureModel(BaseModel):
 
     """
 
-    _iter = 10
+    _iter = 360
 
     def __init__(self, *args, **kwargs):
         self.bq_opts = {
@@ -49,7 +50,8 @@ class BayesianQuadratureModel(BaseModel):
             del kwargs['bq_opts']
 
         self.bqs = {}
-        self.direction = 0
+        self.scale = 100
+        self.params = ['h', 'w']
 
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
 
@@ -61,53 +63,31 @@ class BayesianQuadratureModel(BaseModel):
         return False
 
     def _add_observation(self, R, F):
-        diff = self._unwrap(R - self.model['R'].value)
-        step = self.opts['step']
-        if float(self.model['F'].value) == F and np.isclose(np.abs(diff), step):
-            self.direction = np.sign(diff)
-        else:
-            self.direction = np.sign(R)
-        
         self.model['R'].value = R
         self.model['F'].value = F
         logger.debug(
-            "F = %s, R = %s, direction = %s", 
+            "F = %s, R = %s", 
             float(self.model['F'].value),
-            self.model['R'].value,
-            self.direction)
+            self.model['R'].value)
 
-        S = np.exp(self.model['log_S'].logp)
+        S = self.scale * np.exp(self.model['log_S'].logp)
         bq = self.bqs[F]
-        if not np.isclose(R, bq.x_s).any():
-            bq.add_observation(R, S)
-            bq.fit_hypers(['w'])
+        bq.add_observation(R, S)
+        if bq.x_s.size > 1:
+            self._fit_hypers(F)
 
     def _get_actions(self):
         R = self.model['R'].value
         F = float(self.model['F'].value)
         step = self.opts['step']
 
+        N = scipy.stats.norm(0, np.sqrt(step))
         actions = [
-            (F, R + step),
-            (F, R - step),
-            (1 - F, R),
-            (F, 0),
-            (1 - F, 0),
+            (1 - F, N.rvs()),
+            (F, N.rvs()),
+            (F, R + np.abs(N.rvs())),
+            (F, R - np.abs(N.rvs()))
         ]
-
-        new_actions = []
-        old_actions = []
-        for action in set(actions):
-            F, R = action
-            if np.isclose(0, self._unwrap(R - self.bqs[F].x_s)).any():
-                old_actions.append((F, R))
-            else:
-                new_actions.append((F, R))
-
-        if len(new_actions) > 0:
-            actions = new_actions
-        else:
-            actions = old_actions
 
         actions = np.array(sorted(actions))
         actions[:, 1] = self._unwrap(actions[:, 1])
@@ -117,65 +97,82 @@ class BayesianQuadratureModel(BaseModel):
         actions = self._get_actions()
 
         loss = np.empty(actions.shape[0])
-        params = ['h', 'w']
         F0 = actions[:, 0] == 0
         F1 = actions[:, 0] == 1
+        x_a0 = np.array(actions[F0, 1])
+        x_a1 = np.array(actions[F1, 1])
 
-        if self.bqs[0].x_s.size > 1:
-            self.bqs[0].fit_hypers(params)
-
-        x_a = actions[F0, 1]
         funs = [
-            lambda: self.bqs[0].expected_squared_mean_and_mean(x_a),
+            lambda: self.bqs[0].expected_squared_mean(x_a0),
             self.bqs[0].Z_mean,
             self.bqs[0].Z_var
         ]
         # l0, m0, V0 = self.bqs[0].marginalize(
-        #     funs, n, params=params)
+        #     funs, n, params=self.params)
         l0, m0, V0 = [np.array([f()]) for f in funs]
 
-        if self.bqs[1].x_s.size > 1:
-            self.bqs[1].fit_hypers(params)
-
-        x_a = actions[F1, 1]
         funs = [
-            lambda: self.bqs[1].expected_squared_mean_and_mean(x_a),
+            lambda: self.bqs[1].expected_squared_mean(x_a1),
             self.bqs[1].Z_mean,
             self.bqs[1].Z_var
         ]
         # l1, m1, V1 = self.bqs[1].marginalize(
-        #     funs, n, params=params)
+        #     funs, n, params=self.params)
         l1, m1, V1 = [np.array([f()]) for f in funs]
-
-        esm0 = l0[..., 0].T
-        em0 = l0[..., 1].T
-        esm1 = l1[..., 0].T
-        em1 = l1[..., 1].T
 
         self._m0 = max(0, m0.mean())
         self._V0 = max(0, V0.mean())
         self._m1 = max(0, m1.mean())
         self._V1 = max(0, V1.mean())
 
-        # E_V0 = V0 + m0 - esm0
-        E_V0 = esm0 - em0 ** 2
-        loss[F0] = E_V0.mean(axis=1) + self._V1
-
-        # E_V1 = V1 + m1 - esm1
-        E_V1 = esm1 - em1 ** 2
-        loss[F1] = self._V0 + E_V1.mean(axis=1)
+        loss[F0] = (V0 + m0 ** 2 - l0.T).mean(axis=1) + self._V1
+        loss[F1] = (V1 + m1 ** 2 - l1.T).mean(axis=1) + self._V0
 
         return actions, loss
 
+    def _fit_hypers(self, F, ntry=10):
+        p0_tl = [self.bqs[F].gp_log_l.get_param(p) for p in self.params]
+        p0_l = [self.bqs[F].gp_l.get_param(p) for p in self.params]
+        p0 = np.array(p0_tl + p0_l)
+        
+        logpdf = self.bqs[F]._make_llh_params(self.params)
+        def f(x):
+            llh = logpdf(x)
+            if llh > -np.inf:
+                if self.bqs[F].gp_log_l.get_param('w') > (np.pi / 4.):
+                    return -np.inf
+                if self.bqs[F].gp_l.get_param('w') > (np.pi / 4.):
+                    return -np.inf
+            return llh
+                
+        for i in xrange(ntry):
+            logger.debug(
+                "Fitting parameters %s for F=%d, attempt %d", 
+                self.params, F, i+1)
+
+            res = optim.minimize(
+                fun=lambda x: -f(x),
+                x0=p0,
+                method='Powell')
+
+            if f(res['x']) > MIN:
+                p0 = res['x']
+                break
+
+            p0 = np.abs(np.random.randn(len(self.params)))
+
+        if f(p0) < MIN:
+            raise RuntimeError("couldn't find good parameters")
+
     def _init_bq(self, F):
         Ri = np.array([self.model['R'].value])
-        Si = np.array([np.exp(self.model['log_S'].logp)])
+        Si = self.scale * np.array([np.exp(self.model['log_S'].logp)])
         
         logger.debug("Initializing BQ object for F=%d", F)
         self.bqs[F] = BQ(Ri, Si, **self.bq_opts)
         self.bqs[F].init(
-            params_tl=(8, np.pi / 2., 1.0, 0.0),
-            params_l=(0.2, np.pi / 4., 1.0, 0.0))
+            params_tl=(5, np.pi / 8., 1.0, 0.0),
+            params_l=(25, np.pi / 8., 1.0, 0.0))
 
     def draw(self):
         if self._current_iter == 0:
@@ -203,18 +200,7 @@ class BayesianQuadratureModel(BaseModel):
         for action, loss in zip(actions, losses):
             logger.debug("L(%s) = %s" % (action, loss))
 
-        if self.direction != 0:
-            next_R = self._unwrap(curr_R + (self.direction * self.opts['step']))
-            logger.debug("next: %s", (curr_F, next_R))
-
-            for i in choices:
-                if tuple(actions[i]) == (curr_F, next_R):
-                    best = i
-                    break
-            else:
-                best = np.random.choice(choices)
-        else:
-            best = np.random.choice(choices)
+        best = np.random.choice(choices)
 
         self._add_observation(actions[best, 1], actions[best, 0])
             
@@ -260,57 +246,72 @@ class BayesianQuadratureModel(BaseModel):
     ##################################################################
     # Plotting methods
 
-    xmin = -np.pi
-    xmax = np.pi
+    def plot_bq(self, F, f_S=None):
+        if f_S is not None:
+            f_l = lambda x: self.scale * f_S(x)
+        else:
+            f_l = None
 
-    def plot_log_S_gp(self, ax, f_S=None):
-        # plot the regression for S
-        self.bq.plot_gp_log_l(ax, f_l=f_S, xmin=self.xmin, xmax=self.xmax)
-        ax.set_title(r"GPR for $\log(S)$")
-        ax.set_ylabel(r"Similarity ($\log(S)$)")
+        self.bqs[F].plot(f_l=f_l, xmin=-np.pi, xmax=np.pi)
 
-    def plot_S_gp(self, ax, f_S=None):
-        # plot the regression for S
-        self.bq.plot_gp_l(ax, f_l=f_S, xmin=self.xmin, xmax=self.xmax)
-        ax.set_title(r"GPR for $S$")
-        ax.set_xlabel("")
-        ax.set_ylabel(r"Similarity ($S$)")
+    def plot(self, f_S0=None, f_S1=None):
+        fig, axes = plt.subplots(2, 3)
 
-    def plot_S(self, ax, f_S=None):
-        # plot the regression for S
-        self.bq.plot_l(ax, f_l=f_S, xmin=self.xmin, xmax=self.xmax)
-        ax.set_title(r"Final GPR for $S$")
-        ax.set_xlabel("")
-        ax.set_ylabel("")
+        if f_S0 is not None:
+            f_l0 = lambda x: self.scale * f_S0(x)
+        else:
+            f_l0 = None
 
-    def plot(self, axes, f_S=None):
-        self.plot_log_S_gp(axes[0], f_S=f_S)
-        self.plot_S_gp(axes[1], f_S=f_S)
-        self.plot_S(axes[2], f_S=f_S)
+        if f_S1 is not None:
+            f_l1 = lambda x: self.scale * f_S1(x)
+        else:
+            f_l1 = None
 
-        # align y-axis labels
-        sg.align_ylabels(-0.12, axes[0], axes[1])
+        xmin = -np.pi
+        xmax = np.pi
 
-        # sync y-axis limits
-        lim = (-0.05, 0.2)
-        axes[1].set_ylim(*lim)
-        axes[2].set_ylim(*lim)
+        self.bqs[0].plot_gp_log_l(axes[0, 0], f_l=f_l0, xmin=xmin, xmax=xmax)
+        self.bqs[0].plot_gp_l(axes[0, 1], f_l=f_l0, xmin=xmin, xmax=xmax)
+        self.bqs[0].plot_l(axes[0, 2], f_l=f_l0, xmin=xmin, xmax=xmax)
 
-        # overall figure settings
-        sg.set_figsize(12, 4)
-        plt.tight_layout()
+        self.bqs[1].plot_gp_log_l(axes[1, 0], f_l=f_l1, xmin=xmin, xmax=xmax)
+        self.bqs[1].plot_gp_l(axes[1, 1], f_l=f_l1, xmin=xmin, xmax=xmax)
+        self.bqs[1].plot_l(axes[1, 2], f_l=f_l1, xmin=xmin, xmax=xmax)
+
+        ymins, ymaxs = zip(*[ax.get_ylim() for ax in axes[:, 1:].flat])
+        ymin = min(ymins)
+        ymax = max(ymaxs)
+        for ax in axes[:, 1:].flat:
+            ax.set_ylim(ymin, ymax)
+
+        ymins, ymaxs = zip(*[ax.get_ylim() for ax in axes[:, 0]])
+        ymin = min(ymins)
+        ymax = max(ymaxs)
+        for ax in axes[:, 0]:
+            ax.set_ylim(ymin, ymax)
+
+        fig.set_figwidth(14)
+        fig.set_figheight(7)
 
     ##################################################################
     # Misc
 
     def hypothesis_test(self):
+        N0 = scipy.stats.norm(self._m0, np.sqrt(self._V0))
+        if N0.cdf(0) > 0.025:
+            return None
+
+        N1 = scipy.stats.norm(self._m1, np.sqrt(self._V1))
+        if N1.cdf(0) > 0.025:
+            return None
+
         N = scipy.stats.norm(self._m0 - self._m1, np.sqrt(self._V0 + self._V1))
         test = N.cdf(0)
 
-        if test > 0.95:
-            return 0
-        elif test < 0.05:
+        if test > 0.975:
             return 1
+        elif test < 0.025:
+            return 0
         else:
             return None
 
