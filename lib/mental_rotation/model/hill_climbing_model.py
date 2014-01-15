@@ -27,16 +27,7 @@ class HillClimbingModel(BaseModel):
         if self.direction is None:
             self.direction = np.random.choice([1, -1])
             step = self.direction * self.opts['step']
-
             self.model['R'].value = R + step
-            new_log_S = self.model['log_S'].logp
-            if new_log_S < log_S or np.allclose(new_log_S, log_S):
-                self.tally()
-                self.model['R'].value = R
-                self.direction *= -1
-
-            else: # pragma: no cover
-                pass
 
         else:
             step = self.direction * self.opts['step']
