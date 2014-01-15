@@ -1,10 +1,5 @@
 {
   "description": null, 
-  "last_modified": "2014-01-12 22:01:48.012677", 
-  "title": null, 
-  "image": null, 
-  "datapackage_version": "1.0-beta.5", 
-  "sources": [], 
   "contributors": [
     {
       "email": "jhamrick@berkeley.edu", 
@@ -15,7 +10,10 @@
       "name": "Thomas L. Griffiths"
     }
   ], 
-  "version": "1.0.0", 
+  "image": null, 
+  "datapackage_version": "1.0-beta.5", 
+  "sources": [], 
+  "last_modified": "2014-01-15 00:39:58.925307", 
   "keywords": null, 
   "licenses": [
     {
@@ -23,16 +21,18 @@
       "id": "odc-by"
     }
   ], 
+  "name": "HillClimbingModel_D.dpkg", 
+  "title": null, 
+  "version": "1.1.0", 
   "homepage": null, 
   "resources": [
     {
-      "hash": "f35530585c6bb0e4aef50e37efc5dc1b", 
+      "hash": "1fb865f765d64c7dfe2b08f687f99602", 
       "name": "model.csv", 
       "format": "csv", 
-      "bytes": 84610, 
-      "modified": "2014-01-12 22:01:48.002868", 
+      "bytes": 84242, 
+      "modified": "2014-01-15 00:39:58.913155", 
       "path": "./model.csv"
     }
-  ], 
-  "name": "HillClimbingModel_D.dpkg"
+  ]
 }
