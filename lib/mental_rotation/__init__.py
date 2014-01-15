@@ -1,8 +1,11 @@
 from path import path
+
+# first define the root path
 ROOT_PATH = path(__path__[0]).joinpath("../../").abspath()
 del path
 
 
+# load the configuration
 def get_config(name='config.ini'):
     from ConfigParser import SafeConfigParser
     config = SafeConfigParser()
@@ -12,6 +15,7 @@ def get_config(name='config.ini'):
 config = get_config()
 
 
+# load the various paths that we need
 def get_path(name):
     return ROOT_PATH.joinpath(config.get("paths", name))
 
@@ -24,6 +28,7 @@ SIM_PATH = get_path("simulations")
 RESOURCE_PATH = get_path("resources")
 SIM_SCRIPT_PATH = get_path("sim_scripts")
 
+# configure logging
 import logging
 FORMAT = '%(levelname)s -- %(processName)s/%(filename)s -- %(message)s'
 LOGLEVEL = config.get("global", "loglevel").upper()
@@ -31,4 +36,15 @@ logging.basicConfig(format=FORMAT, level=LOGLEVEL)
 logger = logging.getLogger("mental_rotation")
 logger.setLevel(LOGLEVEL)
 
+# import stimulus and model code
 from .stimulus import Stimulus2D
+from . import model
+
+# make a list of the available models
+MODELS = model.__all__[:]
+if 'BaseModel' in MODELS:
+    MODELS.remove('BaseModel')
+MODELS = tuple(MODELS)
+
+# import the rest of the code
+from . import sims

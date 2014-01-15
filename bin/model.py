@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from mental_rotation import BIN_PATH
+from mental_rotation import BIN_PATH, MODELS
 from termcolor import colored
 import logging
 import subprocess

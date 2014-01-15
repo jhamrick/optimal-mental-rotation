@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from path import path
 from utils import parse_address, get_params
 from tasks import Tasks
-from mental_rotation import LOGLEVEL
+from mental_rotation import LOGLEVEL, MODELS
 
 logger = logging.getLogger("mental_rotation.sims.server")
 
@@ -164,6 +164,7 @@ def create_server_parser(parser):
     parser.add_argument(
         "-m", "--model",
         required=True,
+        choices=MODELS,
         help="Model name.")
     parser.add_argument(
         "-e", "--exp",

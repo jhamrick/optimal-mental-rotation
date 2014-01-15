@@ -6,25 +6,22 @@ import json
 import logging
 import pandas as pd
 
-from mental_rotation import SIM_PATH, DATA_PATH
+from mental_rotation import SIM_PATH, DATA_PATH, MODELS
 from mental_rotation import model as m
 from snippets import datapackage as dpkg
 
-
-MODELS = ['GoldStandardModel', 'HillClimbingModel', 'BayesianQuadratureModel']
-
 logger = logging.getLogger('mental_rotation')
-
-hypotheses = {
-    0: "same",
-    1: "flipped"
-}
 
 
 def load(model_class, pth, taskname):
     model = model_class.load(pth)
     stim, rot, flip = taskname.split("_")
     rot = float(rot)
+
+    hypotheses = {
+        0: "same",
+        1: "flipped"
+    }
     flip = hypotheses[int(flip)]
 
     data = {}

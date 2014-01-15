@@ -2,9 +2,8 @@
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from mental_rotation.sims.build import build
+from mental_rotation import MODELS
 from copy import deepcopy
-
-MODELS = ['GoldStandardModel', 'HillClimbingModel', 'BayesianQuadratureModel']
 
 
 def make_parser():
