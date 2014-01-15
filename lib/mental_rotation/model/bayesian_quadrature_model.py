@@ -1,12 +1,13 @@
 import numpy as np
 
 import matplotlib.pyplot as plt
-import snippets.graphing as sg
 import logging
 import scipy.stats
+import scipy.optimize as optim
+import pickle
+
 from bayesian_quadrature import BQ
 from gp import PeriodicKernel
-import scipy.optimize as optim
 
 from .. import config
 from . import BaseModel
@@ -35,6 +36,8 @@ class BayesianQuadratureModel(BaseModel):
     """
 
     _iter = 360
+    _scale = 100
+    _params = ['h', 'w']
 
     def __init__(self, *args, **kwargs):
         self.bq_opts = {
@@ -50,8 +53,10 @@ class BayesianQuadratureModel(BaseModel):
             del kwargs['bq_opts']
 
         self.bqs = {}
-        self.scale = 100
-        self.params = ['h', 'w']
+        self._m0 = None
+        self._V0 = None
+        self._m1 = None
+        self._V1 = None
 
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
 
@@ -70,7 +75,7 @@ class BayesianQuadratureModel(BaseModel):
             float(self.model['F'].value),
             self.model['R'].value)
 
-        S = self.scale * np.exp(self.model['log_S'].logp)
+        S = self._scale * np.exp(self.model['log_S'].logp)
         bq = self.bqs[F]
         bq.add_observation(R, S)
         if bq.x_s.size > 1:
@@ -113,7 +118,7 @@ class BayesianQuadratureModel(BaseModel):
             self.bqs[0].Z_var
         ]
         # l0, m0, V0 = self.bqs[0].marginalize(
-        #     funs, n, params=self.params)
+        #     funs, n, params=self._params)
         l0, m0, V0 = [np.array([f()]) for f in funs]
 
         funs = [
@@ -122,7 +127,7 @@ class BayesianQuadratureModel(BaseModel):
             self.bqs[1].Z_var
         ]
         # l1, m1, V1 = self.bqs[1].marginalize(
-        #     funs, n, params=self.params)
+        #     funs, n, params=self._params)
         l1, m1, V1 = [np.array([f()]) for f in funs]
 
         self._m0 = max(0, m0.mean())
@@ -136,11 +141,11 @@ class BayesianQuadratureModel(BaseModel):
         return actions, loss
 
     def _fit_hypers(self, F, ntry=10):
-        p0_tl = [self.bqs[F].gp_log_l.get_param(p) for p in self.params]
-        p0_l = [self.bqs[F].gp_l.get_param(p) for p in self.params]
+        p0_tl = [self.bqs[F].gp_log_l.get_param(p) for p in self._params]
+        p0_l = [self.bqs[F].gp_l.get_param(p) for p in self._params]
         p0 = np.array(p0_tl + p0_l)
         
-        logpdf = self.bqs[F]._make_llh_params(self.params)
+        logpdf = self.bqs[F]._make_llh_params(self._params)
         def f(x):
             llh = logpdf(x)
             if llh > -np.inf:
@@ -153,7 +158,7 @@ class BayesianQuadratureModel(BaseModel):
         for i in xrange(ntry):
             logger.debug(
                 "Fitting parameters %s for F=%d, attempt %d", 
-                self.params, F, i+1)
+                self._params, F, i+1)
 
             res = optim.minimize(
                 fun=lambda x: -f(x),
@@ -167,14 +172,14 @@ class BayesianQuadratureModel(BaseModel):
             if f(p0) > MIN:
                 break
 
-            p0 = np.abs(np.random.randn(len(self.params)))
+            p0 = np.abs(np.random.randn(len(self._params)))
 
         if f(p0) < MIN:
             raise RuntimeError("couldn't find good parameters")
 
     def _init_bq(self, F):
         Ri = np.array([self.model['R'].value])
-        Si = self.scale * np.array([np.exp(self.model['log_S'].logp)])
+        Si = self._scale * np.array([np.exp(self.model['log_S'].logp)])
         
         logger.debug("Initializing BQ object for F=%d", F)
         self.bqs[F] = BQ(Ri, Si, **self.bq_opts)
@@ -229,6 +234,15 @@ class BayesianQuadratureModel(BaseModel):
     ##################################################################
     # Estimated dZ_dR and full estimate of Z
 
+    def log_dZ_dR(self, R, F):
+        return np.log(self.dZ_dR(R, F))
+
+    def dZ_dR(self, R, F):
+        p_S = self.S(R, F)
+        p_R = self.bqs[F]._make_approx_px(R)
+        p_F = self.model['F'].p * F + (1 - self.model['F'].p) * (1 - F)
+        return p_S * p_R * p_F
+
     def log_Z(self, F):
         Z = self.Z(F)
         out = np.empty_like(Z)
@@ -256,7 +270,7 @@ class BayesianQuadratureModel(BaseModel):
 
     def plot_bq(self, F, f_S=None):
         if f_S is not None:
-            f_l = lambda x: self.scale * f_S(x)
+            f_l = lambda x: self._scale * f_S(x)
         else:
             f_l = None
 
@@ -266,12 +280,12 @@ class BayesianQuadratureModel(BaseModel):
         fig, axes = plt.subplots(2, 3)
 
         if f_S0 is not None:
-            f_l0 = lambda x: self.scale * f_S0(x)
+            f_l0 = lambda x: self._scale * f_S0(x)
         else:
             f_l0 = None
 
         if f_S1 is not None:
-            f_l1 = lambda x: self.scale * f_S1(x)
+            f_l1 = lambda x: self._scale * f_S1(x)
         else:
             f_l1 = None
 
@@ -339,3 +353,25 @@ class BayesianQuadratureModel(BaseModel):
             print "--> STOP and accept hypothesis 0 (same)"
         else: # pragma: no cover
             print "--> UNDECIDED"
+
+    ##################################################################
+    # Copying/Saving
+
+    def __getstate__(self):
+        state = super(BayesianQuadratureModel, self).__getstate__()
+        state['_m0'] = self._m0
+        state['_V0'] = self._V0
+        state['_m1'] = self._m1
+        state['_V1'] = self._V1
+        state['bqs'] = pickle.dumps(self.bqs)
+        state['bq_opts'] = pickle.dumps(self.bq_opts)
+        return state
+
+    def __setstate__(self, state):
+        super(BayesianQuadratureModel, self).__setstate__(state)
+        self._m0 = state['_m0']
+        self._V0 = state['_V0']
+        self._m1 = state['_m1']
+        self._V1 = state['_V1']
+        self.bqs = pickle.loads(state['bqs'])
+        self.bq_opts = pickle.loads(state['bq_opts'])
