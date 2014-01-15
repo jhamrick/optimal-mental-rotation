@@ -22,10 +22,19 @@ class Simulation(Process):
         self.end_time = None
         super(Simulation, self).__init__()
 
+    def _simulate(self, cls, Xa, Xb, dest):
+        model = cls(Xa, Xb)
+        model.sample()
+        if self.save:
+            if dest.exists():
+                dest.rmtree_p()
+            model.save(dest)
+
     def simulate(self):
 
         ## Assorted parameters.
         istim = self.task["istim"]
+        num_samples = self.task["num_samples"]
 
         stim_path = self.task["stim_path"]
         X = Stimulus2D.load(stim_path)
@@ -39,24 +48,28 @@ class Simulation(Process):
             raise ValueError("unhandled model: %s" % model_name)
 
         np.random.seed(self.task["seed"])
-        model = model_class(Xa, Xb)
-        model.sample()
+        data_path = path(self.task["data_path"])
+        if self.save and not data_path.exists():
+            data_path.makedirs()
 
-        if self.save:
-            # Write data to file.
-            data_path = path(self.task["data_path"])
-            if not data_path.dirname().exists():
-                data_path.dirname().makedirs()
-            model.save(data_path)
+        for isamp in xrange(num_samples):
+            dest = data_path.joinpath("sample_%d" % isamp)
+            self._simulate(model_class, Xa, Xb, dest)
 
-            # Mark simulation as complete.
-            self.task["complete"] = True
+        # Mark simulation as complete.
+        self.task["complete"] = True
 
     def print_info(self):
         self.info_lock.acquire()
         dt = self.end_time - self.start_time
+        n_samples = self.task['num_samples']
+        avg = timedelta(seconds=(dt.total_seconds() / float(n_samples)))
 
-        mp.util.info("Total time : %s" % str(dt))
+        mp.util.info("-" * 60)
+        mp.util.info("Total time      : %s" % str(dt))
+        mp.util.info("Avg. per sample : %s" % str(avg))
+        mp.util.info("Num samples     : %d" % n_samples)
+        mp.util.info("-" * 60)
 
         sys.stdout.flush()
         self.info_lock.release()

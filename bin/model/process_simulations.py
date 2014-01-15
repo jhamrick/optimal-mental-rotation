@@ -51,24 +51,31 @@ def process_all(model_type, exp, force=False):
     tasks_file = sim_root.joinpath("tasks.json")
     with open(tasks_file, "r") as fh:
         tasks = json.load(fh)
+    completed_file = sim_root.joinpath("completed.json")
+    with open(completed_file, "r") as fh:
+        completed = json.load(fh)
         
     try:
         model_class = getattr(m, model_type)
     except AttributeError:
         raise ValueError("unhandled model type: %s" % model_type)
 
-    data = {}
+    data = []
     for i, taskname in enumerate(sorted(tasks.keys())):
         task = tasks[taskname]
         pth = path(task['data_path'])
         logger.info("Processing '%s'...", pth.abspath())
-        data[taskname] = load(model_class, pth, taskname)
 
-        # overrepresent data points from 0 and 180
-        if data[taskname]['theta'] in (0, 180):
-            data[taskname + "_2"] = data[taskname].copy()
+        if not completed[taskname]:
+            raise RuntimeError("simulations are not complete")
 
-    df = pd.DataFrame.from_dict(data, orient='index').reset_index(drop=True)
+        for isample in xrange(task['num_samples']):
+            samppth = pth.joinpath("sample_%d" % isample)
+            sampdata = load(model_class, samppth, taskname)
+            sampdata['sample'] = isample
+            data.append(sampdata)
+
+    df = pd.DataFrame(data)
 
     # load the existing datapackage and bump the version
     if dp_path.exists():

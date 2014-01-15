@@ -6,6 +6,7 @@ from copy import deepcopy
 
 MODELS = ['GoldStandardModel', 'HillClimbingModel', 'BayesianQuadratureModel']
 
+
 def make_parser():
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter)
@@ -28,13 +29,29 @@ def make_parser():
     return parser
 
 
+def make_params(model, exp, force):
+    params = {
+        'model': model,
+        'exp': exp,
+        'force': force,
+        'stim_path': exp
+    }
+
+    if model == "GoldStandardModel":
+        params['num_samples'] = 1
+    elif model == "HillClimbingModel":
+        params['num_samples'] = 100
+    elif model == "BayesianQuadratureModel":
+        params['num_samples'] = 10
+    else:
+        raise ValueError("unhandled model type: %s" % model)
+
+    return params
+
+
 if __name__ == "__main__":
     parser = make_parser()
     args = parser.parse_args()
 
-    params = {}
-    params['model'] = args.model
-    params['exp'] = args.exp
-    params['force'] = args.force
-    params['stim_path'] = args.exp
+    params = make_params(args.model, args.exp, args.force)
     build(**params)

@@ -48,6 +48,9 @@ def build(model, exp, **params):
     script['sim_root'] = str(sim_root.relpath(SIM_PATH))
     script['stim_paths'] = [str(x.relpath(STIM_PATH)) for x in stim_paths]
 
+    # number of samples
+    script['num_samples'] = params['num_samples']
+
     # create the directory for our script and resources, and save them
     if not script_root.exists():
         script_root.makedirs_p()
