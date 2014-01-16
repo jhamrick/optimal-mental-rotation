@@ -56,7 +56,7 @@ class Tasks(dict):
                     "task_name": sim_name,
                     "seed": abs(hash(sim_name)),
                     "num_tries": 0,
-                    "samples": tuple([int(x) for x in chunk]),
+                    "samples": [int(x) for x in chunk],
                 }
 
                 completed[sim_name] = False
