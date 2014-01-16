@@ -61,15 +61,15 @@ def process_all(model_type, exp, force=False):
     for i, taskname in enumerate(sorted(tasks.keys())):
         task = tasks[taskname]
         pth = path(task['data_path'])
-        logger.info("Processing '%s'...", pth.abspath())
+        logger.info("Processing '%s'...", task)
 
         if not completed[taskname]:
             raise RuntimeError("simulations are not complete")
 
-        for ichunk in task['chunk']:
-            samppth = pth.joinpath("sample_%d" % ichunk)
+        for isample in task['samples']:
+            samppth = pth.joinpath("sample_%d" % isample)
             sampdata = load(model_class, samppth, taskname)
-            sampdata['sample'] = ichunk
+            sampdata['sample'] = isample
             data.append(sampdata)
 
     df = pd.DataFrame(data)
