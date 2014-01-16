@@ -45,7 +45,8 @@ class BayesianQuadratureModel(BaseModel):
             'x_mean': config.getfloat("model", "R_mu"),
             'x_var': 1. / config.getfloat("model", "R_kappa"),
             'candidate_thresh': config.getfloat("model", "step") / 2.,
-            'kernel': PeriodicKernel
+            'kernel': PeriodicKernel,
+            'optim_method': 'L-BFGS-B'
         }
 
         if 'bq_opts' in kwargs:
@@ -163,7 +164,7 @@ class BayesianQuadratureModel(BaseModel):
             res = optim.minimize(
                 fun=lambda x: -f(x),
                 x0=p0,
-                method='Powell')
+                method='L-BFGS-B')
 
             if f(res['x']) > MIN:
                 p0 = res['x']
