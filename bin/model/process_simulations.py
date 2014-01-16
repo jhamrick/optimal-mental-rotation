@@ -13,9 +13,9 @@ from snippets import datapackage as dpkg
 logger = logging.getLogger('mental_rotation')
 
 
-def load(model_class, pth, taskname):
+def load(model_class, pth, stimname):
     model = model_class.load(pth)
-    stim, rot, flip = taskname.split("_")
+    stim, rot, flip = stimname.split("_")
     rot = float(rot)
 
     hypotheses = {
@@ -68,7 +68,7 @@ def process_all(model_type, exp, force=False):
 
         for isample in task['samples']:
             samppth = pth.joinpath("sample_%d" % isample)
-            sampdata = load(model_class, samppth, taskname)
+            sampdata = load(model_class, samppth, pth.namebase)
             sampdata['sample'] = isample
             data.append(sampdata)
 
