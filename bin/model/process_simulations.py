@@ -61,7 +61,7 @@ def process_all(model_type, exp, force=False):
     for i, taskname in enumerate(sorted(tasks.keys())):
         task = tasks[taskname]
         pth = path(task['data_path'])
-        logger.info("Processing '%s'...", task)
+        logger.info("Processing '%s'...", taskname)
 
         if not completed[taskname]:
             raise RuntimeError("simulations are not complete")
