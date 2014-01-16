@@ -66,10 +66,10 @@ def process_all(model_type, exp, force=False):
         if not completed[taskname]:
             raise RuntimeError("simulations are not complete")
 
-        for isample in xrange(task['num_samples']):
-            samppth = pth.joinpath("sample_%d" % isample)
+        for ichunk in task['chunk']:
+            samppth = pth.joinpath("sample_%d" % ichunk)
             sampdata = load(model_class, samppth, taskname)
-            sampdata['sample'] = isample
+            sampdata['sample'] = ichunk
             data.append(sampdata)
 
     df = pd.DataFrame(data)
