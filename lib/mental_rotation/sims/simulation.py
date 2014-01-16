@@ -34,7 +34,7 @@ class Simulation(Process):
 
         ## Assorted parameters.
         istim = self.task["istim"]
-        num_samples = self.task["num_samples"]
+        samples = self.task["samples"]
 
         stim_path = self.task["stim_path"]
         X = Stimulus2D.load(stim_path)
@@ -52,7 +52,7 @@ class Simulation(Process):
         if self.save and not data_path.exists():
             data_path.makedirs()
 
-        for isamp in xrange(num_samples):
+        for isamp in samples:
             dest = data_path.joinpath("sample_%d" % isamp)
             self._simulate(model_class, Xa, Xb, dest)
 
@@ -62,7 +62,7 @@ class Simulation(Process):
     def print_info(self):
         self.info_lock.acquire()
         dt = self.end_time - self.start_time
-        n_samples = self.task['num_samples']
+        n_samples = len(self.task['samples'])
         avg = timedelta(seconds=(dt.total_seconds() / float(n_samples)))
 
         mp.util.info("-" * 60)

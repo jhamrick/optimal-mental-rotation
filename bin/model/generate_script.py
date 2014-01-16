@@ -38,10 +38,13 @@ def make_params(model, exp, force):
 
     if model == "GoldStandardModel":
         params['num_samples'] = 1
+        params['chunksize'] = 10
     elif model == "HillClimbingModel":
         params['num_samples'] = 100
+        params['chunksize'] = 100
     elif model == "BayesianQuadratureModel":
         params['num_samples'] = 10
+        params['chunksize'] = 2
     else:
         raise ValueError("unhandled model type: %s" % model)
 

@@ -28,30 +28,37 @@ class Tasks(dict):
 
         stim_paths = [STIM_PATH.joinpath(x) for x in params['stim_paths']]
         num_samples = params['num_samples']
+        chunksize = float(params['chunksize'])
 
         tasks = cls()
         completed = cls()
         for istim, stim in enumerate(stim_paths):
-            sim_name = stim.namebase
-            data_path = sim_root.joinpath(sim_name)
             rot = float(sim_name.split("_")[1])
-
-            # Make the task dicts for this sample.
-            tasks[sim_name] = {
-                "model": params["model"],
-                "istim": istim,
-                "stim_path": str(stim),
-                "data_path": str(data_path),
-                "script_root": params["script_root"],
-                "task_name": sim_name,
-                "seed": abs(hash(sim_name)),
-                "num_tries": 0,
-                "num_samples": num_samples,
-            }
-
             if rot in (0, 180):
-                tasks[sim_name]["num_samples"] *= 2
+                ns = num_samples * 2
+            else:
+                ns = num_samples
 
-            completed[sim_name] = False
+            n_chunks = int(np.ceil(ns / chunksize))
+            chunks = np.array_split(np.arange(ns), n_chunks, axis=0)
+
+            for ichunk, chunk in enumerate(chunks):
+                sim_name = "%s_%02d" % (stim.namebase, ichunk)
+                data_path = sim_root.joinpath(stim.namebase)
+
+                # Make the task dicts for this sample.
+                tasks[sim_name] = {
+                    "model": params["model"],
+                    "istim": istim,
+                    "stim_path": str(stim),
+                    "data_path": str(data_path),
+                    "script_root": params["script_root"],
+                    "task_name": sim_name,
+                    "seed": abs(hash(sim_name)),
+                    "num_tries": 0,
+                    "samples": chunk,
+                }
+
+                completed[sim_name] = False
 
         return tasks, completed

@@ -50,6 +50,7 @@ def build(model, exp, **params):
 
     # number of samples
     script['num_samples'] = params['num_samples']
+    script['chunksize'] = params['chunksize']
 
     # create the directory for our script and resources, and save them
     if not script_root.exists():
