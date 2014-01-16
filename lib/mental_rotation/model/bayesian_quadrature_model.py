@@ -35,7 +35,7 @@ class BayesianQuadratureModel(BaseModel):
 
     """
 
-    _iter = 360
+    _iter = 720
     _scale = 100
     _params = ['h', 'w']
 
