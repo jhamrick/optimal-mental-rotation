@@ -13,7 +13,7 @@
   "image": null, 
   "datapackage_version": "1.0-beta.5", 
   "sources": [], 
-  "last_modified": "2014-01-15 00:30:06.340228", 
+  "last_modified": "2014-01-16 19:42:37.203001", 
   "keywords": null, 
   "licenses": [
     {
@@ -23,15 +23,15 @@
   ], 
   "name": "BayesianQuadratureModel_D.dpkg", 
   "title": null, 
-  "version": "1.1.0", 
+  "version": "1.2.0", 
   "homepage": null, 
   "resources": [
     {
-      "hash": "462b8b67759d2d540ba0cdec92a0f411", 
+      "hash": "697428eab220274f5e294005ed86e074", 
       "name": "model.csv", 
       "format": "csv", 
-      "bytes": 145295, 
-      "modified": "2014-01-15 00:30:04.970291", 
+      "bytes": 1476632, 
+      "modified": "2014-01-16 19:42:26.260273", 
       "path": "./model.csv"
     }
   ]
