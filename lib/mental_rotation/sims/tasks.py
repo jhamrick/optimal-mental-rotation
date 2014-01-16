@@ -33,7 +33,7 @@ class Tasks(dict):
         tasks = cls()
         completed = cls()
         for istim, stim in enumerate(stim_paths):
-            rot = float(sim_name.split("_")[1])
+            rot = float(stim.namebase.split("_")[1])
             if rot in (0, 180):
                 ns = num_samples * 2
             else:
