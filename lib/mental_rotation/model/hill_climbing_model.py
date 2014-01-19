@@ -30,7 +30,7 @@ class HillClimbingModel(BaseModel):
             self.model['R'].value = step
 
             new_log_S = self.model['log_S'].logp
-            if new_log_S < log_S:
+            if new_log_S < log_S and not np.isclose(new_log_S, log_S):
                 self.tally()
                 self._current_iter += 1
                 self.direction *= -1
@@ -41,7 +41,7 @@ class HillClimbingModel(BaseModel):
             self.model['R'].value = R + step
             new_log_S = self.model['log_S'].logp
 
-            if new_log_S < log_S:
+            if new_log_S < log_S and not np.isclose(new_log_S, log_S):
                 if F == 0:
                     self.tally()
                     self._current_iter += 1
