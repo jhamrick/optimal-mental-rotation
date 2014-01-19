@@ -40,26 +40,29 @@ class BayesianQuadratureModel(BaseModel):
     _params = ['h', 'w']
 
     def __init__(self, *args, **kwargs):
+        if 'bq_opts' in kwargs:
+            bq_opts = kwargs['bq_opts']
+            del kwargs['bq_opts']
+        else:
+            bq_opts = {}
+
+        super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
+
         self.bq_opts = {
             'n_candidate': config.getint("bq", "n_candidate"),
-            'x_mean': config.getfloat("model", "R_mu"),
-            'x_var': 1. / config.getfloat("model", "R_kappa"),
-            'candidate_thresh': config.getfloat("model", "step") / 2.,
+            'x_mean': config.getfloat("bq", "R_mu"),
+            'x_var': 1. / config.getfloat("bq", "R_kappa"),
+            'candidate_thresh': self.opts['step'] / 2.,
             'kernel': PeriodicKernel,
             'optim_method': 'Powell'
         }
-
-        if 'bq_opts' in kwargs:
-            self.bq_opts.update(kwargs['bq_opts'])
-            del kwargs['bq_opts']
+        self.bq_opts.update(bq_opts)
 
         self.bqs = {}
         self._m0 = None
         self._V0 = None
         self._m1 = None
         self._V1 = None
-
-        super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
 
     def _check_done(self):
         hyp = self.hypothesis_test()
@@ -85,19 +88,13 @@ class BayesianQuadratureModel(BaseModel):
     def _get_actions(self):
         R = self.model['R'].value
         F = float(self.model['F'].value)
-        step = self.opts['step']
-
-        N = scipy.stats.norm(0, np.sqrt(step / 2.))
-        def rand():
-            x = np.clip(N.rvs(), -step, step)
-            return x
         
         actions = [
             (1 - F, 0),
             (1 - F, R),
             (F, 0),
-            (F, R + np.abs(N.rvs())),
-            (F, R - np.abs(N.rvs()))
+            (F, R + np.abs(self._random_step())),
+            (F, R - np.abs(self._random_step()))
         ]
 
         actions = np.array(sorted(actions))
@@ -233,16 +230,7 @@ class BayesianQuadratureModel(BaseModel):
         return self.bqs[F].l_mean(R)
 
     ##################################################################
-    # Estimated dZ_dR and full estimate of Z
-
-    def log_dZ_dR(self, R, F):
-        return np.log(self.dZ_dR(R, F))
-
-    def dZ_dR(self, R, F):
-        p_S = self.S(R, F)
-        p_R = self.bqs[F]._make_approx_px(R)
-        p_F = self.model['F'].p * F + (1 - self.model['F'].p) * (1 - F)
-        return p_S * p_R * p_F
+    # Estimated Z
 
     def log_Z(self, F):
         Z = self.Z(F)
@@ -337,6 +325,22 @@ class BayesianQuadratureModel(BaseModel):
             return 0
         else:
             return None
+
+    @property
+    def log_lh_h0(self):
+        m = self._m0
+        s = np.sqrt(self._V0)
+        lower = m - 1.96 * s
+        upper = m + 1.96 * s
+        return np.array([m, lower, upper])
+
+    @property
+    def log_lh_h1(self):
+        m = self._m1
+        s = np.sqrt(self._V1)
+        lower = m - 1.96 * s
+        upper = m + 1.96 * s
+        return np.array([m, lower, upper])
 
     def print_stats(self):
         llh0 = self.log_lh_h0
