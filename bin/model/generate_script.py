@@ -42,6 +42,9 @@ def make_params(model, exp, force):
     elif model == "HillClimbingModel":
         params['num_samples'] = 100
         params['chunksize'] = 100
+    elif model == "ThresholdModel":
+        params['num_samples'] = 100
+        params['chunksize'] = 100
     elif model == "BayesianQuadratureModel":
         params['num_samples'] = 10
         params['chunksize'] = 2

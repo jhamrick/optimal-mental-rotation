@@ -27,8 +27,6 @@ def load(model_class, pth, stimname):
     data = {}
     data['nstep'] = model.R_i.size
     data['hypothesis'] = hypotheses[model.hypothesis_test()]
-    data['log_Z0'] = model.log_Z(0)
-    data['log_Z1'] = model.log_Z(1)
     data['log_lh_h0'] = model.log_lh_h0
     data['log_lh_h1'] = model.log_lh_h1
     data['stimulus'] = stim
