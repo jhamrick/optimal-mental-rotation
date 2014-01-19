@@ -5,6 +5,7 @@ from path import path
 import json
 import logging
 import pandas as pd
+import multiprocessing as mp
 
 from mental_rotation import SIM_PATH, DATA_PATH, MODELS
 from mental_rotation import model as m
@@ -13,28 +14,37 @@ from snippets import datapackage as dpkg
 logger = logging.getLogger('mental_rotation')
 
 
-def load(model_class, pth, stimname):
-    model = model_class.load(pth)
-    stim, rot, flip = stimname.split("_")
-    rot = float(rot)
+def load(samples, model_class, pth):
+    all_data = []
 
-    hypotheses = {
-        0: "same",
-        1: "flipped",
-        None: None
-    }
-    flip = hypotheses[int(flip)]
+    for isample in samples:
+        samppth = pth.joinpath("sample_%d" % isample)
+        stimname = pth.namebase
 
-    data = {}
-    data['nstep'] = model.R_i.size
-    data['hypothesis'] = hypotheses[model.hypothesis_test()]
-    data['log_lh_h0'] = model.log_lh_h0
-    data['log_lh_h1'] = model.log_lh_h1
-    data['stimulus'] = stim
-    data['theta'] = rot
-    data['flipped'] = flip
+        model = model_class.load(samppth)
+        stim, rot, flip = stimname.split("_")
+        rot = float(rot)
 
-    return data
+        hypotheses = {
+            0: "same",
+            1: "flipped",
+            None: None
+        }
+        flip = hypotheses[int(flip)]
+
+        data = {}
+        data['nstep'] = model.R_i.size
+        data['hypothesis'] = hypotheses[model.hypothesis_test()]
+        data['log_lh_h0'] = model.log_lh_h0
+        data['log_lh_h1'] = model.log_lh_h1
+        data['stimulus'] = stim
+        data['theta'] = rot
+        data['flipped'] = flip
+
+        data['sample'] = isample
+        all_data.append(data)
+
+    return all_data
 
 def process_all(model_type, exp, force=False):
     name = "%s_%s.dpkg" % (model_type, exp)
@@ -56,20 +66,24 @@ def process_all(model_type, exp, force=False):
     except AttributeError:
         raise ValueError("unhandled model type: %s" % model_type)
 
-    data = []
+    pool = mp.Pool()
+
+    results = {}
     for i, taskname in enumerate(sorted(tasks.keys())):
         task = tasks[taskname]
         pth = path(task['data_path'])
-        logger.info("Processing '%s'...", taskname)
+        logger.info("Starting '%s'...", taskname)
 
         if not completed[taskname]:
             raise RuntimeError("simulations are not complete")
 
-        for isample in task['samples']:
-            samppth = pth.joinpath("sample_%d" % isample)
-            sampdata = load(model_class, samppth, pth.namebase)
-            sampdata['sample'] = isample
-            data.append(sampdata)
+        args = [task['samples'], model_class, pth]
+        results[taskname] = pool.apply_async(load, args)
+
+    data = []
+    for taskname, res in results.iteritems():
+        logger.info("Fetching '%s'...", taskname)
+        data.extend(res.get())
 
     df = pd.DataFrame(data)
 
