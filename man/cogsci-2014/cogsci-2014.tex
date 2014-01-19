@@ -23,17 +23,35 @@
 \usepackage{cogsci}
 \usepackage{pslatex}
 \usepackage{apacite}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{amsmath, amsthm, amssymb}
+
+\newcommand{\TODO}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\Xa}[0]{\mathbf{X}_a}
+\newcommand{\Xb}[0]{\mathbf{X}_b}
+\newcommand{\Xt}[0]{\mathbf{X}_t}
+\newcommand{\R}[0]{\mathbf{R}_\theta}
+\newcommand{\F}[0]{\mathbf{F}}
+\newcommand{\M}[0]{\mathbf{M}}
+\newcommand{\I}[0]{\mathbb{I}}
+\newcommand{\hi}[0]{h=0}
+\newcommand{\hf}[0]{h=1}
+
+\newenvironment{pitemize}{
+\begin{itemize}
+  \setlength{\itemsep}{1pt}
+  \setlength{\parskip}{0pt}
+  \setlength{\parsep}{0pt}
+}{\end{itemize}}
 
 
-\title{How to Make a Camera-Ready Proceedings Contribution}
+\title{An active sampling model of mental rotation}
  
-\author{{\large \bf Morton Ann Gernsbacher (MAG@Macc.Wisc.Edu)} \\
-  Department of Psychology, 1202 W. Johnson Street \\
-  Madison, WI 53706 USA
-  \AND {\large \bf Sharon J. Derry (SDJ@Macc.Wisc.Edu)} \\
-  Department of Educational Psychology, 1025 W. Johnson Street \\
-  Madison, WI 53706 USA}
-
+\author{{\large \bf Jessica B. Hamrick (jhamrick@berkeley.edu)} \\
+  {\large \bf Thomas L. Griffiths (tom\_griffiths@berkeley.edu)} \\
+  Department of Psychology, University of California, Berkeley, CA
+  94720 USA}
 
 \begin{document}
 
@@ -41,174 +59,180 @@
 
 
 \begin{abstract}
-The abstract should be one paragraph, indented 1/8~inch on both sides,
-in 9~point font with single spacing. The heading {\bf Abstract} should
-be 10~point, bold, centered, with one line space below it. This
-one-paragraph abstract section is required only for standard spoken
-papers and standard posters (i.e., those presentations that will be
-represented by six page papers in the Proceedings).
+\TODO{}
 
 \textbf{Keywords:} 
-Add your choice of indexing terms or keywords; kindly use a semi-colon; between each term.
+\TODO{}
 \end{abstract}
 
 
-\section{General Formatting Instructions}
+\section{Introduction}
 
-For standard spoken papers and standard posters, the entire contribution (including figures, references, everything) can be no longer than six pages. For abstract posters, the entire contribution can be no longer than one page. For symposia, the entire contribution can be no longer than two pages.
-
-The text of the paper should be formatted in two columns with an
-overall width of 7 inches (17.8 cm) and length of 9.25 inches (23.5
-cm), with 0.25 inches between the columns. Leave two line spaces
-between the last author listed and the text of the paper. The left
-margin should be 0.75 inches and the top margin should be 1 inch.
-\textbf{The right and bottom margins will depend on whether you use
-  U.S. letter or A4 paper, so you must be sure to measure the width of
-  the printed text.} Use 10~point Times Roman with 12~point vertical
-spacing, unless otherwise specified.
-
-The title should be in 14~point, bold, and centered. The title should
-be formatted with initial caps (the first letter of content words
-capitalized and the rest lower case). Each author's name should appear
-on a separate line, 11~point bold, and centered, with the author's
-email address in parentheses. Under each author's name list the
-author's affiliation and postal address in ordinary 10~point type.
-
-Indent the first line of each paragraph by 1/8~inch (except for the
-first paragraph of a new section). Do not add extra vertical space
-between paragraphs.
+One of our most astonishing cognitive feats is the ability to
+envision, manipulate, and plan with objects -- all without actually
+perceiving them. This capacity for ``mental simulation'' has been
+widely studied and has sparked intense debate about the underlying
+representation of mental images \TODO{cite}. Despite this vast
+literature, there have been surprisingly few computational models of
+mental imagery.
 
 
-\section{First-Level Headings}
 
-First level headings should be in 12~point, initial caps, bold and
-centered. Leave one line space above the heading and 1/4~ line space
-below the heading.
+\section{Background}
+
+classic result by shepard and metzler
+
+assume people rotate until congruent
+
+but how do people actually construct the plan for the rotation?
+
+evidence that people *don't* actually rotate until congruent
+
+so what are they actually doing?
+
+perhaps they are performing mental manipulations of an image, but not
+a single trajectory of rotation
+
+rational analysis \cite{Marr:1983to,anderson90,Shepard:1987tt}
+
+1) the problem: determine something about the spatial transformations
+that an object has undergone
+2) the goal: make this determiniation while using the least amount of
+resources
+3) the solution: perform those rotations and reflections which will
+give the most information (?) about the answer until an answer is
+found
+
+motivate the active searching approach
+\cite{Gureckis:2012gu,Markant:2012uu} \cite{Markant:2012uu,Nelson2007}
+
+we focus less on the representation, and more on the process, assuming
+a spatial representation (because you need both to make a claim,
+\cite{Anderson1978})
+
+problem solving \cite{Hegarty2004, Schwartz1999}
+
+symbolic vs simulation \cite{Schwartz:1996uy}
+
+eye tracking \cite{Just1976}
+
+\section{Models of mental rotation}
+
+In the mental rotation task, people are presented with pairs of
+two-dimensional shapes similar to those used by \cite{Cooper:1975wp}
+(e.g., Figure \ref{fig:stimuli}) and must determine whether the two
+images depict the same shape, or mirror-image shapes.
+
+\subsection{Computational-level analysis}
+
+Formally, we denote the shapes as $X_a$ and $X_b$ and assume $X_b$ is
+generated by a transformation of $X_a$, i.e. $X_b=f(X_a, \theta, h)$,
+where $\theta$ is a rotation, $h=0$ is the hypothesis that the images
+depict the same object, and $h=1$ is the hypothesis that the images
+depict mirror-image objects. The posterior probability of each
+hypothesis given the observed shapes is then:
+\begin{equation}
+  p(h\ \vert\ X_a, X_b) \propto \int p(X_b\ \vert\ X_a, \theta, h)p(X_a)p(h)p(\theta)\ \mathrm{d}\theta.
+  \label{eq:posterior}
+\end{equation}
+Because we ultimately want to determine which hypothesis is more
+likely, the quantity of interest is a ratio:
+\begin{equation*}
+  \ell := \frac{\int p(X_b\ \vert\ X_a, \theta, \hi)p(X_a)p(\hi)p(\theta)\ \mathrm{d}\theta}{\int p(X_b\ \vert\ X_a, \theta, \hf)p(X_a)p(\hf)p(\theta)\ \mathrm{d}\theta},
+\end{equation*}
+which (assuming the two hypotheses are equally likely \textit{a
+  priori}, and that all rotations are equally likely) simplifies to:
+\begin{equation}
+  \ell = \frac{\int p(X_b\ \vert\ X_a, \theta, \hi)\ \mathrm{d}\theta}{\int p(X_b\ \vert\ X_a, \theta, \hf)\ \mathrm{d}\theta}.
+  \label{eq:lh-ratio}
+\end{equation}
+If $\ell > 1$, then we accept the hypothesis that the images depict
+the same object ($\hi$); if $\ell < 1$, then we accept the hypothesis
+that the images depict flipped objects ($\hf$).
+
+\subsection{Algorithmic assumptions}
+
+If we represent a shape of $N$ vertices with a $N\times 2$ coordinate
+matrix $\mathbf{X}=[\mathbf{x}_1, \ldots{}, \mathbf{x}_N]$, then the
+transformation $f$ is $f(\mathbf{X}, h,
+\theta):=\mathbf{X}\F_h^T\R^T$, where $\R$ is a rotation matrix,
+$\F_0$ is the identity matrix $\I$, and $\F_1$ is a reflection matrix
+across the $y$-axis. Assuming no computational constraints, the
+simplest solution is to compute the left inverse of $\Xa\F_h^T$ and,
+for each $h$, check whether $(\Xa
+\F_h^T)_\mathrm{left}^{-1}\cdot{}\Xb$ is a valid rotation matrix.
+
+However, we assume that the ability to compute left inverses is not
+available. Instead, the observed shapes may only be transformed by a
+small amount at a time, and each transformation is costly in terms of
+computational resources. The goal, then is to estimate the integrals
+in Eq.~\ref{eq:lh-ratio} by evaluating $p(\Xb\ \vert\ \Xa, \theta, h)$
+as few times as possible. 
+
+We define $p(\Xb\ \vert\ \Xa, \theta, h)$ to be the similarity between
+$\Xb$ and a transformation of $\Xa$:
+\begin{equation}
+  p(\Xb\ \vert\ \Xa, \theta, h):= S(\Xb, f(\Xa, h, \theta)).
+  \label{eq:likelihood}
+\end{equation}
+We do not know which vertices of $\Xb$ correspond to which vertices of
+$\Xa$, so $S$ must marginalize over the set of possible mappings,
+$\mathbb{M}$. For brevity, let $\mathbf{X}_m=\M\cdot{}f(\Xa, h,
+\theta)$ where $\M\in\mathbb{M}$ is a permutation matrix. Then:
+\begin{equation}
+  S(\Xb, f(\Xa, h, \theta)):=\frac{1}{|\mathbb{M}|} \sum_{\M} \prod_{n=1}^N \mathcal{N}(\mathbf{x}_{bn}\ \vert \ \mathbf{x}_{mn}, \I\sigma^2)
+  \label{eq:similarity}
+\end{equation}
+
+Additionally, we have the constraint of small
+transformations. Specifically, if the current mental image is $\Xt$,
+then:
+\begin{equation}
+  \mathbf{X}_{t+1} = \left\{ \begin{array}{ll}
+      f(\Xt, 0, \epsilon) &\mbox{ rotate right by $\epsilon$,} \\
+      f(\Xt, 0, -\epsilon) &\mbox{ rotate left by $\epsilon$,} \\
+      f(\Xt, 1, 0) &\mbox{ flip,} \\
+      f(\Xa, 0, 0) &\mbox{ reset, or} \\
+      f(\Xa, 1, 0) &\mbox{ reset and flip.} \\
+    \end{array} \right.
+\end{equation}
+
+\subsubsection{Hill climbing model}
+
+An intuitive and simple model is to first rotate in the direction that
+increases similarity, and then stop rotating once a ``match'' is
+found. If all rotations have been exhausted, then flip, and try
+rotating again.
 
 
-\subsection{Second-Level Headings}
-
-Second level headings should be 11~point, initial caps, bold, and
-flush left. Leave one line space above the heading and 1/4~ line
-space below the heading.
+\subsubsection{Bayesian quadrature model}
 
 
-\subsubsection{Third-Level Headings}
-
-Third-level headings should be 10~point, initial caps, bold, and flush
-left. Leave one line space above the heading, but no space after the
-heading.
+\section{Methods}
 
 
-\section{Formalities, Footnotes, and Floats}
-
-Use standard APA citation format. Citations within the text should
-include the author's last name and year. If the authors' names are
-included in the sentence, place only the year in parentheses, as in
-\citeA{NewellSimon1972a}, but otherwise place the entire reference in
-parentheses with the authors and year separated by a comma
-\cite{NewellSimon1972a}. List multiple references alphabetically and
-separate them by semicolons
-\cite{ChalnickBillman1988a,NewellSimon1972a}. Use the
-et~al. construction only after listing all the authors to a
-publication in an earlier reference and for citations with four or
-more authors.
+\subsection{Stimuli}
 
 
-\subsection{Footnotes}
-
-Indicate footnotes with a number\footnote{Sample of the first
-  footnote.} in the text. Place the footnotes in 9~point type at the
-bottom of the page on which they appear. Precede the footnote with a
-horizontal rule.\footnote{Sample of the second footnote.}
+\subsection{Procedure}
 
 
-\subsection{Tables}
-
-Number tables consecutively; place the table number and title (in
-10~point) above the table with one line space above the caption and
-one line space below it, as in Table~\ref{sample-table}. You may float
-tables to the top or bottom of a column, set wide tables across both
-columns.
-
-\begin{table}[!ht]
-\begin{center} 
-\caption{Sample table title.} 
-\label{sample-table} 
-\vskip 0.12in
-\begin{tabular}{ll} 
-\hline
-Error type    &  Example \\
-\hline
-Take smaller        &   63 - 44 = 21 \\
-Always borrow~~~~   &   96 - 42 = 34 \\
-0 - N = N           &   70 - 47 = 37 \\
-0 - N = 0           &   70 - 47 = 30 \\
-\hline
-\end{tabular} 
-\end{center} 
-\end{table}
+\section{Results}
 
 
-\subsection{Figures}
-
-All artwork must be very dark for purposes of reproduction and should
-not be hand drawn. Number figures sequentially, placing the figure
-number and caption, in 10~point, after the figure with one line space
-above the caption and one line space below it, as in
-Figure~\ref{sample-figure}. If necessary, leave extra white space at
-the bottom of the page to avoid splitting the figure and figure
-caption. You may float figures to the top or bottom of a column, or
-set wide figures across both columns.
-
-\begin{figure}[ht]
-\begin{center}
-\fbox{CoGNiTiVe ScIeNcE}
-\end{center}
-\caption{This is a figure.} 
-\label{sample-figure}
-\end{figure}
+\section{Discussion}
 
 
 \section{Acknowledgments}
 
-Place acknowledgments (including funding information) in a section at
-the end of the paper.
-
-
-\section{References Instructions}
-
-Follow the APA Publication Manual for citation format, both within the
-text and in the reference list, with the following exceptions: (a) do
-not cite the page numbers of any book, including chapters in edited
-volumes; (b) use the same format for unpublished references as for
-published ones. Alphabetize references by the surnames of the authors,
-with single author entries preceding multiple author entries. Order
-references by the same authors by the year of publication, with the
-earliest first.
-
-Use a first level section heading for the reference list. Use a
-hanging indent style, with the first line of the reference flush
-against the left margin and subsequent lines indented by 1/8~inch.
-Below are example references for a conference paper, book chapter,
-journal article, technical report, dissertation, book, and edited
-volume, respectively.
-
-\nocite{ChalnickBillman1988a}
-\nocite{Feigenbaum1963a}
-\nocite{Hill1983a}
-\nocite{OhlssonLangley1985a}
-\nocite{Lewis1978a}
-\nocite{NewellSimon1972a}
-\nocite{ShragerLangley1990a}
-
+This research was supported by ONR MURI grant number N00014-13-1-0341,
+and a Berkeley Fellowship awarded to JBH.
 
 \bibliographystyle{apacite}
 
 \setlength{\bibleftmargin}{.125in}
 \setlength{\bibindent}{-\bibleftmargin}
 
-\bibliography{CogSci_Template}
-
+\bibliography{references}
 
 \end{document}
