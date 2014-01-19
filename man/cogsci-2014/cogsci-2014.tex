@@ -37,6 +37,7 @@
 \newcommand{\I}[0]{\mathbb{I}}
 \newcommand{\hi}[0]{h=0}
 \newcommand{\hf}[0]{h=1}
+\newcommand{\dif}[0]{\,\mathrm{d}}
 
 \newenvironment{pitemize}{
 \begin{itemize}
@@ -132,18 +133,18 @@ depict the same object, and $h=1$ is the hypothesis that the images
 depict mirror-image objects. The posterior probability of each
 hypothesis given the observed shapes is then:
 \begin{equation}
-  p(h\ \vert\ X_a, X_b) \propto \int p(X_b\ \vert\ X_a, \theta, h)p(X_a)p(h)p(\theta)\ \mathrm{d}\theta.
+  p(h\ \vert\ X_a, X_b) \propto \int p(X_b\ \vert\ X_a, \theta, h)p(X_a)p(h)p(\theta)\dif\theta.
   \label{eq:posterior}
 \end{equation}
 Because we ultimately want to determine which hypothesis is more
 likely, the quantity of interest is a ratio:
 \begin{equation*}
-  \ell := \frac{\int p(X_b\ \vert\ X_a, \theta, \hi)p(X_a)p(\hi)p(\theta)\ \mathrm{d}\theta}{\int p(X_b\ \vert\ X_a, \theta, \hf)p(X_a)p(\hf)p(\theta)\ \mathrm{d}\theta},
+  \ell := \frac{\int p(X_b\ \vert\ X_a, \theta, \hi)p(X_a)p(\hi)p(\theta)\dif\theta}{\int p(X_b\ \vert\ X_a, \theta, \hf)p(X_a)p(\hf)p(\theta)\dif\theta},
 \end{equation*}
 which (assuming the two hypotheses are equally likely \textit{a
   priori}, and that all rotations are equally likely) simplifies to:
 \begin{equation}
-  \ell = \frac{\int p(X_b\ \vert\ X_a, \theta, \hi)\ \mathrm{d}\theta}{\int p(X_b\ \vert\ X_a, \theta, \hf)\ \mathrm{d}\theta}.
+  \ell = \frac{\int p(X_b\ \vert\ X_a, \theta, \hi)\dif\theta}{\int p(X_b\ \vert\ X_a, \theta, \hf)\dif\theta}.
   \label{eq:lh-ratio}
 \end{equation}
 If $\ell > 1$, then we accept the hypothesis that the images depict
@@ -180,7 +181,7 @@ $\Xa$, so $S$ must marginalize over the set of possible mappings,
 $\mathbb{M}$. For brevity, let $\mathbf{X}_m=\M\cdot{}f(\Xa, h,
 \theta)$ where $\M\in\mathbb{M}$ is a permutation matrix. Then:
 \begin{equation}
-  S(\Xb, f(\Xa, h, \theta)):=\frac{1}{|\mathbb{M}|} \sum_{\M} \prod_{n=1}^N \mathcal{N}(\mathbf{x}_{bn}\ \vert \ \mathbf{x}_{mn}, \I\sigma^2)
+  S(\Xb, f(\Xa, h, \theta)):=\frac{1}{|\mathbb{M}|} \sum_{\M} \prod_{n=1}^N \mathcal{N}(\mathbf{x}_{bn}\ \vert \ \mathbf{x}_{mn}, \I\sigma^2).
   \label{eq:similarity}
 \end{equation}
 
@@ -195,17 +196,96 @@ then:
       f(\Xa, 0, 0) &\mbox{ reset, or} \\
       f(\Xa, 1, 0) &\mbox{ reset and flip.} \\
     \end{array} \right.
+  \label{eq:actions}
 \end{equation}
 
-\subsubsection{Hill climbing model}
+\subsubsection{Threshold-based model}
 
 An intuitive and simple model is to first rotate in the direction that
 increases similarity, and then stop rotating once a ``match'' is
-found. If all rotations have been exhausted, then flip, and try
-rotating again.
+found, as determined by a threshold on the value of $S$. If all
+rotations have been exhausted, then flip, and try rotating again.
 
+The consequence of doing a search for a match is that
+Eq.~\ref{eq:lh-ratio} becomes a likelihood ratio test, where $\theta$
+is set to the MLE value, rather than being marginalized:
+\begin{equation}
+  \ell = \frac{\max_\theta p(\Xb\ \vert\ \Xa, \theta, \hi)}{\max_\theta p(\Xb\ \vert\ \Xa, \theta, \hf)}.
+  \label{eq:mle-lh-ratio}
+\end{equation}
 
-\subsubsection{Bayesian quadrature model}
+\subsubsection{Hill-climbing model}
+
+Unfortunately, it is not always clear what constitutes a good enough
+``match''. Many shapes may have multimodal similarity functions
+\TODO{refer to figure}, and the maximum possible value of $S$ is
+unlikely to be known \textit{a priori} \TODO{cite something about how
+  shape matching is hard}. In this case, we must weaken our stopping
+criteria: rather than searching for a value above a threshold, we
+search for \textit{any} local maximum.  Similar to the threshold-based
+model, we use the (local) MLE estimate of $\theta$, as in
+Eq.~\ref{eq:mle-lh-ratio}.
+
+\subsubsection{Confidence-based model}
+
+An alternative to the previous two models is to approximate the
+integrals in Eq.~\ref{eq:lh-ratio} by picking locations to sample
+which will most improve accuracy of the estimate. Rather than a point
+estimate of the ratio, or even a simple Monte Carlo estimate, we can
+infer a distribution by placing priors over the similarity functions
+themselves:
+\begin{equation}
+\ell = \frac{\int \left[\int S(\Xb, f(\Xa, \theta, \hi))p(\theta)\dif\theta\right] p(S)\dif S}{\int \left[\int S(\Xb, f(\Xa, \theta, \hf))p(\theta)\dif\theta\right] p(S)\dif S}
+\end{equation}
+This is a technique known in the machine-learning literature as
+\textit{Bayesian Quadrature} (BQ)
+\cite{Diaconis:1988uo,OHagan:1991tx,Osborne:2012tm}. Specifically, we
+use Gaussian Process (GP) priors \cite{Osborne:2012tm} \TODO{probably
+  need to describe better what a GP is}. Because our domain is on a
+circle, we utilize a periodic kernel for the covariance
+\cite{Rasmussen:2006vz}, i.e. $k(\theta,
+\theta^\prime)=h^2\exp[-\frac{2}{w^2}\sin^2(\frac{1}{2}(\theta-\theta^\prime))]$.
+
+Denoting $S_h=S(\Xb, f(\Xa, \theta, h))$, we first place a GP prior on
+$\log(S_h)$. Because GPs have no guarantee of non-negativity, placing
+the prior over the log enforces positivity after it is exponentiated:
+\begin{equation}
+\mathbb{E}[Z_h] \approx \int \exp(\mu_h(\theta))p(\theta)\dif\theta,
+\end{equation}
+where $\mu_h:=\mu(\log S_h)$ is the mean of the log-GP. However, this
+integral is still intractable. To approximate it, we fit a second GP
+over points sampled from the log-GP.\footnote{Note that the approach
+  presented in \cite{Osborne:2012tm} differs slightly from the one
+  used here. We chose this newer version after a discussion with one
+  of the authors on the original BQ paper \TODO{cite personal
+    communication}.}We will denote these points as
+$\bar{S}_h:=\exp(\mu_h)$. Then, from \TODO{cite personal
+  communication}:
+\begin{align}
+  \mathbb{E}[Z_h] &\approx \int \bar{\mu}_h(\theta)p(\theta)\dif\theta,\\
+  \mathbb{V}(Z_h) &\approx \iint \mathrm{Cov}_h(\theta,
+  \theta^\prime)\bar{\mu}_h(\theta)\bar{\mu}_h(\theta^\prime)p(\theta)p(\theta^\prime)\dif\theta\dif\theta^\prime,
+\end{align}
+where $\bar{\mu}_h:=\mu(\bar{S}_h)$ is the mean of the second GP, and
+$\mathrm{Cov}_h:=\mathrm{Cov}(\log S_h)$ is the covariance of the
+log-GP.
+
+Now that we have a distribution over $Z_h$, we can additionally
+compute which points which we would expect to strengthen our estimate
+(i.e., decrease the variance). From \cite{Osborne:2012tm}, the
+expected variance of $Z_h$ if we sampled a new observation at
+$\theta_a$ is:
+\begin{align}
+\mathbb{E}&[\mathbb{V}(Z_h|\theta_a)]=\mathbb{V}(Z_h) + \mathbb{E}[Z_h] - \\
+&\int \mathbb{E}[Z_h|\theta_{a}]^2 \mathcal{N}(\mu_h(\theta_a), \mathrm{Cov}_h(\theta_a, \theta_a))\dif\log S_h(\theta_a)\nonumber
+\label{ref:expected-variance}
+\end{align}
+
+Revisiting our likelihood ratio, we now have:
+\begin{equation}
+p(\ell)\approx\frac{\mathcal{N}(\mathbb{E}[Z_0], \mathbb{V}(Z_0))}{\mathcal{N}(\mathbb{E}[Z_1], \mathbb{V}(Z_1))}
+\end{equation}
+\TODO{figure out what to do here.}
 
 
 \section{Methods}
