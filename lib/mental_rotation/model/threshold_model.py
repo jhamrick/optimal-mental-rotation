@@ -20,23 +20,19 @@ class ThresholdModel(BaseModel):
             self.model['R'].value = 0
             self.model['F'].value = 0
             S0 = np.exp(self.model['log_S'].logp)
-            if S0 > self._thresh:
-                self.status = 'done'
-                return
                 
             self.tally()
             self._current_iter += 1
-
             self.model['F'].value = 1
             S1 = np.exp(self.model['log_S'].logp)
-            if S1 > self._thresh:
-                self.status = 'done'
-                return
 
             if S0 > S1:
                 self.tally()
                 self._current_iter += 1
                 self.model['F'].value = 0
+
+            if np.exp(self.model['log_S'].logp) > self._thresh:
+                self.status = 'done'
 
             return
 
