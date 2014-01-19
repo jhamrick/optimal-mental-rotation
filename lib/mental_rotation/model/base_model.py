@@ -15,8 +15,6 @@ class BaseModel(object):
     def __init__(self, Xa, Xb, **opts):
 
         self.opts = {
-            'R_mu': config.getfloat("model", "R_mu"),
-            'R_kappa': config.getfloat("model", "R_kappa"),
             'S_sigma': config.getfloat("model", "S_sigma"),
         }
         self.opts.update(opts)
@@ -39,17 +37,16 @@ class BaseModel(object):
         self.model['Xa'] = model.Xi('Xa', np.array(Xa))
         self.model['Xb'] = model.Xi('Xb', np.array(Xb))
         self.model['F'] = model.F()
-        self.model['R'] = model.R(
-            self.opts['R_mu'], self.opts['R_kappa'])
+        self.model['R'] = model.R()
         self.model['Xr'] = model.Xr(
             self.model['Xa'], self.model['R'], self.model['F'])
         self.model['log_S'] = model.log_S(
             self.model['Xb'], self.model['Xr'], self.opts['S_sigma'])
-        self.model['log_dZ_dR'] = model.log_dZ_dR(
-            self.model['log_S'], self.model['R'], self.model['F'])
 
         self._log_const = model.log_const(
-            Xa.shape[0], Xa.shape[1], self.opts['S_sigma'])
+            self.model['Xa'].value.shape[0],
+            self.model['Xa'].value.shape[1],
+            self.opts['S_sigma'])
 
     def _init_traces(self):
         n = self._iter
@@ -58,7 +55,6 @@ class BaseModel(object):
         self._traces['R'] = np.empty(n)
         self._traces['Xr'] = np.empty((n,) + self.model['Xr'].value.shape)
         self._traces['log_S'] = np.empty(n)
-        self._traces['log_dZ_dR'] = np.empty(n)
 
     def trace(self, var):
         return self._traces[var][:self._current_iter]
@@ -74,7 +70,6 @@ class BaseModel(object):
         self._traces['R'][i] = self.model['R'].value
         self._traces['Xr'][i] = self.model['Xr'].value.copy()
         self._traces['log_S'][i] = self.model['log_S'].logp
-        self._traces['log_dZ_dR'][i] = self.model['log_dZ_dR'].logp
 
     def sample(self):
         if self.status == "done":
@@ -148,43 +143,19 @@ class BaseModel(object):
         raise NotImplementedError
 
     ##################################################################
-    # Sampled dZ_dR (which is just S_i*p(R_i)) and full estimate of Z
-
-    @property
-    def log_dZ_dR_i(self):
-        log_p = self.trace('log_dZ_dR')
-        return log_p
-
-    @property
-    def dZ_dR_i(self):
-        return np.exp(self.log_dZ_dR_i)
-
-    def log_dZ_dR(self, R, F):
-        raise NotImplementedError
-
-    def dZ_dR(self, R, F):
-        raise NotImplementedError
-
-    def log_Z(self, F):
-        raise NotImplementedError
-
-    def Z(self, F):
-        raise NotImplementedError
-
-    ##################################################################
     # Log likelihoods for each hypothesis
 
     @property
     def log_lh_h0(self):
-        log_Z = self.log_Z(0)
-        p_Xa = self.model['Xa'].logp
-        return log_Z + p_Xa
+        Fi = self.F_i
+        log_S0 = self.log_S_i[Fi == 0].max()
+        return log_S0
 
     @property
     def log_lh_h1(self):
-        log_Z = self.log_Z(1)
-        p_Xa = self.model['Xa'].logp
-        return log_Z + p_Xa
+        Fi = self.F_i
+        log_S1 = self.log_S_i[Fi == 1].max()
+        return log_S1
 
     def hypothesis_test(self):
         llh0 = self.log_lh_h0

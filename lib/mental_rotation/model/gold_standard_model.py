@@ -37,31 +37,6 @@ class GoldStandardModel(BaseModel):
         return S
 
     ##################################################################
-    # Estimated dZ_dR and full estimate of Z
-
-    def log_dZ_dR(self, R, F):
-        return np.log(self.dZ_dR(R, F))
-
-    def dZ_dR(self, R, F):
-        R_i = self.R_i
-        F_i = self.F_i
-        match = F_i == F
-        ix = np.argsort(R_i[match])
-        Ri = R_i[match][ix]
-        dZ_dRi = self.dZ_dR_i[match][ix]
-        dZ_dR = np.interp(self._unwrap(R), Ri, dZ_dRi)
-        return dZ_dR
-
-    def log_Z(self, F):
-        return np.log(self.Z(F))
-
-    def Z(self, F):
-        R = np.linspace(-np.pi, np.pi, 361)
-        dZ_dR = self.dZ_dR(R, F)
-        Z = np.trapz(dZ_dR, R)
-        return Z
-
-    ##################################################################
     # Plotting methods
 
     def plot(self, ax):
