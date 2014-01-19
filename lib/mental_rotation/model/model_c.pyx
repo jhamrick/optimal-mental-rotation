@@ -28,6 +28,11 @@ def log_factorial(long n):
     return _log_factorial(n)
 
 
+cpdef float64_t log_const(long n, long d, float64_t S_sigma):
+    cdef float64_t const = -0.5 * (log(S_sigma) + log(2 * M_PI)) * n * d - log(2 * n)
+    return const
+
+
 cpdef float64_t log_prior(float64_t[:, ::1] X):
     # the beginning is the same as the end, so ignore the last vertex
     cdef int n = X.shape[0] - 1
@@ -76,7 +81,6 @@ cpdef float64_t log_similarity(float64_t[:, ::1] X0, float64_t[:, ::1] X1, float
     # the list (or on the ends), so we really only need to cycle
     # through 2n orderings (once for the original ordering, and
     # once for the reverse)
-    logn = log(n)
     log_S = 0
     for i in xrange(n):
         total1 = 0
@@ -86,7 +90,7 @@ cpdef float64_t log_similarity(float64_t[:, ::1] X0, float64_t[:, ::1] X1, float
             total1 += logp[j, idx]
             idx = <int>fmod(n - j + i - 1, n)
             total2 += logp[j, idx]
-        log_S += exp(total1 - logn) + exp(total2 - logn)
+        log_S += exp(total1) + exp(total2)
 
-    log_S = log(log_S)
+    log_S = log(log_S / (2.0 * n))
     return log_S

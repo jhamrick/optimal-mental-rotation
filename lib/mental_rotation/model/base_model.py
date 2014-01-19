@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.stats
 import snippets.graphing as sg
 import json
 
@@ -17,9 +18,14 @@ class BaseModel(object):
             'R_mu': config.getfloat("model", "R_mu"),
             'R_kappa': config.getfloat("model", "R_kappa"),
             'S_sigma': config.getfloat("model", "S_sigma"),
-            'step': config.getfloat("model", "step")
         }
         self.opts.update(opts)
+
+        # compute step based on the standard deviation of the
+        # similarity function
+        radius = np.sqrt(np.sum(Xa ** 2, axis=1)).max()
+        arclength = np.sqrt(self.opts['S_sigma'])
+        self.opts['step'] = arclength / radius
 
         self._make_model(Xa, Xb)
 
@@ -41,6 +47,9 @@ class BaseModel(object):
             self.model['Xb'], self.model['Xr'], self.opts['S_sigma'])
         self.model['log_dZ_dR'] = model.log_dZ_dR(
             self.model['log_S'], self.model['R'], self.model['F'])
+
+        self._log_const = model.log_const(
+            Xa.shape[0], Xa.shape[1], self.opts['S_sigma'])
 
     def _init_traces(self):
         n = self._iter
@@ -221,6 +230,14 @@ class BaseModel(object):
             if x_ > np.pi:
                 x_ -= 2 * np.pi
         return x_
+
+    def _random_step(self):
+        step = self.opts['step']
+        # x = scipy.stats.norm.rvs(0, np.sqrt(step / 2.))
+        # R = np.clip(x, -step, step)
+        R = np.random.uniform(-step, step)
+        return R
+
 
     ##################################################################
     # Copying/Saving

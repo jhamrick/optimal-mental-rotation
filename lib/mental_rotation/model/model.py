@@ -2,7 +2,7 @@ import numpy as np
 import scipy
 
 from .. import Stimulus2D
-from .model_c import log_prior, log_similarity
+from .model_c import log_prior, log_similarity, log_const
 
 
 def memoprop(f):
@@ -155,6 +155,9 @@ class R(Variable):
     
     @value.setter
     def value(self, val):
+        val = val % (2 * np.pi)
+        if val > np.pi:
+            val -= 2 * np.pi
         self._value = val
         self.clear()
         
