@@ -20,7 +20,7 @@ def load(model_class, pth, stimname):
 
     hypotheses = {
         0: "same",
-        1: "flipped"
+        1: "flipped",
         None: None
     }
     flip = hypotheses[int(flip)]
