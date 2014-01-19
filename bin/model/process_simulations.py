@@ -68,7 +68,7 @@ def process_all(model_type, exp, force=False):
 
     pool = mp.Pool()
 
-    results = {}
+    results = []
     for i, taskname in enumerate(sorted(tasks.keys())):
         task = tasks[taskname]
         pth = path(task['data_path'])
@@ -78,12 +78,18 @@ def process_all(model_type, exp, force=False):
             raise RuntimeError("simulations are not complete")
 
         args = [task['samples'], model_class, pth]
-        results[taskname] = pool.apply_async(load, args)
+        results.append((taskname, pool.apply_async(load, args)))
 
     data = []
-    for taskname, res in results.iteritems():
-        logger.info("Fetching '%s'...", taskname)
-        data.extend(res.get())
+    while len(results) > 0:
+        taskname, res = results.pop(0)
+        if res.ready():
+            logger.info("Fetching '%s'...", taskname)
+            if not res.successful():
+                raise RuntimeError("task failed")
+            data.extend(res.get())
+        else:
+            results.append((taskname, res))
 
     df = pd.DataFrame(data)
 
