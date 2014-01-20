@@ -109,7 +109,7 @@ def find_bad_participants(exp, data):
             info['note'] = "incomplete"
             continue
 
-        # check to make sure they actually finished
+        # check for duplicated entries
         prestim = df\
             .groupby(['trial_phase'])\
             .get_group('prestim')
@@ -119,7 +119,6 @@ def find_bad_participants(exp, data):
             info['note'] = "duplicate_trials"
             continue
 
-        # check for duplicated entries
         dupes = df.sort('psiturk_time')[['mode', 'trial', 'trial_phase']]\
                   .duplicated().any()
         if dupes:
@@ -297,14 +296,18 @@ def load_data(data_path, conds, fields):
     n_incomplete = (p_info['note'] == 'incomplete').sum()
     n_dupe = (p_info['note'] == 'duplicate_trials').sum()
     n_failed = (p_info['note'] == 'failed').sum()
+    n_repeat = (p_info['note'] == 'repeat_worker').sum()
     n_good = len(all_pids) - len(bad_pids)
 
-    n_bad = len(bad_pids) - n_failed - n_incomplete - n_dupe
-    n_complete = n_subj - n_incomplete - n_dupe
+    n_bad = len(bad_pids) - n_failed - n_incomplete - n_repeat
+    n_complete = n_subj - n_incomplete
 
     logger.info(
         "%d/%d (%.1f%%) participants complete",
         n_complete, n_subj, n_complete * 100. / n_subj)
+    logger.info(
+        "%d/%d (%.1f%%) repeat participants",
+        n_repeat, n_complete, n_bad * 100. / n_complete)
     logger.info(
         "%d/%d (%.1f%%) participants bad",
         n_bad, n_complete, n_bad * 100. / n_complete)
