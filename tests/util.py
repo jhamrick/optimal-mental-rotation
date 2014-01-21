@@ -22,7 +22,8 @@ def setup_config(tmp_path):
     config.set('paths', 'sim_scripts', tmp_path.joinpath('resources/sim-scripts'))
 
     config.add_section('experiment')
-    config.set('experiment', 'remote_dest', tmp_path.joinpath('deploy'))
+    config.set('experiment', 'deploy_path', tmp_path.joinpath('deploy'))
+    config.set('experiment', 'fetch_path', 'http://localhost:22361/data')
     
     config.add_section('model')
     config.set('model', 'S_sigma', '0.15')

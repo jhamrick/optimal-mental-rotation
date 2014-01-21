@@ -32,7 +32,7 @@ if __name__ == "__main__":
     cmd_template.append("%s")
     cmd_template.append("%s")
 
-    dest = config.get("experiment", "remote_dest")
+    dest = config.get("experiment", "deploy_path")
     for source in src_paths:
         cmd = " ".join(cmd_template) % (source, dest)
         print colored(cmd, 'blue')
