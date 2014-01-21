@@ -35,13 +35,7 @@ def setup_config(tmp_path):
     return config
 
 
-def seed(config):
-    seed = config.getint('global', 'seed')
-    np.random.seed(seed)
-
-
 def make_stim():
-    seed()
     stim = Stimulus2D.random(8)
     return stim
 
@@ -53,22 +47,3 @@ def make_circle():
     v[:, 1] = np.sin(R)
     X = Stimulus2D(v)
     return X
-
-
-def make_model(cls, flip=True, name=None, theta=None):
-    X = make_stim()
-    if flip:
-        X.flip([0, 1])
-    if theta is None:
-        X.rotate(39)
-    else:
-        X.rotate(theta)
-    Xa = X.copy_from_initial()
-    Xb = X.copy_from_vertices()
-
-    opts = {
-        'S_sigma': config.getfloat('model', 'S_sigma')
-    }
-
-    m = cls(Xa.vertices, Xb.vertices, **opts)
-    return Xa, Xb, m
