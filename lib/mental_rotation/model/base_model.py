@@ -177,8 +177,30 @@ class BaseModel(object):
     ##################################################################
     # Plotting 
 
-    def plot(self, ax):
-        raise NotImplementedError
+    def plot(self, ax, F, f_S=None, color0='k', color=None):
+        lines = {}
+
+        if f_S is not None:
+            R = np.linspace(-np.pi, np.pi, 1000)
+            S = f_S(R, F)
+            lines['truth'] = ax.plot(R, S, '-', lw=2, color=color0)
+
+        Fi = self.F_i == F
+        if not Fi.any():
+            return lines
+
+        if color is None:
+            if F == 0:
+                color = 'r'
+            elif F == 1:
+                color = 'b'
+
+        Ri = self.R_i[Fi]
+        Si = self.S_i[Fi]
+        lines['approx'] = ax.plot(Ri, Si, '-', lw=2, color=color)
+        lines['points'] = ax.plot(Ri, Si, 'o', markersize=5, color=color)
+
+        return lines
 
     ##################################################################
     # Misc

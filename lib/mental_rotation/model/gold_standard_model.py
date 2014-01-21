@@ -1,6 +1,9 @@
 import numpy as np
+import logging
 
 from . import BaseModel
+
+logger = logging.getLogger("mental_rotation.model.gs")
 
 
 class GoldStandardModel(BaseModel):
@@ -39,10 +42,15 @@ class GoldStandardModel(BaseModel):
     ##################################################################
     # Plotting methods
 
-    def plot(self, ax):
-        R = np.linspace(-np.pi, np.pi, 361)
-        S0 = self.S(R, F=0)
-        S1 = self.S(R, F=1)
-        ax.plot(R, S0, '-', color="#550000", label="Truth, F=0", lw=2)
-        ax.plot(R, S1, '-', color="#000055", label="Truth, F=1", lw=2)
-        ax.legend()
+    def plot(self, ax, F, f_S=None, color0=None, color='k'):
+        if f_S is not None:
+            logger.warn("f_S is not used by this function")
+        if color0 is not None:
+            logger.warn("color0 is not used by this function")
+
+        R = np.linspace(-np.pi, np.pi, 1000)
+        S = self.S(R, F)
+
+        lines = {}
+        lines['approx'] = ax.plot(R, S, '-', color=color, lw=2)
+        return lines
