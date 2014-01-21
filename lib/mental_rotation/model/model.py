@@ -73,7 +73,7 @@ def slow_log_similarity(X0, X1, S_sigma):
         for j in xrange(n):
             e[i+n] += -0.5 * (np.dot(d[j], np.dot(invSigma, d[j])) + Z0 + Z1)
     # overall similarity, marginalizing out order
-    log_S = np.log(np.sum(np.exp(e - np.log(n))))
+    log_S = np.log(np.sum(np.exp(e)) / (2.0*n))
     return log_S
 
 
