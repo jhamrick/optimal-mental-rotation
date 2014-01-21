@@ -22,17 +22,36 @@ class OracleModel(BaseModel):
     def _solve(self):
         Xa = self.model['Xa'].value
         Xb = self.model['Xb'].value
-        
-        h = 0
-        R = np.dot(np.linalg.pinv(Xa), Xb).T
-        if np.sign(R[0, 1]) == np.sign(R[1, 0]):
+        F = np.array([[-1, 0], [0, 1]], dtype=float)
+
+        if np.allclose(Xa, Xb):
+            h = 0
+            theta = 0
+
+        elif np.allclose(np.dot(Xa, F.T), Xb):
             h = 1
-            F = np.array([[-1, 0], [0, 1]], dtype=float)
-            R = np.dot(np.linalg.pinv(np.dot(Xa, F.T)), Xb).T
-        
-        costheta = R[0, 0]
-        sintheta = R[1, 0]
-        theta = np.arctan2(sintheta, costheta)
+            theta = 0
+
+        else:
+            R = np.round(np.dot(np.linalg.pinv(Xa), Xb).T, decimals=9)
+
+            # rotated 180 degrees
+            if np.allclose(R, np.array([[-1.0, 0.0], [0.0, -1.0]])):
+                h = 0
+                theta = np.pi
+
+            elif np.sign(R[0, 1]) == np.sign(R[1, 0]):
+                h = 1
+                R = np.dot(np.linalg.pinv(np.dot(Xa, F.T)), Xb).T
+                costheta = R[0, 0]
+                sintheta = R[1, 0]
+                theta = np.arctan2(sintheta, costheta)
+
+            else:
+                h = 0
+                costheta = R[0, 0]
+                sintheta = R[1, 0]
+                theta = np.arctan2(sintheta, costheta)
 
         return theta, h
 
@@ -75,12 +94,12 @@ class OracleModel(BaseModel):
     # Copying/Saving
 
     def __getstate__(self):
-        state = super(HillClimbingModel, self).__getstate__()
+        state = super(OracleModel, self).__getstate__()
         state['direction'] = self.direction
         state['target'] = self.direction
         return state
 
     def __setstate__(self, state):
-        super(HillClimbingModel, self).__setstate__(state)
+        super(OracleModel, self).__setstate__(state)
         self.direction = state['direction']
         self.target = state['target']

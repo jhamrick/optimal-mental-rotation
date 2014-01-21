@@ -22,11 +22,14 @@ def make_circle():
     return X
 
 
-def make_model(cls, flip=True, name=None):
+def make_model(cls, flip=True, name=None, theta=None):
     X = make_stim()
     if flip:
         X.flip([0, 1])
-    X.rotate(39)
+    if theta is None:
+        X.rotate(39)
+    else:
+        X.rotate(theta)
     Xa = X.copy_from_initial()
     Xb = X.copy_from_vertices()
     m = cls(Xa.vertices, Xb.vertices, name=name)
