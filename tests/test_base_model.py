@@ -21,7 +21,8 @@ class TestBaseModel(object):
         config = util.setup_config(tmp_path)
         return config
 
-    def stim(self, request, config):
+    @pytest.fixture(scope="class", params=[(39, False), (39, True)])
+    def basic_stim(self, request, config):
         seed = config.getint("global", "seed")
         np.random.randint(seed)
 
@@ -36,8 +37,21 @@ class TestBaseModel(object):
         Xb = X.copy_from_vertices()
         return theta, flip, Xa, Xb
 
-    basic_stim = pytest.fixture(scope="class", params=[(39, False), (39, True)])(stim)
-    full_stim = pytest.fixture(scope="class", params=[(t, f) for t in range(0, 360, 45) for f in [True, False]])(stim)
+    @pytest.fixture(scope="class", params=[(t, f) for t in range(0, 360, 45) for f in [True, False]])
+    def full_stim(self, request, config):
+        seed = config.getint("global", "seed")
+        np.random.randint(seed)
+
+        # create stimulus
+        X = Stimulus2D.random(8)
+        theta, flip = request.param
+        if flip:
+            X.flip([0, 1])
+        X.rotate(theta)
+
+        Xa = X.copy_from_initial()
+        Xb = X.copy_from_vertices()
+        return theta, flip, Xa, Xb
 
     @pytest.fixture
     def model(self, config, request, tmpdir):
