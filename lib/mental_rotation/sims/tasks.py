@@ -32,6 +32,7 @@ class Tasks(dict):
         tasks = cls()
         completed = cls()
         for istim, stim in enumerate(stim_paths):
+            stim = path(stim)
             rot = float(stim.namebase.split("_")[1])
             if rot in (0, 180):
                 ns = num_samples * 2
@@ -42,8 +43,8 @@ class Tasks(dict):
             chunks = np.array_split(np.arange(ns), n_chunks, axis=0)
 
             for ichunk, chunk in enumerate(chunks):
-                sim_name = "%s_%02d" % (stim.namebase, ichunk)
-                data_path = sim_root.joinpath(stim.namebase)
+                sim_name = "%s~%d" % (stim.namebase, ichunk)
+                data_path = sim_root.joinpath(sim_name)
 
                 # Make the task dicts for this sample.
                 tasks[sim_name] = {
@@ -51,11 +52,10 @@ class Tasks(dict):
                     "istim": istim,
                     "stim_path": str(stim),
                     "data_path": str(data_path),
-                    "script_root": params["script_root"],
                     "task_name": sim_name,
                     "seed": abs(hash(sim_name)),
-                    "num_tries": 0,
                     "samples": [int(x) for x in chunk],
+                    "model_opts": params["model_opts"]
                 }
 
                 completed[sim_name] = False

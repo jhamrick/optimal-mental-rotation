@@ -19,7 +19,6 @@ def setup_config(tmp_path):
     config.set('paths', 'experiment', tmp_path.joinpath('experiment'))
     config.set('paths', 'simulations', tmp_path.joinpath('data/sim-raw'))
     config.set('paths', 'resources', tmp_path.joinpath('resources'))
-    config.set('paths', 'sim_scripts', tmp_path.joinpath('resources/sim-scripts'))
 
     config.add_section('experiment')
     config.set('experiment', 'deploy_path', tmp_path.joinpath('deploy'))
