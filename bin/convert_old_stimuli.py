@@ -54,15 +54,15 @@ def load_stim(file):
 
 
 def convert_stims(from_path, to_path, stim_path, force):
-    stim_path = STIM_PATH.joinpath(from_path)
-    dest = STIM_PATH.joinpath(to_path)
+    src = stim_path.joinpath(from_path)
+    dest = stim_path.joinpath(to_path)
 
     if dest.exists() and not force:
         logger.warning(
             "Destination already exists, exiting (use --force to override)")
         return
 
-    files = stim_path.listdir()
+    files = src.listdir()
     files = [x for x in files if x.endswith(".npz")]
 
     if dest.exists():
