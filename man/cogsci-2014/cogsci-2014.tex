@@ -26,6 +26,7 @@
 \usepackage{graphicx}
 \usepackage{color}
 \usepackage{amsmath, amsthm, amssymb}
+\usepackage{subfig}
 
 \newcommand{\TODO}[1]{\textcolor{red}{[TODO: #1]}}
 \newcommand{\Xa}[0]{\mathbf{X}_a}
@@ -118,6 +119,14 @@ symbolic vs simulation \cite{Schwartz:1996uy}
 eye tracking \cite{Just1976}
 
 \section{Models of mental rotation}
+
+\begin{figure*}[t]
+  \begin{center}
+    \includegraphics[width=\textwidth]{../../figures/D/model-traces.pdf}
+    \caption{\textbf{Model traces.}}
+    \label{fig:model-traces}
+  \end{center}
+\end{figure*}
 
 In the mental rotation task, people are presented with pairs of
 two-dimensional shapes similar to those used by \cite{Cooper:1975wp}
@@ -312,6 +321,14 @@ degrees.
 
 \subsection{Participants}
 
+\begin{figure*}[t]
+  \begin{center}
+    \includegraphics[width=\textwidth]{../../figures/D/response-times.pdf}
+    \caption{\textbf{Response times.}}
+    \label{fig:response-times}
+  \end{center}
+\end{figure*}
+
 We recruited \TODO{N} participants on Amazon's Mechanical Turk. Each
 participant was paid \$1.00 for approximately 15 minutes of work. Out
 of these participantsm \TODO{N\% (N)} were included in our
@@ -322,23 +339,30 @@ comprehension check (\TODO{N\% (N)}).
 
 \subsection{Design}
 
-The experiment consisted of one block of 10 practice trials followed
-by two blocks of 100 experiment trials. Within a block, trials were
-presented in a random order.
+The experiment consisted 210 total trials: of one block of 10 practice
+trials followed by two blocks of 100 experiment trials. Within a
+block, trials were presented in a random order.
 
-All participants saw the same 10 practice trials as described
-above. Participants in different conditions saw different experimental
-trials, however. Across participants, there were a total of 800
-experimental stimuli (20 shapes $\times$ 20 angles $\times$ 2
-same/flipped). These stimuli were split across conditions in the
-following manner. First, stimuli were split into four blocks of 200
-trials. Within each block, each shape was repeated 10 times and each
-rotation was repeated 10 times (5 same, 5 flipped), such that across
-all blocks, each stimulus appeared exactly once. Each block was then
-split in half. Each participant then completed two half-blocks (not
-necessarily both from the original full block).
+All participants saw the same 10 practice trials (as described
+above). There were a total of 800 experimental stimuli (20 shapes
+$\times$ 20 angles $\times$ 2 same/flipped), which were split into 8
+blocks of 100 across conditions in the following manenr. First,
+stimuli were split into four blocks of 200 trials. Within each block,
+each shape was repeated 10 times and each rotation was repeated 10
+times (5 same, 5 flipped), such that across all blocks, each stimulus
+appeared exactly once. Each block was then split in half. Each
+participant then completed two half-blocks (not necessarily both from
+the original full block).
 
 \subsection{Procedure}
+
+\begin{figure*}[t]
+  \begin{center}
+    \includegraphics[width=0.85\textwidth]{../../figures/D/accuracy.pdf}
+    \caption{\textbf{Accuracy.}}
+    \label{fig:response-times}
+  \end{center}
+\end{figure*}
 
 Participants were given the following instructions while being shown
 an example ``same'' pair and an example ``flipped'' pair: \textit{``On
@@ -355,15 +379,27 @@ press `s' to indicate they thought the images depicted the same
 object, or `d' to indicate they thought the images depicted flipped
 objects.
 
-While there was no time limit on response time, participants were
-urged to repond as quickly as possible while still being
-accurate. Specifically, we asked them to aim for at least 85\% correct
-in the experimental blocks, and provided a score counter to keep them
-informed of their accuracy.
-
+While there was no limit on response time, participants were urged to
+repond as quickly as possible while still being
+accurate. Specifically, we asked them to aim for at least 85\%
+accuracy in the experimental blocks, and provided a counter to keep
+them informed of their score.
 
 \section{Results}
 
+\begin{figure}[t]
+  \centering
+  \subfloat{\includegraphics[width=0.25\textwidth]{../../figures/D/trial-vs-accuracy.pdf}}%
+  \subfloat{\includegraphics[width=0.25\textwidth]{../../figures/D/trial-vs-time.pdf}}
+  \caption{\textbf{Effect of learning.}}
+  \label{fig:learning}
+\end{figure}
+
+response time as a function of rotation
+
+accuracy as a function of rotation
+
+practice effects
 
 \section{Discussion}
 
