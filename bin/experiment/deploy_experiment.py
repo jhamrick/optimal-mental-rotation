@@ -6,17 +6,15 @@ from termcolor import colored
 from path import path
 import subprocess
 
-# load configuration
-config = SafeConfigParser()
-config.read("config.ini")
-
 
 if __name__ == "__main__":
-    EXP_PATH = path(config.get("paths", "experiment"))
-
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter)
 
+    parser.add_argument(
+        "-c", "--config",
+        default="config.ini",
+        help="path to configuration file")
     parser.add_argument(
         "-u", "--user",
         default="cocosci",
@@ -44,6 +42,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # load configuration
+    config = SafeConfigParser()
+    config.read(args.config)
+
+    EXP_PATH = path(config.get("paths", "experiment"))
     src_paths = [
         str(EXP_PATH.joinpath("static").relpath()),
         str(EXP_PATH.joinpath("templates").relpath())
@@ -57,7 +60,11 @@ if __name__ == "__main__":
     cmd_template.append("%s")
     cmd_template.append("%s")
 
-    dest = "%s@%s:%s" % (args.user, args.host, args.dest)
+    if args.host in ("localhost", "127.0.0.1"):
+        dest = args.dest
+    else:
+        dest = "%s@%s:%s" % (args.user, args.host, args.dest)
+
     for source in src_paths:
         cmd = " ".join(cmd_template) % (source, dest)
         print colored(cmd, 'blue')

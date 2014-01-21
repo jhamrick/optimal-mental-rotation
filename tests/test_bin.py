@@ -37,6 +37,22 @@ def config_real_stimuli(request):
     return config_path
 
 
+@pytest.fixture(scope="module")
+def config_real_experiment(request):
+    tmp_path = setup_temp()
+    config_path = tmp_path.joinpath('config.ini')
+    config = setup_config(tmp_path)
+    config.set("paths", "experiment", "experiment")
+    with open(config_path, 'w') as fh:
+        config.write(fh)
+
+    def fin():
+        tmp_path.rmtree_p()
+    request.addfinalizer(fin)
+
+    return config_path
+
+
 def test_convert_old_stimuli(config):
     code = sp.call([
         "./bin/convert_old_stimuli.py", 
@@ -68,7 +84,29 @@ def test_experiment_generate_configs(config_real_stimuli):
     assert code == 0
 
 
-def test_experiment_deploy_experiment(config):
+def test_experiment_deploy_experiment(tmpdir, config_real_experiment):
+    config = config_real_experiment
+
+    pth = tmpdir.mkdir("exp")
+    code = sp.call([
+        "./bin/experiment/deploy_experiment.py", 
+        "-c", config,
+        "-H", "localhost",
+        "-n",
+        pth.strpath
+    ])
+    assert code == 0
+
+    code = sp.call([
+        "./bin/experiment/deploy_experiment.py", 
+        "-c", config,
+        "-H", "localhost",
+        pth.strpath
+    ])
+    assert code == 0
+
+
+def test_pre_experiment(config):
     pass
 
 
@@ -101,8 +139,4 @@ def test_model(config):
 
 
 def test_post_experiment(config):
-    pass
-
-
-def test_pre_experiment(config):
     pass

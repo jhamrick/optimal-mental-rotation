@@ -11,10 +11,6 @@ import pandas as pd
 
 logger = logging.getLogger("mental_rotation.experiment")
 
-# load configuration
-config = SafeConfigParser()
-config.read("config.ini")
-
 
 def get_stiminfo(stim_path):
     stim = Stimulus2D.load(stim_path)
