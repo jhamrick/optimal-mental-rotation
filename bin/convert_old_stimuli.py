@@ -104,8 +104,6 @@ if __name__ == "__main__":
         help="force tasks to complete")
 
     args = parser.parse_args()
-
     config = SafeConfigParser()
     config.read(args.config)
-
     convert_stims(args.from_path, args.to_path, args.force, config)

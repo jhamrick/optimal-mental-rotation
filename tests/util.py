@@ -24,7 +24,7 @@ def setup_config(tmp_path):
     config.set('paths', 'stimuli', 'tests/stimuli')
     config.set('paths', 'data', tmp_path.joinpath('data'))
     config.set('paths', 'figures', tmp_path.joinpath('figures'))
-    config.set('paths', 'experiment', 'experiment')
+    config.set('paths', 'experiment', tmp_path.joinpath('experiment'))
     config.set('paths', 'simulations', tmp_path.joinpath('data/sim-raw'))
     config.set('paths', 'resources', tmp_path.joinpath('resources'))
     config.set('paths', 'sim_scripts', tmp_path.joinpath('resources/sim-scripts'))
@@ -37,11 +37,7 @@ def setup_config(tmp_path):
     config.set('bq', 'R_kappa', '0.01')
     config.set('bq', 'n_candidate', '20')
 
-    config_path = tmp_path.joinpath('config.ini')
-    with open(config_path, 'w') as fh:
-        config.write(fh)
-
-    return config_path
+    return config
 
 
 def seed(config):

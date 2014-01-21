@@ -47,7 +47,8 @@ def get_stiminfo(stim_path):
     return info
 
 
-def save_configs(version, force=False):
+def save_configs(config, force):
+    version = config.get("global", "version")
     STIM_PATH = path(config.get("paths", "stimuli"))
     EXP_PATH = path(config.get("paths", "experiment"))
 
@@ -116,48 +117,42 @@ def save_configs(version, force=False):
         else:
             tB = stim_pairs.ix[trials[0]].reset_index()
 
-        config = {}
-        config['training'] = training
-        config['experimentA'] = sorted(tA.T.to_dict().values())
-        config['experimentB'] = sorted(tB.T.to_dict().values())
-        config['examples'] = examples
+        trial_config = {}
+        trial_config['training'] = training
+        trial_config['experimentA'] = sorted(tA.T.to_dict().values())
+        trial_config['experimentB'] = sorted(tB.T.to_dict().values())
+        trial_config['examples'] = examples
 
-        config_path = EXP_PATH.joinpath(
+        trial_config_path = EXP_PATH.joinpath(
             "static", "json", "%s-cb0.json" % i).abspath()
 
-        if config_path.exists() and not force:
+        if trial_config_path.exists() and not force:
             continue
 
-        if not config_path.dirname().exists():
-            config_path.dirname().makedirs_p()
+        if not trial_config_path.dirname().exists():
+            trial_config_path.dirname().makedirs_p()
 
-        with open(config_path, "w") as fh:
-            json.dump(config, fh, indent=2, allow_nan=False)
+        with open(trial_config_path, "w") as fh:
+            json.dump(trial_config, fh, indent=2, allow_nan=False)
 
-        logger.info("Saved %s", config_path.relpath())
+        logger.info("Saved %s", trial_config_path.relpath())
 
 
-def make_parser():
-    VERSION = config.get("global", "version")
-
+if __name__ == "__main__":
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(
-        "-v", "--version",
-        default=VERSION,
-        help="Experiment version.")
+        "-c", "--config",
+        default="config.ini",
+        help="path to configuration file")
     parser.add_argument(
         "-f", "--force",
         action="store_true",
         default=False,
         help="Force configs to be generated.")
 
-    return parser
-
-
-if __name__ == "__main__":
-    parser = make_parser()
     args = parser.parse_args()
-
-    save_configs(args.version, force=args.force)
+    config = SafeConfigParser()
+    config.read(args.config)
+    save_configs(config, args.force)
