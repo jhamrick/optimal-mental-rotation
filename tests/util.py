@@ -5,14 +5,6 @@ from ConfigParser import RawConfigParser
 from mental_rotation.stimulus import Stimulus2D
 
 
-def setup_temp():
-    tmp_path = path('/tmp/mental_rotation')
-    if tmp_path.exists():
-        tmp_path.rmtree_p()
-    tmp_path.mkdir_p()
-    return tmp_path
-
-
 def setup_config(tmp_path):
     config = RawConfigParser()
     config.add_section('global')
