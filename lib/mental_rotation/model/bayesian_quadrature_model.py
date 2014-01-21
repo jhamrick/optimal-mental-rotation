@@ -39,14 +39,15 @@ class BayesianQuadratureModel(BaseModel):
     _params = ['h', 'w']
 
     def __init__(self, *args, **kwargs):
-        self.bq_opts = kwargs['bq_opts']
-        del kwargs['bq_opts']
-
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
 
+        self.bq_opts = {}
         self.bq_opts['candidate_thresh'] = self.opts['step'] / 2.
         self.bq_opts['kernel'] = PeriodicKernel
         self.bq_opts['optim_method'] = 'Powell'
+        self.bq_opts['x_mu'] = np.pi
+        self.bq_opts['x_var'] = 10.0
+        self.bq_opts['n_candidate'] = 20
 
         self.bqs = {}
         self._m0 = None
