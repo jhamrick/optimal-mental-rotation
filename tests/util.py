@@ -1,34 +1,50 @@
 import numpy as np
+from path import path
 from ConfigParser import RawConfigParser
 
 from mental_rotation.stimulus import Stimulus2D
 
 
-config = RawConfigParser()
-config.add_section('global')
-config.set('global', 'loglevel', 'INFO')
-config.set('global', 'version', 'test')
-config.set('global', 'seed', '23480')
-
-config.add_section('paths')
-config.set('paths', 'stimuli', 'stimuli')
-config.set('paths', 'data', 'data')
-config.set('paths', 'figures', 'figures')
-config.set('paths', 'experiment', 'experiment')
-config.set('paths', 'simulations', 'data/sim-raw')
-config.set('paths', 'resources', 'resources')
-config.set('paths', 'sim_scripts', 'resources/sim-scripts')
-
-config.add_section('model')
-config.set('model', 'S_sigma', '0.15')
-
-config.add_section('bq')
-config.set('bq', 'R_mu', '3.141592653589793')
-config.set('bq', 'R_kappa', '0.01')
-config.set('bq', 'n_candidate', '20')
+def setup_temp():
+    tmp_path = path('/tmp/mental_rotation')
+    if tmp_path.exists():
+        tmp_path.rmtree_p()
+    tmp_path.mkdir_p()
+    return tmp_path
 
 
-def seed():
+def setup_config(tmp_path):
+    config = RawConfigParser()
+    config.add_section('global')
+    config.set('global', 'loglevel', 'INFO')
+    config.set('global', 'version', 'test')
+    config.set('global', 'seed', '23480')
+
+    config.add_section('paths')
+    config.set('paths', 'stimuli', 'tests/stimuli')
+    config.set('paths', 'data', tmp_path.joinpath('data'))
+    config.set('paths', 'figures', tmp_path.joinpath('figures'))
+    config.set('paths', 'experiment', 'experiment')
+    config.set('paths', 'simulations', tmp_path.joinpath('data/sim-raw'))
+    config.set('paths', 'resources', tmp_path.joinpath('resources'))
+    config.set('paths', 'sim_scripts', tmp_path.joinpath('resources/sim-scripts'))
+    
+    config.add_section('model')
+    config.set('model', 'S_sigma', '0.15')
+    
+    config.add_section('bq')
+    config.set('bq', 'R_mu', '3.141592653589793')
+    config.set('bq', 'R_kappa', '0.01')
+    config.set('bq', 'n_candidate', '20')
+
+    config_path = tmp_path.joinpath('config.ini')
+    with open(config_path, 'w') as fh:
+        config.write(fh)
+
+    return config_path
+
+
+def seed(config):
     seed = config.getint('global', 'seed')
     np.random.seed(seed)
 

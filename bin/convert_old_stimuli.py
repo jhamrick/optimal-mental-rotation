@@ -11,11 +11,6 @@ import sys
 logger = logging.getLogger('mental_rotation.experiment')
 
 
-# load configuration
-config = SafeConfigParser()
-config.read("config.ini")
-
-
 def load_stim(file):
     logger.debug("Loading stimulus '%s'" % file.relpath())
     data = np.load(file)
@@ -58,12 +53,23 @@ def load_stim(file):
     return (stimname, rot, flipped), stim
 
 
-def convert_stims(stim_path, dest):
+def convert_stims(from_path, to_path, force, config):
+    STIM_PATH = path(config.get("paths", "stimuli"))
+    stim_path = STIM_PATH.joinpath(from_path)
+    dest = STIM_PATH.joinpath(to_path)
+
+    if dest.exists() and not force:
+        logger.warning(
+            "Destination already exists, exiting (use --force to override)")
+        return
+
     files = stim_path.listdir()
     files = [x for x in files if x.endswith(".npz")]
 
-    if not dest.exists():
-        dest.makedirs_p()
+    if dest.exists():
+        dest.rmtree_p()
+
+    dest.makedirs_p()
 
     for f in files:
         (stimname, rot, flipped), stim = load_stim(f)
@@ -88,22 +94,18 @@ if __name__ == "__main__":
         required=True,
         help="new stimulus set name")
     parser.add_argument(
+        "-c", "--config",
+        default="config.ini",
+        help="path to configuration file")
+    parser.add_argument(
         "-f", "--force",
         action="store_true",
         default=False,
         help="force tasks to complete")
 
     args = parser.parse_args()
-    STIM_PATH = path(config.get("paths", "stimuli"))
-    from_path = STIM_PATH.joinpath(args.from_path)
-    to_path = STIM_PATH.joinpath(args.to_path)
 
-    stim_path = to_path.joinpath("stimuli.csv")
-    trial_path = to_path.joinpath("trials.csv")
+    config = SafeConfigParser()
+    config.read(args.config)
 
-    if (stim_path.exists() or trial_path.exists()) and not args.force:
-        logger.warning(
-            "Destination already exists, exiting (use --force to override)")
-        sys.exit(0)
-
-    convert_stims(from_path, to_path)
+    convert_stims(args.from_path, args.to_path, args.force, config)
