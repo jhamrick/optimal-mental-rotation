@@ -6,59 +6,12 @@ from mental_rotation import MODELS
 from copy import deepcopy
 from ConfigParser import SafeConfigParser
 from path import path
+import logging
 
-
-# load configuration
-config = SafeConfigParser()
-config.read("config.ini")
-
-
-def make_parser():
-    VERSION = config.get("global", "version")
-
-    parser = ArgumentParser(
-        formatter_class=ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument(
-        "-m", "--model",
-        required=True,
-        choices=MODELS,
-        help="Name of the model to use.")
-    parser.add_argument(
-        "-v", "--version",
-        default=VERSION,
-        help="Experiment/code version.")
-    parser.add_argument(
-        "-f", "--force",
-        action="store_true",
-        default=False,
-        help="Force script to be generated.")
-
-    return parser
+logger = logging.getLogger("model.generate_script")
 
 
 def make_params(model, version, force):
-    params = {
-        'model': model,
-        'version': version,
-        'force': force,
-        'stim_path': version
-    }
-
-    if model == "GoldStandardModel":
-        params['num_samples'] = 1
-        params['chunksize'] = 1
-    elif model == "HillClimbingModel":
-        params['num_samples'] = 100
-        params['chunksize'] = 100
-    elif model == "ThresholdModel":
-        params['num_samples'] = 100
-        params['chunksize'] = 100
-    elif model == "BayesianQuadratureModel":
-        params['num_samples'] = 10
-        params['chunksize'] = 2
-    else:
-        raise ValueError("unhandled model type: %s" % model)
 
     return params
 
@@ -66,17 +19,16 @@ def make_params(model, version, force):
 def build(model, version, **params):
     """Create a simulation script."""
 
-    SIM_PATH = path(config.get("paths", "simulations"))
-    SCRIPT_PATH = path(config.get("paths", "sim_scripts"))
-    STIM_PATH = path(config.get("paths", "stimuli"))
-
+    sim_path = params['sim_path']
+    script_path = params['script_path']
+    stim_path = params['stim_path']
     force = params['force']
 
     # Path where we will save the simulations
-    sim_root = SIM_PATH.joinpath(model, version)
+    sim_root = sim_path.joinpath(model, version)
 
     # Path where we will save the simulation script/resources
-    script_root = SCRIPT_PATH.joinpath(model)
+    script_root = script_path.joinpath(model)
     script_file = script_root.joinpath("%s.json" % version)
 
     # check to see if we would override existing data
@@ -89,7 +41,7 @@ def build(model, version, **params):
         script_root.rmtree()
 
     # Locations of stimuli
-    stim_paths = STIM_PATH.joinpath(params['stim_path']).listdir()
+    stim_paths = stim_path.joinpath(version).listdir()
 
     # Put it all together in a big dictionary...
     script = {}
@@ -100,8 +52,8 @@ def build(model, version, **params):
 
     # Various paths -- but strip away the absolute parts, because we
     # might be running the simulations on another computer
-    script['sim_root'] = str(sim_root.relpath(SIM_PATH))
-    script['stim_paths'] = [str(x.relpath(STIM_PATH)) for x in stim_paths]
+    script['sim_root'] = str(sim_root.relpath(sim_path))
+    script['stim_paths'] = [str(x.relpath(stim_path)) for x in stim_paths]
 
     # number of samples
     script['num_samples'] = params['num_samples']
@@ -120,8 +72,38 @@ def build(model, version, **params):
 
 
 if __name__ == "__main__":
-    parser = make_parser()
+    parser = ArgumentParser(
+        formatter_class=ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument(
+        "-m", "--model",
+        required=True,
+        choices=MODELS,
+        help="Name of the model to use.")
+    parser.add_argument(
+        "-f", "--force",
+        action="store_true",
+        default=False,
+        help="Force script to be generated.")
+
     args = parser.parse_args()
 
-    params = make_params(args.model, args.version, args.force)
+    # load configuration
+    config = SafeConfigParser()
+    config.read(args.config)
+
+    loglevel = config.get("global", "loglevel")
+    logging.basicConfig(level=loglevel)
+
+    params = {
+        'model': args.model,
+        'version': config.get("global", "version"),
+        'force': args.force,
+        'num_samples': config.getint(model, 'num_samples'),
+        'chunksize': config.getint(model, 'chunksize')
+        'stim_path': path(config.get("paths", "stimuli")),
+        'sim_path': path(config.get("paths", "simulations")),
+        'script_path': path(config.get("paths", "sim_scripts"))
+    }
+
     build(**params)
