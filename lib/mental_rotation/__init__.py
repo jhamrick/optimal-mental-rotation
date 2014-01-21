@@ -14,6 +14,9 @@ def get_config(name='config.ini'):
 
 config = get_config()
 
+VERSION = config.get("global", "version")
+SEED = config.getint("global", "seed")
+
 
 # load the various paths that we need
 def get_path(name):
