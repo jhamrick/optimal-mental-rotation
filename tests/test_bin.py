@@ -98,10 +98,6 @@ def test_post_experiment(config):
     pass
 
 
-def test_model_generate_script(config):
-    pass
-
-
 def test_model_run_simulations(config):
     pass
 

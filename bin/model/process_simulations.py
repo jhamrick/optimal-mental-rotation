@@ -7,25 +7,26 @@ import json
 import logging
 import pandas as pd
 import multiprocessing as mp
+import itertools
 
 from mental_rotation import MODELS
 from mental_rotation import model as m
 from snippets import datapackage as dpkg
 
-logger = logging.getLogger('mental_rotation')
+logger = logging.getLogger('model.process_simulations')
 
 
-# load configuration
-config = SafeConfigParser()
-config.read("config.ini")
+def load(task):
+    samples = task['samples']
+    model_class = getattr(m, task['model'])
+    data_path = path(task['data_path'])
+    stim_path = path(task['stim_path'])
 
-
-def load(samples, model_class, pth):
     all_data = []
 
     for isample in samples:
-        samppth = pth.joinpath("sample_%d" % isample)
-        stimname = pth.namebase
+        samppth = data_path.joinpath("sample_%02d" % isample)
+        stimname = stim_path.namebase
 
         model = model_class.load(samppth)
         stim, rot, flip = stimname.split("_")
@@ -50,19 +51,17 @@ def load(samples, model_class, pth):
         data['sample'] = isample
         all_data.append(data)
 
-    return all_data
+    return task['task_name'], all_data
 
-def process_all(model_type, exp, force=False):
-    SIM_PATH = path(config.get("paths", "simulations"))
-    DATA_PATH = path(config.get("paths", "data"))
 
-    name = "%s_%s.dpkg" % (model_type, exp)
-    dp_path = DATA_PATH.joinpath("model", name)
+def process_all(model_type, version, sim_path, data_path, force=False):
+    name = "%s_%s.dpkg" % (model_type, version)
+    dp_path = data_path.joinpath("model", name)
 
     if dp_path.exists() and not force:
         return
 
-    sim_root = SIM_PATH.joinpath(model_type, exp)
+    sim_root = sim_path.joinpath(model_type, version)
     tasks_file = sim_root.joinpath("tasks.json")
     with open(tasks_file, "r") as fh:
         tasks = json.load(fh)
@@ -70,37 +69,22 @@ def process_all(model_type, exp, force=False):
     with open(completed_file, "r") as fh:
         completed = json.load(fh)
         
-    try:
-        model_class = getattr(m, model_type)
-    except AttributeError:
-        raise ValueError("unhandled model type: %s" % model_type)
+    for taskname in tasks:
+        if not completed[taskname]:
+            raise RuntimeError("task '%s' is not complete" % taskname)
 
     pool = mp.Pool()
-
-    results = []
-    for i, taskname in enumerate(sorted(tasks.keys())):
-        task = tasks[taskname]
-        pth = path(task['data_path'])
-        logger.info("Starting '%s'...", taskname)
-
-        if not completed[taskname]:
-            raise RuntimeError("simulations are not complete")
-
-        args = [task['samples'], model_class, pth]
-        results.append((taskname, pool.apply_async(load, args)))
+    results = pool.imap_unordered(load, tasks.values())
 
     data = []
-    while len(results) > 0:
-        taskname, res = results.pop(0)
-        if res.ready():
-            logger.info("Fetching '%s'...", taskname)
-            if not res.successful():
-                raise RuntimeError("task failed")
-            data.extend(res.get())
-        else:
-            results.append((taskname, res))
+    for i, result in enumerate(results):
+        taskname, taskdata = result
+        logger.info("Successfully processed '%s'", taskname)
+        data.extend(taskdata)
 
-    df = pd.DataFrame(data)
+    df = pd.DataFrame(data)\
+           .sort(['stimulus', 'theta', 'flipped', 'sample'])\
+           .reset_index(drop=True)
 
     # load the existing datapackage and bump the version
     if dp_path.exists():
@@ -134,9 +118,9 @@ if __name__ == "__main__":
         choices=MODELS,
         help="Name of the model to use.")
     parser.add_argument(
-        "-e", "--exp",
-        required=True,
-        help="Experiment version.")
+        "-c", "--config",
+        default="config.ini",
+        help="path to configuration file")
     parser.add_argument(
         "-f", "--force",
         action="store_true",
@@ -144,4 +128,14 @@ if __name__ == "__main__":
         help="Force processed data to be overwritten.")
 
     args = parser.parse_args()
-    process_all(args.model, args.exp, force=args.force)
+
+    config = SafeConfigParser()
+    config.read(args.config)
+    sim_path = path(config.get("paths", "simulations"))
+    data_path = path(config.get("paths", "data"))
+    version = config.get("global", "version")
+    loglevel = config.get("global", "loglevel")
+    logging.basicConfig(level=loglevel)
+    logger.setLevel(loglevel)
+
+    process_all(args.model, version, sim_path, data_path, force=args.force)

@@ -120,9 +120,8 @@ def run(params, force):
     completed_file = path(params["completed_path"])
 
     # create the pool of worker processes
-    #pool = mp.Pool()
-    #results = pool.imap_unordered(simulate, queued_tasks)
-    results = itertools.imap(simulate, queued_tasks)
+    pool = mp.Pool()
+    results = pool.imap_unordered(simulate, queued_tasks)
 
     # process tasks as they are completed
     for i, task_name in enumerate(results):
