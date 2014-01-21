@@ -21,7 +21,6 @@ class TestBaseModel(object):
         config = util.setup_config(tmp_path)
         return config
 
-    @pytest.fixture(scope="class", params=[(39, False), (39, True)])
     def stim(self, request, config):
         seed = config.getint("global", "seed")
         np.random.randint(seed)
@@ -37,15 +36,19 @@ class TestBaseModel(object):
         Xb = X.copy_from_vertices()
         return theta, flip, Xa, Xb
 
+    basic_stim = pytest.fixture(scope="class", params=[(39, False), (39, True)])(stim)
+    full_stim = pytest.fixture(scope="class", params=[(t, f) for t in range(0, 360, 45) for f in [True, False]])(stim)
+
     @pytest.fixture
-    def model(self, stim, config, request, tmpdir):
-        # stimulus
-        theta, flipped, Xa, Xb = stim
+    def model(self, config, request, tmpdir):
+        S_sigma = config.getfloat('model', 'S_sigma')
 
         # create the model
-        m = self.cls(
-            Xa.vertices, Xb.vertices, 
-            S_sigma=config.getfloat('model', 'S_sigma'))
+        def make_model(Xa, Xb):
+            m = self.cls(
+                Xa.vertices, Xb.vertices, 
+                S_sigma=S_sigma)
+            return m
 
         # handle temporary directories
         self.pth = path(tmpdir.strpath).joinpath("save")
@@ -53,24 +56,29 @@ class TestBaseModel(object):
             self.pth.rmtree_p()
         request.addfinalizer(fin)
 
-        return theta, flipped, Xa, Xb, m
+        return make_model
 
+    def test_priors(self, basic_stim, model):
+        theta, flipped, Xa, Xb = basic_stim
+        m = model(Xa, Xb)
 
-    def test_priors(self, model):
-        theta, flipped, Xa, Xb, m = model
         assert np.allclose(m.model['Xa'].value, Xa.vertices)
         assert np.allclose(m.model['Xb'].value, Xb.vertices)
         assert m.model['Xa'].logp == m.model['Xb'].logp
         assert m.model['Xa'].logp == log_prior(Xa.vertices)
         assert m.model['Xb'].logp == log_prior(Xb.vertices)
 
-    def test_Xr(self, model):
-        theta, flipped, Xa, Xb, m = model
+    def test_Xr(self, basic_stim, model):
+        theta, flipped, Xa, Xb = basic_stim
+        m = model(Xa, Xb)
+
         assert np.allclose(m.model['Xr'].value, Xa.vertices)
         assert np.allclose(m.model['Xr'].value, m.model['Xa'].value)
 
-    def test_similarity(self, model):
-        theta, flipped, Xa, Xb, m = model
+    def test_similarity(self, basic_stim, model):
+        theta, flipped, Xa, Xb = basic_stim
+        m = model(Xa, Xb)
+
         log_S = log_similarity(
             Xb.vertices,
             Xa.vertices,
@@ -83,11 +91,13 @@ class TestBaseModel(object):
             m.opts['S_sigma'])
         assert log_S == m.model['log_S'].logp
 
-    def test_plot(self, model):
+    def test_plot(self, basic_stim, model):
         if self.cls is BaseModel:
             return
 
-        theta, flipped, Xa, Xb, m = model
+        theta, flipped, Xa, Xb = basic_stim
+        m = model(Xa, Xb)
+
         m.sample()
 
         fig, ax = plt.subplots()
@@ -99,78 +109,94 @@ class TestBaseModel(object):
         m.plot(ax, 0, f_S = lambda R, F: np.ones_like(R), color='g')
         plt.close('all')
 
-    def test_R_i(self, model):
+    def test_R_i(self, basic_stim, model):
         if self.cls is BaseModel:
             return
 
-        theta, flipped, Xa, Xb, m = model
+        theta, flipped, Xa, Xb = basic_stim
+        m = model(Xa, Xb)
+
         m.sample()
         Ri = m.R_i
         # at least once for F=0, at least once for F=1
         assert np.isclose(Ri, 0).sum() >= 2
 
-    def test_F_i(self, model):
+    def test_F_i(self, basic_stim, model):
         if self.cls is BaseModel:
             return
 
-        theta, flipped, Xa, Xb, m = model
+        theta, flipped, Xa, Xb = basic_stim
+        m = model(Xa, Xb)
+
         m.sample()
         Fi = m.F_i
         assert ((Fi == 0) | (Fi == 1)).all()
         assert (Fi == 0).any()
         assert (Fi == 1).any()
 
-    def test_log_S_i(self, model):
+    def test_log_S_i(self, basic_stim, model):
         if self.cls is BaseModel:
             return
         raise NotImplementedError
 
-    def test_S_i(self, model):
+    def test_S_i(self, basic_stim, model):
         if self.cls is BaseModel:
             return
 
-        theta, flipped, Xa, Xb, m = model
+        theta, flipped, Xa, Xb = basic_stim
+        m = model(Xa, Xb)
+
         m.sample()
         assert np.allclose(m.log_S_i, np.log(m.S_i))
 
-    def test_print_stats(self, model):
+    def test_print_stats(self, basic_stim, model):
         if self.cls is BaseModel:
             return
 
-        theta, flipped, Xa, Xb, m = model
+        theta, flipped, Xa, Xb = basic_stim
+        m = model(Xa, Xb)
+
         m.sample()
         m.print_stats()
 
-    def test_sample_and_save(self, model, tmpdir):
+    def test_sample_and_save(self, basic_stim, model, tmpdir):
         if self.cls is BaseModel:
             return
 
-        theta, flipped, Xa, Xb, m = model
+        theta, flipped, Xa, Xb = basic_stim
+        m = model(Xa, Xb)
+
         m.sample()
         m.save(self.pth)
 
-    def test_save(self, model, tmpdir):
+    def test_save(self, basic_stim, model, tmpdir):
         if self.cls is BaseModel:
             return
 
-        theta, flipped, Xa, Xb, m = model
+        theta, flipped, Xa, Xb = basic_stim
+        m = model(Xa, Xb)
+
         m.save(self.pth)
 
-    def test_force_save(self, model, tmpdir):
+    def test_force_save(self, basic_stim, model, tmpdir):
         if self.cls is BaseModel:
             return
 
-        theta, flipped, Xa, Xb, m = model
+        theta, flipped, Xa, Xb = basic_stim
+        m = model(Xa, Xb)
+
         m.save(self.pth)
         with pytest.raises(IOError):
             m.save(self.pth)
         m.save(self.pth, force=True)
 
-    def test_load(self, model, tmpdir):
+    def test_load(self, basic_stim, model, tmpdir):
         if self.cls is BaseModel:
             return
 
-        theta, flipped, Xa, Xb, m = model
+        theta, flipped, Xa, Xb = basic_stim
+        m = model(Xa, Xb)
+
         with pytest.raises(IOError):
             self.cls.load(self.pth)
         m.sample()
@@ -178,21 +204,25 @@ class TestBaseModel(object):
         m2 = self.cls.load(self.pth)
         m2.print_stats()
 
-    def test_load_and_sample(self, model, tmpdir):
+    def test_load_and_sample(self, basic_stim, model, tmpdir):
         if self.cls is BaseModel:
             return
 
-        theta, flipped, Xa, Xb, m = model
+        theta, flipped, Xa, Xb = basic_stim
+        m = model(Xa, Xb)
+
         m.save(self.pth)
         m2 = self.cls.load(self.pth)
         m2.sample()
         m2.print_stats()
 
-    def test_sample_again(self, model):
+    def test_sample_again(self, basic_stim, model):
         if self.cls is BaseModel:
             return
 
-        theta, flipped, Xa, Xb, m = model
+        theta, flipped, Xa, Xb = basic_stim
+        m = model(Xa, Xb)
+
         m.sample()
         state1 = deepcopy(m.__getstate__())
         m.sample()
