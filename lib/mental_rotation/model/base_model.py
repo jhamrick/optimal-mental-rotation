@@ -147,14 +147,20 @@ class BaseModel(object):
 
     @property
     def log_lh_h0(self):
-        Fi = self.F_i
-        log_S0 = self.log_S_i[Fi == 0].max()
+        Fi = self.F_i == 0
+        if Fi.any():
+            log_S0 = self.log_S_i[Fi].max()
+        else:
+            log_S0 = -np.inf
         return log_S0
 
     @property
     def log_lh_h1(self):
-        Fi = self.F_i
-        log_S1 = self.log_S_i[Fi == 1].max()
+        Fi = self.F_i == 1
+        if Fi.any():
+            log_S1 = self.log_S_i[Fi].max()
+        else:
+            log_S1 = -np.inf
         return log_S1
 
     def hypothesis_test(self):

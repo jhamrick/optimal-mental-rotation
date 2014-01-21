@@ -151,7 +151,7 @@ class R(Variable):
     
     @value.setter
     def value(self, val):
-        val = val % (2 * np.pi)
+        val = float(val) % (2 * np.pi)
         if val >= np.pi:
             val -= 2 * np.pi
         self._value = val
