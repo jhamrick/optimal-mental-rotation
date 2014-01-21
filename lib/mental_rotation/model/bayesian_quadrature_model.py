@@ -45,7 +45,7 @@ class BayesianQuadratureModel(BaseModel):
         self.bq_opts['candidate_thresh'] = self.opts['step'] / 2.
         self.bq_opts['kernel'] = PeriodicKernel
         self.bq_opts['optim_method'] = 'Powell'
-        self.bq_opts['x_mu'] = np.pi
+        self.bq_opts['x_mean'] = np.pi
         self.bq_opts['x_var'] = 10.0
         self.bq_opts['n_candidate'] = 20
 

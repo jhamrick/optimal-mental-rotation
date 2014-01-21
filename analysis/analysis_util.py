@@ -2,11 +2,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-from mental_rotation import SEED
+from ConfigParser import SafeConfigParser
 
 
-def seed():
-    np.random.seed(SEED)
+def load_config(pth):
+    config = SafeConfigParser()
+    config.read(pth)
+    return config
 
 
 def clear_right(ax=None):
