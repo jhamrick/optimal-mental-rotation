@@ -5,7 +5,6 @@ import json
 
 from path import path
 from . import model
-from .. import config
 
 
 class BaseModel(object):
@@ -14,10 +13,7 @@ class BaseModel(object):
 
     def __init__(self, Xa, Xb, **opts):
 
-        self.opts = {
-            'S_sigma': config.getfloat("model", "S_sigma"),
-        }
-        self.opts.update(opts)
+        self.opts = opts.copy()
 
         # compute step based on the standard deviation of the
         # similarity function

@@ -1,11 +1,19 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-import subprocess
+from ConfigParser import SafeConfigParser
 from termcolor import colored
-from mental_rotation import EXP_PATH
+from path import path
+import subprocess
+
+# load configuration
+config = SafeConfigParser()
+config.read("config.ini")
+
 
 if __name__ == "__main__":
+    EXP_PATH = path(config.get("paths", "experiment"))
+
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter)
 

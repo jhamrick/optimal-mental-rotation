@@ -3,10 +3,8 @@ import sys
 import multiprocessing as mp
 import logging
 from threading import Thread, current_thread
-from utils import parse_address
 from server import ServerManager
 from simulation import Simulation
-from mental_rotation import LOGLEVEL
 
 logger = logging.getLogger("mental_rotation.sims.client")
 
@@ -87,18 +85,12 @@ def worker_thread(mgr, info_lock, save=False, max_tries=3, timeout=1e5):
     sys.exit(0)
 
 
-def run_client(**kwargs):
+def run_client(save, timeout, address, authkey, num_procs, max_tries, loglevel):
     """Run the simulation client manager."""
 
     mplogger = mp.log_to_stderr()
-    mplogger.setLevel(LOGLEVEL)
-
-    save = kwargs.get("save", False)
-    timeout = kwargs.get("timeout", 310)
-    address = kwargs.get("address", ("127.0.0.1", 50000))
-    authkey = kwargs.get("authkey", None)
-    n_procs = kwargs.get("n_procs", mp.cpu_count())
-    max_tries = kwargs.get("max_tries", 3)
+    mplogger.setLevel(loglevel)
+    logger.setLevel(loglevel)
 
     # Job-specific parameters.
     kwargs = dict(save=save)
@@ -120,7 +112,7 @@ def run_client(**kwargs):
 
     logger.info("Starting processes...")
     threads = []
-    for ithread in xrange(n_procs):
+    for ithread in xrange(num_procs):
         thread = Thread(
             name="Thread_%02d" % ithread,
             target=worker_thread,
@@ -135,49 +127,3 @@ def run_client(**kwargs):
 
     logger.info("Jobs complete.")
     sys.exit(0)
-
-
-def parse_and_run_client(args):
-    kwargs = {
-        'save': args.save,
-        'timeout': args.timeout,
-        'address': args.address,
-        'authkey': args.authkey,
-        'n_procs': args.num_procs,
-        'max_tries': args.max_tries
-    }
-    run_client(**kwargs)
-
-
-def create_client_parser(parser):
-    parser.add_argument(
-        "-s", "--save",
-        action="store_true",
-        help="Save data to disk.")
-    parser.add_argument(
-        "-T", "--timeout",
-        default=310,
-        type=int,
-        help="Timeout (in seconds) before process restarts.")
-    parser.add_argument(
-        "-a", "--address",
-        default=("127.0.0.1", 50000),
-        type=parse_address,
-        help="Address (host:port) of server.")
-    parser.add_argument(
-        "-k", "--authkey",
-        default=None,
-        help="Server authentication key.")
-    parser.add_argument(
-        "-n", "--num-processes",
-        default=mp.cpu_count(),
-        dest="num_procs",
-        type=int,
-        help="Number of client processes.")
-    parser.add_argument(
-        "-m", "--max-tries",
-        default=3,
-        dest="max_tries",
-        type=int,
-        help="Number of times to try running a task.")
-    parser.set_defaults(func=parse_and_run_client)

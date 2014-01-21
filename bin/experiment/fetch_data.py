@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from mental_rotation import DATA_PATH
+from ConfigParser import SafeConfigParser
 from path import path
 import logging
 import urllib2
 
 logger = logging.getLogger('mental_rotation.experiment')
+
+# load configuration
+config = SafeConfigParser()
+config.read("config.ini")
 
 
 def add_auth(url, username, password):
@@ -35,7 +39,7 @@ def add_auth(url, username, password):
     urllib2.install_opener(opener)
 
 
-def fetch(site_root, filename, experiment, force=False):
+def fetch(site_root, filename, version, force=False):
     """Download `filename` from `site_root` and save it in the
     human-raw/`experiment` data folder.
 
@@ -46,7 +50,8 @@ def fetch(site_root, filename, experiment, force=False):
 
     # get the destination to save the data, and don't do anything if
     # it exists already
-    dest = DATA_PATH.joinpath("human-raw", experiment, url.name)
+    DATA_PATH = path(config.get("paths", "data"))
+    dest = DATA_PATH.joinpath("human-raw", version, url.name)
     if dest.exists() and not force:
         return
 
@@ -75,12 +80,14 @@ def fetch(site_root, filename, experiment, force=False):
 
 
 if __name__ == "__main__":
+    VERSION = config.get("global", "version")
+
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(
-        "-e", "--exp",
-        required=True,
+        "-v", "--version",
+        default=VERSION,
         help="Experiment version.")
     parser.add_argument(
         "-a", "--address",
@@ -120,4 +127,4 @@ if __name__ == "__main__":
     # fetch and save the data files
     files = ["trialdata", "eventdata", "questiondata"]
     for filename in files:
-        fetch(args.address, filename, args.exp, args.force)
+        fetch(args.address, filename, args.version, args.force)

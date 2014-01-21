@@ -2,16 +2,22 @@
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from path import path
+from ConfigParser import SafeConfigParser
 import json
 import logging
 import pandas as pd
 import multiprocessing as mp
 
-from mental_rotation import SIM_PATH, DATA_PATH, MODELS
+from mental_rotation import MODELS
 from mental_rotation import model as m
 from snippets import datapackage as dpkg
 
 logger = logging.getLogger('mental_rotation')
+
+
+# load configuration
+config = SafeConfigParser()
+config.read("config.ini")
 
 
 def load(samples, model_class, pth):
@@ -47,6 +53,9 @@ def load(samples, model_class, pth):
     return all_data
 
 def process_all(model_type, exp, force=False):
+    SIM_PATH = path(config.get("paths", "simulations"))
+    DATA_PATH = path(config.get("paths", "data"))
+
     name = "%s_%s.dpkg" % (model_type, exp)
     dp_path = DATA_PATH.joinpath("model", name)
 

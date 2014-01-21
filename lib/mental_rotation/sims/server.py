@@ -4,9 +4,7 @@ import logging
 from multiprocessing.managers import BaseManager
 from datetime import datetime, timedelta
 from path import path
-from utils import parse_address, get_params
 from tasks import Tasks
-from mental_rotation import LOGLEVEL, MODELS
 
 logger = logging.getLogger("mental_rotation.sims.server")
 
@@ -120,18 +118,14 @@ class ServerManager(BaseManager):
             cls.register("get_done_queue")
 
 
-def run_server(model, exp, **kwargs):
+def run_server(params, address, authkey, force, loglevel):
     """Run the simulation server manager."""
 
     mplogger = mp.log_to_stderr()
-    mplogger.setLevel(LOGLEVEL)
-
-    address = kwargs.get("address", ("127.0.0.1", 50000))
-    authkey = kwargs.get("authkey", None)
-    force = kwargs.get("force", False)
+    mplogger.setLevel(loglevel)
+    logger.setLevel(loglevel)
 
     # Set up parameters and task data.
-    params = get_params(model, exp)
     ServerManager.register_shared(with_callable=True, params=params)
     logger.info("Registered shared resources")
 
@@ -147,40 +141,3 @@ def run_server(model, exp, **kwargs):
     logger.info("Jobs complete. Shutting down.")
     mgr.shutdown()
     sys.exit(0)
-
-
-def parse_and_run_server(args):
-    model = args.model
-    exp = args.exp
-    kwargs = {
-        'address': args.address,
-        'authkey': args.authkey,
-        'force': args.force,
-    }
-    run_server(model, exp, **kwargs)
-
-
-def create_server_parser(parser):
-    parser.add_argument(
-        "-m", "--model",
-        required=True,
-        choices=MODELS,
-        help="Model name.")
-    parser.add_argument(
-        "-e", "--exp",
-        required=True,
-        help="Experiment version.")
-    parser.add_argument(
-        "-a", "--address",
-        default=("127.0.0.1", 50000),
-        type=parse_address,
-        help="Address (host:port) of server.")
-    parser.add_argument(
-        "-k", "--authkey",
-        default=None,
-        help="Server authentication key.")
-    parser.add_argument(
-        "-f", "--force",
-        action="store_true",
-        help="Force all tasks to be put on the queue.")
-    parser.set_defaults(func=parse_and_run_server)

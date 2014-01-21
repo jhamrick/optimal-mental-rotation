@@ -1,13 +1,18 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from mental_rotation import BIN_PATH
+from ConfigParser import SafeConfigParser
 from termcolor import colored
+from path import path
 import logging
 import subprocess
 import sys
 
 logger = logging.getLogger('mental_rotation.experiment')
+
+# load configuration
+config = SafeConfigParser()
+config.read("config.ini")
 
 
 def run_cmd(cmd):
@@ -18,12 +23,15 @@ def run_cmd(cmd):
 
 
 if __name__ == "__main__":
+    VERSION = config.get("global", "version")
+    BIN_PATH = path(config.get("paths", "bin"))
+
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(
-        "-e", "--exp",
-        required=True,
+        "-v", "--version",
+        default=VERSION,
         help="experiment version")
     parser.add_argument(
         "-f", "--force",
@@ -60,14 +68,14 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
 
-    exp = args.exp
+    version = args.version
     force = args.force
 
     # generate configs
     if args.generate or args.all:
         cmd = [
             "python", BIN_PATH.joinpath("experiment/generate_configs.py"),
-            "-e", exp
+            "-v", version
         ]
         if force:
             cmd.append("-f")

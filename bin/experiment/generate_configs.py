@@ -1,14 +1,19 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-import json
-from mental_rotation import EXP_PATH, STIM_PATH
+from ConfigParser import SafeConfigParser
+from itertools import product
 from mental_rotation.stimulus import Stimulus2D
+from path import path
+import json
 import logging
 import pandas as pd
-from itertools import product
 
 logger = logging.getLogger("mental_rotation.experiment")
+
+# load configuration
+config = SafeConfigParser()
+config.read("config.ini")
 
 
 def get_stiminfo(stim_path):
@@ -42,10 +47,13 @@ def get_stiminfo(stim_path):
     return info
 
 
-def save_configs(exp, force=False):
-    example_path = STIM_PATH.joinpath("%s-example" % exp)
-    training_path = STIM_PATH.joinpath("%s-training" % exp)
-    exp_path = STIM_PATH.joinpath(exp)
+def save_configs(version, force=False):
+    STIM_PATH = path(config.get("paths", "stimuli"))
+    EXP_PATH = path(config.get("paths", "experiment"))
+
+    example_path = STIM_PATH.joinpath("%s-example" % version)
+    training_path = STIM_PATH.joinpath("%s-training" % version)
+    exp_path = STIM_PATH.joinpath(version)
 
     examples = map(get_stiminfo, example_path.listdir())
     training = map(get_stiminfo, training_path.listdir())
@@ -130,12 +138,14 @@ def save_configs(exp, force=False):
 
 
 def make_parser():
+    VERSION = config.get("global", "version")
+
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(
-        "-e", "--exp",
-        required=True,
+        "-v", "--version",
+        default=VERSION,
         help="Experiment version.")
     parser.add_argument(
         "-f", "--force",
@@ -150,4 +160,4 @@ if __name__ == "__main__":
     parser = make_parser()
     args = parser.parse_args()
 
-    save_configs(args.exp, force=args.force)
+    save_configs(args.version, force=args.force)

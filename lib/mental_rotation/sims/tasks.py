@@ -2,7 +2,6 @@ from itertools import product as iproduct
 from path import path
 import json
 import numpy as np
-from mental_rotation import STIM_PATH
 
 
 class Tasks(dict):
@@ -26,7 +25,7 @@ class Tasks(dict):
         if not sim_root.exists():
             sim_root.makedirs_p()
 
-        stim_paths = [STIM_PATH.joinpath(x) for x in params['stim_paths']]
+        stim_paths = params['stim_paths']
         num_samples = params['num_samples']
         chunksize = float(params['chunksize'])
 

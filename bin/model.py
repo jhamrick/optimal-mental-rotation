@@ -1,11 +1,19 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from mental_rotation import BIN_PATH, MODELS
 from termcolor import colored
+from ConfigParser import SafeConfigParser
+from mental_rotation import MODELS
+from path import path
+
 import logging
 import subprocess
 import sys
+
+
+# load configuration
+config = SafeConfigParser()
+config.read("config.ini")
 
 
 def run_cmd(cmd):
@@ -16,6 +24,9 @@ def run_cmd(cmd):
 
 
 if __name__ == "__main__":
+    VERSION = config.get("global", "version")
+    BIN_PATH = path(config.get("paths", "bin"))
+    
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter)
 
@@ -25,9 +36,9 @@ if __name__ == "__main__":
         choices=MODELS,
         help="Name of the model to use.")
     parser.add_argument(
-        "-e", "--exp",
-        required=True,
-        help="experiment version")
+        "-v", "--version",
+        default=VERSION,
+        help="Experiment/code version")
     parser.add_argument(
         "-f", "--force",
         action="store_true",
@@ -78,14 +89,14 @@ if __name__ == "__main__":
         sys.exit(1)
 
     model = args.model
-    exp = args.exp
+    version = args.version
     force = args.force
 
     # generate configs
     if args.generate or args.all:
         cmd = [
             "python", BIN_PATH.joinpath("model/generate_script.py"),
-            "-m", model, "-e", exp
+            "-m", model, "-v", version
         ]
         if force:
             cmd.append("-f")
@@ -95,7 +106,7 @@ if __name__ == "__main__":
     if args.run_server or args.all:
         cmd = [
             "python", BIN_PATH.joinpath("model/run_simulations.py"),
-            "server", "-m", model, "-e", exp, "-k", "zo7MV6GndfNf"
+            "server", "-m", model, "-v", version, "-k", "zo7MV6GndfNf"
         ]
         if force:
             cmd.append("-f")
@@ -112,7 +123,7 @@ if __name__ == "__main__":
     if args.process or args.all:
         cmd = [
             "python", BIN_PATH.joinpath("model/process_simulations.py"),
-            "-m", model, "-e", exp
+            "-m", model, "-v", version
         ]
         if force:
             cmd.append("-f")

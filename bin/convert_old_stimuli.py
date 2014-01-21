@@ -1,13 +1,19 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from mental_rotation import STIM_PATH
+from ConfigParser import SafeConfigParser
 from mental_rotation.stimulus import Stimulus2D
+from path import path
 import logging
 import numpy as np
 import sys
 
 logger = logging.getLogger('mental_rotation.experiment')
+
+
+# load configuration
+config = SafeConfigParser()
+config.read("config.ini")
 
 
 def load_stim(file):
@@ -88,6 +94,7 @@ if __name__ == "__main__":
         help="force tasks to complete")
 
     args = parser.parse_args()
+    STIM_PATH = path(config.get("paths", "stimuli"))
     from_path = STIM_PATH.joinpath(args.from_path)
     to_path = STIM_PATH.joinpath(args.to_path)
 
