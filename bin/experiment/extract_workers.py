@@ -8,16 +8,11 @@ from ConfigParser import SafeConfigParser
 from snippets import datapackage as dpkg
 from path import path
 
-logger = logging.getLogger("mental_rotation.experiment")
-
-# load configuration
-config = SafeConfigParser()
-config.read("config.ini")
+logger = logging.getLogger("experiment.extract_workers")
 
 
-def get_table():
-    DATA_PATH = path(config.get("paths", "data"))
-    dbpath = DATA_PATH.joinpath("human", "workers.db")
+def get_table(data_path):
+    dbpath = data_path.joinpath("human", "workers.db")
 
     if not dbtools.Table.exists(dbpath, "workers"):
         logger.info("Creating new table 'workers'")
@@ -33,9 +28,8 @@ def get_table():
     return tbl
 
 
-def save_stability(version):
-    DATA_PATH = path(config.get("paths", "data"))
-    dp_path = DATA_PATH.joinpath("human", "%s.dpkg" % version)
+def extract_workers(version, data_path):
+    dp_path = data_path.joinpath("human", "%s.dpkg" % version)
 
     # load the datapackage
     logger.info("Loading '%s'", dp_path.relpath())
@@ -69,7 +63,7 @@ def save_stability(version):
     df['dataset'] = str(dp_path.name)
 
     # load the table we're saving it to
-    tbl = get_table()
+    tbl = get_table(data_path)
 
     KEY = ['pid']
     tbl_dupes = tbl.select(KEY, where=("dataset=?", dp_path.name))
@@ -86,16 +80,25 @@ def save_stability(version):
         logger.info("Adding %d new items", len(unique))
         tbl.insert(df_idx.ix[unique].reset_index().T.to_dict().values())
 
-if __name__ == "__main__":
-    VERSION = config.get("global", "version")
 
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(
-        "-v", "--version",
-        default=VERSION,
-        help="Experiment version.")
+        "-c", "--config",
+        default="config.ini",
+        help="path to configuration file")
 
     args = parser.parse_args()
-    save_stability(args.version)
+
+    config = SafeConfigParser()
+    config.read(args.config)
+
+    loglevel = config.get("global", "loglevel")
+    logging.basicConfig(level=loglevel)
+
+    version = config.get("global", "version")
+    data_path = path(config.get("paths", "data"))
+
+    extract_workers(version, data_path)

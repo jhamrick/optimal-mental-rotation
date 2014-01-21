@@ -82,10 +82,6 @@ def test_pre_experiment(config):
     assert code == 0
 
 
-def test_experiment_extract_workers(config):
-    pass
-
-
 def test_experiment_fetch_data(config):
     pass
 
@@ -94,11 +90,15 @@ def test_experiment_process_data(config):
     pass
 
 
-def test_model_generate_script(config):
+def test_experiment_extract_workers(config):
     pass
 
 
-def test_model_process_simulations(config):
+def test_post_experiment(config):
+    pass
+
+
+def test_model_generate_script(config):
     pass
 
 
@@ -106,9 +106,9 @@ def test_model_run_simulations(config):
     pass
 
 
-def test_model(config):
+def test_model_process_simulations(config):
     pass
 
 
-def test_post_experiment(config):
+def test_model(config):
     pass

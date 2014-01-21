@@ -8,7 +8,7 @@ import logging
 import numpy as np
 import sys
 
-logger = logging.getLogger('mental_rotation.experiment')
+logger = logging.getLogger('convert_old_stimuli')
 
 
 def load_stim(file):
@@ -53,8 +53,7 @@ def load_stim(file):
     return (stimname, rot, flipped), stim
 
 
-def convert_stims(from_path, to_path, force, config):
-    STIM_PATH = path(config.get("paths", "stimuli"))
+def convert_stims(from_path, to_path, stim_path, force):
     stim_path = STIM_PATH.joinpath(from_path)
     dest = STIM_PATH.joinpath(to_path)
 
@@ -104,6 +103,12 @@ if __name__ == "__main__":
         help="force tasks to complete")
 
     args = parser.parse_args()
+
     config = SafeConfigParser()
     config.read(args.config)
-    convert_stims(args.from_path, args.to_path, args.force, config)
+
+    loglevel = config.get("global", "loglevel")
+    logging.basicConfig(level=loglevel)
+
+    stim_path = path(config.get("paths", "stimuli"))
+    convert_stims(args.from_path, args.to_path, stim_path, args.force)

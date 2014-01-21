@@ -9,7 +9,7 @@ import json
 import logging
 import pandas as pd
 
-logger = logging.getLogger("mental_rotation.experiment")
+logger = logging.getLogger("experiment.generate_configs")
 
 
 def get_stiminfo(stim_path):
@@ -43,18 +43,14 @@ def get_stiminfo(stim_path):
     return info
 
 
-def save_configs(config, force):
-    version = config.get("global", "version")
-    STIM_PATH = path(config.get("paths", "stimuli"))
-    EXP_PATH = path(config.get("paths", "experiment"))
-
-    example_path = STIM_PATH.joinpath("%s-example" % version)
-    training_path = STIM_PATH.joinpath("%s-training" % version)
-    exp_path = STIM_PATH.joinpath(version)
+def save_configs(version, stim_path, exp_path, force):
+    example_path = stim_path.joinpath("%s-example" % version)
+    training_path = stim_path.joinpath("%s-training" % version)
+    stim_path = stim_path.joinpath(version)
 
     examples = map(get_stiminfo, example_path.listdir())
     training = map(get_stiminfo, training_path.listdir())
-    exp_stims = {stim.name: get_stiminfo(stim) for stim in exp_path.listdir()}
+    exp_stims = {stim.name: get_stiminfo(stim) for stim in stim_path.listdir()}
 
     stim_pairs = pd.DataFrame.from_dict(exp_stims).T
     stim_pairs['theta'] = stim_pairs['theta'].astype(int)
@@ -119,7 +115,7 @@ def save_configs(config, force):
         trial_config['experimentB'] = sorted(tB.T.to_dict().values())
         trial_config['examples'] = examples
 
-        trial_config_path = EXP_PATH.joinpath(
+        trial_config_path = exp_path.joinpath(
             "static", "json", "%s-cb0.json" % i).abspath()
 
         if trial_config_path.exists() and not force:
@@ -151,4 +147,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = SafeConfigParser()
     config.read(args.config)
-    save_configs(config, args.force)
+
+    loglevel = config.get("global", "loglevel")
+    logging.basicConfig(level=loglevel)
+
+    version = config.get("global", "version")
+    stim_path = path(config.get("paths", "stimuli"))
+    exp_path = path(config.get("paths", "experiment"))
+
+    save_configs(version, stim_path, exp_path, args.force)

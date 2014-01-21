@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from ConfigParser import SafeConfigParser
 from datetime import datetime
-from mental_rotation import DATA_PATH
 from path import path
 from snippets import datapackage as dpkg
 import dbtools
 import json
-import logging
 import numpy as np
 import pandas as pd
 import sys
+import logging
 
-logger = logging.getLogger('mental_rotation.experiment')
+logger = logging.getLogger("experiment.process_data")
 
 
 def str2bool(x):
@@ -53,7 +53,7 @@ def parse_timestamp(df, field):
     return timestamp
 
 
-def find_bad_participants(exp, data):
+def find_bad_participants(exp, data, dbpath):
     """Check participant data to make sure they pass the following
     conditions:
 
@@ -127,7 +127,6 @@ def find_bad_participants(exp, data):
             continue
 
         # see if they already did (a version of) the experiment
-        dbpath = DATA_PATH.joinpath("human", "workers.db")
         if dbtools.Table.exists(dbpath, "workers"):
             tbl = dbtools.Table(dbpath, "workers")
             datasets = tbl.select("dataset", where=("pid=?", pid))['dataset']
@@ -229,7 +228,7 @@ def load_meta(data_path):
     return meta, conds, fields
 
 
-def load_data(data_path, conds, fields):
+def load_data(data_path, db_path, conds, fields):
     """Load experiment trial data from the given path. Returns a pandas
     DataFrame.
 
@@ -283,7 +282,7 @@ def load_data(data_path, conds, fields):
         })
     p_info = pd\
         .DataFrame\
-        .from_dict(find_bad_participants(data_path.namebase, data))
+        .from_dict(find_bad_participants(data_path.namebase, data, db_path))
     participants = pd.merge(p_conds, p_info, on=['assignment', 'pid'])\
                      .sort('timestamp')\
                      .set_index('timestamp')
@@ -417,9 +416,9 @@ if __name__ == "__main__":
         formatter_class=ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(
-        "-e", "--exp",
-        required=True,
-        help="Experiment version.")
+        "-c", "--config",
+        default="config.ini",
+        help="Path to configuration file")
     parser.add_argument(
         "-f", "--force",
         action="store_true",
@@ -428,9 +427,19 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # load configuration
+    config = SafeConfigParser()
+    config.read(args.config)
+
+    loglevel = config.get("global", "loglevel")
+    logging.basicConfig(level=loglevel)
+
     # paths to the data and where we will save it
-    data_path = DATA_PATH.joinpath("human-raw", args.exp)
-    dest_path = DATA_PATH.joinpath("human", "%s.dpkg" % args.exp)
+    version = config.get("global", "version")
+    DATA_PATH = path(config.get("paths", "data"))
+    data_path = DATA_PATH.joinpath("human-raw", version)
+    dest_path = DATA_PATH.joinpath("human", "%s.dpkg" % version)
+    db_path = DATA_PATH.joinpath("human", "workers.db")
 
     # don't do anything if the datapackage already exists
     if dest_path.exists() and not args.force:
@@ -442,7 +451,7 @@ if __name__ == "__main__":
 
     # load the data
     meta, conds, fields = load_meta(data_path)
-    data, participants = load_data(data_path, conds, fields)
+    data, participants = load_data(data_path, db_path, conds, fields)
     events = load_events(data_path)
 
     # save it
