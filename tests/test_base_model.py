@@ -42,10 +42,16 @@ class TestBaseModel(object):
         if self.cls is BaseModel:
             return
 
-        fig, ax = plt.subplots()
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
-        m.plot(ax)
+
+        fig, ax = plt.subplots()
+        m.plot(ax, 0)
+        m.plot(ax, 1)
+        plt.close('all')
+
+        fig, ax = plt.subplots()
+        m.plot(ax, 0, f_S = lambda R, F: np.ones_like(R), color='g')
         plt.close('all')
 
     def test_R_i(self):

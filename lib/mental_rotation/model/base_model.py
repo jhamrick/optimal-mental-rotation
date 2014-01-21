@@ -197,8 +197,10 @@ class BaseModel(object):
 
         Ri = self.R_i[Fi]
         Si = self.S_i[Fi]
-        lines['approx'] = ax.plot(Ri, Si, '-', lw=2, color=color)
-        lines['points'] = ax.plot(Ri, Si, 'o', markersize=5, color=color)
+        ii = np.argsort(Ri)
+
+        lines['approx'] = ax.plot(Ri[ii], Si[ii], '-', lw=2, color=color)
+        lines['points'] = ax.plot(Ri[ii], Si[ii], 'o', markersize=5, color=color)
 
         return lines
 

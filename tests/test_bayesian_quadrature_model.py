@@ -43,10 +43,20 @@ class TestBayesianQuadratureModel(BaseModel):
     def test_log_lh_h1(self):
         pass
 
-    def test_plot(self):
+    def test_plot_bq(self):
         Xa, Xb, m = util.make_model(self.cls)
         m.sample()
-        m.plot()
+        m.plot_bq(0)
+        plt.close('all')
+        m.plot_bq(0, f_S=lambda R: np.ones_like(R))
+        plt.close('all')
+
+    def test_plot_all(self):
+        Xa, Xb, m = util.make_model(self.cls)
+        m.sample()
+        m.plot_bq(0)
+        plt.close('all')
+        m.plot_bq(0, f_S0=lambda R: np.ones_like(R), f_S1=lambda R: np.ones_like(R))
         plt.close('all')
 
     def test_S(self):

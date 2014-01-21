@@ -227,7 +227,7 @@ class BayesianQuadratureModel(BaseModel):
             len(R)
         except TypeError:
             R = np.array([R])
-        return self.bqs[F].l_mean(R)
+        return self.bqs[F].l_mean(R) / self._scale
 
     ##################################################################
     # Estimated Z
@@ -241,11 +241,11 @@ class BayesianQuadratureModel(BaseModel):
 
     def Z(self, F):
         if F == 0:
-            mean = self._m0
-            var = self._V0
+            mean = self._m0 / self._scale
+            var = self._V0 / (self._scale ** 2)
         elif F == 1:
-            mean = self._m1
-            var = self._V1
+            mean = self._m1 / self._scale
+            var = self._V1 / (self._scale ** 2)
         
         lower = mean - 1.96 * np.sqrt(var)
         upper = mean + 1.96 * np.sqrt(var)
@@ -265,7 +265,7 @@ class BayesianQuadratureModel(BaseModel):
 
         self.bqs[F].plot(f_l=f_l, xmin=-np.pi, xmax=np.pi)
 
-    def plot(self, f_S0=None, f_S1=None):
+    def plot_all(self, f_S0=None, f_S1=None):
         fig, axes = plt.subplots(2, 3)
 
         if f_S0 is not None:
@@ -304,19 +304,56 @@ class BayesianQuadratureModel(BaseModel):
         fig.set_figwidth(14)
         fig.set_figheight(7)
 
+    def plot(self, ax, F, f_S=None, color0='k', color=None):
+        lines = {}
+
+        R = np.linspace(-np.pi, np.pi, 1000)
+        if f_S is not None:
+            S = f_S(R, F)
+            lines['truth'] = ax.plot(R, S, '-', lw=2, color=color0)
+
+        Fi = self.F_i == F
+        if not Fi.any():
+            return lines
+
+        if color is None:
+            if F == 0:
+                color = 'r'
+            elif F == 1:
+                color = 'b'
+
+        S = self.S(R, F)
+        Ss = np.sqrt(self.bqs[F].l_var(R)) / self._scale
+        lower = S - Ss
+        upper = S + Ss
+
+        lines['stddev'] = ax.fill_between(R, lower, upper, color=color, alpha=0.3)
+        lines['approx'] = ax.plot(R, S, '-', lw=2, color=color)
+
+        Ri = self.R_i[Fi]
+        Si = self.S_i[Fi]
+        lines['points'] = ax.plot(Ri, Si, 'o', markersize=5, color=color)
+
+        return lines
+
     ##################################################################
     # Misc
 
     def hypothesis_test(self):
-        N0 = scipy.stats.norm(self._m0, np.sqrt(self._V0))
+        m0 = self._m0 / self._scale
+        V0 = self._V0 / (self._scale ** 2)
+        m1 = self._m1 / self._scale
+        V1 = self._V1 / (self._scale ** 2)
+
+        N0 = scipy.stats.norm(m0, np.sqrt(V0))
         if N0.cdf(0) > 0.025:
             return None
 
-        N1 = scipy.stats.norm(self._m1, np.sqrt(self._V1))
+        N1 = scipy.stats.norm(m1, np.sqrt(V1))
         if N1.cdf(0) > 0.025:
             return None
 
-        N = scipy.stats.norm(self._m0 - self._m1, np.sqrt(self._V0 + self._V1))
+        N = scipy.stats.norm(m0 - m1, np.sqrt(V0 + V1))
         test = N.cdf(0)
 
         if test > 0.975:
@@ -328,16 +365,16 @@ class BayesianQuadratureModel(BaseModel):
 
     @property
     def log_lh_h0(self):
-        m = self._m0
-        s = np.sqrt(self._V0)
+        m = self._m0 / self._scale
+        s = np.sqrt(self._V0) / self._scale
         lower = m - 1.96 * s
         upper = m + 1.96 * s
         return np.array([m, lower, upper])
 
     @property
     def log_lh_h1(self):
-        m = self._m1
-        s = np.sqrt(self._V1)
+        m = self._m1 / self._scale
+        s = np.sqrt(self._V1) / self._scale
         lower = m - 1.96 * s
         upper = m + 1.96 * s
         return np.array([m, lower, upper])
