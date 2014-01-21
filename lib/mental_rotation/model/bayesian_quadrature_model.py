@@ -9,7 +9,6 @@ import pickle
 from bayesian_quadrature import BQ
 from gp import PeriodicKernel
 
-from .. import config
 from . import BaseModel
 
 logger = logging.getLogger("mental_rotation.model.bq")
@@ -40,23 +39,14 @@ class BayesianQuadratureModel(BaseModel):
     _params = ['h', 'w']
 
     def __init__(self, *args, **kwargs):
-        if 'bq_opts' in kwargs:
-            bq_opts = kwargs['bq_opts']
-            del kwargs['bq_opts']
-        else:
-            bq_opts = {}
+        self.bq_opts = kwargs['bq_opts']
+        del kwargs['bq_opts']
 
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
 
-        self.bq_opts = {
-            'n_candidate': config.getint("bq", "n_candidate"),
-            'x_mean': config.getfloat("bq", "R_mu"),
-            'x_var': 1. / config.getfloat("bq", "R_kappa"),
-            'candidate_thresh': self.opts['step'] / 2.,
-            'kernel': PeriodicKernel,
-            'optim_method': 'Powell'
-        }
-        self.bq_opts.update(bq_opts)
+        self.bq_opts['candidate_thresh'] = self.opts['step'] / 2.
+        self.bq_opts['kernel'] = PeriodicKernel
+        self.bq_opts['optim_method'] = 'Powell'
 
         self.bqs = {}
         self._m0 = None

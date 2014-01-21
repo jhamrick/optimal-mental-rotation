@@ -1,10 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pytest
+
 from path import path
+from copy import deepcopy
+
 from mental_rotation.model import BaseModel, model
 from . import util
-from copy import deepcopy
-import pytest
 
 
 class TestBaseModel(object):
