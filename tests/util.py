@@ -28,6 +28,9 @@ def setup_config(tmp_path):
     config.set('paths', 'simulations', tmp_path.joinpath('data/sim-raw'))
     config.set('paths', 'resources', tmp_path.joinpath('resources'))
     config.set('paths', 'sim_scripts', tmp_path.joinpath('resources/sim-scripts'))
+
+    config.add_section('experiment')
+    config.set('experiment', 'remote_dest', tmp_path.joinpath('deploy'))
     
     config.add_section('model')
     config.set('model', 'S_sigma', '0.15')

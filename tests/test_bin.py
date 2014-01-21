@@ -84,25 +84,12 @@ def test_experiment_generate_configs(config_real_stimuli):
     assert code == 0
 
 
-def test_experiment_deploy_experiment(tmpdir, config_real_experiment):
+def test_experiment_deploy_experiment(config_real_experiment):
     config = config_real_experiment
 
-    pth = tmpdir.mkdir("exp")
     code = sp.call([
         "./bin/experiment/deploy_experiment.py", 
-        "-c", config,
-        "-H", "localhost",
-        "-n",
-        pth.strpath
-    ])
-    assert code == 0
-
-    code = sp.call([
-        "./bin/experiment/deploy_experiment.py", 
-        "-c", config,
-        "-H", "localhost",
-        pth.strpath
-    ])
+        "-c", config])
     assert code == 0
 
 
