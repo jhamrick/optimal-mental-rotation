@@ -74,17 +74,20 @@ class ThresholdModel(BaseModel):
     ##################################################################
     # Plotting methods
 
-    def plot(self, ax):
+    def plot(self, ax, F=None):
         Fi = self.F_i
 
-        Ri0 = self.R_i[Fi == 0]
-        Si0 = self.S_i[Fi == 0]
+        if F is None or F == 0:
+            Ri0 = self.R_i[Fi == 0]
+            Si0 = self.S_i[Fi == 0]
+            ax.plot(Ri0, Si0, 'r-', lw=2)
+            ax.plot(Ri0, Si0, 'ro', markersize=5)
 
-        Ri1 = self.R_i[Fi == 1]
-        Si1 = self.S_i[Fi == 1]
-
-        ax.plot(Ri0, Si0, 'ro', markersize=7)
-        ax.plot(Ri1, Si1, 'bo', markersize=7)
+        if F is None or F == 1:
+            Ri1 = self.R_i[Fi == 1]
+            Si1 = self.S_i[Fi == 1]
+            ax.plot(Ri1, Si1, 'b-', lw=2)
+            ax.plot(Ri1, Si1, 'bo', markersize=5)
 
     ##################################################################
     # Copying/Saving
