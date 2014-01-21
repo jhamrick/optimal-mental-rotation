@@ -1,152 +1,66 @@
 #!/usr/bin/env python
 
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 import argparse
 import multiprocessing as mp
 from mental_rotation import MODELS
-from mental_rotation.sims.server import run_server
-from mental_rotation.sims.client import run_client
+from mental_rotation.sims.manager import run
 from ConfigParser import SafeConfigParser
 from path import path
 
-# load configuration
-config = SafeConfigParser()
-config.read("config.ini")
+
+def make_params(model, config):
+    version = config.get("global", "version")
+    model_opts = {
+        'S_sigma': config.getfloat("model", "S_sigma")
+    }
+
+    sim_path = path(config.get("paths", "simulations"))
+    sim_root = path(sim_path.joinpath(model, version))
+    stim_path = path(config.get("paths", "stimuli"))
+    stim_paths = stim_path.joinpath(version).listdir()
+
+    params = {
+        'model': model,
+        'version': version,
+        'num_samples': config.getint(model, 'num_samples'),
+        'chunksize': config.getint(model, 'chunksize'),
+        'sim_root': str(sim_root),
+        'tasks_path': str(sim_root.joinpath("tasks.json")),
+        'completed_path': str(sim_root.joinpath("completed.json")),
+        'stim_paths': map(str, stim_paths),
+        'model_opts': model_opts,
+        'loglevel': config.get("global", "loglevel")
+    }
+
+    return params
 
 
-def get_params(model, version, sim_path, script_path):
-    """Load the parameters from the simulation script."""
-    return script
-
-
-def parse_and_run_server(parser_args):
-    SIM_PATH = path(config.get("paths", "simulations"))
-    SCRIPT_PATH = path(config.get("paths", "sim_scripts"))
-
-    model = parser_args.model
-    version = parser_args.version
-    sim_root = SIM_PATH.joinpath(model, version)
-    script_root = SCRIPT_PATH.joinpath(model)
-    script_file = script_root.joinpath("%s.json" % version)
-    with script_file.open("r") as fid:
-        script = json.load(fid)
-    script["script_root"] = str(script_root)
-    script["sim_root"] = str(sim_root)
-    script["tasks_path"] = str(sim_root.joinpath("tasks.json"))
-
-    kwargs = dict(parser_args._get_kwargs())
-    del kwargs['model']
-    del kwargs['version']
-    del kwargs['func']
-    run_server(script, **kwargs)
-
-
-def parse_and_run_client(parser_args):
-    kwargs = dict(parser_args._get_kwargs())
-    del kwargs['func']
-    run_client(**kwargs)
-
-
-def create_server_parser(parser):
-    VERSION = config.get("global", "version")
-
-    def parse_address(address):
-        host, port = address.split(":")
-        return host, int(port)
+if __name__ == "__main__":
+    parser = ArgumentParser(
+        formatter_class=ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(
         "-m", "--model",
         required=True,
         choices=MODELS,
-        help="Model name.")
+        help="Name of the model to use.")
     parser.add_argument(
-        "-v", "--version",
-        default=VERSION,
-        help="Experiment/code version.")
-    parser.add_argument(
-        "-a", "--address",
-        default=("127.0.0.1", 50000),
-        type=parse_address,
-        help="Address (host:port) of server.")
-    parser.add_argument(
-        "-k", "--authkey",
-        default=None,
-        help="Server authentication key.")
+        "-c", "--config",
+        default="config.ini",
+        help="path to configuration file")
     parser.add_argument(
         "-f", "--force",
         action="store_true",
-        help="Force all tasks to be put on the queue.")
-    parser.add_argument(
-        "-l", "--loglevel",
-        default="INFO",
-        dest="loglevel",
-        type=int,
-        help="Logging verbosity level.")
-    parser.set_defaults(func=parse_and_run_server)
-
-
-def create_client_parser(parser):
-    def parse_address(address):
-        host, port = address.split(":")
-        return host, int(port)
-
-    parser.add_argument(
-        "-s", "--save",
-        action="store_true",
-        help="Save data to disk.")
-    parser.add_argument(
-        "-T", "--timeout",
-        default=310,
-        type=int,
-        help="Timeout (in seconds) before process restarts.")
-    parser.add_argument(
-        "-a", "--address",
-        default=("127.0.0.1", 50000),
-        type=parse_address,
-        help="Address (host:port) of server.")
-    parser.add_argument(
-        "-k", "--authkey",
-        default=None,
-        help="Server authentication key.")
-    parser.add_argument(
-        "-n", "--num-processes",
-        default=mp.cpu_count(),
-        dest="num_procs",
-        type=int,
-        help="Number of client processes.")
-    parser.add_argument(
-        "-m", "--max-tries",
-        default=3,
-        dest="max_tries",
-        type=int,
-        help="Number of times to try running a task.")
-    parser.add_argument(
-        "-l", "--loglevel",
-        default="INFO",
-        dest="loglevel",
-        type=str,
-        help="Logging verbosity level.")
-
-    parser.set_defaults(func=parse_and_run_client)
-
-
-
-if __name__ == "__main__":
-    # create main parser
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    subparsers = parser.add_subparsers()
-
-    # create server parser
-    server = subparsers.add_parser(
-        "server",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    create_server_parser(server)
-
-    # create client parser
-    client = subparsers.add_parser(
-        "client",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    create_client_parser(client)
+        default=False,
+        help="Force script to be generated.")
 
     args = parser.parse_args()
-    args.func(args)
+
+    # load configuration
+    config = SafeConfigParser()
+    config.read(args.config)
+    model = args.model
+
+    params = make_params(model, config)
+    run(params, args.force)
