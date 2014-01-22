@@ -102,8 +102,15 @@ def X0():
 
 
 def pytest_generate_tests(metafunc):
-    theta = [39]
-    flipped = [True, False]
+    if hasattr(metafunc.function, "full"):
+        theta = range(0, 360, 20)
+        flipped = [True, False]
+    elif hasattr(metafunc.function, "once"):
+        theta = [0]
+        flipped = [False]
+    else:
+        theta = [39]
+        flipped = [True, False]
 
     all_argnames = ['theta', 'flipped', 'Xa', 'Xb', 'model']
     argnames = [x for x in metafunc.fixturenames if x in all_argnames]

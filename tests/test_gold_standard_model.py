@@ -1,5 +1,5 @@
 import numpy as np
-import pymc
+import pytest
 
 from mental_rotation.model import GoldStandardModel
 from mental_rotation.model.model import log_similarity
@@ -59,6 +59,7 @@ class TestGoldStandardModel(BaseModel):
         assert model.log_S(0, 0) == model.log_S(2 * np.pi, 0)
         assert model.log_S(0, 1) == model.log_S(2 * np.pi, 1)
 
+    @pytest.mark.full
     def test_hypothesis(self, flipped, model):
         model.sample()
         assert model.hypothesis_test() == int(flipped)

@@ -13,6 +13,7 @@ class TestBaseModel(object):
 
     cls = BaseModel
 
+    @pytest.mark.full
     def test_priors(self, Xa, Xb, model):
         assert np.allclose(model.model['Xa'].value, Xa.vertices)
         assert np.allclose(model.model['Xb'].value, Xb.vertices)
@@ -24,6 +25,7 @@ class TestBaseModel(object):
         assert np.allclose(model.model['Xr'].value, Xa.vertices)
         assert np.allclose(model.model['Xr'].value, model.model['Xa'].value)
 
+    @pytest.mark.full
     def test_similarity(self, Xa, Xb, model):
         log_S = log_similarity(
             Xb.vertices,
@@ -37,6 +39,7 @@ class TestBaseModel(object):
             model.opts['S_sigma'])
         assert log_S == model.model['log_S'].logp
 
+    @pytest.mark.once
     def test_plot(self, model):
         if self.cls is BaseModel:
             return
@@ -90,6 +93,7 @@ class TestBaseModel(object):
         model.sample()
         model.print_stats()
 
+    @pytest.mark.once
     def test_sample_and_save(self, model, tmppath):
         if self.cls is BaseModel:
             return
@@ -97,12 +101,14 @@ class TestBaseModel(object):
         model.sample()
         model.save(tmppath)
 
+    @pytest.mark.once
     def test_save(self, model, tmppath):
         if self.cls is BaseModel:
             return
 
         model.save(tmppath)
 
+    @pytest.mark.once
     def test_force_save(self, model, tmppath):
         if self.cls is BaseModel:
             return
@@ -112,6 +118,7 @@ class TestBaseModel(object):
             model.save(tmppath)
         model.save(tmppath, force=True)
 
+    @pytest.mark.once
     def test_load(self, model, tmppath):
         if self.cls is BaseModel:
             return
@@ -125,6 +132,7 @@ class TestBaseModel(object):
         m2 = self.cls.load(tmppath)
         m2.print_stats()
 
+    @pytest.mark.once
     def test_load_and_sample(self, model, tmppath):
         if self.cls is BaseModel:
             return
@@ -134,6 +142,7 @@ class TestBaseModel(object):
         m2.sample()
         m2.print_stats()
 
+    @pytest.mark.once
     def test_sample_again(self, model):
         if self.cls is BaseModel:
             return

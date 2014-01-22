@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from mental_rotation.model import OracleModel
 from mental_rotation.model.model import log_similarity
@@ -25,6 +26,7 @@ class TestOracleModel(BaseModel):
 
         assert np.allclose(log_S, model.log_S_i)
 
+    @pytest.mark.full
     def test_correct(self, theta, flipped, model):
         model.sample()
 
