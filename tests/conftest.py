@@ -103,7 +103,7 @@ def X0():
 
 def pytest_generate_tests(metafunc):
     if hasattr(metafunc.function, "full"):
-        theta = range(0, 360, 20)
+        theta = sorted(range(0, 360, 45) + [39])
         flipped = [True, False]
     elif hasattr(metafunc.function, "once"):
         theta = [0]

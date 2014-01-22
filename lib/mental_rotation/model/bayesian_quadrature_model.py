@@ -356,19 +356,11 @@ class BayesianQuadratureModel(BaseModel):
 
     @property
     def log_lh_h0(self):
-        m = self._m0 / self._scale
-        s = np.sqrt(self._V0) / self._scale
-        lower = m - 1.96 * s
-        upper = m + 1.96 * s
-        return np.array([m, lower, upper])
+        return self.log_Z(0)
 
     @property
     def log_lh_h1(self):
-        m = self._m1 / self._scale
-        s = np.sqrt(self._V1) / self._scale
-        lower = m - 1.96 * s
-        upper = m + 1.96 * s
-        return np.array([m, lower, upper])
+        return self.log_Z(1)
 
     def print_stats(self):
         llh0 = self.log_lh_h0

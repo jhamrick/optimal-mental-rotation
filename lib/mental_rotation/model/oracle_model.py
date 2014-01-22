@@ -53,7 +53,7 @@ class OracleModel(BaseModel):
                 sintheta = R[1, 0]
                 theta = np.arctan2(sintheta, costheta)
 
-        return theta, h
+        return self._unwrap(theta), h
 
     def draw(self):
         if self._current_iter == 0:

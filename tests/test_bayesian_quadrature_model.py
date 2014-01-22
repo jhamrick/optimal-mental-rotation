@@ -10,92 +10,67 @@ from . import util
 class TestBayesianQuadratureModel(BaseModel):
 
     cls = BayesianQuadratureModel
+    cls._iter = 3
 
-    def test_log_S_i(self):
-        pass
+    @pytest.mark.xfail(reason="not implemented")
+    def test_log_S_i(self, model):
+        raise NotImplementedError
 
-    def test_S(self):
-        Xa, Xb, m = util.make_model(self.cls)
-        m.sample()
+    def test_S(self, model):
+        model.sample()
         R = np.linspace(0, 2 * np.pi, 361)
-        assert np.allclose(m.log_S(R, 0), np.log(m.S(R, 0)))
-        assert np.allclose(m.log_S(R, 1), np.log(m.S(R, 1)))
-        assert not np.allclose(m.S(R, 0), m.S(R, 1))
+        assert np.allclose(model.log_S(R, 0), np.log(model.S(R, 0)))
+        assert np.allclose(model.log_S(R, 1), np.log(model.S(R, 1)))
+        assert not np.allclose(model.S(R, 0), model.S(R, 1))
 
-    def test_log_S(self):
-        pass
+    @pytest.mark.xfail(reason="not implemented")
+    def test_log_S(self, model):
+        raise NotImplementedError
 
-    def test_Z(self):
-        Xa, Xb, m = util.make_model(self.cls)
-        m.sample()
-        assert np.allclose(m.log_Z(0), np.log(m.Z(0)))
-        assert np.allclose(m.log_Z(1), np.log(m.Z(1)))
+    def test_Z(self, model):
+        model.sample()
+        assert np.allclose(model.log_Z(0), np.log(model.Z(0)))
+        assert np.allclose(model.log_Z(1), np.log(model.Z(1)))
 
-    def test_log_lh_h0(self):
-        Xa, Xb, m = util.make_model(self.cls)
-        m.sample()
-        log_p_Xa = m.model['Xa'].logp
-        log_Z = m.log_Z(0)
-        assert (m.log_lh_h0 == (log_p_Xa + log_Z)).all()
-        log_Z = m.log_Z(1)
-        assert (m.log_lh_h1 == (log_p_Xa + log_Z)).all()
+    def test_log_lh(self, model):
+        model.sample()
+        assert (model.log_lh_h0 == model.log_Z(0)).all()
+        assert (model.log_lh_h1 == model.log_Z(1)).all()
 
-    def test_log_lh_h1(self):
-        pass
+    @pytest.mark.xfail(reason="not implemented")
+    def test_log_lh_h0(self, model):
+        raise NotImplementedError
 
-    def test_plot_bq(self):
-        Xa, Xb, m = util.make_model(self.cls)
-        m.sample()
-        m.plot_bq(0)
+    @pytest.mark.xfail(reason="not implemented")
+    def test_log_lh_h1(self, model):
+        raise NotImplementedError
+
+    def test_plot_bq(self, model):
+        model.sample()
+        model.plot_bq(0)
         plt.close('all')
-        m.plot_bq(0, f_S=lambda R: np.ones_like(R))
-        plt.close('all')
-
-    def test_plot_all(self):
-        Xa, Xb, m = util.make_model(self.cls)
-        m.sample()
-        m.plot_bq(0)
-        plt.close('all')
-        m.plot_bq(0, f_S0=lambda R: np.ones_like(R), f_S1=lambda R: np.ones_like(R))
+        model.plot_bq(0, f_S=lambda R: np.ones_like(R))
         plt.close('all')
 
-    def test_S(self):
-        if self.cls is BaseModel:
-            return
+    def test_plot_all(self, model):
+        model.sample()
+        model.plot_all()
+        plt.close('all')
+        model.plot_all(f_S0=lambda R: np.ones_like(R), f_S1=lambda R: np.ones_like(R))
+        plt.close('all')
 
-        Xa, Xb, m = util.make_model(self.cls)
-        m.sample()
+    def test_S(self, model):
+        model.sample()
         R = np.linspace(0, 2 * np.pi, 361)
 
-        tl = m.log_S(R, 0)
-        l = m.S(R, 0)
+        tl = model.log_S(R, 0)
+        l = model.S(R, 0)
         pos = l > 0
         assert np.allclose(tl[pos], np.log(l[pos]))
 
-        tl = m.log_S(R, 1)
-        l = m.S(R, 1)
+        tl = model.log_S(R, 1)
+        l = model.S(R, 1)
         pos = l > 0
         assert np.allclose(tl[pos], np.log(l[pos]))
 
-        assert not np.allclose(m.S(R, 0), m.S(R, 1))
-
-
-    def test_dZ_dR(self):
-        if self.cls is BaseModel:
-            return
-
-        Xa, Xb, m = util.make_model(self.cls)
-        m.sample()
-        R = np.linspace(0, 2 * np.pi, 361)
-
-        tl = m.log_dZ_dR(R, 0)
-        l = m.dZ_dR(R, 0)
-        pos = l > 0
-        assert np.allclose(tl[pos], np.log(l[pos]))
-
-        tl = m.log_dZ_dR(R, 1)
-        l = m.dZ_dR(R, 1)
-        pos = l > 0
-        assert np.allclose(tl[pos], np.log(l[pos]))
-
-        assert not np.allclose(m.dZ_dR(R, 0), m.dZ_dR(R, 1))
+        assert not np.allclose(model.S(R, 0), model.S(R, 1))
