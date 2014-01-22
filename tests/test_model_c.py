@@ -1,11 +1,12 @@
 import numpy as np
+import pytest
+from path import path
 from mental_rotation.stimulus import Stimulus2D
-from mental_rotation.model import model_c
-from mental_rotation.model import model
+from mental_rotation.model import model_c, model
 from . import util
 
+
 def test_log_prior():
-    util.seed()
     for i in xrange(5):
         stim = Stimulus2D.random(3).vertices
         assert model_c.log_prior(stim) == -2.9826069522587453
@@ -39,11 +40,9 @@ def test_log_factorial():
 
 
 def test_log_similarity():
-    util.seed()
     for i in xrange(5):
         stim1 = Stimulus2D.random(6).vertices
         stim2 = Stimulus2D.random(6).vertices
         s1 = model_c.log_similarity(stim1, stim2, 0.15)
         s2 = model.slow_log_similarity(stim1, stim2, 0.15)
         assert np.allclose(s1, s2)
-

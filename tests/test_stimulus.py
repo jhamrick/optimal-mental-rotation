@@ -1,28 +1,24 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pytest
+from path import path
 from tempfile import NamedTemporaryFile
 from mental_rotation import Stimulus2D
 
-from . import util
-
 
 def test_vertices_ndim():
-    util.seed()
     vertices = np.random.rand(8)
     with pytest.raises(ValueError):
         Stimulus2D(vertices)
 
 
 def test_vertices_shape():
-    util.seed()
     vertices = np.random.rand(8, 3)
     with pytest.raises(ValueError):
         Stimulus2D(vertices)
 
 
 def test_vertices_copy():
-    util.seed()
     vertices = np.random.rand(8, 2)
     stim = Stimulus2D(vertices)
     assert vertices is not stim._v
@@ -47,103 +43,94 @@ def test_random():
         stim = Stimulus2D.random((8,))
 
 
-def test_rotate():
-    stim = util.make_stim()
-    stim.rotate(90)
-    assert stim.operations == [["rotate", 90.0]]
-    assert (stim.vertices != stim._v).any()
+def test_rotate(X0):
+    X0.rotate(90)
+    assert X0.operations == [["rotate", 90.0]]
+    assert (X0.vertices != X0._v).any()
 
 
-def test_rotate4():
-    stim = util.make_stim()
-    stim.rotate(90)
-    stim.rotate(90)
-    stim.rotate(90)
-    stim.rotate(90)
-    assert stim.operations == [["rotate", 90.0]]*4
-    assert np.allclose(stim.vertices, stim._v)
+def test_rotate4(X0):
+    X0.rotate(90)
+    X0.rotate(90)
+    X0.rotate(90)
+    X0.rotate(90)
+    assert X0.operations == [["rotate", 90.0]]*4
+    assert np.allclose(X0.vertices, X0._v)
 
 
-def test_flip2():
-    stim = util.make_stim()
-    stim.flip([1, 0])
-    stim.flip([1, 0])
-    assert stim.operations == [["flip", [1.0, 0.0]]]*2
-    assert np.allclose(stim.vertices, stim._v)
+def test_flip2(X0):
+    X0.flip([1, 0])
+    X0.flip([1, 0])
+    assert X0.operations == [["flip", [1.0, 0.0]]]*2
+    assert np.allclose(X0.vertices, X0._v)
 
 
-def test_equality():
-    stim1 = util.make_stim()
-    stim2 = util.make_stim()
-    assert stim1 == stim1
-    assert stim2 == stim2
-    assert stim1 == stim2
-    assert not (stim1 != stim2)
+def test_equality(X0):
+    X1 = Stimulus2D(X0.vertices.copy(), sort=False)
+    X2 = Stimulus2D(X0.vertices.copy(), sort=False)
 
-    stim2.rotate(90)
-    assert stim1 != stim2
-    v = stim2.vertices
-    stim2.rotate(90)
-    stim2.rotate(90)
-    stim2.rotate(90)
-    assert stim1 != stim2
+    assert X0 == X0
+    assert X1 == X1
+    assert X0 == X1
+    assert not (X0 != X1)
 
-    stim2 = util.make_stim()
-    assert stim1 == stim2
-    stim2._v[:] = v
-    assert stim1 != stim2
+    X1.rotate(90)
+    assert X0 != X1
+    v = X1.vertices
+    X1.rotate(90)
+    X1.rotate(90)
+    X1.rotate(90)
+    assert X0 != X1
+
+    assert X0 == X2
+    X2._v[:] = v
+    assert X0 != X2
 
 
-def test_save():
+def test_save(X0):
     fh = NamedTemporaryFile()
-    stim = util.make_stim()
     with pytest.raises(IOError):
-        stim.save(fh.name, force=False)
-    stim.save(fh.name, force=True)
+        X0.save(fh.name, force=False)
+    X0.save(fh.name, force=True)
 
 
-def test_io():
+def test_io(X0):
     fh = NamedTemporaryFile()
-    stim1 = util.make_stim()
-    stim1.save(fh.name, force=True)
-    stim2 = Stimulus2D.load(fh.name)
-    assert stim1 == stim2
+    X0.save(fh.name, force=True)
+    X1 = Stimulus2D.load(fh.name)
+    assert X0 == X1
 
 
-def test_copy_from_state():
-    stim1 = util.make_stim()
-    stim1.rotate(90)
-    stim2 = stim1.copy_from_state()
-    assert stim1 == stim2
-    assert stim1 is not stim2
-    stim1.rotate(90)
-    assert stim1 != stim2
+def test_copy_from_state(X0):
+    X0.rotate(90)
+    X1 = X0.copy_from_state()
+    assert X0 == X1
+    assert X0 is not X1
+    X0.rotate(90)
+    assert X0 != X1
 
 
-def test_copy_from_vertices():
-    stim1 = util.make_stim()
-    stim1.rotate(90)
-    stim2 = stim1.copy_from_vertices()
-    assert stim1 != stim2
-    assert np.allclose(stim1.vertices, stim2.vertices)
-    assert np.allclose(stim1.vertices, stim2._v)
-    assert not np.allclose(stim1._v, stim2.vertices)
-    assert not np.allclose(stim1._v, stim2._v)
+def test_copy_from_vertices(X0):
+    X0.rotate(90)
+    X1 = X0.copy_from_vertices()
+    assert X0 != X1
+    assert np.allclose(X0.vertices, X1.vertices)
+    assert np.allclose(X0.vertices, X1._v)
+    assert not np.allclose(X0._v, X1.vertices)
+    assert not np.allclose(X0._v, X1._v)
 
 
-def test_copy_from_initial():
-    stim1 = util.make_stim()
-    stim1.rotate(90)
-    stim2 = stim1.copy_from_initial()
-    assert stim1 != stim2
-    assert np.allclose(stim1._v, stim2.vertices)
-    assert np.allclose(stim1._v, stim2._v)
-    assert not np.allclose(stim1.vertices, stim2._v)
-    assert not np.allclose(stim1.vertices, stim2.vertices)
+def test_copy_from_initial(X0):
+    X0.rotate(90)
+    X1 = X0.copy_from_initial()
+    assert X0 != X1
+    assert np.allclose(X0._v, X1.vertices)
+    assert np.allclose(X0._v, X1._v)
+    assert not np.allclose(X0.vertices, X1._v)
+    assert not np.allclose(X0.vertices, X1.vertices)
 
 
-def test_plot():
-    stim = util.make_stim()
+def test_plot(X0):
     fig, ax = plt.subplots()
-    stim.plot(ax)
+    X0.plot(ax)
     plt.close('all')

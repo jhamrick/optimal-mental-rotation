@@ -3,20 +3,17 @@ import numpy as np
 from mental_rotation.model import ThresholdModel
 from mental_rotation.model.model import log_similarity
 from .test_base_model import TestBaseModel as BaseModel
-from . import util
 
 
 class TestThresholdModel(BaseModel):
 
     cls = ThresholdModel
 
-    def test_log_S_i(self, basic_stim, model):
-        theta, flipped, Xa, Xb = basic_stim
-        m = model(Xa, Xb)
-        m.sample()
+    def test_log_S_i(self, Xa, Xb, model):
+        model.sample()
 
-        R = m.R_i
-        F = m.F_i
+        R = model.R_i
+        F = model.F_i
         log_S = np.empty_like(R)
 
         for i, (r, f) in enumerate(zip(R, F)):
@@ -25,6 +22,6 @@ class TestThresholdModel(BaseModel):
                 Xr.flip(np.array([0, 1]))
             Xr.rotate(np.degrees(r))
             log_S[i] = log_similarity(
-                Xr.vertices, Xb.vertices, m.opts['S_sigma'])
+                Xr.vertices, Xb.vertices, model.opts['S_sigma'])
 
-        assert np.allclose(log_S, m.log_S_i)
+        assert np.allclose(log_S, model.log_S_i)

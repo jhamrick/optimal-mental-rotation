@@ -1,36 +1,13 @@
-from .util import setup_config
-
-import sys
-import os
 import subprocess as sp
 import pytest
-import shutil
-from path import path
 
 
-@pytest.fixture(scope="module")
-def config(request):
-    tmp_path = path("/tmp/mental_rotation")
-    shutil.copytree("./experiment", tmp_path.joinpath("experiment"))
-
-    config_path = tmp_path.joinpath('config.ini')
-    config = setup_config(tmp_path)
-    with open(config_path, 'w') as fh:
-        config.write(fh)
-
-    def fin():
-        tmp_path.rmtree_p()
-    request.addfinalizer(fin)
-
-    return config_path
-
-
-def test_convert_old_stimuli(config):
+def test_convert_old_stimuli(tmp_config):
     code = sp.call([
         "./bin/convert_old_stimuli.py", 
         "--from", "old", 
         "--to", "new", 
-        "-c", config])
+        "-c", tmp_config])
     assert code == 0
 
     code = sp.call([
@@ -38,73 +15,76 @@ def test_convert_old_stimuli(config):
         "--from", "old", 
         "--to", "new", 
         "-f", 
-        "-c", config])
+        "-c", tmp_config])
     assert code == 0
 
 
-def test_experiment_generate_configs(config):
+@pytest.mark.usefixtures("tmp_experiment")
+def test_experiment_generate_configs(tmp_config):
     code = sp.call([
         "./bin/experiment/generate_configs.py", 
-        "-c", config])
+        "-c", tmp_config])
     assert code == 0
 
     code = sp.call([
         "./bin/experiment/generate_configs.py", 
-        "-c", config, "-f"])
+        "-c", tmp_config, "-f"])
     assert code == 0
 
 
-def test_experiment_deploy_experiment(config):
+@pytest.mark.usefixtures("tmp_experiment")
+def test_experiment_deploy_experiment(tmp_config):
     code = sp.call([
         "./bin/experiment/deploy_experiment.py", 
-        "-c", config])
+        "-c", tmp_config])
     assert code == 0
 
 
-def test_pre_experiment(config):
+@pytest.mark.usefixtures("tmp_experiment")
+def test_pre_experiment(tmp_config):
     code = sp.call([
         "./bin/pre_experiment.py", 
-        "-c", config])
+        "-c", tmp_config])
     assert code == 1
 
     code = sp.call([
         "./bin/pre_experiment.py", 
-        "-c", config,
+        "-c", tmp_config,
         "-a"
     ])
     assert code == 0
 
     code = sp.call([
         "./bin/pre_experiment.py", 
-        "-c", config,
+        "-c", tmp_config,
         "-a", "-f"
     ])
     assert code == 0
 
 
-def test_experiment_fetch_data(config):
+def test_experiment_fetch_data(tmp_config):
     pass
 
 
-def test_experiment_process_data(config):
+def test_experiment_process_data(tmp_config):
     pass
 
 
-def test_experiment_extract_workers(config):
+def test_experiment_extract_workers(tmp_config):
     pass
 
 
-def test_post_experiment(config):
+def test_post_experiment(tmp_config):
     pass
 
 
-def test_model_run_simulations(config):
+def test_model_run_simulations(tmp_config):
     pass
 
 
-def test_model_process_simulations(config):
+def test_model_process_simulations(tmp_config):
     pass
 
 
-def test_model(config):
+def test_model(tmp_config):
     pass
