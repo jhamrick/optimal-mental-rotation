@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.stats
-import snippets.graphing as sg
 import json
+import matplotlib.pyplot as plt
 
 from path import path
 from . import model
@@ -199,6 +199,33 @@ class BaseModel(object):
         lines['points'] = ax.plot(Ri[ii], Si[ii], 'o', markersize=5, color=color)
 
         return lines
+
+    def plot_trace(self, ax, legend=True):
+        Fi = self.F_i
+        Si = self.log_S_i - self._log_const
+        Si = (Si - Si.min() + 1) * 10
+        Ri = self.R_i
+        ti = np.arange(Ri.size)
+        ci = np.empty((Ri.size, 3))
+        ci[Fi == 0] = np.array([1, 0, 0])
+        ci[Fi == 1] = np.array([0, 0, 1])
+
+        ax.plot(ti, Ri, 'k-')
+        ax.scatter(ti, Ri, c=ci, s=Si, edgecolor=ci)
+    
+        ax.set_xlabel("Action #", fontsize=14)
+        ax.set_xlim(0, Ri.size - 1)
+ 
+        ax.set_ylim(np.pi+0.4, -np.pi-0.4)
+        ax.set_yticks([np.pi, np.pi / 2., 0, -np.pi / 2., -np.pi])
+        ax.set_yticklabels([180, 90, 0, -90, -180])
+
+        if legend:
+            p0 = plt.Rectangle((0, 0), 1, 1, fc="r", ec="r")
+            p1 = plt.Rectangle((0, 0), 1, 1, fc="b", ec="b")
+            ax.legend(
+                [p0, p1], ["same", "flipped"], 
+                frameon=False, numpoints=1, fontsize=12)
 
     ##################################################################
     # Misc

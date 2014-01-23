@@ -84,6 +84,21 @@ class TestBaseModel(object):
         model.plot(ax, 0, f_S = lambda R, F: np.ones_like(R), color='g')
         plt.close('all')
 
+    @pytest.mark.once
+    def test_plot_trace(self, model):
+        if self.cls is BaseModel:
+            pytest.skip("class is BaseModel")
+
+        model.sample()
+
+        fig, ax = plt.subplots()
+        model.plot_trace(ax)
+        plt.close('all')
+
+        fig, ax = plt.subplots()
+        model.plot_trace(ax, legend=False)
+        plt.close('all')
+
     def test_R_i(self, model):
         if self.cls is BaseModel:
             pytest.skip("class is BaseModel")
