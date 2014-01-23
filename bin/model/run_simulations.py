@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-import argparse
-import multiprocessing as mp
 from mental_rotation import MODELS
 from mental_rotation.sims.manager import run
 from ConfigParser import SafeConfigParser

@@ -1,23 +1,18 @@
-#!/usr/bin/env python
-
 import multiprocessing as mp
 import logging
-import numpy as np
 import signal
 import sys
-import itertools
-import traceback
+import json
+import socket
 
 from path import path
 from datetime import datetime, timedelta
 
-import mental_rotation.model as m
-from mental_rotation.stimulus import Stimulus2D
-from mental_rotation import MODELS
-from tasks import Tasks
+from .tasks import Tasks
+from .util import run_command
 
 
-logger = logging.getLogger("mental_rotation.sims")
+logger = logging.getLogger("mental_rotation.sims.manager")
 
 
 def signal_handler(signal, frame):
@@ -27,58 +22,77 @@ def signal_handler(signal, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def load_tasks(params, force):
+def get_next_task(tasks, queued):
+    if len(queued) == 0:
+        return None
+    task_name = queued.pop(0)
+    task = tasks[task_name]
+    queued.append(task_name)
+    return task
+
+
+def extract_result(task):
+    task_name = task['task_name']
+    data_path = path(task['data_path'])
+    loc = data_path.dirname().joinpath("%s.tar.gz" % task_name)
+    if not loc.exists():
+        logger.error("data not found for task '%s'")
+        return False
+
+    if data_path.exists():
+        data_path.rmtree_p()
+
+    cmd = ['tar', '-xf', loc, '-C', data_path.dirname()]
+    run_command(logger, cmd)
+
+    loc.remove()
+    return True
+
+
+def complete_task(params, task_name, completed, queued):
+    completed_file = path(params["completed_path"])
+
+    # mark it done
+    completed[task_name] = True
+    completed.save(completed_file)
+
+    # remove it from open tasks
+    if task_name in queued:
+        queued.remove(task_name)
+
+
+def create_tasks(params, force):
     tasks_file = path(params["tasks_path"])
     completed_file = path(params["completed_path"])
 
     if tasks_file.exists() and completed_file.exists() and not force:
-        tasks = Tasks.load(tasks_file)
-        completed = Tasks.load(completed_file)
+        logger.info("tasks file already exists")
+
     else:
         tasks, completed = Tasks.create(params)
         tasks.save(tasks_file)
         completed.save(completed_file)
 
+        logger.info("tasks file created")
+
+
+def load_tasks(params, force):
+    tasks_file = path(params["tasks_path"])
+    completed_file = path(params["completed_path"])
+
+    tasks = Tasks.load(tasks_file)
+    completed = Tasks.load(completed_file)
+
     logger.info("%d tasks loaded", len(tasks))
-    return tasks, completed
 
+    queued = []
+    for task_name in sorted(tasks.keys()):
+        complete = completed[task_name]
+        if force or not complete:
+            queued.append(task_name)
 
-def simulate(task):
-    samples = task["samples"]
-    stim_path = task["stim_path"]
-    model_name = task["model"]
-    seed = task["seed"]
-    data_path = path(task["data_path"])
-    model_opts = task["model_opts"]
-
-    X = Stimulus2D.load(stim_path)
-    Xa = X.copy_from_initial().vertices
-    Xb = X.copy_from_vertices().vertices
-
-    try:
-        model_class = getattr(m, model_name)
-    except AttributeError:
-        raise ValueError("unhandled model: %s" % model_name)
-
-    np.random.seed(seed)
-    if not data_path.exists():
-        data_path.makedirs()
-
-    error = None
-    for isamp in samples:
-        dest = data_path.joinpath("sample_%02d" % isamp)
-        model = model_class(Xa, Xb, **model_opts)
-        try:
-            model.sample()
-        except:
-            error = traceback.format_exc()
-            break
-
-        if dest.exists():
-            dest.rmtree_p()
-        model.save(dest)
-
-    return task["task_name"], error
+    logger.info("%d tasks queued", len(queued))
+    return tasks, completed, queued
 
 
 def report(task_name, num_finished, num_tasks, start_time):
@@ -98,18 +112,6 @@ def report(task_name, num_finished, num_tasks, start_time):
     logger.info("Time remaining: %s", str(time_left))
 
 
-def queue_tasks(tasks, completed, force):
-    queued_tasks = []
-    for task_name in sorted(tasks.keys()):
-        task = tasks[task_name]
-        complete = completed[task_name]
-        if force or not complete:
-            queued_tasks.append(task)
-
-    logger.info("%d tasks queued", len(queued_tasks))
-    return queued_tasks
-
-
 def run(params, force):
     # configure logging
     mplogger = mp.log_to_stderr()
@@ -120,29 +122,67 @@ def run(params, force):
     start_time = datetime.now()
 
     # load tasks and put eligible ones in the queue
-    tasks, completed = load_tasks(params, force)
-    queued_tasks = queue_tasks(tasks, completed, force)
-    num_tasks = len(queued_tasks)
-    completed_file = path(params["completed_path"])
-
-    # create the pool of worker processes
-    pool = mp.Pool()
-    results = pool.imap_unordered(simulate, queued_tasks)
+    create_tasks(params, force)
+    tasks, completed, queued = load_tasks(params, force)
     errors = []
+    num_tasks = len(queued)
 
-    # process tasks as they are completed
-    for i, (task_name, error) in enumerate(results):
-        if error:
-            logger.error("Task '%s' failed with error:\n%s", task_name, error)
+    port = 55556
+    backlog = 1024
+    size = 1024
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.bind(('', port))
+    s.listen(backlog)
+
+    i = 0
+    while True:
+        client, address = s.accept()
+        data = client.recv(size)
+
+        print "connected to client"
+
+        # send the client the path to save the data
+        if data.rstrip() == 'panda_connect':
+            client.send(str(path(params['sim_root']).abspath()))
+
+        # process a request for a new task
+        elif data.rstrip() == 'panda_request':
+            task = get_next_task(tasks, queued)
+
+            if task:
+                # send the task
+                client.send(json.dumps(task))
+            else:
+                # no more tasks left
+                client.send('no_panda')
+
+        # a client is done with a task, so mark it complete
+        elif data.startswith('panda_complete'):
+            task_name = data.replace('panda_complete', '').rstrip()
+            if extract_result(tasks[task_name]):
+                complete_task(params, task_name, completed, queued)
+
+                # report progress
+                report(task_name, i, num_tasks, start_time)
+                i += 1
+
+        # there was an error
+        elif data.startswith('panda_error'):
+            task_name = data.replace('panda_error', '').rstrip()
+
+            logger.error("Task '%s' failed with an error", task_name)
             errors.append(task_name)
-            continue
 
-        # mark it done
-        completed[task_name] = True
-        completed.save(completed_file)
+        # reload the tasks list
+        elif data.rstrip() == 'panda_reload':
+            tasks, completed, queued = load_tasks(params, False)
 
-        # report progress
-        report(task_name, i, num_tasks, start_time)
+        else:
+            logger.error("Unrecognized command: %s", data)
+
+        client.close()
 
     if len(errors) > 0:
         # report any errors
@@ -152,4 +192,3 @@ def run(params, force):
     else:
         # done
         logger.info("Jobs complete. Shutting down.")
-
