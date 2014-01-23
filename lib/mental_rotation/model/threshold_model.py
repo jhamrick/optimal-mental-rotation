@@ -46,6 +46,10 @@ class ThresholdModel(BaseModel):
             self.model['R'].value = step
 
             new_log_S = self.model['log_S'].logp
+            if np.exp(new_log_S) > self._thresh:
+                self.status = 'done'
+                return
+
             if new_log_S < log_S:
                 self.tally()
                 self._current_iter += 1
