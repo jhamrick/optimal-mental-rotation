@@ -161,7 +161,7 @@ class BayesianQuadratureModel(BaseModel):
             if f(p0) > MIN:
                 break
 
-            p0 = np.abs(np.random.randn(len(self._params)))
+            p0 = np.abs(np.random.randn(len(self._params) * 2))
 
         if f(p0) < MIN:
             raise RuntimeError("couldn't find good parameters")
