@@ -72,7 +72,7 @@ def tmp_config(request, config, tmproot):
 @pytest.fixture(scope="session")
 def tmp_experiment(request, config):
     tmp_path = config.get("paths", "experiment")
-    shutil.copytree("./experiment", tmp_path)
+    shutil.copytree("./experiment", tmp_path, symlinks=True)
 
     def fin():
         tmp_path.rmtree_p()
