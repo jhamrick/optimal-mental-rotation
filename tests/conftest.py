@@ -108,6 +108,9 @@ def pytest_generate_tests(metafunc):
     elif hasattr(metafunc.function, "once"):
         theta = [0]
         flipped = [False]
+    elif hasattr(metafunc.function, "smallrot"):
+        theta = [20, 340]
+        flipped = [True, False]
     else:
         theta = [39]
         flipped = [True, False]
