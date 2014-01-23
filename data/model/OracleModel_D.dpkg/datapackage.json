@@ -1,10 +1,5 @@
 {
   "description": null, 
-  "last_modified": "2014-01-23 00:45:39.115403", 
-  "title": null, 
-  "image": null, 
-  "datapackage_version": "1.0-beta.5", 
-  "sources": [], 
   "contributors": [
     {
       "email": "jhamrick@berkeley.edu", 
@@ -15,7 +10,10 @@
       "name": "Thomas L. Griffiths"
     }
   ], 
-  "version": "1.0.0", 
+  "image": null, 
+  "datapackage_version": "1.0-beta.5", 
+  "sources": [], 
+  "last_modified": "2014-01-23 02:01:26.014658", 
   "keywords": null, 
   "licenses": [
     {
@@ -23,16 +21,18 @@
       "id": "odc-by"
     }
   ], 
+  "name": "OracleModel_D.dpkg", 
+  "title": null, 
+  "version": "1.1.0", 
   "homepage": null, 
   "resources": [
     {
-      "hash": "62cf6fdbaa570a2bfbbec80424beac27", 
+      "hash": "ddb61b050f49aff8ea252c7711cfddb2", 
       "name": "model.csv", 
       "format": "csv", 
       "bytes": 451816, 
-      "modified": "2014-01-23 00:45:39.057273", 
+      "modified": "2014-01-23 02:01:25.983242", 
       "path": "./model.csv"
     }
-  ], 
-  "name": "OracleModel_D.dpkg"
+  ]
 }
