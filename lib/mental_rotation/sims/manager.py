@@ -6,6 +6,7 @@ import numpy as np
 import signal
 import sys
 import itertools
+import traceback
 
 from path import path
 from datetime import datetime, timedelta
@@ -63,16 +64,21 @@ def simulate(task):
     if not data_path.exists():
         data_path.makedirs()
 
+    error = None
     for isamp in samples:
         dest = data_path.joinpath("sample_%02d" % isamp)
         model = model_class(Xa, Xb, **model_opts)
-        model.sample()
+        try:
+            model.sample()
+        except:
+            error = traceback.format_exc()
+            break
 
         if dest.exists():
             dest.rmtree_p()
         model.save(dest)
 
-    return task["task_name"]
+    return task["task_name"], error
 
 
 def report(task_name, num_finished, num_tasks, start_time):
@@ -122,9 +128,15 @@ def run(params, force):
     # create the pool of worker processes
     pool = mp.Pool()
     results = pool.imap_unordered(simulate, queued_tasks)
+    errors = []
 
     # process tasks as they are completed
-    for i, task_name in enumerate(results):
+    for i, (task_name, error) in enumerate(results):
+        if error:
+            logger.error("Task '%s' failed with error:\n%s", task_name, error)
+            errors.append(task_name)
+            continue
+
         # mark it done
         completed[task_name] = True
         completed.save(completed_file)
@@ -132,5 +144,12 @@ def run(params, force):
         # report progress
         report(task_name, i, num_tasks, start_time)
 
-    # done
-    logger.info("Jobs complete. Shutting down.")
+    if len(errors) > 0:
+        # report any errors
+        logger.error("The following tasks had errors: %s", errors)
+        logger.info("Shutting down.")
+
+    else:
+        # done
+        logger.info("Jobs complete. Shutting down.")
+
