@@ -1,10 +1,5 @@
 {
   "description": null, 
-  "last_modified": "2014-01-19 10:22:10.427862", 
-  "title": null, 
-  "image": null, 
-  "datapackage_version": "1.0-beta.5", 
-  "sources": [], 
   "contributors": [
     {
       "email": "jhamrick@berkeley.edu", 
@@ -15,7 +10,10 @@
       "name": "Thomas L. Griffiths"
     }
   ], 
-  "version": "1.0.0", 
+  "image": null, 
+  "datapackage_version": "1.0-beta.5", 
+  "sources": [], 
+  "last_modified": "2014-01-23 01:07:32.679108", 
   "keywords": null, 
   "licenses": [
     {
@@ -23,16 +21,18 @@
       "id": "odc-by"
     }
   ], 
+  "name": "ThresholdModel_D.dpkg", 
+  "title": null, 
+  "version": "1.1.0", 
   "homepage": null, 
   "resources": [
     {
-      "hash": "90e1c8a0b79742406fafbe45c4d517e5", 
+      "hash": "ab663a93937cd34a75f3b247bbdafc44", 
       "name": "model.csv", 
       "format": "csv", 
-      "bytes": 5825104, 
-      "modified": "2014-01-19 10:22:10.020016", 
+      "bytes": 5825290, 
+      "modified": "2014-01-23 01:07:32.281587", 
       "path": "./model.csv"
     }
-  ], 
-  "name": "ThresholdModel_D.dpkg"
+  ]
 }
