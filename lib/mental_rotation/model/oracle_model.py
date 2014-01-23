@@ -62,6 +62,10 @@ class OracleModel(BaseModel):
             self.model['F'].value = F
             self.target = R
             self.direction = np.sign(self._unwrap(R))
+
+            if self.target == 0:
+                self.status = 'done'
+
             return
 
         R = self.model['R'].value

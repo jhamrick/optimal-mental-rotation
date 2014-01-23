@@ -48,3 +48,8 @@ class TestOracleModel(BaseModel):
     def test_F_i(self, flipped, model):
         model.sample()
         assert (model.F_i == int(flipped)).all()
+
+    @pytest.mark.once
+    def test_num_steps(self, theta, model):
+        model.sample()
+        assert model._current_iter == 1
