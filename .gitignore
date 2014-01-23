@@ -35,4 +35,4 @@ experiment/config.txt
 htmlcov
 lib/mental_rotation/model/*.c
 lib/mental_rotation/model/*.so
-lib/mental_rotation/analysis/.ipynb_checkpoints
+analysis/.ipynb_checkpoints
