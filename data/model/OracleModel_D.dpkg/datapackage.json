@@ -1,0 +1,38 @@
+{
+  "description": null, 
+  "last_modified": "2014-01-23 00:45:39.115403", 
+  "title": null, 
+  "image": null, 
+  "datapackage_version": "1.0-beta.5", 
+  "sources": [], 
+  "contributors": [
+    {
+      "email": "jhamrick@berkeley.edu", 
+      "name": "Jessica B. Hamrick"
+    }, 
+    {
+      "email": "tom_griffiths@berkeley.edu", 
+      "name": "Thomas L. Griffiths"
+    }
+  ], 
+  "version": "1.0.0", 
+  "keywords": null, 
+  "licenses": [
+    {
+      "url": "http://opendefinition.org/licenses/odc-by", 
+      "id": "odc-by"
+    }
+  ], 
+  "homepage": null, 
+  "resources": [
+    {
+      "hash": "62cf6fdbaa570a2bfbbec80424beac27", 
+      "name": "model.csv", 
+      "format": "csv", 
+      "bytes": 451816, 
+      "modified": "2014-01-23 00:45:39.057273", 
+      "path": "./model.csv"
+    }
+  ], 
+  "name": "OracleModel_D.dpkg"
+}
