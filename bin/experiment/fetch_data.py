@@ -76,7 +76,6 @@ def fetch(site_root, filename, version, force=False):
 
 
 if __name__ == "__main__":
-    VERSION = config.get("global", "version")
 
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter)
@@ -124,7 +123,7 @@ if __name__ == "__main__":
         password = args.password
 
     # create the authentication handler to the server
-    add_auth(args.address, username, password)
+    add_auth(address, username, password)
 
     # fetch and save the data files
     files = ["trialdata", "eventdata", "questiondata"]

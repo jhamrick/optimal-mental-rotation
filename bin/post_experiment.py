@@ -10,10 +10,6 @@ import sys
 
 logger = logging.getLogger('mental_rotation.experiment')
 
-# load configuration
-config = SafeConfigParser()
-config.read("config.ini")
-
 
 def run_cmd(cmd):
     logging.info(colored("Running %s" % " ".join(cmd), 'blue'))
@@ -23,16 +19,14 @@ def run_cmd(cmd):
 
 
 if __name__ == "__main__":
-    VERSION = config.get("global", "version")
-    BIN_PATH = path(config.get("paths", "bin"))
 
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(
-        "-v", "--version",
-        default=VERSION,
-        help="experiment version")
+        "-c", "--config",
+        default="config.ini",
+        help="path to configuration file")
     parser.add_argument(
         "-f", "--force",
         action="store_true",
@@ -74,14 +68,14 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
 
-    version = args.version
+    config = args.config
     force = args.force
 
     # download data
     if args.fetch or args.all:
         cmd = [
-            "python", BIN_PATH.joinpath("experiment/fetch_data.py"),
-            "-v", version
+            "python", "./bin/experiment/fetch_data.py",
+            "-c", config
         ]
         if force:
             cmd.append("-f")
@@ -90,8 +84,8 @@ if __name__ == "__main__":
     # process data
     if args.process or args.all:
         cmd = [
-            "python", BIN_PATH.joinpath("experiment/process_data.py"),
-            "-v", version
+            "python", "./bin/experiment/process_data.py",
+            "-c", config
         ]
         if force:
             cmd.append("-f")
@@ -100,7 +94,7 @@ if __name__ == "__main__":
     # extract ids
     if args.extract or args.all:
         cmd = [
-            "python", BIN_PATH.joinpath("experiment/extract_workers.py"),
-            "-v", version
+            "python", "./bin/experiment/extract_workers.py",
+            "-c", config
         ]
         run_cmd(cmd)
