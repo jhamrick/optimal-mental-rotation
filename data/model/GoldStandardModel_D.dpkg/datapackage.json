@@ -13,7 +13,7 @@
   "image": null, 
   "datapackage_version": "1.0-beta.5", 
   "sources": [], 
-  "last_modified": "2014-01-16 04:58:11.223801", 
+  "last_modified": "2014-01-23 00:38:06.937797", 
   "keywords": null, 
   "licenses": [
     {
@@ -23,15 +23,15 @@
   ], 
   "name": "GoldStandardModel_D.dpkg", 
   "title": null, 
-  "version": "1.3.0", 
+  "version": "1.4.0", 
   "homepage": null, 
   "resources": [
     {
-      "hash": "4b2640595c40c928330b475356ead6d8", 
+      "hash": "29771e0eceee200283e4f7112094fa3c", 
       "name": "model.csv", 
       "format": "csv", 
-      "bytes": 86877, 
-      "modified": "2014-01-16 04:58:11.216536", 
+      "bytes": 56971, 
+      "modified": "2014-01-23 00:38:06.932362", 
       "path": "./model.csv"
     }
   ]
