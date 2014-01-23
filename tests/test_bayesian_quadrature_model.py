@@ -4,7 +4,6 @@ import pytest
 
 from mental_rotation.model import BayesianQuadratureModel
 from .test_base_model import TestBaseModel as BaseModel
-from . import util
 
 
 class TestBayesianQuadratureModel(BaseModel):

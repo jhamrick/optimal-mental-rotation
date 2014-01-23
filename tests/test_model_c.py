@@ -3,7 +3,6 @@ import pytest
 from path import path
 from mental_rotation.stimulus import Stimulus2D
 from mental_rotation.model import model_c, model
-from . import util
 
 
 def test_log_prior():
