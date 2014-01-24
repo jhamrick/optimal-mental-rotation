@@ -166,7 +166,7 @@ def worker_job(host, port):
     tmpdir.rmtree_p()
 
 
-def run(host, port, loglevel):
+def run(host, port, nprocess, loglevel):
     # configure logging
     mplogger = mp.log_to_stderr()
     mplogger.setLevel(loglevel)
@@ -175,7 +175,7 @@ def run(host, port, loglevel):
 
     # create the worker processes
     processes = []
-    for i in xrange(mp.cpu_count()):
+    for i in xrange(nprocess):
         p = mp.Process(target=worker_job, args=(host, port))
         processes.append(p)
         p.start()
