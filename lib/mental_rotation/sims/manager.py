@@ -6,6 +6,7 @@ import Queue
 from path import path
 from datetime import datetime, timedelta
 from SimpleXMLRPCServer import SimpleXMLRPCServer
+from SocketServer import ThreadingMixIn
 
 from .tasks import Tasks
 from .util import run_command
@@ -142,23 +143,8 @@ class TaskManager(object):
         logger.info("-" * 40)
 
 
-class TaskManagerServer(SimpleXMLRPCServer):
-
-    def __init__(self, manager, host, port):
-        SimpleXMLRPCServer.__init__(
-            self, (host, port), logRequests=False, allow_none=True)
-
-        self.register_function(manager.load_tasks, 'panda_reload')
-        self.register_function(manager.get_sim_root, 'panda_connect')
-        self.register_function(manager.get_next_task, 'panda_request')
-        self.register_function(manager.extract_data, 'panda_extract')
-        self.register_function(manager.set_complete, 'panda_complete')
-        self.register_function(manager.set_error, 'panda_error')
-
-        self.register_multicall_functions()
-        self.register_introspection_functions()
-
-        logger.info("Started XML-RPC server at %s:%d" % (host, port))
+class TaskManagerServer(ThreadingMixIn, SimpleXMLRPCServer):
+    pass
 
 
 def run(host, port, params, force):
@@ -168,5 +154,18 @@ def run(host, port, params, force):
     logger.setLevel(params['loglevel'])
 
     manager = TaskManager(params, force)
-    server = TaskManagerServer(manager, host, port)
+    server = TaskManagerServer(
+        (host, port), logRequests=False, allow_none=True)
+
+    server.register_function(manager.load_tasks, 'panda_reload')
+    server.register_function(manager.get_sim_root, 'panda_connect')
+    server.register_function(manager.get_next_task, 'panda_request')
+    server.register_function(manager.extract_data, 'panda_extract')
+    server.register_function(manager.set_complete, 'panda_complete')
+    server.register_function(manager.set_error, 'panda_error')
+    server.register_multicall_functions()
+    server.register_introspection_functions()
+
+    logger.info("Started XML-RPC server at %s:%d" % (host, port))
+
     server.serve_forever()
