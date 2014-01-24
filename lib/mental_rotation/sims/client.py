@@ -117,7 +117,7 @@ def worker_job(host, port):
             run_command(logger, cmd)
 
             # tell the server to extract it
-            pandaserver.panda_extract(task_name, dst_path)
+            pandaserver.panda_extract(task_name, str(dst_path))
             # then mark it as complete
             pandaserver.panda_complete(task_name)
 
