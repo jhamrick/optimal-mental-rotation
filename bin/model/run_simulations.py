@@ -45,11 +45,13 @@ if __name__ == "__main__":
         help="Name of the model to use.")
     parser.add_argument(
         "-H", "--host",
-        default='127.0.0.1')
+        default='127.0.0.1',
+        help="Server hostname")
     parser.add_argument(
         "-p", "--port",
         type=int,
-        default=55556)
+        default=55556,
+        help="Server port number")
     parser.add_argument(
         "-c", "--config",
         default="config.ini",

@@ -12,11 +12,13 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "-H", "--host",
-        default='127.0.0.1')
+        default='127.0.0.1',
+        help="server host")
     parser.add_argument(
         "-p", "--port",
         type=int,
-        default=55556)
+        default=55556,
+        help="server port")
     parser.add_argument(
         "-c", "--config",
         default="config.ini",
