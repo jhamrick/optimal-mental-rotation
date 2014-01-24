@@ -3,7 +3,6 @@
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from termcolor import colored
 from mental_rotation import MODELS
-from path import path
 
 import logging
 import subprocess
