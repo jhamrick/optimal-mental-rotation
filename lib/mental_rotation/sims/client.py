@@ -135,7 +135,7 @@ def worker_job(host, port):
                 prefix = "ubuntu@%s:" % host
                 dst_path = sim_root.joinpath("%s.tar.gz" % task_name)
                 options = [
-                    '-i', '~/.ssh/client_id_rsa',
+                    '-i', '/home/ubuntu/.ssh/client_id_rsa',
                     '-o', 'StrictHostKeyChecking=no',
                     '-o', 'UserKnownHostsFile=/dev/null'
                 ]
