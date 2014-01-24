@@ -82,12 +82,13 @@ def worker_job(host, port):
 
     while True:
         # get the next task from the pandaserver
-        try:
-            task = pandaserver.panda_request()
-        except:
-            time.sleep(30)
-        else:
-            break
+        while True:
+            try:
+                task = pandaserver.panda_request()
+            except:
+                time.sleep(30)
+            else:
+                break
 
         # no more tasks left
         if task is None:
