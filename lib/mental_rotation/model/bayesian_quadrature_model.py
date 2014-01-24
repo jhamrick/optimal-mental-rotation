@@ -66,27 +66,38 @@ class BayesianQuadratureModel(BaseModel):
         self.model['R'].value = R
         self.model['F'].value = F
         logger.debug(
-            "F = %s, R = %s", 
+            "F = %s, R = %s",
             float(self.model['F'].value),
             self.model['R'].value)
 
         S = self._scale * np.exp(self.model['log_S'].logp)
         bq = self.bqs[F]
+        ns = bq.x_s.size
         bq.add_observation(R, S)
-        if bq.x_s.size > 1:
+
+        # don't fit hypers if we only have one observation, or if
+        # adding this observation didn't actually change the number of
+        # useful points
+        if bq.x_s.size > 1 and bq.x_s.size > ns:
             self._fit_hypers(F)
 
     def _get_actions(self):
         R = self.model['R'].value
         F = float(self.model['F'].value)
-        
-        actions = [
+
+        all_actions = [
             (1 - F, 0),
             (1 - F, R),
             (F, 0),
             (F, R + np.abs(self._random_step())),
             (F, R - np.abs(self._random_step()))
         ]
+
+        actions = []
+        for action in all_actions:
+            if action[0] == F and np.isclose(action[1], R):
+                continue
+            actions.append(action)
 
         actions = np.array(sorted(actions))
         actions[:, 1] = self._unwrap(actions[:, 1])
@@ -119,10 +130,10 @@ class BayesianQuadratureModel(BaseModel):
         #     funs, n, params=self._params)
         l1, m1, V1 = [np.array([f()]) for f in funs]
 
-        self._m0 = max(0, m0.mean())
-        self._V0 = max(0, V0.mean())
-        self._m1 = max(0, m1.mean())
-        self._V1 = max(0, V1.mean())
+        self._m0 = m0.mean()
+        self._V0 = V0.mean()
+        self._m1 = m1.mean()
+        self._V1 = V1.mean()
 
         loss[F0] = (V0 + m0 ** 2 - l0.T).mean(axis=1) + self._V1
         loss[F1] = (V1 + m1 ** 2 - l1.T).mean(axis=1) + self._V0
@@ -130,24 +141,53 @@ class BayesianQuadratureModel(BaseModel):
         return actions, loss
 
     def _fit_hypers(self, F, ntry=10):
+        bq = self.bqs[F]
+        params = self._params * 2
+        nparam = len(self._params)
+
+        def f(x):
+            if x is None or np.isnan(x).any():
+                return -np.inf
+
+            params_tl = dict(zip(params, x[:nparam]))
+            if 'w' in params_tl and params_tl['w'] > (np.pi / 4.):
+                return -np.inf
+
+            params_l = dict(zip(params, x[nparam:]))
+            if 'w' in params_l and params_l['w'] > (np.pi / 4.):
+                return -np.inf
+
+            try:
+                bq._set_gp_log_l_params(params_tl)
+            except (ValueError, np.linalg.LinAlgError):
+                return -np.inf
+
+            try:
+                llh_tl = bq.gp_log_l.log_lh
+            except (ValueError, np.linalg.LinAlgError):
+                return -np.inf
+
+            try:
+                bq._set_gp_l_params(params_l)
+            except (ValueError, np.linalg.LinAlgError):
+                return -np.inf
+
+            try:
+                llh_l = bq.gp_l.log_lh
+            except (ValueError, np.linalg.LinAlgError):
+                return -np.inf
+
+            llh = llh_tl + llh_l
+            return llh
+
         p0_tl = [self.bqs[F].gp_log_l.get_param(p) for p in self._params]
         p0_l = [self.bqs[F].gp_l.get_param(p) for p in self._params]
         p0 = np.array(p0_tl + p0_l)
-        
-        logpdf = self.bqs[F]._make_llh_params(self._params)
-        def f(x):
-            llh = logpdf(x)
-            if llh > -np.inf:
-                if self.bqs[F].gp_log_l.get_param('w') > (np.pi / 4.):
-                    return -np.inf
-                if self.bqs[F].gp_l.get_param('w') > (np.pi / 4.):
-                    return -np.inf
-            return llh
-                
+
         for i in xrange(ntry):
             logger.debug(
-                "Fitting parameters %s for F=%d, attempt %d", 
-                self._params, F, i+1)
+                "Fitting parameters %s for F=%d, attempt %d",
+                self._params, F, i + 1)
 
             res = optim.minimize(
                 fun=lambda x: -f(x),
@@ -169,7 +209,7 @@ class BayesianQuadratureModel(BaseModel):
     def _init_bq(self, F):
         Ri = np.array([self.model['R'].value])
         Si = self._scale * np.array([np.exp(self.model['log_S'].logp)])
-        
+
         logger.debug("Initializing BQ object for F=%d", F)
         self.bqs[F] = BQ(Ri, Si, **self.bq_opts)
         self.bqs[F].init(
@@ -189,9 +229,6 @@ class BayesianQuadratureModel(BaseModel):
             self._init_bq(1)
             return
 
-        curr_R = self.model['R'].value
-        curr_F = float(self.model['F'].value)
-        
         actions, losses = self._eval_actions()
         if self._check_done():
             return
@@ -205,7 +242,6 @@ class BayesianQuadratureModel(BaseModel):
         best = np.random.choice(choices)
 
         self._add_observation(actions[best, 1], actions[best, 0])
-            
 
     ##################################################################
     # The estimated S function
@@ -237,14 +273,14 @@ class BayesianQuadratureModel(BaseModel):
         elif F == 1:
             mean = self._m1 / self._scale
             var = self._V1 / (self._scale ** 2)
-        
+
         lower = mean - 1.96 * np.sqrt(var)
         upper = mean + 1.96 * np.sqrt(var)
-        
+
         out = np.array([mean, lower, upper])
         out[out < 0] = 0
         return out
-    
+
     ##################################################################
     # Plotting methods
 
@@ -318,7 +354,8 @@ class BayesianQuadratureModel(BaseModel):
         lower = S - Ss
         upper = S + Ss
 
-        lines['stddev'] = ax.fill_between(R, lower, upper, color=color, alpha=0.3)
+        lines['stddev'] = ax.fill_between(
+            R, lower, upper, color=color, alpha=0.3)
         lines['approx'] = ax.plot(R, S, '-', lw=2, color=color)
 
         Ri = self.R_i[Fi]
