@@ -50,6 +50,7 @@ def simulate(task):
 
     error = None
     for isamp in samples:
+        logger.info("Task '%s', sample %d", task['task_name'], isamp)
         dest = data_path.joinpath("sample_%02d" % isamp)
         model = model_class(Xa, Xb, **model_opts)
         try:
@@ -170,6 +171,7 @@ def run(host, port, loglevel):
     mplogger = mp.log_to_stderr()
     mplogger.setLevel(loglevel)
     logger.setLevel(loglevel)
+    np.seterr(invalid='ignore')
 
     # create the worker processes
     processes = []
