@@ -10,7 +10,8 @@ from path import path
 def make_params(model, config):
     version = config.get("global", "version")
     model_opts = {
-        'S_sigma': config.getfloat("model", "S_sigma")
+        'S_sigma': config.getfloat("model", "S_sigma"),
+        'step': config.getfloat("model", "step")
     }
 
     sim_path = path(config.get("paths", "simulations"))
