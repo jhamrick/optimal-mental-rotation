@@ -94,8 +94,7 @@ class TaskManager(object):
         data_path = path(task['data_path'])
         zip_path = path(zip_path)
         if not zip_path.exists():
-            logger.error("Data not found for task '%s'", task_name)
-            return
+            raise IOError("Not found: %s", zip_path)
 
         if data_path.exists():
             data_path.rmtree_p()
