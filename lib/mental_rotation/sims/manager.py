@@ -25,6 +25,7 @@ class TaskManager(object):
         self.completed = None
         self.queue = mp.Queue()
         self.info_lock = mp.Lock()
+        self.save_lock = mp.Lock()
 
         self.create_tasks()
         self.load_tasks()
@@ -44,8 +45,11 @@ class TaskManager(object):
 
         else:
             tasks, completed = Tasks.create(self.params)
+
+            self.save_lock.acquire()
             tasks.save(tasks_file)
             completed.save(completed_file)
+            self.save_lock.release()
 
             logger.debug("Tasks file created")
 
@@ -55,8 +59,10 @@ class TaskManager(object):
         tasks_file = path(self.params["tasks_path"])
         completed_file = path(self.params["completed_path"])
 
+        self.save_lock.acquire()
         self.tasks = Tasks.load(tasks_file)
         self.completed = Tasks.load(completed_file)
+        self.save_lock.release()
 
         logger.info("%d tasks loaded", len(self.tasks))
 
@@ -115,7 +121,9 @@ class TaskManager(object):
         # mark the task as done
         completed_file = path(self.params["completed_path"])
         self.completed[task_name] = True
+        self.save_lock.acquire()
         self.completed.save(completed_file)
+        self.save_lock.release()
 
         # report the progress
         self.num_finished += 1
