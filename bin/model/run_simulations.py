@@ -44,6 +44,13 @@ if __name__ == "__main__":
         choices=MODELS,
         help="Name of the model to use.")
     parser.add_argument(
+        "-H", "--host",
+        default='127.0.0.1')
+    parser.add_argument(
+        "-p", "--port",
+        type=int,
+        default=55556)
+    parser.add_argument(
         "-c", "--config",
         default="config.ini",
         help="path to configuration file")
@@ -61,4 +68,4 @@ if __name__ == "__main__":
     model = args.model
 
     params = make_params(model, config)
-    run(params, args.force)
+    run(args.host, args.port, params, args.force)

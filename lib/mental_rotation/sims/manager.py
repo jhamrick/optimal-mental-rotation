@@ -145,7 +145,7 @@ class TaskManager(object):
 
 class TaskManagerServer(SimpleXMLRPCServer):
 
-    def __init__(self, manager, host="127.0.0.1", port=55556):
+    def __init__(self, manager, host, port):
         SimpleXMLRPCServer.__init__(
             self, (host, port), logRequests=False, allow_none=True)
 
@@ -162,12 +162,12 @@ class TaskManagerServer(SimpleXMLRPCServer):
         logger.info("Started XML-RPC server at %s:%d" % (host, port))
 
 
-def run(params, force):
+def run(host, port, params, force):
     # configure logging
     mplogger = mp.log_to_stderr()
     mplogger.setLevel(params['loglevel'])
     logger.setLevel(params['loglevel'])
 
     manager = TaskManager(params, force)
-    server = TaskManagerServer(manager)
+    server = TaskManagerServer(manager, host, port)
     server.serve_forever()
