@@ -22,7 +22,7 @@ if __name__ == "__main__":
         help="server port")
     parser.add_argument(
         "-n", "--num",
-        dtype=int,
+        type=int,
         default=mp.cpu_count(),
         help="number of processes to use")
     parser.add_argument(
