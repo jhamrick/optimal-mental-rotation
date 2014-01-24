@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import multiprocessing as mp
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from ConfigParser import SafeConfigParser
 
@@ -20,6 +21,10 @@ if __name__ == "__main__":
         default=55556,
         help="server port")
     parser.add_argument(
+        "-n", "--num",
+        default=mp.cpu_count(),
+        help="number of processes to use")
+    parser.add_argument(
         "-c", "--config",
         default="config.ini",
         help="path to configuration file")
@@ -31,4 +36,4 @@ if __name__ == "__main__":
     config.read(args.config)
     loglevel = config.get("global", "loglevel")
 
-    run(args.host, args.port, loglevel)
+    run(args.host, args.port, args.num, loglevel)
