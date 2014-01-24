@@ -164,10 +164,15 @@ def run(host, port, params, force):
     mplogger.setLevel(params['loglevel'])
     logger.setLevel(params['loglevel'])
 
+    if logger.getEffectiveLevel() <= 10:
+        logRequests = True
+    else:
+        logRequests = False
+
     # create the server
     manager = TaskManager(params, force)
     server = TaskManagerServer(
-        (host, port), logRequests=True, allow_none=True)
+        (host, port), logRequests=logRequests, allow_none=True)
 
     server.register_function(manager.load_tasks, 'panda_reload')
     server.register_function(manager.get_sim_root, 'panda_connect')
