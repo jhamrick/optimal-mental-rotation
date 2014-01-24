@@ -78,7 +78,7 @@ class TaskManager(object):
     def get_next_task(self):
         # process a request for a new task
         try:
-            task_name = self.queue.get(False)
+            task_name = self.queue.get(True, timeout=1)
         except Queue.Empty:
             return None
 

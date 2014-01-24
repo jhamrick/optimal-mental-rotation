@@ -74,7 +74,7 @@ def worker_job(host, port):
         try:
             sim_root = path(pandaserver.panda_connect())
         except:
-            time.sleep(30)
+            time.sleep(1)
         else:
             break
 
@@ -86,7 +86,7 @@ def worker_job(host, port):
             try:
                 task = pandaserver.panda_request()
             except:
-                time.sleep(30)
+                time.sleep(1)
             else:
                 break
 
@@ -111,7 +111,7 @@ def worker_job(host, port):
                 try:
                     pandaserver.panda_error(task_name)
                 except:
-                    time.sleep(30)
+                    time.sleep(1)
                 else:
                     break
 
@@ -138,7 +138,7 @@ def worker_job(host, port):
                 try:
                     run_command(logger, cmd)
                 except:
-                    time.sleep(30)
+                    time.sleep(1)
                 else:
                     break
 
@@ -147,7 +147,7 @@ def worker_job(host, port):
                 try:
                     pandaserver.panda_extract(task_name, str(dst_path))
                 except:
-                    time.sleep(30)
+                    time.sleep(1)
                 else:
                     break
 
@@ -156,7 +156,7 @@ def worker_job(host, port):
                 try:
                     pandaserver.panda_complete(task_name)
                 except:
-                    time.sleep(30)
+                    time.sleep(1)
                 else:
                     break
 
