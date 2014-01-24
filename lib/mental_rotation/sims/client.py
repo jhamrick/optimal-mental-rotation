@@ -134,7 +134,13 @@ def worker_job(host, port):
                 dst_path = sim_root.joinpath("%s.tar.gz" % task_name)
 
             cmd = ['scp', '-q', src_path, prefix + dst_path]
-            run_command(logger, cmd)
+            while True:
+                try:
+                    run_command(logger, cmd)
+                except:
+                    time.sleep(30)
+                else:
+                    break
 
             # tell the server to extract it
             while True:
