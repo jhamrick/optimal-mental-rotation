@@ -107,13 +107,13 @@ def worker_job(host, port):
 
             # then send it to the server
             if host in ('localhost', '127.0.0.1'):
+                prefix = ""
                 dst_path = "%s/%s.tar.gz" % (sim_root, task_name)
             else:
-                user = "ubuntu"
-                dst_path = "%s@%s:%s/%s.tar.gz" % (
-                    user, host, sim_root, task_name)
+                prefix = "ubuntu@%s:" % host
+                dst_path = sim_root.joinpath("%s.tar.gz" % task_name)
 
-            cmd = ['scp', '-q', src_path, dst_path]
+            cmd = ['scp', '-q', src_path, prefix + dst_path]
             run_command(logger, cmd)
 
             # tell the server to extract it
