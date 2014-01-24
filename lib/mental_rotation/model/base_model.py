@@ -1,7 +1,7 @@
 import numpy as np
-import scipy.stats
 import json
 import matplotlib.pyplot as plt
+import scipy.stats
 
 from path import path
 from . import model
@@ -12,20 +12,10 @@ class BaseModel(object):
     _iter = None
 
     def __init__(self, Xa, Xb, **opts):
-
         self.opts = opts.copy()
-
-        # compute step based on the standard deviation of the
-        # similarity function
-        radius = np.sqrt(np.sum(Xa ** 2, axis=1)).max()
-        arclength = np.sqrt(self.opts['S_sigma'])
-        self.opts['step'] = arclength / radius
-
         self._make_model(Xa, Xb)
-
         self._current_iter = None
         self._traces = None
-
         self.status = "ready"
 
     def _make_model(self, Xa, Xb):
@@ -257,9 +247,9 @@ class BaseModel(object):
 
     def _random_step(self):
         step = self.opts['step']
-        # x = scipy.stats.norm.rvs(0, np.sqrt(step / 2.))
-        # R = np.clip(x, -step, step)
-        R = np.random.uniform(-step, step)
+        x = scipy.stats.norm.rvs(0, np.sqrt(step / 2.))
+        R = np.clip(x, -step, step)
+        # R = np.random.uniform(-step, step)
         return R
 
 

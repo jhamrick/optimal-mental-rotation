@@ -10,6 +10,7 @@ from itertools import product
 from mental_rotation.stimulus import Stimulus2D
 
 S_sigma = 0.15
+step = np.radians(25)
 
 
 @pytest.fixture(scope="session")
@@ -43,10 +44,11 @@ def config(request, tmproot):
     config.add_section('experiment')
     config.set('experiment', 'deploy_path', tmproot.joinpath('deploy'))
     config.set('experiment', 'fetch_path', 'http://localhost:22361/data')
-    
+
     config.add_section('model')
     config.set('model', 'S_sigma', str(S_sigma))
-    
+    config.set('model', 'step', step)
+
     config.add_section('bq')
     config.set('bq', 'R_mu', '3.141592653589793')
     config.set('bq', 'R_kappa', '0.01')
@@ -89,9 +91,11 @@ def seed(config):
 def tmppath(config, request, tmpdir):
     # handle temporary directories
     pth = path(tmpdir.strpath).joinpath("save")
+
     def fin():
         pth.rmtree_p()
     request.addfinalizer(fin)
+
     return pth
 
 
@@ -134,8 +138,9 @@ def pytest_generate_tests(metafunc):
 
         # create model
         model = metafunc.cls.cls(
-            Xa.vertices, Xb.vertices, 
-            S_sigma=S_sigma)
+            Xa.vertices, Xb.vertices,
+            S_sigma=S_sigma,
+            step=step)
 
         args = dict(theta=t, flipped=f, Xa=Xa, Xb=Xb, model=model)
         argvalues.append([args[x] for x in argnames])

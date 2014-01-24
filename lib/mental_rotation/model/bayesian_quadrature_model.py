@@ -45,7 +45,7 @@ class BayesianQuadratureModel(BaseModel):
         self.bq_opts['candidate_thresh'] = self.opts['step'] / 2.
         self.bq_opts['kernel'] = PeriodicKernel
         self.bq_opts['optim_method'] = 'Powell'
-        self.bq_opts['x_mean'] = np.pi
+        self.bq_opts['x_mean'] = 0
         self.bq_opts['x_var'] = 10.0
         self.bq_opts['n_candidate'] = 20
 
@@ -72,13 +72,12 @@ class BayesianQuadratureModel(BaseModel):
 
         S = self._scale * np.exp(self.model['log_S'].logp)
         bq = self.bqs[F]
-        ns = bq.x_s.size
         bq.add_observation(R, S)
 
         # don't fit hypers if we only have one observation, or if
         # adding this observation didn't actually change the number of
         # useful points
-        if bq.x_s.size > 1 and bq.x_s.size > ns:
+        if bq.x_s.size > 1:
             self._fit_hypers(F)
 
     def _get_actions(self):
