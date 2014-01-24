@@ -130,11 +130,22 @@ def worker_job(host, port):
             if host in ('localhost', '127.0.0.1'):
                 prefix = ""
                 dst_path = "%s/%s.tar.gz" % (sim_root, task_name)
+                options = []
             else:
                 prefix = "ubuntu@%s:" % host
                 dst_path = sim_root.joinpath("%s.tar.gz" % task_name)
+                options = [
+                    '-i', '~/.ssh/client_id_rsa',
+                    '-o', 'StrictHostKeyChecking=no',
+                    '-o', 'UserKnownHostsFile=/dev/null'
+                ]
 
-            cmd = ['scp', '-q', src_path, prefix + dst_path]
+            # build the scp command
+            cmd = ['scp', '-q']
+            cmd.extend(options)
+            cmd.append(src_path)
+            cmd.append(prefix + dst_path)
+
             while True:
                 try:
                     run_command(logger, cmd)
