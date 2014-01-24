@@ -3,13 +3,14 @@ import logging
 import multiprocessing as mp
 import numpy as np
 import signal
-import socket
 import sys
 import tempfile
-import time
 import traceback
 
+
+from datetime import datetime
 from path import path
+from xmlrpclib import ServerProxy
 
 import mental_rotation.model as m
 from mental_rotation.stimulus import Stimulus2D
@@ -20,7 +21,7 @@ logger = logging.getLogger("mental_rotation.sims.client")
 
 def signal_handler(signal, frame):
     mp.util.debug("Keyboard interrupt!")
-    sys.exit(1)
+    sys.exit(-2)
 
 signal.signal(signal.SIGINT, signal_handler)
 
@@ -52,6 +53,8 @@ def simulate(task):
         model = model_class(Xa, Xb, **model_opts)
         try:
             model.sample()
+        except SystemExit:
+            raise
         except:
             error = traceback.format_exc()
             break
@@ -63,101 +66,60 @@ def simulate(task):
     return error
 
 
-def ssh_copy(source, dest):
-    cmd = ['scp', '-q', str(source), str(dest)]
-    run_command(logger, cmd)
-
-
-def connect(host, port):
-    while True:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        if s and s.connect_ex((host, port)) == 0:
-            if s.send('panda_connect\n') != 0:
-                print "sent request"
-                sim_root = s.recv(2048)
-                if sim_root:
-                    s.close()
-                    return sim_root
-            s.close()
-
-        print ('connect failed, retrying')
-        time.sleep(30)
-
-
-def get_id(host, port):
-    while True:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        if s and s.connect_ex((host, port)) == 0:
-            if s.send('panda_request\n') != 0:
-                print "sent request"
-                data = s.recv(2048)
-                if data:
-                    s.close()
-                    task = json.loads(data)
-                    return task
-            s.close()
-
-        print ('get_id failed, retrying')
-        time.sleep(30)
-
-
-def report(id, msg, host, port):
-    while True:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        if s and s.connect_ex((host, port)) == 0:
-            if s.send('panda_%s%s\n' % (msg, id)) != 0:
-                s.close()
-                return
-            s.close()
-
-        print ('report failed, retrying')
-        time.sleep(30)
-
-
-def send_back(task, sim_root, host):
-    task_name = task["task_name"]
-    data_path = path(task["data_path"])
-    src_path = data_path.dirname().joinpath("%s.tar.gz" % task_name)
-
-    cmd = ['tar', 'czf', src_path, '-C', data_path.dirname(), data_path.name]
-    run_command(logger, cmd)
-
-    if host in ('localhost', '127.0.0.1'):
-        dst_path = "%s/%s.tar.gz" % (sim_root, task_name)
-    else:
-        user = "ubuntu"
-        dst_path = "%s@%s:%s/%s.tar.gz" % (user, host, sim_root, task_name)
-    ssh_copy(src_path, dst_path)
-
-
 def worker_job(host, port):
-
-    print "connecting to %s:%s" % (host, port)
-    sim_root = connect(host, port)
+    # connet to the server
+    pandaserver = ServerProxy("http://%s:%d" % (host, port))
+    sim_root = pandaserver.panda_connect()
     tmpdir = path(tempfile.mkdtemp())
 
     while True:
-        # get the next task from the server
-        task = get_id(host, port)
+        # get the next task from the pandaserver
+        task = pandaserver.panda_request()
 
         # no more tasks left
-        if task == 'no_panda':
-            print "no more tasks"
+        if task is None:
+            logger.info("Nothing left to do, shutting down")
             break
 
+        task = json.loads(task)
         task_name = task["task_name"]
-        print('executing ' + task_name)
         task['data_path'] = tmpdir.joinpath(task_name)
+
+        logger.info("Got task '%s'", task_name)
+        startime = datetime.now()
         error = simulate(task)
+        dt = (datetime.now() - startime).total_seconds()
+        logger.info("Completed task '%s' in %s seconds", task_name, dt)
 
         if error is not None:
             logger.error("Task '%s' failed with error:\n%s", task_name, error)
-            report(task_name, "error", host, port)
+            pandaserver.panda_error(task_name)
 
         else:
-            send_back(task, sim_root, host)
-            report(task_name, "complete", host, port)
-            print ('done')
+            data_path = path(task["data_path"])
+            src_path = data_path.dirname().joinpath("%s.tar.gz" % task_name)
+
+            # first compress the data
+            cmd = [
+                'tar', 'czf', src_path, '-C',
+                data_path.dirname(), data_path.name]
+            run_command(logger, cmd)
+
+            # then send it to the server
+            if host in ('localhost', '127.0.0.1'):
+                dst_path = "%s/%s.tar.gz" % (sim_root, task_name)
+            else:
+                user = "ubuntu"
+                dst_path = "%s@%s:%s/%s.tar.gz" % (
+                    user, host, sim_root, task_name)
+
+            cmd = ['scp', '-q', src_path, dst_path]
+            run_command(logger, cmd)
+
+            # tell the server to extract it
+            pandaserver.panda_extract(task_name, dst_path)
+            # then mark it as complete
+            pandaserver.panda_complete(task_name)
 
         task['data_path'].rmtree_p()
 
@@ -170,11 +132,15 @@ def run(host, port, loglevel):
     mplogger.setLevel(loglevel)
     logger.setLevel(loglevel)
 
-    # create the pool of worker processes
-    #pool = mp.Pool()
-    #for i in xrange(mp.cpu_count()):
-    #pool.apply_async(worker_job, args=(host, port))
-    worker_job(host, port)
+    # create the worker processes
+    processes = []
+    for i in xrange(mp.cpu_count()):
+        p = mp.Process(target=worker_job, args=(host, port))
+        processes.append(p)
+        p.start()
 
-    #pool.close()
-    #pool.join()
+    # wait for them to finish
+    for p in processes:
+        p.join()
+
+    logger.info("Worker threads done, shutting down.")

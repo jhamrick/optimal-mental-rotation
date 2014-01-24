@@ -1,4 +1,3 @@
-from itertools import product as iproduct
 from path import path
 import json
 import numpy as np
