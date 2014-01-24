@@ -108,7 +108,7 @@ class TaskManager(object):
             data_path.rmtree_p()
 
         logger.debug("Extracting data for task '%s'", task_name)
-        cmd = ['tar', '-xf', '-m', zip_path, '-C', data_path.dirname()]
+        cmd = ['tar', '-xf', zip_path, '-m', '-C', data_path.dirname()]
         run_command(logger, cmd)
 
         zip_path.remove()
