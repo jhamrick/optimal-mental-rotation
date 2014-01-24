@@ -159,7 +159,7 @@ def run(host, port, params, force):
     # create the server
     manager = TaskManager(params, force)
     server = TaskManagerServer(
-        (host, port), logRequests=False, allow_none=True)
+        (host, port), logRequests=True, allow_none=True)
 
     server.register_function(manager.load_tasks, 'panda_reload')
     server.register_function(manager.get_sim_root, 'panda_connect')
