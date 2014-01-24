@@ -13,7 +13,7 @@
   "image": null, 
   "datapackage_version": "1.0-beta.5", 
   "sources": [], 
-  "last_modified": "2014-01-23 02:01:26.014658", 
+  "last_modified": "2014-01-24 11:21:09.933388", 
   "keywords": null, 
   "licenses": [
     {
@@ -23,15 +23,15 @@
   ], 
   "name": "OracleModel_D.dpkg", 
   "title": null, 
-  "version": "1.1.0", 
+  "version": "1.2.0", 
   "homepage": null, 
   "resources": [
     {
-      "hash": "ddb61b050f49aff8ea252c7711cfddb2", 
+      "hash": "96166e99cfdbfb20a51c4ba59d3fddf4", 
       "name": "model.csv", 
       "format": "csv", 
-      "bytes": 451816, 
-      "modified": "2014-01-23 02:01:25.983242", 
+      "bytes": 450628, 
+      "modified": "2014-01-24 11:21:09.901908", 
       "path": "./model.csv"
     }
   ]
