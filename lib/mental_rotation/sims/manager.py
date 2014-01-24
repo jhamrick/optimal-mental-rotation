@@ -24,6 +24,7 @@ class TaskManager(object):
         self.tasks = None
         self.completed = None
         self.queue = mp.Queue()
+        self.info_lock = mp.Lock()
 
         self.create_tasks()
         self.load_tasks()
@@ -133,6 +134,7 @@ class TaskManager(object):
             seconds=(avg_dt.total_seconds() * (
                 self.num_tasks - self.num_finished)))
 
+        self.info_lock.acquire()
         logger.info("=" * 40)
         logger.info("Task `%s` complete", task_name)
         logger.info("Progress: %d/%d (%.2f%%)",
@@ -141,6 +143,7 @@ class TaskManager(object):
         logger.info("Time per task : %s", str(avg_dt))
         logger.info("Time remaining: %s", str(time_left))
         logger.info("-" * 40)
+        self.info_lock.release()
 
 
 class TaskManagerServer(ThreadingMixIn, SimpleXMLRPCServer):
@@ -153,6 +156,7 @@ def run(host, port, params, force):
     mplogger.setLevel(params['loglevel'])
     logger.setLevel(params['loglevel'])
 
+    # create the server
     manager = TaskManager(params, force)
     server = TaskManagerServer(
         (host, port), logRequests=False, allow_none=True)
