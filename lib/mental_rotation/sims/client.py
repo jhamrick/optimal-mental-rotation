@@ -69,7 +69,7 @@ def simulate(task):
 def worker_job(host, port):
     # connet to the server
     pandaserver = ServerProxy("http://%s:%d" % (host, port))
-    sim_root = pandaserver.panda_connect()
+    sim_root = path(pandaserver.panda_connect())
     tmpdir = path(tempfile.mkdtemp())
 
     while True:
