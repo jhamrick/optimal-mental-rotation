@@ -1,2 +1,3 @@
 import util
-import plots
+import accuracy
+import response_times
