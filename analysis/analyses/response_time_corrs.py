@@ -5,8 +5,6 @@ import numpy as np
 import util
 from path import path
 
-from mental_rotation.analysis import bootcorr
-
 
 def run(data, results_path, seed):
     np.random.seed(seed)
@@ -27,7 +25,7 @@ def run(data, results_path, seed):
             if key == 'exp':
                 continue
 
-            corr = dict(bootcorr(
+            corr = dict(util.bootcorr(
                 response_means['exp'],
                 response_means[key],
                 nsamples=5000,

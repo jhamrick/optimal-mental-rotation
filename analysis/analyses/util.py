@@ -1,7 +1,7 @@
 from ConfigParser import SafeConfigParser
 
 from mental_rotation.analysis import load_human, load_model, load_all
-from mental_rotation.analysis import bootstrap, beta
+from mental_rotation.analysis import bootstrap, beta, bootcorr
 
 
 def load_config(pth):

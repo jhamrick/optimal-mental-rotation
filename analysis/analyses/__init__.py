@@ -3,3 +3,5 @@ import response_times
 import response_time_corrs
 import accuracy
 import accuracy_corrs
+import trial_time_corrs
+import trial_accuracy_corrs

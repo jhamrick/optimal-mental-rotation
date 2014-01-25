@@ -51,7 +51,13 @@ def load_human(version, data_path):
     exp['trial'].ix[expA.index] = expA['trial']
     exp['trial'].ix[expB.index] = expB['trial']
 
-    return exp_all, exp
+    exp_data = {
+        'expA': expA,
+        'expB': expB,
+        'exp': exp
+    }
+
+    return exp_all, exp_data
 
 
 def load_model(name, version, data_path):
@@ -67,13 +73,13 @@ def load_model(name, version, data_path):
 
 def load_all(version, data_path):
     data = {
-        'exp': load_human(version, data_path)[1],
         'gs': load_model("GoldStandardModel", version, data_path),
         'oc': load_model("OracleModel", version, data_path),
         'th': load_model("ThresholdModel", version, data_path),
         'hc': load_model("HillClimbingModel", version, data_path),
         'bq': load_model("BayesianQuadratureModel", version, data_path)
     }
+    data.update(load_human(version, data_path)[1])
     return data
 
 

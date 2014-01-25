@@ -12,7 +12,8 @@ def run(data, results_path, seed):
     with open(pth, "w") as fh:
         fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
 
-        for name, df in data.iteritems():
+        for name in sorted(data.keys()):
+            df = data[name]
             t = dict(util.bootstrap(df['time']))
 
             print "%s:\t%s" % (name, util.report_mean.format(**t))

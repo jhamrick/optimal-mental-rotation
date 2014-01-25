@@ -6,3 +6,5 @@ import response_time_scatters
 import accuracy
 import accuracy_stimuli
 import accuracy_scatters
+import trial_time
+import trial_accuracy
