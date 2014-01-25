@@ -29,9 +29,9 @@ class TaskManager(object):
 
         self.create_tasks()
         self.load_tasks()
+        self.total_finished = 0
 
         self.start_time = datetime.now()
-        self.num_finished = 0
         self.errors = []
 
     def create_tasks(self):
@@ -67,6 +67,7 @@ class TaskManager(object):
         logger.info("%d tasks loaded", len(self.tasks))
 
         self.num_tasks = 0
+        self.num_finished = 0
         for task_name in sorted(self.tasks.keys()):
             complete = self.completed[task_name]
             if not complete:
@@ -127,29 +128,38 @@ class TaskManager(object):
 
         # report the progress
         self.num_finished += 1
+        self.total_finished += 1
         self.report(task_name)
 
     def set_error(self, task_name):
         logger.error("Task '%s' failed with an error", task_name)
         self.errors.append(task_name)
 
-    def report(self, task_name):
+    def get_status(self):
         progress = 100 * float(self.num_finished) / self.num_tasks
         dt = datetime.now() - self.start_time
         avg_dt = timedelta(
-            seconds=(dt.total_seconds() / float(self.num_finished + 1e-5)))
+            seconds=(dt.total_seconds() / float(self.total_finished + 1e-5)))
         time_left = timedelta(
             seconds=(avg_dt.total_seconds() * (
                 self.num_tasks - self.num_finished)))
 
+        msg = "\n".join([
+            "Progress: %d/%d (%.2f%%)" % (
+                self.num_finished, self.num_tasks, progress),
+            "Time elapsed  : %s" % str(dt),
+            "Time per task : %s" % str(avg_dt),
+            "Time remaining: %s" % str(time_left)
+        ])
+
+        return msg
+
+    def report(self, task_name):
         self.info_lock.acquire()
         logger.info("=" * 40)
         logger.info("Task `%s` complete", task_name)
-        logger.info("Progress: %d/%d (%.2f%%)",
-                    self.num_finished, self.num_tasks, progress)
-        logger.info("Time elapsed  : %s", str(dt))
-        logger.info("Time per task : %s", str(avg_dt))
-        logger.info("Time remaining: %s", str(time_left))
+        for line in self.get_status().split("\n"):
+            logger.info(line)
         logger.info("-" * 40)
         self.info_lock.release()
 
@@ -180,6 +190,7 @@ def run(host, port, params, force):
     server.register_function(manager.extract_data, 'panda_extract')
     server.register_function(manager.set_complete, 'panda_complete')
     server.register_function(manager.set_error, 'panda_error')
+    server.register_function(manager.get_status, 'panda_status')
     server.register_multicall_functions()
     server.register_introspection_functions()
 
