@@ -2,19 +2,16 @@
 
 import os
 import sys
-import glob
 import json
 import urllib2
 import time
-import base64
 import subprocess
-import pdb
 import boto.ec2
 import datetime
 import re
-import math
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from termcolor import colored
 
 
 # amazon keys
@@ -117,8 +114,20 @@ def list_status(zone, instances):
                 timestr = '%ih %s' % (hours, timestr)
             if delta.days > 0:
                 timestr = '%id %s' % (delta.days, timestr)
-            print '%03d ID:%s\t%s\t%s\t%s' % (
-                num, inst.id, inst.instance_type, ip, timestr)
+
+            print "=" * 70
+            print colored(
+                "\t".join([
+                    "%03d" % num,
+                    "ID: %s" % inst.id,
+                    inst.instance_type,
+                    ip,
+                    timestr]),
+                'blue')
+            print "-" * 70
+            ssh_call(zone, inst, 'ps -fp $(pgrep python)', False)
+            print
+
             num = num + 1
 
         else:
