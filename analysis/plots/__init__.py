@@ -2,3 +2,4 @@ import util
 import response_time_histograms
 import response_times
 import response_times_stimuli
+import response_time_scatters

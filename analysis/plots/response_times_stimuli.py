@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 
 import matplotlib.pyplot as plt
+import numpy as np
 import util
 from path import path
 
 
-def plot(key, data, fig_path):
+def plot(key, data, fig_path, seed):
+    np.random.seed(seed)
     fig, axes = plt.subplots(4, 5, sharey=True)
 
     df = data[key]
-
     for i, (stim, sdf) in enumerate(df[df['correct']].groupby('stimulus')):
         ax = axes.flat[i]
 
@@ -39,7 +40,7 @@ def plot(key, data, fig_path):
     plt.draw()
     plt.tight_layout()
 
-    pths = [fig_path.joinpath("response-times-stimuli-%s.%s" % (key, ext))
+    pths = [fig_path.joinpath("response_times_stimuli_%s.%s" % (key, ext))
             for ext in ('png', 'pdf')]
     for pth in pths:
         util.save(pth, close=False)
@@ -52,6 +53,7 @@ if __name__ == "__main__":
     data_path = path(config.get("paths", "data"))
     data = util.load_all(version, data_path)
     fig_path = path(config.get("paths", "figures")).joinpath(version)
+    seed = config.getint("global", "seed")
 
     for key in ['exp', 'th', 'hc', 'bq']:
-        print plot(key, data, fig_path)
+        print plot(key, data, fig_path, seed)

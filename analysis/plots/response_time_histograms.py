@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 import matplotlib.pyplot as plt
+import numpy as np
 import util
 from path import path
 
 
-def plot(data, fig_path):
+def plot(data, fig_path, seed):
+    np.random.seed(seed)
     fig, axes = plt.subplots(1, 5, sharey=True)
 
     order = ['exp', 'oc', 'th', 'hc', 'bq']
@@ -14,7 +16,7 @@ def plot(data, fig_path):
         'oc': "Oracle",
         'th': "Threshold",
         'hc': "Hill climbing",
-        'bq': "Bayesian quadratur"
+        'bq': "Bayesian quadrature"
     }
 
     for i, key in enumerate(order):
@@ -41,7 +43,7 @@ def plot(data, fig_path):
     plt.draw()
     plt.tight_layout()
 
-    pths = [fig_path.joinpath("response-time-histograms.%s" % ext)
+    pths = [fig_path.joinpath("response_time_histograms.%s" % ext)
             for ext in ('png', 'pdf')]
     for pth in pths:
         util.save(pth, close=False)
@@ -54,4 +56,5 @@ if __name__ == "__main__":
     data_path = path(config.get("paths", "data"))
     data = util.load_all(version, data_path)
     fig_path = path(config.get("paths", "figures")).joinpath(version)
-    print plot(data, fig_path)
+    seed = config.getint("global", "seed")
+    print plot(data, fig_path, seed)

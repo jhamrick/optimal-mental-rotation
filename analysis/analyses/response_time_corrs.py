@@ -17,7 +17,7 @@ def run(data, results_path, seed):
         df = data[key]
         y = df[df['correct']].groupby(
             ['stimulus', 'modtheta'])['ztime']
-        response_means[key] = y.mean()
+        response_means[key] = y.apply(util.bootstrap).unstack(-1)['median']
     response_means = pd.DataFrame(response_means)
 
     pth = results_path.joinpath("response_time_corrs.tex")
