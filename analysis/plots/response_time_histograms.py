@@ -41,9 +41,11 @@ def plot(data, fig_path):
     plt.draw()
     plt.tight_layout()
 
-    pth = fig_path.joinpath("response-time-histograms")
-    util.save(pth, ext=["png", "pdf"], close=False)
-    return pth
+    pths = [fig_path.joinpath("response-time-histograms.%s" % ext)
+            for ext in ('png', 'pdf')]
+    for pth in pths:
+        util.save(pth, close=False)
+    return pths
 
 
 if __name__ == "__main__":
