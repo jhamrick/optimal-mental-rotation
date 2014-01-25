@@ -10,17 +10,16 @@ from mental_rotation.analysis import bootcorr
 
 def run(data, results_path, seed):
     np.random.seed(seed)
-    keys = ['exp', 'bq', 'hc', 'oc', 'th']
+    keys = ['exp', 'bq', 'hc']
 
-    response_means = {}
+    accuracy_means = {}
     for key in keys:
         df = data[key]
-        y = df[df['correct']].groupby(
-            ['stimulus', 'modtheta', 'flipped'])['ztime']
-        response_means[key] = y.apply(util.bootstrap).unstack(-1)['median']
-    response_means = pd.DataFrame(response_means)
+        y = df.groupby(['stimulus', 'modtheta', 'flipped'])['correct']
+        accuracy_means[key] = y.apply(util.beta).unstack(-1)['median']
+    accuracy_means = pd.DataFrame(accuracy_means)
 
-    pth = results_path.joinpath("response_time_corrs.tex")
+    pth = results_path.joinpath("accuracy_corrs.tex")
     with open(pth, "w") as fh:
         fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
         for key in keys:
@@ -28,14 +27,14 @@ def run(data, results_path, seed):
                 continue
 
             corr = dict(bootcorr(
-                response_means['exp'],
-                response_means[key],
+                accuracy_means['exp'],
+                accuracy_means[key],
                 nsamples=5000,
                 method='spearman'))
 
             print "exp v. %s: %s" % (key, util.report_spearman.format(**corr))
             cmd = util.newcommand(
-                "Exp%sTimeCorr" % key.capitalize(),
+                "Exp%sAccuracyCorr" % key.capitalize(),
                 util.latex_spearman.format(**corr))
             fh.write(cmd)
 

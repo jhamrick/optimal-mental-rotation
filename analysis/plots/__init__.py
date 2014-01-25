@@ -5,3 +5,4 @@ import response_times_stimuli
 import response_time_scatters
 import accuracy
 import accuracy_stimuli
+import accuracy_scatters
