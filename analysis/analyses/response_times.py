@@ -1,26 +1,26 @@
 #!/usr/bin/env python
 
+import numpy as np
 import util
 from path import path
 
 
-def run(data, results_path):
-    pth = results_path.joinpath("response_times.tex")
+def run(data, results_path, seed):
+    np.random.seed(seed)
 
+    pth = results_path.joinpath("response_times.tex")
     with open(pth, "w") as fh:
         fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
 
         for name, df in data.iteritems():
-            t = util.bootstrap(df['time'])
+            t = dict(util.bootstrap(df['time']))
 
-            print "%s:\t%.2f [%.2f, %.2f]" % (
-                name, t['median'], t['lower'], t['upper'])
+            print "%s:\t%s" % (name, util.report_mean.format(**t))
+            cmd = util.newcommand(
+                "%sTime" % name.capitalize(),
+                util.latex_mean.format(**t))
 
-            for stat, val in t.iteritems():
-                cmd = util.newcommand(
-                    "%sTime%s" % (name.capitalize(), stat.capitalize()),
-                    "%.2f" % val)
-                fh.write(cmd)
+            fh.write(cmd)
 
     return pth
 
@@ -30,4 +30,5 @@ if __name__ == "__main__":
     data_path = path(config.get("paths", "data"))
     data = util.load_all(version, data_path)
     results_path = path(config.get("paths", "results")).joinpath(version)
-    print run(data, results_path)
+    seed = config.getint("global", "seed")
+    print run(data, results_path, seed)

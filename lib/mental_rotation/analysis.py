@@ -101,3 +101,34 @@ def beta(x):
         index=['lower', 'median', 'upper'],
         name=x.name)
     return stats
+
+
+def bootcorr(x, y, nsamples=1000, method='pearson'):
+    arr1 = np.asarray(x)
+    arr2 = np.asarray(y)
+    n, = arr1.shape
+    assert arr1.shape == arr2.shape
+
+    boot_idx = np.random.randint(0, n, n * nsamples)
+    boot_arr1 = arr1[boot_idx].reshape((n, nsamples))
+    boot_arr2 = arr2[boot_idx].reshape((n, nsamples))
+    boot_corr = np.empty(nsamples)
+
+    for i in xrange(nsamples):
+        ii = ~np.isnan(boot_arr1[:, i]) & ~np.isnan(boot_arr2[:, i])
+        if method == 'pearson':
+            func = scipy.stats.pearsonr
+        elif method == 'spearman':
+            func = scipy.stats.spearmanr
+        else:
+            raise ValueError("invalid method: %s" % method)
+
+        boot_corr[i] = func(
+            boot_arr1[ii, i],
+            boot_arr2[ii, i])[0]
+
+    stats = pd.Series(
+        np.percentile(boot_corr, [2.5, 50, 97.5]),
+        index=['lower', 'median', 'upper'])
+
+    return stats
