@@ -11,12 +11,12 @@ def plot(key, data, fig_path, seed):
     fig, axes = plt.subplots(4, 5, sharey=True)
 
     df = data[key]
-    for i, (stim, sdf) in enumerate(df[df['correct']].groupby('stimulus')):
+    for i, (stim, sdf) in enumerate(df.groupby('stimulus')):
         ax = axes.flat[i]
 
         for flipped, df2 in sdf.groupby('flipped'):
-            time = df2.groupby('modtheta')['ztime']
-            stats = time.apply(util.bootstrap).unstack(1)
+            correct = df2.groupby('modtheta')['correct']
+            stats = correct.apply(util.beta).unstack(1)
             lower = stats['median'] - stats['lower']
             upper = stats['upper'] - stats['median']
             ax.errorbar(
@@ -24,15 +24,14 @@ def plot(key, data, fig_path, seed):
                 yerr=[lower, upper],
                 label=flipped, lw=3)
 
-        ax.hlines(0, -10, 190, color='k', linestyle='--')
-        ax.set_xlabel("Rotation")
-        ax.set_xticks([0, 60, 120, 180])
         ax.set_xlim(-10, 190)
+        ax.set_ylim(0.3, 1.05)
+        ax.set_xticks([0, 60, 120, 180])
+        ax.set_xlabel("Rotation")
         util.clear_right(ax)
         util.clear_top(ax)
         util.outward_ticks(ax)
         ax.set_title("Stim %s" % stim)
-        ax.set_ylim(-2, 2)
 
     fig.set_figheight(8)
     fig.set_figwidth(10)
@@ -40,7 +39,7 @@ def plot(key, data, fig_path, seed):
     plt.draw()
     plt.tight_layout()
 
-    pths = [fig_path.joinpath("response_times_stimuli_%s.%s" % (key, ext))
+    pths = [fig_path.joinpath("accuracy_stimuli_%s.%s" % (key, ext))
             for ext in ('png', 'pdf')]
     for pth in pths:
         util.save(pth, close=False)
@@ -55,5 +54,5 @@ if __name__ == "__main__":
     fig_path = path(config.get("paths", "figures")).joinpath(version)
     seed = config.getint("global", "seed")
 
-    for key in ['exp', 'th', 'hc', 'bq']:
+    for key in ['exp', 'hc', 'bq']:
         print plot(key, data, fig_path, seed)
