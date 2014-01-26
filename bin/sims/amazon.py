@@ -12,6 +12,7 @@ import re
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from termcolor import colored
+from path import path
 
 
 # amazon keys
@@ -362,15 +363,15 @@ def fetch_data(args):
 
     addr = "ubuntu@%s" % instances[args.id].ip_address
 
-    cmd = [
-        "git", "annex", "unlock",
-        "data/model/%s_%s.dpkg" % (args.model, args.version)]
+    dpkg = "data/model/%s_%s.dpkg" % (args.model, args.version)
+    cmd = ["git", "annex", "unlock", dpkg]
     subprocess.call(cmd)
+    path(dpkg).rmtree_p()
 
-    cmd = [
-        "git", "annex", "unlock",
-        "data/sim-raw/%s/%s.tar.gz" % (args.model, args.version)]
+    raw = "data/sim-raw/%s/%s.tar.gz" % (args.model, args.version)
+    cmd = ["git", "annex", "unlock", raw]
     subprocess.call(cmd)
+    path(raw).remove()
 
     cmd = [
         "scp", "-r",
