@@ -376,9 +376,9 @@ def fetch_data(args):
     cmd = [
         "scp", "-r",
         "-i", "%s/.ssh/aws/kp_%s.pem" % (HOME, zone),
-        "%s:project/optimal-mental-rotation/data/model/%s_%s.dpkg/*" % (
+        "%s:project/optimal-mental-rotation/data/model/%s_%s.dpkg" % (
             addr, args.model, args.version),
-        "data/model/%s_%s.dpkg/" % (args.model, args.version)]
+        "data/model/"]
     subprocess.call(cmd)
 
     cmd = [
