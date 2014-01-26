@@ -36,3 +36,4 @@ htmlcov
 lib/mental_rotation/model/*.c
 lib/mental_rotation/model/*.so
 analysis/.ipynb_checkpoints
+results
