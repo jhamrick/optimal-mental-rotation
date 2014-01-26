@@ -86,7 +86,7 @@ def load_all(version, data_path, human=None):
     return data
 
 
-def bootstrap(x, nsamples=1000):
+def bootstrap(x, nsamples=10000):
     arr = np.asarray(x)
     n, = arr.shape
     boot_idx = np.random.randint(0, n, n * nsamples)
@@ -112,7 +112,7 @@ def beta(x):
     return stats
 
 
-def bootcorr(x, y, nsamples=1000, method='pearson'):
+def bootcorr(x, y, nsamples=10000, method='pearson'):
     arr1 = np.asarray(x)
     arr2 = np.asarray(y)
     n, = arr1.shape

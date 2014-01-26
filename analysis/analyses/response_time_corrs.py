@@ -28,7 +28,6 @@ def run(data, results_path, seed):
             corr = dict(util.bootcorr(
                 response_means['exp'],
                 response_means[key],
-                nsamples=5000,
                 method='spearman'))
 
             print "exp v. %s: %s" % (key, util.report_spearman.format(**corr))
