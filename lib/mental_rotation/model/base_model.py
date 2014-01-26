@@ -202,11 +202,11 @@ class BaseModel(object):
 
         ax.plot(ti, Ri, 'k-')
         ax.scatter(ti, Ri, c=ci, s=Si, edgecolor=ci)
-    
+
         ax.set_xlabel("Action #", fontsize=14)
         ax.set_xlim(0, Ri.size - 1)
- 
-        ax.set_ylim(np.pi+0.4, -np.pi-0.4)
+
+        ax.set_ylim(np.pi + 0.4, -np.pi - 0.4)
         ax.set_yticks([np.pi, np.pi / 2., 0, -np.pi / 2., -np.pi])
         ax.set_yticklabels([180, 90, 0, -90, -180])
 
@@ -214,7 +214,7 @@ class BaseModel(object):
             p0 = plt.Rectangle((0, 0), 1, 1, fc="r", ec="r")
             p1 = plt.Rectangle((0, 0), 1, 1, fc="b", ec="b")
             ax.legend(
-                [p0, p1], ["same", "flipped"], 
+                [p0, p1], ["$h=0$", "$h=1$"],
                 frameon=False, numpoints=1, fontsize=12)
 
     ##################################################################
