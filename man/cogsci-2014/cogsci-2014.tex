@@ -325,29 +325,22 @@ generated a sixth shape to be included along with the instructions,
 which had both a ``flipped'' and ``same'' version, each rotated to 320
 degrees.
 
-\subsection{Participants}
-
 \begin{figure*}[t]
   \begin{center}
-    \includegraphics[width=\textwidth]{../../figures/D/response-times.pdf}
+    \includegraphics[width=\textwidth]{../../figures/D/response_time.pdf}
     \caption{\textbf{Response times.}}
     \label{fig:response-times}
   \end{center}
 \end{figure*}
 
-We recruited \TODO{N} participants on Amazon's Mechanical Turk. Each
-participant was paid \$1.00 for approximately 15 minutes of work. Out
-of these participantsm \TODO{N\% (N)} were included in our
-analyses. The others were excluded either because of an experimental
-error (\TODO{N\% (N)}), because they had already compelted a previous
-version of the experiment (\TODO{N\% (N)}), or because they failed a
-comprehension check (\TODO{N\% (N)}).
 
 \subsection{Design}
 
-The experiment consisted 210 total trials: of one block of 10 practice
-trials followed by two blocks of 100 experiment trials. Within a
-block, trials were presented in a random order.
+We recruited 247 participants on Amazon's Mechanical Turk. Each
+participant was paid \$1.00 for approximately 15 minutes of work,
+consisting of one block of 10 practice trials followed by two blocks
+of 100 experiment trials. Within a block, trials were presented in a
+random order.
 
 All participants saw the same 10 practice trials (as described
 above). There were a total of 800 experimental stimuli (20 shapes
@@ -378,7 +371,7 @@ an example ``same'' pair and an example ``flipped'' pair: \textit{``On
   \textbf{same} object or \textbf{flipped} objects.''}
 
 On each trial, particpants were instructed to press the `b' key to
-begin and to focus on the fixation cross that appeared for \TODO{N}
+begin and to focus on the fixation cross that appeared for 750
 milliseconds afterwards. The two images were then presented
 side-by-side, each at 300px $\times$ 300px, and participants could
 press `s' to indicate they thought the images depicted the same
@@ -391,12 +384,35 @@ accurate. Specifically, we asked them to aim for at least 85\%
 accuracy in the experimental blocks, and provided a counter to keep
 them informed of their score.
 
+\section{Analysis}
+
+Out of the 247 participants, 200 (81\%) were included in our
+analyses. Of the rest, we excluded 10 (4\%) because of an experimental
+error, 6 (2.4\%) because they had already compelted a previous version
+of the experiment, and 31 (12.6\%) because they failed a comprehension
+check. A participant was marked as passing the comprehension check if
+they answered at least 85\% of ``easy'' trials correctly. ``Easy''
+trials were defined to be those for which the presented shapes
+differed by a rotation of no more than 20 degrees.
+
+We ran model simulations for the same stimuli that participants
+viewed. We ran 10 samples of each stimulus under the Oracle model, and
+100 samples of each stimulus for the Threshold, Hill Climbing, and
+Bayesian Quadrature models, with the exception of stimuli where
+$\theta=0$ or $\theta=180$, in which case we ran double the number of
+samples.
+
+For all analyses (except those of accuracy), confidence intervals were
+computed using a bootstrap analysis with 10000 bootstrap samples. For
+analyses of accuracy, confidence intervals were computed from a
+binomial proportion with a Jeffrey's beta prior.
+
 \section{Results}
 
 \begin{figure}[t]
   \centering
-  \subfloat{\includegraphics[width=0.25\textwidth]{../../figures/D/trial-vs-accuracy.pdf}}%
-  \subfloat{\includegraphics[width=0.25\textwidth]{../../figures/D/trial-vs-time.pdf}}
+  \subfloat{\includegraphics[width=0.25\textwidth]{../../figures/D/trial_accuracy.pdf}}%
+  \subfloat{\includegraphics[width=0.25\textwidth]{../../figures/D/trial_time.pdf}}
   \caption{\textbf{Effect of learning.}}
   \label{fig:learning}
 \end{figure}
