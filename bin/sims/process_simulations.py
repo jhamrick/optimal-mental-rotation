@@ -68,7 +68,7 @@ def process_all(model_type, version, sim_path, data_path, force=False):
     completed_file = sim_root.joinpath("completed.json")
     with open(completed_file, "r") as fh:
         completed = json.load(fh)
-        
+
     for taskname in tasks:
         if not completed[taskname]:
             raise RuntimeError("task '%s' is not complete" % taskname)
@@ -79,7 +79,9 @@ def process_all(model_type, version, sim_path, data_path, force=False):
     data = []
     for i, result in enumerate(results):
         taskname, taskdata = result
-        logger.info("Successfully processed '%s'", taskname)
+        logger.info(
+            "[%d/%d] Successfully processed '%s'",
+            i + 1, len(tasks), taskname)
         data.extend(taskdata)
 
     df = pd.DataFrame(data)\
