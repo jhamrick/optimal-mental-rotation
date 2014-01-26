@@ -14,12 +14,15 @@ def run(data, results_path, seed):
 
         for name in sorted(data.keys()):
             df = data[name]
-            t = dict(util.bootstrap(df['time']))
+            stats = {
+                'mean': df['time'].mean(),
+                'std': df['time'].std()
+            }
 
-            print "%s:\t%s" % (name, util.report_mean.format(**t))
+            print "%s:\t%s" % (name, util.report_mean.format(**stats))
             cmd = util.newcommand(
                 "%sTime" % name.capitalize(),
-                util.latex_mean.format(**t))
+                util.latex_mean.format(**stats))
 
             fh.write(cmd)
 
