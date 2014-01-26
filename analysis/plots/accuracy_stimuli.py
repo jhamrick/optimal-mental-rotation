@@ -6,7 +6,7 @@ import util
 from path import path
 
 
-def plot(key, data, fig_path, seed):
+def plot_key(key, data, fig_path, seed):
     np.random.seed(seed)
     fig, axes = plt.subplots(4, 5, sharey=True)
 
@@ -46,6 +46,13 @@ def plot(key, data, fig_path, seed):
     return pths
 
 
+def plot(data, fig_path, seed):
+    pths = []
+    for key in ['exp', 'hc', 'bq']:
+        pths.extend(plot_key(key, data, fig_path, seed))
+    return pths
+
+
 if __name__ == "__main__":
     config = util.load_config("config.ini")
     version = config.get("global", "version")
@@ -53,6 +60,4 @@ if __name__ == "__main__":
     data = util.load_all(version, data_path)
     fig_path = path(config.get("paths", "figures")).joinpath(version)
     seed = config.getint("global", "seed")
-
-    for key in ['exp', 'hc', 'bq']:
-        print plot(key, data, fig_path, seed)
+    print plot(data, fig_path, seed)

@@ -8,7 +8,7 @@ from path import path
 def run(data, results_path, seed):
     np.random.seed(seed)
 
-    pth = results_path.joinpath("response_times.tex")
+    pth = results_path.joinpath("response_time.tex")
     with open(pth, "w") as fh:
         fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
 

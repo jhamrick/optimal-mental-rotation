@@ -7,12 +7,13 @@ from path import path
 
 def run(data, results_path, seed):
     np.random.seed(seed)
+    keys = ['exp', 'expA', 'expB']
 
     pth = results_path.joinpath("trial_time_corrs.tex")
     with open(pth, "w") as fh:
         fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
 
-        for key in sorted(data.keys()):
+        for key in keys:
             df = data[key]
             trials = df[df['correct']]['trial'].drop_duplicates()
             trials.sort()
