@@ -71,7 +71,7 @@ def load_model(name, version, data_path):
     return data
 
 
-def load_all(version, data_path):
+def load_all(version, data_path, human=None):
     data = {
         'gs': load_model("GoldStandardModel", version, data_path),
         'oc': load_model("OracleModel", version, data_path),
@@ -79,7 +79,10 @@ def load_all(version, data_path):
         'hc': load_model("HillClimbingModel", version, data_path),
         'bq': load_model("BayesianQuadratureModel", version, data_path)
     }
-    data.update(load_human(version, data_path)[1])
+    if human is None:
+        data.update(load_human(version, data_path)[1])
+    else:
+        data.update(human)
     return data
 
 
