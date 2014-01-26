@@ -306,7 +306,7 @@ def load_data(data_path, db_path, conds, fields):
         n_complete, n_subj, n_complete * 100. / n_subj)
     logger.info(
         "%d/%d (%.1f%%) repeat participants",
-        n_repeat, n_complete, n_bad * 100. / n_complete)
+        n_repeat, n_complete, n_repeat * 100. / n_complete)
     logger.info(
         "%d/%d (%.1f%%) participants bad",
         n_bad, n_complete, n_bad * 100. / n_complete)
