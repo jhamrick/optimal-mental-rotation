@@ -107,7 +107,16 @@ split in half.
 
 ### Data
 
+Collected complete data for 247 participants, analyzed data for 200
+participants.
 
+```
+247/292 (84.6%) participants complete
+6/247 (2.4%) repeat participants
+10/247 (4.0%) participants bad
+31/247 (12.6%) participants failed
+200/247 (81.0%) participants OK
+```
 
 ### Notes/Issues
 
