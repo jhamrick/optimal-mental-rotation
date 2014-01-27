@@ -150,12 +150,3 @@ def save(path, fignum=None, close=True, width=None, height=None,
 
     if verbose:
         sys.stdout.write("Done\n")
-
-
-
-# def plot_time_curve(ax, df, flipped):
-#     time = df.groupby('modtheta')['ztime']
-#     stats = time.apply(bootstrap).unstack(1)
-#     lower = stats['median'] - stats['lower']
-#     upper = stats['upper'] - stats['median']
-#     ax.errorbar(stats.index, stats['median'], yerr=[lower, upper], label=flipped, lw=3)

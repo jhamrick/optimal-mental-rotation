@@ -16,7 +16,7 @@ def plot_key(key, data, fig_path, seed):
 
         for flipped, df2 in sdf.groupby('flipped'):
             correct = df2.groupby('modtheta')['correct']
-            stats = correct.apply(util.beta).unstack(1)
+            stats = correct.apply(util.beta).unstack(1) * 100
             lower = stats['median'] - stats['lower']
             upper = stats['upper'] - stats['median']
             ax.errorbar(
@@ -25,7 +25,7 @@ def plot_key(key, data, fig_path, seed):
                 label=flipped, lw=3)
 
         ax.set_xlim(-10, 190)
-        ax.set_ylim(0.3, 1.05)
+        ax.set_ylim(30, 105)
         ax.set_xticks([0, 60, 120, 180])
         ax.set_xlabel("Rotation")
         util.clear_right(ax)

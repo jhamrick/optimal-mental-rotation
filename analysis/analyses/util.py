@@ -24,5 +24,5 @@ latex_pearson = r"$r={median:.2f}$, 95\% CI $[{lower:.2f}, {upper:.2f}]$"
 report_percent = "M={median:.1f}%, 95% CI [{lower:.1f}%, {upper:.1f}%]"
 latex_percent = r"$M={median:.1f}\%$, 95\% CI $[{lower:.1f}\%, {upper:.1f}\%]$"
 
-report_mean = "M={mean:.2f}, SD={std:.2f}"
-latex_mean = r"$M={mean:.2f}$, $SD={std:.2f}$"
+report_mean = "M={median:.1f} [{lower:.1f}, {upper:.1f}]"
+latex_mean = r"$M={median:.1f}$ $[{lower:.1f}, {upper:.1f}]$"

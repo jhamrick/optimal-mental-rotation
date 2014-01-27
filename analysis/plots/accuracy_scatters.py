@@ -20,7 +20,7 @@ def plot(data, fig_path, seed):
     for model in order + ['exp']:
         df = data[model]
         y = df.groupby(['stimulus', 'modtheta', 'flipped'])['correct']
-        accuracy_means[model] = y.apply(util.beta).unstack(-1)['median']
+        accuracy_means[model] = y.apply(util.beta).unstack(-1)['median'] * 100
     accuracy_means = pd.DataFrame(accuracy_means).unstack('flipped')
 
     fig, axes = plt.subplots(1, len(order), sharey=True, sharex=True)
@@ -41,8 +41,8 @@ def plot(data, fig_path, seed):
         util.outward_ticks(ax)
 
     axes[0].set_ylabel("Human accuracy", fontsize=14)
-    axes[0].set_xlim(-0.05, 1.05)
-    axes[0].set_ylim(0.45, 1.05)
+    axes[0].set_xlim(-5, 105)
+    axes[0].set_ylim(45, 105)
     axes[0].legend(loc=0, numpoints=1)
 
     fig.set_figheight(3)

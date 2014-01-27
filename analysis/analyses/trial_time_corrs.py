@@ -17,12 +17,8 @@ def run(data, results_path, seed):
             df = data[key]
             trials = df[df['correct']]['trial'].drop_duplicates()
             trials.sort()
-            times = df[df['correct']]\
-                .groupby('trial')['ztime']\
-                .apply(util.bootstrap)\
-                .unstack(-1)['median']
-
-            corr = dict(util.bootcorr(trials, times))
+            times = df[df['correct']].groupby('trial')['time'].mean()
+            corr = dict(util.bootcorr(trials, times, method='spearman'))
 
             print "%s: %s" % (key, util.report_spearman.format(**corr))
             cmd = util.newcommand(

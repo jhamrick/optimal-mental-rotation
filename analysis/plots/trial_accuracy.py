@@ -14,14 +14,14 @@ def plot(data, fig_path, seed):
     trials.sort()
     acc = df.groupby('trial')['correct']\
         .apply(util.beta)\
-        .unstack(-1)['median']
+        .unstack(-1)['median'] * 100
 
     fig, ax = plt.subplots()
     ax.plot(np.asarray(trials), np.asarray(acc), 'k.')
     ax.set_xlim(1, 200)
-    ax.set_ylim(0.7, 1.0)
+    ax.set_ylim(70, 100)
     ax.set_xlabel("Trial", fontsize=14)
-    ax.set_ylabel("Accuracy (fraction correct)", fontsize=14)
+    ax.set_ylabel("Percent correct", fontsize=14)
     util.clear_right(ax)
     util.clear_top(ax)
     util.outward_ticks(ax)

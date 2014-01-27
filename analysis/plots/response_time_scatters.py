@@ -22,11 +22,11 @@ def plot(data, fig_path, seed):
     for model in order + ['exp']:
         df = data[model]
         y = df[df['correct']].groupby(
-            ['stimulus', 'modtheta', 'flipped'])['ztime']
-        response_means[model] = y.apply(util.bootstrap).unstack(-1)['median']
+            ['stimulus', 'modtheta', 'flipped'])['time']
+        response_means[model] = y.mean()
     response_means = pd.DataFrame(response_means).unstack('flipped')
 
-    fig, axes = plt.subplots(1, len(order), sharey=True, sharex=True)
+    fig, axes = plt.subplots(1, len(order), sharey=True, sharex=False)
 
     for i, model in enumerate(order):
         ax = axes[i]
@@ -44,8 +44,6 @@ def plot(data, fig_path, seed):
         util.outward_ticks(ax)
 
     axes[0].set_ylabel("Human response time", fontsize=14)
-    axes[0].set_xlim(-2, 3)
-    axes[0].set_ylim(-1.5, 1.5)
     axes[0].legend(loc=0, numpoints=1)
 
     fig.set_figheight(3)

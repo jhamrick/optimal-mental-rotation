@@ -28,12 +28,16 @@ def plot(data, fig_path, seed):
             bins = 100
 
         ax.hist(df['time'], bins=bins, normed=True, color='k')
-        ax.set_xlabel("Response time", fontsize=14)
         ax.set_title(titles[key], fontsize=14)
 
         util.clear_right(ax)
         util.clear_top(ax)
-        util.outward_ticks()
+        util.outward_ticks(ax)
+
+        if key == 'exp':
+            ax.set_xlabel("Response time", fontsize=14)
+        else:
+            ax.set_xlabel("Number of actions", fontsize=14)
 
     axes[0].set_ylabel("Fraction of responses", fontsize=14)
 

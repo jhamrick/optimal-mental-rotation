@@ -8,14 +8,14 @@ from path import path
 
 def plot_key(key, data, fig_path, seed):
     np.random.seed(seed)
-    fig, axes = plt.subplots(4, 5, sharey=True)
+    fig, axes = plt.subplots(4, 5, sharey=True, sharex=True)
 
     df = data[key]
     for i, (stim, sdf) in enumerate(df[df['correct']].groupby('stimulus')):
         ax = axes.flat[i]
 
         for flipped, df2 in sdf.groupby('flipped'):
-            time = df2.groupby('modtheta')['ztime']
+            time = df2.groupby('modtheta')['time']
             stats = time.apply(util.bootstrap).unstack(1)
             lower = stats['median'] - stats['lower']
             upper = stats['upper'] - stats['median']
@@ -24,7 +24,6 @@ def plot_key(key, data, fig_path, seed):
                 yerr=[lower, upper],
                 label=flipped, lw=3)
 
-        ax.hlines(0, -10, 190, color='k', linestyle='--')
         ax.set_xlabel("Rotation")
         ax.set_xticks([0, 60, 120, 180])
         ax.set_xlim(-10, 190)
@@ -32,7 +31,6 @@ def plot_key(key, data, fig_path, seed):
         util.clear_top(ax)
         util.outward_ticks(ax)
         ax.set_title("Stim %s" % stim)
-        ax.set_ylim(-2, 2)
 
     fig.set_figheight(8)
     fig.set_figwidth(10)

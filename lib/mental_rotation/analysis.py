@@ -35,9 +35,6 @@ def load_human(version, data_path):
     # compute correct responses
     exp['correct'] = exp['flipped'] == exp['response']
 
-    # compute zscored time
-    exp['ztime'] = exp.groupby('pid')['time'].apply(zscore)
-
     # compute modtheta, where all angles are between 0 and 180
     exp['modtheta'] = exp['theta'].apply(modtheta)
 
@@ -67,7 +64,6 @@ def load_model(name, version, data_path):
     data['modtheta'] = data['theta'].apply(modtheta)
     data['correct'] = data['flipped'] == data['hypothesis']
     data['time'] = data['nstep']
-    data['ztime'] = zscore(data['nstep'])
     return data
 
 
@@ -86,7 +82,7 @@ def load_all(version, data_path, human=None):
     return data
 
 
-def bootstrap(x, nsamples=10000):
+def bootstrap(x, nsamples=1000):
     arr = np.asarray(x)
     n, = arr.shape
     boot_idx = np.random.randint(0, n, n * nsamples)
@@ -99,32 +95,38 @@ def bootstrap(x, nsamples=10000):
     return stats
 
 
-def beta(x):
+def beta(x, percentiles=None):
     arr = np.asarray(x, dtype=int)
     alpha = float((arr == 1).sum()) + 0.5
     beta = float((arr == 0).sum()) + 0.5
-    lower, mean, upper = scipy.special.btdtri(
-        alpha, beta, [0.025, 0.5, 0.975])
-    stats = pd.Series(
-        [lower, mean, upper],
-        index=['lower', 'median', 'upper'],
-        name=x.name)
+    if percentiles is None:
+        lower, mean, upper = scipy.special.btdtri(
+            alpha, beta, [0.025, 0.5, 0.975])
+        stats = pd.Series(
+            [lower, mean, upper],
+            index=['lower', 'median', 'upper'],
+            name=x.name)
+    else:
+        stats = pd.Series(
+            scipy.special.btdtri(alpha, beta, percentiles),
+            index=percentiles,
+            name=x.name)
     return stats
 
 
-def bootcorr(x, y, nsamples=10000, method='pearson'):
+def bootcorr(x, y, nsamples=1000, method='pearson'):
     arr1 = np.asarray(x)
     arr2 = np.asarray(y)
     n, = arr1.shape
     assert arr1.shape == arr2.shape
 
-    boot_idx = np.random.randint(0, n, n * nsamples)
-    boot_arr1 = arr1[boot_idx].reshape((n, nsamples))
-    boot_arr2 = arr2[boot_idx].reshape((n, nsamples))
     boot_corr = np.empty(nsamples)
 
     for i in xrange(nsamples):
-        ii = ~np.isnan(boot_arr1[:, i]) & ~np.isnan(boot_arr2[:, i])
+        boot_idx = np.random.randint(0, n, n)
+        boot_arr1 = arr1[boot_idx]
+        boot_arr2 = arr2[boot_idx]
+
         if method == 'pearson':
             func = scipy.stats.pearsonr
         elif method == 'spearman':
@@ -132,9 +134,8 @@ def bootcorr(x, y, nsamples=10000, method='pearson'):
         else:
             raise ValueError("invalid method: %s" % method)
 
-        boot_corr[i] = func(
-            boot_arr1[ii, i],
-            boot_arr2[ii, i])[0]
+        ii = ~np.isnan(boot_arr1) & ~np.isnan(boot_arr2)
+        boot_corr[i] = func(boot_arr1[ii], boot_arr2[ii])[0]
 
     stats = pd.Series(
         np.percentile(boot_corr, [2.5, 50, 97.5]),

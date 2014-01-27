@@ -5,6 +5,7 @@ import accuracy
 import accuracy_corrs
 import trial_time_corrs
 import trial_accuracy_corrs
+import num_chance
 
 __all__ = [
     'response_time',
@@ -12,5 +13,6 @@ __all__ = [
     'accuracy',
     'accuracy_corrs',
     'trial_time_corrs',
-    'trial_accuracy_corrs'
+    'trial_accuracy_corrs',
+    'num_chance'
 ]

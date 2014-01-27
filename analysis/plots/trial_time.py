@@ -12,16 +12,13 @@ def plot(data, fig_path, seed):
     df = data['exp']
     trials = df[df['correct']]['trial'].drop_duplicates()
     trials.sort()
-    times = df[df['correct']]\
-        .groupby('trial')['ztime']\
-        .apply(util.bootstrap)\
-        .unstack(-1)['median']
+    times = df[df['correct']].groupby('trial')['time'].mean()
 
     fig, ax = plt.subplots()
     ax.plot(np.asarray(trials), np.asarray(times), 'k.')
     ax.set_xlim(1, 200)
     ax.set_xlabel("Trial", fontsize=14)
-    ax.set_ylabel("Response time (z-scored)", fontsize=14)
+    ax.set_ylabel("Response time", fontsize=14)
     util.clear_right(ax)
     util.clear_top(ax)
     util.outward_ticks(ax)

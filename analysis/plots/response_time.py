@@ -8,7 +8,7 @@ from path import path
 
 def plot(data, fig_path, seed):
     np.random.seed(seed)
-    fig, axes = plt.subplots(1, 5, sharex=True, sharey=True)
+    fig, axes = plt.subplots(1, 5, sharex=True)
 
     order = ['exp', 'oc', 'th', 'hc', 'bq']
     titles = {
@@ -24,7 +24,7 @@ def plot(data, fig_path, seed):
         df = data[key]
 
         for flipped, df2 in df[df['correct']].groupby('flipped'):
-            time = df2.groupby('modtheta')['ztime']
+            time = df2.groupby('modtheta')['time']
             stats = time.apply(util.bootstrap).unstack(1)
             lower = stats['median'] - stats['lower']
             upper = stats['upper'] - stats['median']
@@ -33,7 +33,6 @@ def plot(data, fig_path, seed):
                 yerr=[lower, upper],
                 label=flipped, lw=3)
 
-        ax.hlines(0, -10, 190, color='k', linestyle='--')
         ax.set_xlabel("Rotation", fontsize=14)
         ax.set_xticks(np.arange(0, 200, 20))
         ax.set_xlim(-10, 190)
@@ -43,8 +42,12 @@ def plot(data, fig_path, seed):
 
         ax.set_title(titles[key], fontsize=14)
 
+        if key == 'exp':
+            ax.set_ylabel("Response time", fontsize=14)
+        else:
+            ax.set_ylabel("Number of actions", fontsize=14)
+
     axes[0].legend(title="Stimuli", loc=0, frameon=False)
-    axes[0].set_ylim(-2, 2)
     fig.set_figheight(3)
     fig.set_figwidth(18)
 

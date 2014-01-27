@@ -13,11 +13,9 @@ def run(data, results_path, seed):
         fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
 
         for name in sorted(data.keys()):
-            df = data[name]
-            stats = {
-                'mean': df['time'].mean(),
-                'std': df['time'].std()
-            }
+            stats = dict(zip(
+                ['lower', 'median', 'upper'],
+                np.percentile(data[name]['time'], [25, 50, 75])))
 
             print "%s:\t%s" % (name, util.report_mean.format(**stats))
             cmd = util.newcommand(
