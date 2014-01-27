@@ -32,6 +32,23 @@ def run(data, results_path, seed):
                     util.latex_spearman.format(**corr))
                 fh.write(cmd)
 
+            df = data[key]
+            x = df[df['correct']]\
+                .groupby(['stimulus', 'modtheta'])['time']\
+                .mean()\
+                .reset_index()
+            thetas = x['modtheta']
+            times = x['time']
+
+            corr = dict(util.bootcorr(thetas, times))
+
+            print "%s (all): %s" % (
+                key, util.report_spearman.format(**corr))
+            cmd = util.newcommand(
+                "%sThetaTimeCorr" % key.capitalize(),
+                util.latex_spearman.format(**corr))
+            fh.write(cmd)
+
     return pth
 
 if __name__ == "__main__":
