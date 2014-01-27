@@ -92,9 +92,9 @@ One of our most astonishing cognitive feats is the ability to
 envision, manipulate, and plan with objects -- all without actually
 perceiving them. This capacity for ``mental simulation'' has been
 widely studied and has sparked intense debate about the underlying
-representation of mental images \TODO{cite}. Despite this vast
-literature, there have been surprisingly few computational models of
-mental imagery.
+representation of mental images \cite{Kosslyn:2009tj,
+  Pylyshyn:2002vk}. Despite this vast literature, there have been
+surprisingly few computational models of mental imagery.
 
 
 
@@ -102,11 +102,15 @@ mental imagery.
 
 classic result by shepard and metzler
 
+previous models of mental imagery: \cite{Kosslyn:1977tv, Anderson1978,
+  Funt:1983wn, Glasgow:1992tj}
+
 assume people rotate until congruent
 
 but how do people actually construct the plan for the rotation?
 
-evidence that people *don't* actually rotate until congruent
+evidence that people *don't* actually rotate until congruent,
+e.g. rotating away from near-perfect matches \cite{Gardony:2013gn}
 
 so what are they actually doing?
 
@@ -139,9 +143,10 @@ eye tracking \cite{Just1976}
 \section{Models of mental rotation}
 
 In the mental rotation task, people are presented with pairs of
-two-dimensional shapes similar to those used by \cite{Cooper:1975wp}
-(e.g., Figure \ref{fig:stimuli}) and must determine whether the two
-images depict the same shape, or mirror-image shapes.
+two-dimensional shapes similar to those used by \citeA{Cooper:1975wp};
+an example stimulus is shown in Fig.~\ref{fig:stimuli}. The goal is to
+determine whether the two images depict the same shape, or
+mirror-image (flipped) shapes.
 
 \subsection{Computational-level analysis}
 
@@ -270,9 +275,9 @@ over the similarity functions themselves:
 This is a technique known in the machine-learning literature as
 \textit{Bayesian Quadrature} (BQ)
 \cite{Diaconis:1988uo,OHagan:1991tx,Osborne:2012tm}. Specifically, we
-use Gaussian Process (GP) priors \cite{Osborne:2012tm} \TODO{probably
-  need to describe better what a GP is}. Because our domain is on a
-circle, we utilize a periodic kernel for the covariance
+use Gaussian Process (GP) priors, as in \citeA{Osborne:2012tm}
+\TODO{probably need to describe better what a GP is}. Because our
+domain is on a circle, we utilize a periodic kernel for the covariance
 \cite{Rasmussen:2006vz}, i.e. $k(\theta,
 \theta^\prime)=h^2\exp[-\frac{2}{w^2}\sin^2(\frac{1}{2}(\theta-\theta^\prime))]$.
 
@@ -301,21 +306,30 @@ log-GP.
 
 Now that we have a distribution over $Z_h$, we can additionally
 compute which points which we would expect to strengthen our estimate
-(i.e., decrease the variance). From \cite{Osborne:2012tm}, the
+(i.e., decrease the variance). From \citeA{Osborne:2012tm}, the
 expected variance of $Z_h$ if we sampled a new observation at
 $\theta_a$ is:
 \begin{align}
 \mathbb{E}&[\mathbb{V}(Z_h|\theta_a)]=\mathbb{V}(Z_h) + \mathbb{E}[Z_h] - \\
-&\int \mathbb{E}[Z_h|\theta_{a}]^2 \mathcal{N}(\mu_h(\theta_a), \mathrm{Cov}_h(\theta_a, \theta_a))\dif\log S_h(\theta_a)\nonumber
+&\int \mathbb{E}[Z_h|\theta_{a}]^2 \mathcal{N}(\mu_h(\theta_a), \mathrm{Cov}_h(\theta_a, \theta_a))\dif\log S_h(\theta_a).\nonumber
 \label{ref:expected-variance}
 \end{align}
 
 Revisiting our likelihood ratio, we now have:
 \begin{equation}
-p(\ell)\approx\frac{\mathcal{N}(\mathbb{E}[Z_0], \mathbb{V}(Z_0))}{\mathcal{N}(\mathbb{E}[Z_1], \mathbb{V}(Z_1))}
+p(\ell)\approx\frac{\mathcal{N}(\mathbb{E}[Z_0], \mathbb{V}(Z_0))}{\mathcal{N}(\mathbb{E}[Z_1], \mathbb{V}(Z_1))}.
 \end{equation}
-\TODO{figure out what to do here.}
-
+This distribution does not have a nice form. However, we really are
+just interested in whether $Z_0>Z_1$ or $Z_1>Z_0$: thus, rather than
+computing $p(\ell)$, we use $Z_D=Z_0-Z_1$. Assuming $Z_0$ and $Z_1$
+are independent,\footnote{This assumption is probably not
+  correct. \TODO{explanation?}} we have:
+\begin{equation}
+  p(Z_D)\propto\mathcal{N}(\mathbb{E}[Z_0] - \mathbb{E}[Z_1], \mathbb{V}(Z_0) + \mathbb{V}(Z_1)).
+\end{equation}
+We then sample new observations until we are at least 95\% confident
+that $Z_D\neq 0$. In other words, when $p(Z_D<0)<0.025$, we accept
+$h=0$, and when $p(Z_D<0)>0.975$, we accept $h=1$.
 
 \section{Methods}
 
@@ -509,11 +523,13 @@ half). Fig.~\ref{fig:learning}
   \end{center}
 \end{figure*}
 
-We replicated the previous monotonic response time result
+We replicated the previous monotonic response time result, though not
+the linear resulte. Actually kind of similar to \cite{Gardony:2013gn}
+\TODO{elaborate}
 
 Also replicated the constant accuracy for flipped stimuli, but not for
-same stimuli, from \TODO{cite cooper}. Why is this? Maybe the strategy
-is ``they are different until proven the same''.
+same stimuli, from \cite{Cooper:1975wp}. Why is this? Maybe the
+strategy is ``they are different until proven the same''.
 
 None of the models were particularly good fits to human data. The best
 fit was the \Oc{} model, though this is not satisfying because the
@@ -532,6 +548,9 @@ small steps, it often gets stuck sampling the same region over and
 over again, particularly for stimuli with larger rotations
 (Fig.~\ref{fig:model-traces}). As a result, its response time curve is
 convex rather than concave.
+
+Other problems: evidence that rotations aren't actually holistic
+\cite{Yuille:1982tx}, eye movements \cite{Just1976}
 
 \TODO{talk about how these results suggest a model of mental rotation
   is harder than was previous thought, and that this is a first step
