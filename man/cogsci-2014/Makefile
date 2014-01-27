@@ -1,6 +1,6 @@
 .PHONY: clean
 
-cogsci-2014.pdf: cogsci-2014.tex
+cogsci-2014.pdf: cogsci-2014.tex references.bib
 	pdflatex cogsci-2014.tex
 	bibtex cogsci-2014
 	pdflatex cogsci-2014.tex
