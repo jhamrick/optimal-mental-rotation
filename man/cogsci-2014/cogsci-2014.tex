@@ -40,6 +40,11 @@
 \newcommand{\hf}[0]{h=1}
 \newcommand{\dif}[0]{\,\mathrm{d}}
 
+\newcommand{\Oc}[0]{Oracle}
+\newcommand{\Th}[0]{Threshold}
+\newcommand{\Hc}[0]{HC}
+\newcommand{\Bq}[0]{BQ}
+
 \newenvironment{pitemize}{
 \begin{itemize}
   \setlength{\itemsep}{1pt}
@@ -53,6 +58,9 @@
 \input{../../results/D/accuracy_corrs.tex}
 \input{../../results/D/trial_time_corrs.tex}
 \input{../../results/D/trial_accuracy_corrs.tex}
+\input{../../results/D/num_chance.tex}
+\input{../../results/D/theta_time_corrs.tex}
+\input{../../results/D/theta_accuracy_corrs.tex}
 
 \title{An active sampling model of mental rotation}
  
@@ -73,6 +81,10 @@
 \TODO{}
 \end{abstract}
 
+\TODO{put correlations in figures} 
+
+\TODO{need a figure with an example similarity curve, and example
+  stimuli}
 
 \section{Introduction}
 
@@ -125,14 +137,6 @@ symbolic vs simulation \cite{Schwartz:1996uy}
 eye tracking \cite{Just1976}
 
 \section{Models of mental rotation}
-
-\begin{figure*}[t]
-  \begin{center}
-    \includegraphics[width=\textwidth]{../../figures/D/model-traces.pdf}
-    \caption{\textbf{Model traces.}}
-    \label{fig:model-traces}
-  \end{center}
-\end{figure*}
 
 In the mental rotation task, people are presented with pairs of
 two-dimensional shapes similar to those used by \cite{Cooper:1975wp}
@@ -214,12 +218,23 @@ then:
   \label{eq:actions}
 \end{equation}
 
-\subsubsection{Threshold-based model}
+\subsubsection{\Oc{} model}
 
-An intuitive and simple model is to first rotate in the direction that
-increases similarity, and then stop rotating once a ``match'' is
-found, as determined by a threshold on the value of $S$. If all
-rotations have been exhausted, then flip, and try rotating again.
+The previous hypothesis in the literature is that people perform a
+mental rotation in the shortest direction until a match is found, and
+that determining this direction is an implementation detail \TODO{cite
+  anderson?}. To reflect this hypothesis, we created an ``oracle''
+model which knows the correct rotation \textit{a priori}, and simply
+performs rotations in the shortest direction until it reaches the
+correct rotation.
+
+\subsubsection{\Th{} model}
+
+An intuitive and simple model which does not assume the direction is
+known might first rotate in the direction that increases similarity,
+and then stop rotating once a ``match'' is found, as determined by a
+threshold on the value of $S$. If all rotations have been exhausted,
+then flip, and try rotating again.
 
 The consequence of doing a search for a match is that
 Eq.~\ref{eq:lh-ratio} becomes a likelihood ratio test, where $\theta$
@@ -229,7 +244,7 @@ is set to the MLE value, rather than being marginalized:
   \label{eq:mle-lh-ratio}
 \end{equation}
 
-\subsubsection{Hill-climbing model}
+\subsubsection{Hill climbing model}
 
 Unfortunately, it is not always clear what constitutes a good enough
 ``match''. Many shapes may have multimodal similarity functions
@@ -237,18 +252,18 @@ Unfortunately, it is not always clear what constitutes a good enough
 unlikely to be known \textit{a priori} \TODO{cite something about how
   shape matching is hard}. In this case, we must weaken our stopping
 criteria: rather than searching for a value above a threshold, we
-search for \textit{any} local maximum.  Similar to the threshold-based
-model, we use the (local) MLE estimate of $\theta$, as in
-Eq.~\ref{eq:mle-lh-ratio}.
+search for \textit{any} local maximum, as in the Hill Climbing search
+algorithm (\Hc{}). Similar to the \Th{} model, we use the (local) MLE
+estimate of $\theta$, as in Eq.~\ref{eq:mle-lh-ratio}.
 
-\subsubsection{Confidence-based model}
+\subsubsection{Bayesian quadrature model}
 
-An alternative to the previous two models is to approximate the
-integrals in Eq.~\ref{eq:lh-ratio} by picking locations to sample
-which will most improve accuracy of the estimate. Rather than a point
-estimate of the ratio, or even a simple Monte Carlo estimate, we can
-infer a distribution by placing priors over the similarity functions
-themselves:
+An alternative to the previous models is not to perform a search for
+the MLE, but to approximate the integrals in Eq.~\ref{eq:lh-ratio} by
+picking locations to sample which will most improve accuracy of the
+estimate. Rather than a point estimate of the ratio, or even a simple
+Monte Carlo estimate, we can infer a distribution by placing priors
+over the similarity functions themselves:
 \begin{equation}
 \ell = \frac{\int \left[\int S(\Xb, f(\Xa, \theta, \hi))p(\theta)\dif\theta\right] p(S)\dif S}{\int \left[\int S(\Xb, f(\Xa, \theta, \hf))p(\theta)\dif\theta\right] p(S)\dif S}
 \end{equation}
@@ -270,12 +285,11 @@ the prior over the log enforces positivity after it is exponentiated:
 where $\mu_h:=\mu(\log S_h)$ is the mean of the log-GP. However, this
 integral is still intractable. To approximate it, we fit a second GP
 over points sampled from the log-GP.\footnote{Note that the approach
-  presented in \cite{Osborne:2012tm} differs slightly from the one
-  used here. We chose this newer version after a discussion with one
-  of the authors on the original BQ paper \TODO{cite personal
-    communication}.}We will denote these points as
-$\bar{S}_h:=\exp(\mu_h)$. Then, from \TODO{cite personal
-  communication}:
+  used here differs slightly from the one presented in
+  \citeA{Osborne:2012tm} and is based on personal communication with
+  one of the authors \cite{Duvenaud:2013td}.}We will denote these
+points as $\bar{S}_h:=\exp(\mu_h)$. Then, from
+\citeA{Duvenaud:2013td}:
 \begin{align}
   \mathbb{E}[Z_h] &\approx \int \bar{\mu}_h(\theta)p(\theta)\dif\theta,\\
   \mathbb{V}(Z_h) &\approx \iint \mathrm{Cov}_h(\theta,
@@ -328,7 +342,7 @@ degrees.
 \begin{figure*}[t]
   \begin{center}
     \includegraphics[width=\textwidth]{../../figures/D/response_time.pdf}
-    \caption{\textbf{Response times.}}
+    \caption{\textbf{Response times.} \TODO{}}
     \label{fig:response-times}
   \end{center}
 \end{figure*}
@@ -358,8 +372,8 @@ the original full block).
 \begin{figure*}[t]
   \begin{center}
     \includegraphics[width=0.85\textwidth]{../../figures/D/accuracy.pdf}
-    \caption{\textbf{Accuracy.}}
-    \label{fig:response-times}
+    \caption{\textbf{Accuracy.} \TODO{}}
+    \label{fig:accuracy}
   \end{center}
 \end{figure*}
 
@@ -396,16 +410,25 @@ trials were defined to be those for which the presented shapes
 differed by a rotation of no more than 20 degrees.
 
 We ran model simulations for the same stimuli that participants
-viewed. We ran 10 samples of each stimulus under the Oracle model, and
-100 samples of each stimulus for the Threshold, Hill Climbing, and
-Bayesian Quadrature models, with the exception of stimuli where
+viewed. We ran 10 samples of each stimulus under the \Oc{} model, and
+100 samples of each stimulus for the \Th{}, \Hc{}, and
+\Bq{} models, with the exception of stimuli where
 $\theta=0$ or $\theta=180$, in which case we ran double the number of
 samples.
 
-For all analyses (except those of accuracy), confidence intervals were
-computed using a bootstrap analysis with 10000 bootstrap samples. For
-analyses of accuracy, confidence intervals were computed from a
-binomial proportion with a Jeffrey's beta prior.
+For analyses of response time, confidence intervals were computed
+using a bootstrap analysis (sampling with replacement) with 1000
+bootstrap samples. Response times were only only considered for
+correct responses.
+
+For analyses of accuracy, confidence intervals were
+computed from a binomial proportion with a Jeffrey's beta prior.  For
+correlations, we performed a bootstrap analysis (sampling with
+replacement) over Spearman correlations using 10000 bootstrap samples.
+
+To test if participants or a model was above chance on a particular
+stimulus, we used the same posterior and checked whether $p>0.05$ for
+the 50\% mark.
 
 \section{Results}
 
@@ -413,18 +436,106 @@ binomial proportion with a Jeffrey's beta prior.
   \centering
   \subfloat{\includegraphics[width=0.25\textwidth]{../../figures/D/trial_accuracy.pdf}}%
   \subfloat{\includegraphics[width=0.25\textwidth]{../../figures/D/trial_time.pdf}}
-  \caption{\textbf{Effect of learning.}}
+  \caption{\textbf{Effect of learning.} \TODO{}}
   \label{fig:learning}
 \end{figure}
 
-response time as a function of rotation
+\subsubsection{Response times}
 
-accuracy as a function of rotation
+The average response time across all stimuli was \ExpTime{} seconds,
+and the average response time for an individual stimulus ranged from
+\ExpTimeMin{} to \ExpTimeMax{} seconds. The average accuracy across
+all stimuli was \ExpAccuracy{}, though there were \ExpNumChance{}
+individual stimuli (out of 720) for which people were not above
+chance.
 
-practice effects
+As expected, the minimum angle of rotation was significanty
+monotonically correlated with average per-stimulus response times,
+both for flipped pairs (\ExpThetaTimeCorrFlipped{}) and same pairs
+(\ExpThetaTimeCorrSame{}). This was also the case for the number of
+actions taken by the \Oc{} model (\OcThetaTimeCorr{}), the \Th{}
+model (\ThThetaTimeCorr{}), and the \Bq{} model
+(\BqThetaTimeCorr{}), but not the \Hc{} model
+(\HcThetaTimeCorr{}). Fig.~\ref{fig:response-times}a
+
+The number of actions taken by the \Oc{} model was the best predictor
+of human response times, with a correlation of \ExpOcTimeCorr{}. The
+\Th{} model was the next best (\ExpThTimeCorr{}), with the \Bq{} model
+not far behind (\ExpBqTimeCorr{}). The \Hc{} model was not
+significantly correlated with people (\ExpHcTimeCorr{}).
+
+\TODO{flipped response times higher than same response times for
+  smaller angles?}
+
+\subsubsection{Accuracy}
+
+Of the models, the \Oc{} and \Th{} models peformed perfectly,
+with 100\% accuracy. The \Bq{} model was very accurate
+overall (\BqAccuracy{}), though there were \BqNumChance{} stimuli for
+which it was not above chance. The \Hc{} model was not
+particularly accurate, and although it did perform above chance
+overall (\HcAccuracy{}), there were \HcNumChance{} individual stimuli
+for which it was not above chance.
+
+The minimum angle was also correlated with the average per-stimulus
+accuracy: for flipped pairs, \ExpThetaAccuracyCorrFlipped{}, and for
+same pairs, \ExpThetaAccuracyCorrSame{}. There was also a significant
+effect for the \Hc{} model (\HcThetaAccuracyCorr{}) and the
+\Bq{} model
+(\BqThetaAccuracyCorr{}). Fig.~\ref{fig:accuracy}
+
+There was a moderate correlation between the accuracy of the \Hc{}
+model and human accuracy (\ExpHcAccuracyCorr{}). The \Bq{} model had a
+similar correlation, with \ExpBqAccuracyCorr{}.
+
+\subsubsection{Practice effects} 
+
+There was a significant effect of learning both on response time
+(\ExpTrialTimeCorr{}) and on accuracy (\ExpTrialAccuracyCorr{}),
+though the effect on accuracy was not significant during the second
+half of the experiment (\ExpaTrialAccuracyCorr{} for the first half
+vs. \ExpbTrialAccuracyCorr{} for the second
+half). Fig.~\ref{fig:learning}
+
 
 \section{Discussion}
 
+\begin{figure*}[t]
+  \begin{center}
+    \includegraphics[width=\textwidth]{../../figures/D/model-traces.pdf}
+    \caption{\textbf{Model traces.} \TODO{} \TODO{put pictures of the
+        stimuli here}}
+    \label{fig:model-traces}
+  \end{center}
+\end{figure*}
+
+We replicated the previous monotonic response time result
+
+Also replicated the constant accuracy for flipped stimuli, but not for
+same stimuli, from \TODO{cite cooper}. Why is this? Maybe the strategy
+is ``they are different until proven the same''.
+
+None of the models were particularly good fits to human data. The best
+fit was the \Oc{} model, though this is not satisfying because the
+\Oc{} model knows the answer beforehand, which people obviously do
+not. The next best model, the \Th{} model, is also not a
+particularly satisfying account, because it knows the global maximum
+\textit{a priori}, which is not a reasonable assumption. \TODO{explain
+  why it is faster for 180 than mid angles -- it is because for a lot
+  of stimuli, there is rotational symmetry at 180, so it almost always
+  starts checking the correct version first. For mid angles, it might
+  check the wrong version first, meaning it takes much longer.}
+
+The \Bq{} model makes more reasonable assumptions about the observer's
+knowledge, but has its own problems. Because it is forced to take
+small steps, it often gets stuck sampling the same region over and
+over again, particularly for stimuli with larger rotations
+(Fig.~\ref{fig:model-traces}). As a result, its response time curve is
+convex rather than concave.
+
+\TODO{talk about how these results suggest a model of mental rotation
+  is harder than was previous thought, and that this is a first step
+  towards detangling these issues.}
 
 \section{Acknowledgments}
 
