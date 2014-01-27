@@ -15,14 +15,12 @@ def run(data, results_path, seed):
 
         for key in keys:
             for flipped, df in data[key].groupby('flipped'):
-                thetas = df['modtheta']
-                accuracy = df['correct']
-                # x = df.groupby(['stimulus', 'modtheta'])['correct']\
-                #       .apply(util.beta)\
-                #       .unstack(-1)['median']\
-                #       .reset_index()
-                # thetas = x['modtheta']
-                # accuracy = x['median']
+                x = df.groupby(['stimulus', 'modtheta'])['correct']\
+                      .apply(util.beta)\
+                      .unstack(-1)['median']\
+                      .reset_index()
+                thetas = x['modtheta']
+                accuracy = x['median']
 
                 corr = dict(util.bootcorr(
                     thetas, accuracy, method='spearman'))
