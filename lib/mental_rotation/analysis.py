@@ -114,7 +114,7 @@ def beta(x, percentiles=None):
     return stats
 
 
-def bootcorr(x, y, nsamples=1000, method='pearson'):
+def bootcorr(x, y, nsamples=10000, method='pearson'):
     arr1 = np.asarray(x)
     arr2 = np.asarray(y)
     n, = arr1.shape

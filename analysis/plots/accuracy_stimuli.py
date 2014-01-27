@@ -8,7 +8,7 @@ from path import path
 
 def plot_key(key, data, fig_path, seed):
     np.random.seed(seed)
-    fig, axes = plt.subplots(4, 5, sharey=True)
+    fig, axes = plt.subplots(4, 5, sharey=True, sharex=True)
 
     df = data[key]
     for i, (stim, sdf) in enumerate(df.groupby('stimulus')):
@@ -25,7 +25,6 @@ def plot_key(key, data, fig_path, seed):
                 label=flipped, lw=3)
 
         ax.set_xlim(-10, 190)
-        ax.set_ylim(30, 105)
         ax.set_xticks([0, 60, 120, 180])
         ax.set_xlabel("Rotation")
         util.clear_right(ax)

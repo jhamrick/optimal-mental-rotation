@@ -36,9 +36,6 @@ def plot(data, fig_path, seed):
         ax.set_xlabel("Rotation", fontsize=14)
         ax.set_xticks(np.arange(0, 200, 20))
         ax.set_xlim(-10, 190)
-        util.clear_right(ax)
-        util.clear_top(ax)
-        util.outward_ticks(ax)
 
         ax.set_title(titles[key], fontsize=14)
 
@@ -47,7 +44,12 @@ def plot(data, fig_path, seed):
         else:
             ax.set_ylabel("Number of actions", fontsize=14)
 
+        util.clear_right(ax)
+        util.clear_top(ax)
+        util.outward_ticks(ax)
+
     axes[0].legend(title="Stimuli", loc=0, frameon=False)
+
     fig.set_figheight(3)
     fig.set_figwidth(18)
 
