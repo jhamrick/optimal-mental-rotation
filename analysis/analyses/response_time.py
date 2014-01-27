@@ -13,16 +13,21 @@ def run(data, results_path, seed):
         fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
 
         for name in sorted(data.keys()):
-            stats = dict(zip(
-                ['lower', 'median', 'upper'],
-                np.percentile(data[name]['time'], [25, 50, 75])))
+            # overall mean
+            mean = data[name]['time'].mean()
+            means = data[name]\
+                .groupby(['stimulus', 'theta', 'flipped'])['time']\
+                .mean()
+            min = means.min()
+            max = means.max()
 
-            print "%s:\t%s" % (name, util.report_mean.format(**stats))
-            cmd = util.newcommand(
-                "%sTime" % name.capitalize(),
-                util.latex_mean.format(**stats))
-
-            fh.write(cmd)
+            print "%s:\t%.2f [%.2f, %.2f]" % (name, mean, min, max)
+            fh.write(util.newcommand(
+                "%sTime" % name.capitalize(), "%.2f" % mean))
+            fh.write(util.newcommand(
+                "%sTimeMin" % name.capitalize(), "%.2f" % min))
+            fh.write(util.newcommand(
+                "%sTimeMax" % name.capitalize(), "%.2f" % max))
 
     return pth
 
