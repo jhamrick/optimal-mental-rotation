@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import os
 import sys
@@ -200,23 +200,30 @@ def price_list(conn, ecus):
 
         minp, maxp = get_spot_quote(conn, itype[1])
         num = int(round(float(ecus) / itype[0]))
+        if num == 0:
+            continue
+
         amin = 1000.0 * min(minp, normp) / itype[0]
         if amin >= 10.0:
             continue
-        ilist.append([num, itype[1], num * itype[0],
-                      normp * num, minp * num, minp * num, amin])
 
-    return sorted(ilist, key=lambda x: x[7])
+        ilist.append([
+            num, itype[1],
+            num * itype[0],
+            normp * num,
+            minp * num,
+            minp * num, amin])
+
+    return sorted(ilist, key=lambda x: x[-1])
 
 
 def print_price(ilist):
     for idx, i in enumerate(ilist):
-        print '%03d: %3d x %-11s\t(%3d ECU)\t: normal $%3.2f/h \tspot $%.3f - $%5.2f\t min $%.3f /kECUh' % (
-            idx, i[1], i[2], i[3], i[4], i[5], i[6], i[7])
+        print '%03d: %3d x %-11s\t(%3d ECU)\t: normal $%3.2f/h \tspot $%.3f - $%5.2f\t min $%.3f /kECUh' % tuple([idx] + i)
 
 
 def get_prices(args):
-    ilist = sorted(price_list(connect(), args.ecus), key=lambda x: x[7])
+    ilist = sorted(price_list(connect(), args.ecus), key=lambda x: x[-1])
     print_price(ilist)
 
 
