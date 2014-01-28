@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import sys
 import subprocess
@@ -8,6 +8,8 @@ from ConfigParser import SafeConfigParser
 from termcolor import colored
 from path import path
 
+from mental_rotation import MODELS
+
 
 if __name__ == "__main__":
     parser = ArgumentParser(
@@ -16,6 +18,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-m", "--model",
         required=True,
+        choices=MODELS,
         help="Name of the model to use.")
     parser.add_argument(
         "-c", "--config",
