@@ -42,11 +42,11 @@ if __name__ == "__main__":
     sim_root = path(sim_path.joinpath(model, version))
 
     zip_path = sim_root.dirname().joinpath(version + ".tar.gz")
-    if zip_path.exists() and not args.force:
+    if (zip_path.exists() or zip_path.islink()) and not args.force:
         print "'%s' already exists" % zip_path.relpath()
         sys.exit(0)
 
-    if zip_path.exists():
+    if zip_path.exists() or zip_path.islink():
         zip_path.remove()
 
     cmd = ["tar", "-czvf", zip_path, '-C', sim_root.dirname(), sim_root.name]
