@@ -47,7 +47,6 @@ def simulate(task):
     if not data_path.exists():
         data_path.makedirs()
 
-    error = None
     for iopt, opts in model_opts.iteritems():
         logger.info("Task '%s', part %s", task['task_name'], iopt)
         dest = data_path.joinpath("part_%s" % iopt)
@@ -57,14 +56,11 @@ def simulate(task):
         except SystemExit:
             raise
         except:
-            error = traceback.format_exc()
-            break
+            print traceback.format_exc()
 
         if dest.exists():
             dest.rmtree_p()
         model.save(dest)
-
-    return error
 
 
 def worker_job(host, port):
