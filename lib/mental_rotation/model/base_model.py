@@ -150,8 +150,8 @@ class BaseModel(object):
         return log_S1
 
     def hypothesis_test(self):
-        llh0 = self.log_lh_h0
-        llh1 = self.log_lh_h1
+        llh0 = self.log_lh_h0 + np.log(self.opts['prior'])
+        llh1 = self.log_lh_h1 + np.log(1 - self.opts['prior'])
 
         if np.isclose(llh0, llh1):
             return None
@@ -161,7 +161,7 @@ class BaseModel(object):
             return 1
 
     ##################################################################
-    # Plotting 
+    # Plotting
 
     def plot(self, ax, F, f_S=None, color0='k', color=None):
         lines = {}
@@ -226,9 +226,11 @@ class BaseModel(object):
 
         llr = self.log_lh_h0 - self.log_lh_h1
         print "log LH(h0) / LH(h1) = %f" % llr
-        if llr < 0: # pragma: no cover
+
+        hyp = self.hypothesis_test()
+        if hyp == 1: # pragma: no cover
             print "--> STOP and accept hypothesis 1 (flipped)"
-        elif llr > 0: # pragma: no cover
+        elif hyp == 0: # pragma: no cover
             print "--> STOP and accept hypothesis 0 (same)"
         else: # pragma: no cover
             print "--> UNDECIDED"
@@ -247,15 +249,12 @@ class BaseModel(object):
 
     def _random_step(self):
         step = self.opts['step']
-        x = scipy.stats.norm.rvs(0, np.sqrt(step / 2.))
-        R = np.clip(x, -step, step)
-        # R = np.random.uniform(-step, step)
+        R = scipy.stats.norm.rvs(0, step)
         return R
-
 
     ##################################################################
     # Copying/Saving
-    
+
     def __getstate__(self):
         state = {}
         state['opts'] = self.opts

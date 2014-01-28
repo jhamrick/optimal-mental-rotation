@@ -7,7 +7,6 @@ import json
 import logging
 import pandas as pd
 import multiprocessing as mp
-import itertools
 
 from mental_rotation import MODELS
 from mental_rotation import model as m
@@ -17,15 +16,15 @@ logger = logging.getLogger('model.process_simulations')
 
 
 def load(task):
-    samples = task['samples']
+    model_opts = task['model_opts']
     model_class = getattr(m, task['model'])
     data_path = path(task['data_path'])
     stim_path = path(task['stim_path'])
 
     all_data = []
 
-    for isample in samples:
-        samppth = data_path.joinpath("sample_%02d" % isample)
+    for iopt, opts in model_opts.iteritems():
+        samppth = data_path.joinpath("part_%s" % iopt)
         stimname = stim_path.namebase
 
         model = model_class.load(samppth)
@@ -47,8 +46,7 @@ def load(task):
         data['stimulus'] = stim
         data['theta'] = rot
         data['flipped'] = flip
-
-        data['sample'] = isample
+        data.update(opts)
         all_data.append(data)
 
     return task['task_name'], all_data

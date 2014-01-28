@@ -28,7 +28,6 @@ signal.signal(signal.SIGINT, signal_handler)
 
 
 def simulate(task):
-    samples = task["samples"]
     stim_path = task["stim_path"]
     model_name = task["model"]
     seed = task["seed"]
@@ -49,10 +48,10 @@ def simulate(task):
         data_path.makedirs()
 
     error = None
-    for isamp in samples:
-        logger.info("Task '%s', sample %d", task['task_name'], isamp)
-        dest = data_path.joinpath("sample_%02d" % isamp)
-        model = model_class(Xa, Xb, **model_opts)
+    for iopt, opts in model_opts.iteritems():
+        logger.info("Task '%s', part %s", task['task_name'], iopt)
+        dest = data_path.joinpath("part_%s" % iopt)
+        model = model_class(Xa, Xb, **opts)
         try:
             model.sample()
         except SystemExit:
@@ -184,14 +183,18 @@ def run(host, port, nprocess, loglevel):
     np.seterr(invalid='ignore')
 
     # create the worker processes
-    processes = []
-    for i in xrange(nprocess):
-        p = mp.Process(target=worker_job, args=(host, port))
-        processes.append(p)
-        p.start()
+    if nprocess == 1:
+        worker_job(host, port)
 
-    # wait for them to finish
-    for p in processes:
-        p.join()
+    else:
+        processes = []
+        for i in xrange(nprocess):
+            p = mp.Process(target=worker_job, args=(host, port))
+            processes.append(p)
+            p.start()
+
+        # wait for them to finish
+        for p in processes:
+            p.join()
 
     logger.info("Worker threads done, shutting down.")

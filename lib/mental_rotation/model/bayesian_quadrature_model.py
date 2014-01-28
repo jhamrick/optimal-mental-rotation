@@ -55,6 +55,8 @@ class BayesianQuadratureModel(BaseModel):
         self._m1 = None
         self._V1 = None
 
+        self.direction = 0
+
     def _check_done(self):
         hyp = self.hypothesis_test()
         if hyp == 0 or hyp == 1:
@@ -62,13 +64,15 @@ class BayesianQuadratureModel(BaseModel):
             return True
         return False
 
-    def _add_observation(self, R, F):
+    def _add_observation(self, F, R, direction):
         self.model['R'].value = R
         self.model['F'].value = F
+        self.direction = direction
         logger.debug(
-            "F = %s, R = %s",
+            "F = %s, R = %s, direction = %s",
             float(self.model['F'].value),
-            self.model['R'].value)
+            self.model['R'].value,
+            self.direction)
 
         S = self._scale * np.exp(self.model['log_S'].logp)
         bq = self.bqs[F]
@@ -83,14 +87,20 @@ class BayesianQuadratureModel(BaseModel):
     def _get_actions(self):
         R = self.model['R'].value
         F = float(self.model['F'].value)
+        d = self.direction
 
-        all_actions = [
-            (1 - F, 0),
-            (1 - F, R),
-            (F, 0),
-            (F, R + np.abs(self._random_step())),
-            (F, R - np.abs(self._random_step()))
-        ]
+        if d == 0:
+            all_actions = [
+                (F, R + np.abs(self._random_step()), 1),
+                (F, R - np.abs(self._random_step()), -1)
+            ]
+        else:
+            all_actions = [
+                (1 - F, 0, 0),
+                (1 - F, R, d),
+                (F, 0, 0),
+                (F, R + d * np.abs(self._random_step()), d),
+            ]
 
         actions = []
         for action in all_actions:
@@ -240,7 +250,7 @@ class BayesianQuadratureModel(BaseModel):
 
         best = np.random.choice(choices)
 
-        self._add_observation(actions[best, 1], actions[best, 0])
+        self._add_observation(*actions[best])
 
     ##################################################################
     # The estimated S function
@@ -367,10 +377,12 @@ class BayesianQuadratureModel(BaseModel):
     # Misc
 
     def hypothesis_test(self):
-        m0 = self._m0 / self._scale
-        V0 = self._V0 / (self._scale ** 2)
-        m1 = self._m1 / self._scale
-        V1 = self._V1 / (self._scale ** 2)
+        lp = self.opts['prior']
+
+        m0 = lp * self._m0 / self._scale
+        V0 = lp ** 2 * self._V0 / (self._scale ** 2)
+        m1 = (1 - lp) * self._m1 / self._scale
+        V1 = (1 - lp) ** 2 * self._V1 / (self._scale ** 2)
 
         N0 = scipy.stats.norm(m0, np.sqrt(V0))
         if N0.cdf(0) > 0.025:

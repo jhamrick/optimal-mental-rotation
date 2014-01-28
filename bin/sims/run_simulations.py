@@ -3,21 +3,36 @@
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from mental_rotation import MODELS
 from mental_rotation.sims.manager import run
-from ConfigParser import SafeConfigParser
+from ConfigParser import SafeConfigParser, NoOptionError
 from path import path
 
 
 def make_params(model, config):
     version = config.get("global", "version")
+
+    def parse(vals):
+        return [float(x.strip()) for x in vals.split(",")]
+
     model_opts = {
-        'S_sigma': config.getfloat("model", "S_sigma"),
-        'step': config.getfloat("model", "step")
+        'S_sigma': parse(config.get("sims", "s_sigma")),
+        'step': parse(config.get("sims", "step")),
+        'prior': parse(config.get("sims", "prior"))
     }
 
     sim_path = path(config.get("paths", "simulations"))
     sim_root = path(sim_path.joinpath(model, version))
-    stim_path = path(config.get("paths", "stimuli"))
-    stim_paths = stim_path.joinpath(version).listdir()
+    stim_path = path(config.get("paths", "stimuli")).joinpath(version)
+
+    try:
+        stim_ids = [x.strip() for x in config.get("sims", "stims").split(",")]
+    except NoOptionError:
+        stim_ids = sorted(set([
+            x.namebase.split("_")[0] for x in stim_path.listdir()]))
+
+    stim_paths = []
+    for stim in stim_path.listdir():
+        if stim.namebase.split("_")[0] in stim_ids:
+            stim_paths.append(stim)
 
     params = {
         'model': model,

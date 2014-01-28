@@ -1,4 +1,5 @@
 from path import path
+from itertools import product
 import json
 import numpy as np
 
@@ -27,6 +28,7 @@ class Tasks(dict):
         stim_paths = params['stim_paths']
         num_samples = params['num_samples']
         chunksize = float(params['chunksize'])
+        opts = params['model_opts']
 
         tasks = cls()
         completed = cls()
@@ -38,12 +40,25 @@ class Tasks(dict):
             else:
                 ns = num_samples
 
-            n_chunks = int(np.ceil(ns / chunksize))
-            chunks = np.array_split(np.arange(ns), n_chunks, axis=0)
+            opt_names = sorted(opts.keys())
+            param_names = opt_names + ['sample']
+            param_vals = [opts[key] for key in param_names[:-1]]
+            param_vals.append(range(ns))
 
-            for ichunk, chunk in enumerate(chunks):
-                sim_name = "%s~%d" % (stim.namebase, ichunk)
+            combs = np.array(list(product(*param_vals)))
+            if chunksize == -1:
+                n_chunks = 1
+            else:
+                n_chunks = int(np.ceil(combs.shape[0] / chunksize))
+
+            ichunks = np.array_split(
+                np.arange(len(combs)), n_chunks, axis=0)
+
+            for idx, ichunk in enumerate(ichunks):
+                sim_name = "%s~%d" % (stim.namebase, idx)
                 data_path = sim_root.joinpath(sim_name)
+                model_opts = {
+                    i: dict(zip(param_names, combs[i])) for i in ichunk}
 
                 # Make the task dicts for this sample.
                 tasks[sim_name] = {
@@ -53,8 +68,7 @@ class Tasks(dict):
                     "data_path": str(data_path),
                     "task_name": sim_name,
                     "seed": abs(hash(sim_name)),
-                    "samples": [int(x) for x in chunk],
-                    "model_opts": params["model_opts"]
+                    "model_opts": model_opts,
                 }
 
                 completed[sim_name] = False

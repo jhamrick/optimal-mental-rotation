@@ -20,7 +20,7 @@ class ThresholdModel(BaseModel):
             self.model['R'].value = 0
             self.model['F'].value = 0
             S0 = np.exp(self.model['log_S'].logp)
-                
+
             self.tally()
             self._current_iter += 1
             self.model['F'].value = 1
@@ -37,9 +37,6 @@ class ThresholdModel(BaseModel):
             return
 
         R = self.model['R'].value
-        F = self.model['F'].value
-        log_S = self.model['log_S'].logp
-
         if self.direction is None:
             step = self._random_step()
             self.direction = np.sign(step)
@@ -49,12 +46,6 @@ class ThresholdModel(BaseModel):
             if np.exp(new_log_S) > self._thresh:
                 self.status = 'done'
                 return
-
-            if new_log_S < log_S:
-                self.tally()
-                self._current_iter += 1
-                self.direction *= -1
-                self.model['R'].value = 0
 
         else:
             step = self.direction * np.abs(self._random_step())
