@@ -16,15 +16,16 @@ from path import path
 
 
 # amazon keys
-ZONE = 'us-west-2'
+regions = ['us-west-2', 'us-east-1']
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 HOME = os.getenv('HOME')
 
-# HVM AMI
-IMAGE_ID = 'ami-5495f564'
-# Normal AMI
-#IMAGE_ID = ami-908deda0'
+# instance data
+image_ids = {
+    'us-west-2': 'ami-5495f564',
+    'us-east-1': 'ami-05d5ea6c'
+}
 
 region_translate = {
     'us-east-1': 'us-east',
@@ -47,6 +48,16 @@ possible_instance_types = [
 ###############
 ## FUNCTIONS ##
 ###############
+
+# def running_procs(zone,instance):
+# 	op=ssh_call(zone,instance,'ps ax | grep mitsuba | wc -l; ps ax | grep rsync | wc -l').splitlines()
+# 	return [int(op[0])-2, int(op[1])-2]
+
+# def get_running_sec(inst):
+# 	dt, tz = parse_timestamp(inst.launch_time)
+# 	curTime = datetime.datetime(*time.gmtime()[:6])
+# 	delta = curTime-dt
+# 	return delta.seconds
 
 
 def parse_timestamp(s):
@@ -83,14 +94,14 @@ def parse_timestamp(s):
     return None, None
 
 
-def connect():
+def connect(zone):
     return boto.ec2.connect_to_region(
-        ZONE,
+        zone,
         aws_access_key_id=AWS_ACCESS_KEY_ID,
         aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
 
-def list_status(instances):
+def list_status(zone, instances):
     num = 0
     for inst in instances:
         if inst.state == 'running':
@@ -116,10 +127,10 @@ def list_status(instances):
                     timestr]),
                 'blue')
 
-            pids = ssh_call(inst, 'pgrep python', True)
+            pids = ssh_call(zone, inst, 'pgrep python', True)
             if pids.strip() != '':
                 print "-" * 70
-                ssh_call(inst, 'ps -fp $(pgrep python)', False)
+                ssh_call(zone, inst, 'ps -fp $(pgrep python)', False)
 
             print
 
@@ -140,11 +151,12 @@ def get_instances(conn, active_only=False):
 
 
 def list_instances(args):
-    print 'Zone %s' % ZONE
-    list_status(get_instances(connect()))
+    for idx, zone in enumerate(regions):
+        print ('Zone %s [ID %d]' % (zone, idx))
+        list_status(zone, get_instances(connect(zone)))
 
 
-def get_quote(type):
+def get_quote(zone, type):
     if not get_quote.pricing:
         response = urllib2.urlopen(
             'http://aws.amazon.com/ec2/pricing/' +
@@ -153,7 +165,7 @@ def get_quote(type):
         get_quote.pricing = json.loads(pricejson)
 
     for regions in get_quote.pricing['config']['regions']:
-        if regions['region'] != region_translate[ZONE]:
+        if regions['region'] != region_translate[zone]:
             continue
         for itypes in regions['instanceTypes']:
             for size in itypes['sizes']:
@@ -193,10 +205,10 @@ def get_spot_quote(conn, type):
     return min_price, max_price
 
 
-def price_list(conn, ecus):
+def price_list(zone, conn, ecus):
     ilist = []
     for itype in possible_instance_types:
-        normp = get_quote(itype[1])
+        normp = get_quote(zone, itype[1])
         if normp < 0:
             continue
 
@@ -208,30 +220,33 @@ def price_list(conn, ecus):
         amin = 1000.0 * min(minp, normp) / itype[0]
         if amin >= 10.0:
             continue
-
-        ilist.append([
-            num, itype[1],
-            num * itype[0],
-            normp * num,
-            minp * num,
-            minp * num, amin])
+        ilist.append([zone, num, itype[1], num * itype[0],
+                      normp * num, minp * num, minp * num, amin])
 
     return sorted(ilist, key=lambda x: x[-1])
 
 
-def print_price(ilist):
+def print_price(ilist, print_zone):
     for idx, i in enumerate(ilist):
-        print '%03d: %3d x %-11s\t(%3d ECU)\t: normal $%3.2f/h \tspot $%.3f - $%5.2f\t min $%.3f /kECUh' % tuple([idx] + i)
+        if print_zone:
+            pzone = '%s[%d]' % (i[0], regions.index(i[0]))
+        else:
+            pzone = '%03d' % idx
+        print ('%s: %3d x %-11s\t(%3d ECU)\t: normal $%3.2f/h \tspot $%.3f - $%5.2f\t min $%.3f /kECUh' % (
+            pzone, i[1], i[2], i[3], i[4], i[5], i[6], i[7]))
 
 
 def get_prices(args):
-    ilist = sorted(price_list(connect(), args.ecus), key=lambda x: x[-1])
-    print_price(ilist)
+    ilist = []
+    for zone in regions:
+        ilist.extend(price_list(zone, connect(zone), args.ecus))
+    ilist = sorted(ilist, key=lambda x: x[7])
+    print_price(ilist, True)
 
 
-def ssh_call(inst, cmd, ret_out=True):
+def ssh_call(zone, inst, cmd, ret_out=True):
     pr = subprocess.Popen(
-        ['ssh', '-i', '%s/.ssh/aws/kp_%s.pem' % (HOME, ZONE),
+        ['ssh', '-i', '%s/.ssh/aws/kp_%s.pem' % (HOME, zone),
          '-o', 'StrictHostKeyChecking=no',
          '-o', 'LogLevel=ERROR',
          '-o', 'UserKnownHostsFile=/dev/null',
@@ -250,14 +265,16 @@ def ssh_call(inst, cmd, ret_out=True):
 
 
 def login_instance(args):
-    conn = connect()
+    zone = regions[args.zone]
+    conn = connect(zone)
     instances = get_instances(conn, active_only=True)
     print 'Log into instance %s' % instances[args.id].id
-    ssh_call(instances[args.id], '', False)
+    ssh_call(zone, instances[args.id], '', False)
 
 
 def terminate(args):
-    conn = connect()
+    zone = regions[args.zone]
+    conn = connect(zone)
     instances = get_instances(conn, active_only=False)
     for i in instances:
         if i.state != "terminated":
@@ -277,28 +294,30 @@ def wait_for(instances):
 
 
 def create_instance(args):
-    conn = connect()
+    zone = regions[args.zone]
+    conn = connect(zone)
 
-    ilist = price_list(conn, args.ecus)
-    print_price(ilist)
+    ilist = price_list(zone, conn, args.ecus)
+    print_price(ilist, False)
 
     cont = raw_input('(n)ormal, (s)pot, (a)bort ? ')
     if cont != 'n' and cont != 's':
         sys.exit(1)
     type_idx = int(raw_input('instance type number ? '))
 
-    instance_type = ilist[type_idx][1]
-    num_instances = ilist[type_idx][0]
+    instance_type = ilist[type_idx][2]
+    num_instances = ilist[type_idx][1]
     print('Choosing %dx \'%s\'' % (num_instances, instance_type))
 
+    image_id = image_ids[zone]
     instances = []
     if cont == 'n':
         res = conn.run_instances(
-            image_id=IMAGE_ID,
+            image_id=image_id,
             min_count=num_instances,
             max_count=num_instances,
-            key_name='kp_' + ZONE,
-            security_groups=['sg_' + ZONE],
+            key_name='kp_' + zone,
+            security_groups=['sg_' + zone],
             instance_initiated_shutdown_behavior='stop',
             instance_type=instance_type)
         instances = res.instances
@@ -306,9 +325,9 @@ def create_instance(args):
     elif cont == 's':
         price = float(raw_input('max price $')) / num_instances
         res = conn.request_spot_instances(
-            key_name='kp_' + ZONE,
-            security_groups=['sg_' + ZONE],
-            image_id=IMAGE_ID,
+            key_name='kp_' + zone,
+            security_groups=['sg_' + zone],
+            image_id=image_id,
             count=num_instances,
             price=str(price),
             instance_type=instance_type,
@@ -321,28 +340,31 @@ def create_instance(args):
 
     print ('Waiting for instances...')
     wait_for(instances)
-    list_status(instances)
+    list_status(zone, instances)
 
 
 def abort_scripts(args):
-    conn = connect()
+    zone = regions[args.zone]
+    conn = connect(zone)
     instances = get_instances(conn, active_only=True)
     for inst in instances:
         print "Aborting scripts on instance '%s'..." % inst.id
-        ssh_call(inst, 'killall python', False)
+        ssh_call(zone, inst, 'killall python', False)
 
 
 def update_git(args):
-    conn = connect()
+    zone = regions[args.zone]
+    conn = connect(zone)
     instances = get_instances(conn, active_only=True)
     for inst in instances:
         print "Updating git repo on instance '%s'..." % inst.id
         cmd = "cd project/optimal-mental-rotation && git pull"
-        ssh_call(inst, cmd, False)
+        ssh_call(zone, inst, cmd, False)
 
 
 def fetch_data(args):
-    conn = connect()
+    zone = regions[args.zone]
+    conn = connect(zone)
     instances = get_instances(conn, active_only=True)
     print 'Fetch %s (%s) from instance %s' % (
         args.model, args.version, instances[args.id].id)
@@ -364,7 +386,7 @@ def fetch_data(args):
 
     cmd = [
         "scp", "-r",
-        "-i", "%s/.ssh/aws/kp_%s.pem" % (HOME, ZONE),
+        "-i", "%s/.ssh/aws/kp_%s.pem" % (HOME, zone),
         "%s:project/optimal-mental-rotation/data/model/%s_%s.dpkg" % (
             addr, args.model, args.version),
         "data/model/"]
@@ -372,7 +394,7 @@ def fetch_data(args):
 
     cmd = [
         "scp", "-r",
-        "-i", "%s/.ssh/aws/kp_%s.pem" % (HOME, ZONE),
+        "-i", "%s/.ssh/aws/kp_%s.pem" % (HOME, zone),
         "%s:project/optimal-mental-rotation/data/sim-raw/%s/%s.tar.gz" % (
             addr, args.model, args.version),
         "data/sim-raw/%s/" % args.model]
@@ -401,12 +423,18 @@ if __name__ == "__main__":
     create_parser = subparsers.add_parser(
         'create', help="create ec2 instances")
     create_parser.add_argument(
+        'zone', type=int,
+        help="zone")
+    create_parser.add_argument(
         'ecus', type=int, help="number of desired ECUs")
     create_parser.set_defaults(func=create_instance)
 
     # # start
     # start_parser = subparsers.add_parser(
     #     'start', help="start simulations")
+    # start_parser.add_argument(
+    #     'zone', type=int, required=True,
+    #     help="zone")
     # start_parser.add_argument(
     #     'id', type=int, required=True,
     #     help="which instance to start server on")
@@ -415,16 +443,25 @@ if __name__ == "__main__":
     # abort
     abort_parser = subparsers.add_parser(
         'abort', help="abort scripts on all nodes")
+    abort_parser.add_argument(
+        'zone', type=int,
+        help="zone")
     abort_parser.set_defaults(func=abort_scripts)
 
     # update
     update_parser = subparsers.add_parser(
         'update', help="update git repositories on all nodes")
+    update_parser.add_argument(
+        'zone', type=int,
+        help="zone")
     update_parser.set_defaults(func=update_git)
 
     # fetch
     fetch_parser = subparsers.add_parser(
         'fetch', help="fetch git repositories on all nodes")
+    fetch_parser.add_argument(
+        'zone', type=int,
+        help="zone")
     fetch_parser.add_argument(
         'id', type=int,
         help="which instance to fetch data from")
@@ -440,6 +477,9 @@ if __name__ == "__main__":
     login_parser = subparsers.add_parser(
         'login', help="log in to instance")
     login_parser.add_argument(
+        'zone', type=int,
+        help="zone")
+    login_parser.add_argument(
         'id', type=int,
         help="which instance to log in to")
     login_parser.set_defaults(func=login_instance)
@@ -447,6 +487,9 @@ if __name__ == "__main__":
     # terminate
     terminate_parser = subparsers.add_parser(
         'terminate', help="terminate all nodes")
+    terminate_parser.add_argument(
+        'zone', type=int,
+        help="zone")
     terminate_parser.set_defaults(func=terminate)
 
     args = parser.parse_args()
