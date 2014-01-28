@@ -91,6 +91,7 @@ def process_all(model_type, version, sim_path, data_path, force=False):
         dp = dpkg.DataPackage.load(dp_path)
         dp.bump_minor_version()
         dp.clear_resources()
+        dp_path.rmtree_p()
 
     # create the datapackage
     else:
