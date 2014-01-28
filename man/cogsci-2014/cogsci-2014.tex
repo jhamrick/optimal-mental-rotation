@@ -62,7 +62,7 @@
 \input{../../results/D/theta_time_corrs.tex}
 \input{../../results/D/theta_accuracy_corrs.tex}
 
-\title{An active sampling model of mental rotation}
+\title{Modeling mental rotation}
  
 \author{{\large \bf Jessica B. Hamrick (jhamrick@berkeley.edu)} \\
   {\large \bf Thomas L. Griffiths (tom\_griffiths@berkeley.edu)} \\
@@ -86,36 +86,66 @@
 \TODO{need a figure with an example similarity curve, and example
   stimuli}
 
+\TODO{fix title}
+
 \section{Introduction}
 
 One of our most astonishing cognitive feats is the ability to
 envision, manipulate, and plan with objects -- all without actually
 perceiving them. This capacity for ``mental simulation'' has been
 widely studied and has sparked intense debate about the underlying
-representation of mental images \cite{Kosslyn:2009tj,
+representation of mental images \cite<e.g.,>{Kosslyn:2009tj,
   Pylyshyn:2002vk}. Despite this vast literature, there have been
 surprisingly few computational models of mental imagery.
 
-
-
 \section{Background}
 
-classic result by shepard and metzler
+In the classic experiment by \citeA{Shepard1971}, participants viewed
+images of three-dimensional objects and had to determine whether the
+images depicted the same object (which differed by a rotation) or two
+separate objects (which differed by a reflection and a rotation). The
+result was that people's response times had a strong linear
+correlation with the minimum angle of rotation. The conclusion was
+that people were solving this task by ``mentally rotating'' the
+objects until they were congruent.
 
-previous models of mental imagery: \cite{Kosslyn:1977tv, Anderson1978,
-  Funt:1983wn, Glasgow:1992tj}
+However, there are some questions regarding this process of problem
+solving that are not explained by the alignment hypothesis: how do
+people know the axis around which to rotate the objects? If the axis
+is known, how do people know which direction to rotate the objects?
+And finally, how do people know when to stop rotating and give a
+response?
 
-assume people rotate until congruent
+Previous models of mental rotation have, for the most part, not
+addressed these questions. \citeA{Kosslyn:1977tv} focus primarily on
+simulating the visual simulation buffer rather than the decision of
+\textit{what} should be simulated. Similarly, \citeA{Glasgow:1992tj}
+are more concerned with the representation of imagery than the
+process. Although \citeA{Anderson1978} emphasizes the importance of
+considering both representation and process, he dismisses the problem
+of determining the direction and axis of rotation as merely a
+``technical difficulty''.
 
-but how do people actually construct the plan for the rotation?
+The only model (of which the authors are aware) that has more
+seriously attempted to address these concerns is the parallel-process
+model of mental rotation by \citeA{Funt:1983wn}. He determines the
+direction and axis of rotation using the method-of-moments method;
+once this target rotation computed, his model rotates one object until
+the target rotation is reached, and then compares the two to see if
+they are congruent.
 
-evidence that people *don't* actually rotate until congruent,
-e.g. rotating away from near-perfect matches \cite{Gardony:2013gn}
+More recently, evidence has come to light that people \textit{do not}
+actually rotate until the objects are congruent. Eye-tracking studies
+suggest people pay attention to certain salient features of the
+object, rather than a holistic representation \cite{Just1976}, and 
+\citeA{Yuille:1982tx} e.g. rotating away from near-perfect matches \cite{Gardony:2013gn}
 
 so what are they actually doing?
 
 perhaps they are performing mental manipulations of an image, but not
 a single trajectory of rotation
+
+\subsection{A rational analysis of mental rotation}
 
 rational analysis \cite{Marr:1983to,anderson90,Shepard:1987tt}
 
@@ -148,6 +178,10 @@ an example stimulus is shown in Fig.~\ref{fig:stimuli}. The goal is to
 determine whether the two images depict the same shape, or
 mirror-image (flipped) shapes.
 
+here we use simple 2d models as a starting point, but the general case
+of solving this problem is very difficult, \TODO{cite shape matching
+  literature}
+
 \subsection{Computational-level analysis}
 
 Formally, we denote the shapes as $X_a$ and $X_b$ and assume $X_b$ is
@@ -161,12 +195,10 @@ hypothesis given the observed shapes is then:
   \label{eq:posterior}
 \end{equation}
 Because we ultimately want to determine which hypothesis is more
-likely, the quantity of interest is a ratio:
-\begin{equation*}
-  \ell := \frac{\int p(X_b\ \vert\ X_a, \theta, \hi)p(X_a)p(\hi)p(\theta)\dif\theta}{\int p(X_b\ \vert\ X_a, \theta, \hf)p(X_a)p(\hf)p(\theta)\dif\theta},
-\end{equation*}
-which (assuming the two hypotheses are equally likely \textit{a
-  priori}, and that all rotations are equally likely) simplifies to:
+likely, the quantity of interest is a ratio $\ell:=p(h=0\ \vert\ X_a,
+X_b) / p(h=1\ \vert\ X_a, X_b)$ which (assuming the two hypotheses are
+equally likely \textit{a priori}, and that all rotations are equally
+likely) simplifies to:
 \begin{equation}
   \ell = \frac{\int p(X_b\ \vert\ X_a, \theta, \hi)\dif\theta}{\int p(X_b\ \vert\ X_a, \theta, \hf)\dif\theta}.
   \label{eq:lh-ratio}
@@ -231,7 +263,7 @@ that determining this direction is an implementation detail \TODO{cite
   anderson?}. To reflect this hypothesis, we created an ``oracle''
 model which knows the correct rotation \textit{a priori}, and simply
 performs rotations in the shortest direction until it reaches the
-correct rotation.
+point where the shapes are aligned.
 
 \subsubsection{\Th{} model}
 
@@ -252,21 +284,40 @@ is set to the MLE value, rather than being marginalized:
 \subsubsection{Hill climbing model}
 
 Unfortunately, it is not always clear what constitutes a good enough
-``match''. Many shapes may have multimodal similarity functions
-\TODO{refer to figure}, and the maximum possible value of $S$ is
-unlikely to be known \textit{a priori} \TODO{cite something about how
-  shape matching is hard}. In this case, we must weaken our stopping
-criteria: rather than searching for a value above a threshold, we
-search for \textit{any} local maximum, as in the Hill Climbing search
-algorithm (\Hc{}). Similar to the \Th{} model, we use the (local) MLE
-estimate of $\theta$, as in Eq.~\ref{eq:mle-lh-ratio}.
+``match''. In the current formulation of the problem, we know the
+exact geometry of the shapes, and know that a linear transformation
+exists which will perfectly align the shapes. However, more generally,
+shapes could be more complex and/or three-dimensional, be subject to
+perceptual uncertainty, or even be not exactly identical. In these
+cases, the problem of choosing a threshold becomes much harder: it is
+not clear how to choose a reasonable threshold \textit{a priori}, as
+the global optimum will depend on many factors. Indeed, shape matching
+is a non-trivial problem in computer vision, requiring sophisticated
+algorithms to achieve reasonable performance
+\cite<e.g.,>{Belongie:2002tj,Sebastian:2003vm}.
+
+Thus, the \Th{} model will not be robust beyond this domain. One
+obvious alternative would be to perform an exhaustive search or use a
+global optimisation strategy. However, this would not result in the
+linear response time found by \citeA{Shepard1971}. A second
+alternative (which would potentially demonstrate the linear response
+time result) could instead just perform a Hill Climbing (\Hc{}) search
+for a \textit{local} maximum. Similar to the \Th{} model, we use the
+(local) MLE estimate of $\theta$, as in Eq.~\ref{eq:mle-lh-ratio}.
 
 \subsubsection{Bayesian quadrature model}
 
 An alternative to the previous models is not to perform a search for
 the MLE, but to approximate the integrals in Eq.~\ref{eq:lh-ratio} by
 picking locations to sample which will most improve accuracy of the
-estimate. Rather than a point estimate of the ratio, or even a simple
+estimate. \TODO{Really need to motivate this better: why do we need
+  something so complex? Talk about how it's robust to the shape of the
+  function, the scale, noise, etc. It's complicated, but it should be
+  able to handle these things, so let's try it and see if it works at
+  all. If it does, we can work towards somethign more succinct in the
+  future.}
+
+Rather than a point estimate of the ratio, or even a simple
 Monte Carlo estimate, we can infer a distribution by placing priors
 over the similarity functions themselves:
 \begin{equation}
@@ -317,7 +368,7 @@ $\theta_a$ is:
 
 Revisiting our likelihood ratio, we now have:
 \begin{equation}
-p(\ell)\approx\frac{\mathcal{N}(\mathbb{E}[Z_0], \mathbb{V}(Z_0))}{\mathcal{N}(\mathbb{E}[Z_1], \mathbb{V}(Z_1))}.
+p(\ell)=p\left(\frac{Z_0}{Z_1}\right)\approx\frac{\mathcal{N}(Z_0\ \vert\ \mathbb{E}[Z_0], \mathbb{V}(Z_0))}{\mathcal{N}(Z_1\ \vert\ \mathbb{E}[Z_1], \mathbb{V}(Z_1))}.
 \end{equation}
 This distribution does not have a nice form. However, we really are
 just interested in whether $Z_0>Z_1$ or $Z_1>Z_0$: thus, rather than
@@ -362,7 +413,7 @@ degrees.
 \end{figure*}
 
 
-\subsection{Design}
+\subsection{Participants and Design}
 
 We recruited 247 participants on Amazon's Mechanical Turk. Each
 participant was paid \$1.00 for approximately 15 minutes of work,
@@ -412,7 +463,9 @@ accurate. Specifically, we asked them to aim for at least 85\%
 accuracy in the experimental blocks, and provided a counter to keep
 them informed of their score.
 
-\section{Analysis}
+\section{Results}
+
+\subsection{General analysis}
 
 Out of the 247 participants, 200 (81\%) were included in our
 analyses. Of the rest, we excluded 10 (4\%) because of an experimental
@@ -444,8 +497,6 @@ To test if participants or a model was above chance on a particular
 stimulus, we used the same posterior and checked whether $p>0.05$ for
 the 50\% mark.
 
-\section{Results}
-
 \begin{figure}[t]
   \centering
   \subfloat{\includegraphics[width=0.25\textwidth]{../../figures/D/trial_accuracy.pdf}}%
@@ -454,22 +505,18 @@ the 50\% mark.
   \label{fig:learning}
 \end{figure}
 
-\subsubsection{Response times}
+\subsection{Response times}
 
 The average response time across all stimuli was \ExpTime{} seconds,
 and the average response time for an individual stimulus ranged from
-\ExpTimeMin{} to \ExpTimeMax{} seconds. The average accuracy across
-all stimuli was \ExpAccuracy{}, though there were \ExpNumChance{}
-individual stimuli (out of 720) for which people were not above
-chance.
-
-As expected, the minimum angle of rotation was significanty
-monotonically correlated with average per-stimulus response times,
-both for flipped pairs (\ExpThetaTimeCorrFlipped{}) and same pairs
+\ExpTimeMin{} to \ExpTimeMax{} seconds.  As expected, the minimum
+angle of rotation was significanty monotonically correlated with
+average per-stimulus response times, both for flipped pairs
+(\ExpThetaTimeCorrFlipped{}) and same pairs
 (\ExpThetaTimeCorrSame{}). This was also the case for the number of
-actions taken by the \Oc{} model (\OcThetaTimeCorr{}), the \Th{}
-model (\ThThetaTimeCorr{}), and the \Bq{} model
-(\BqThetaTimeCorr{}), but not the \Hc{} model
+actions taken by the \Oc{} model (\OcThetaTimeCorr{}), the \Th{} model
+(\ThThetaTimeCorr{}), and the \Bq{} model (\BqThetaTimeCorr{}), but
+not the \Hc{} model
 (\HcThetaTimeCorr{}). Fig.~\ref{fig:response-times}a
 
 The number of actions taken by the \Oc{} model was the best predictor
@@ -481,15 +528,17 @@ significantly correlated with people (\ExpHcTimeCorr{}).
 \TODO{flipped response times higher than same response times for
   smaller angles?}
 
-\subsubsection{Accuracy}
+\subsection{Accuracy}
 
-Of the models, the \Oc{} and \Th{} models peformed perfectly,
-with 100\% accuracy. The \Bq{} model was very accurate
-overall (\BqAccuracy{}), though there were \BqNumChance{} stimuli for
-which it was not above chance. The \Hc{} model was not
-particularly accurate, and although it did perform above chance
-overall (\HcAccuracy{}), there were \HcNumChance{} individual stimuli
-for which it was not above chance.
+The average accuracy across all stimuli was \ExpAccuracy{}, though
+there were \ExpNumChance{} individual stimuli (out of 720) for which
+people were not above chance. Of the models, the \Oc{} and \Th{}
+models peformed perfectly, with 100\% accuracy. The \Bq{} model was
+very accurate overall (\BqAccuracy{}), though there were
+\BqNumChance{} stimuli for which it was not above chance. The \Hc{}
+model was not particularly accurate, and although it did perform above
+chance overall (\HcAccuracy{}), there were \HcNumChance{} individual
+stimuli for which it was not above chance.
 
 The minimum angle was also correlated with the average per-stimulus
 accuracy: for flipped pairs, \ExpThetaAccuracyCorrFlipped{}, and for
@@ -502,7 +551,7 @@ There was a moderate correlation between the accuracy of the \Hc{}
 model and human accuracy (\ExpHcAccuracyCorr{}). The \Bq{} model had a
 similar correlation, with \ExpBqAccuracyCorr{}.
 
-\subsubsection{Practice effects} 
+\subsection{Practice effects} 
 
 There was a significant effect of learning both on response time
 (\ExpTrialTimeCorr{}) and on accuracy (\ExpTrialAccuracyCorr{}),
