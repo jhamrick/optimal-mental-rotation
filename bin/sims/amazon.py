@@ -340,15 +340,18 @@ def fetch_data(args):
 
     addr = "ubuntu@%s" % instances[args.id].ip_address
 
-    dpkg = "data/model/%s_%s.dpkg" % (args.model, args.version)
-    cmd = ["git", "annex", "unlock", dpkg]
-    subprocess.call(cmd)
-    path(dpkg).rmtree_p()
+    dpkg = path("data/model/%s_%s.dpkg" % (args.model, args.version))
+    if dpkg.exists():
+        cmd = ["git", "annex", "unlock", dpkg]
+        subprocess.call(cmd)
+        path(dpkg).rmtree_p()
 
-    raw = "data/sim-raw/%s/%s.tar.gz" % (args.model, args.version)
-    cmd = ["git", "annex", "unlock", raw]
-    subprocess.call(cmd)
-    path(raw).remove()
+    raw = path("data/sim-raw/%s/%s.tar.gz" % (args.model, args.version))
+    if raw.islink():
+        cmd = ["git", "annex", "unlock", raw]
+        subprocess.call(cmd)
+    if raw.exists():
+        path(raw).remove()
 
     cmd = [
         "scp", "-r",
