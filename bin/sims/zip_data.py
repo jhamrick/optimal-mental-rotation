@@ -49,7 +49,7 @@ if __name__ == "__main__":
     if zip_path.exists() or zip_path.islink():
         zip_path.remove()
 
-    cmd = ["tar", "-czvf", zip_path, '-C', sim_root.dirname(), sim_root.name]
+    cmd = ["tar", "-czf", zip_path, '-C', sim_root.dirname(), sim_root.name]
     print colored(" ".join(cmd), 'blue')
     code = subprocess.call(cmd)
     if code != 0:
