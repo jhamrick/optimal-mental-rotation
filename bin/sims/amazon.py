@@ -278,15 +278,15 @@ def create_instance(args):
     conn = connect()
 
     ilist = price_list(conn, args.ecus)
-    print_price(ilist, False)
+    print_price(ilist)
 
     cont = raw_input('(n)ormal, (s)pot, (a)bort ? ')
     if cont != 'n' and cont != 's':
         sys.exit(1)
     type_idx = int(raw_input('instance type number ? '))
 
-    instance_type = ilist[type_idx][2]
-    num_instances = ilist[type_idx][1]
+    instance_type = ilist[type_idx][1]
+    num_instances = ilist[type_idx][0]
     print('Choosing %dx \'%s\'' % (num_instances, instance_type))
 
     instances = []
@@ -357,7 +357,7 @@ def fetch_data(args):
     if raw.islink():
         cmd = ["git", "annex", "unlock", raw]
         subprocess.call(cmd)
-    if raw.exists():
+    if raw.exists() or raw.islink():
         path(raw).remove()
 
     cmd = [
