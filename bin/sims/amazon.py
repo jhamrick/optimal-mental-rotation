@@ -21,8 +21,10 @@ AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 HOME = os.getenv('HOME')
 
-# instance data
-IMAGE_ID = 'ami-908deda0'
+# HVM AMI
+IMAGE_ID = 'ami-5495f564'
+# Normal AMI
+#IMAGE_ID = ami-908deda0'
 
 region_translate = {
     'us-east-1': 'us-east',
