@@ -22,7 +22,7 @@ AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
 HOME = os.getenv('HOME')
 
 # instance data
-IMAGE_ID = 'ami-846e0eb4'
+IMAGE_ID = 'ami-908deda0'
 
 region_translate = {
     'us-east-1': 'us-east',
