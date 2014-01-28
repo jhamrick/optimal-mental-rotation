@@ -125,8 +125,12 @@ def list_status(zone, instances):
                     ip,
                     timestr]),
                 'blue')
-            print "-" * 70
-            ssh_call(zone, inst, 'ps -fp $(pgrep python)', False)
+
+            pids = ssh_call(zone, inst, 'pgrep python', True)
+            if pids.strip() != '':
+                print "-" * 70
+                ssh_call(zone, inst, 'ps -fp $(pgrep python)', False)
+
             print
 
             num = num + 1
