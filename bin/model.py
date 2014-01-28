@@ -48,6 +48,11 @@ if __name__ == "__main__":
         default=False,
         help="run simulations")
     group.add_argument(
+        "--zip",
+        action="store_true",
+        default=False,
+        help="create a gzip archive of simulation data")
+    group.add_argument(
         "--process",
         action="store_true",
         default=False,
@@ -56,6 +61,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     required = [
         args.run,
+        args.zip,
         args.process,
         args.all
     ]
@@ -73,6 +79,16 @@ if __name__ == "__main__":
     if args.run or args.all:
         cmd = [
             "python", "./bin/model/run_simulations.py",
+            "-m", model, "-c", config
+        ]
+        if force:
+            cmd.append("-f")
+        run_cmd(cmd)
+
+    # zip simulations
+    if args.zip or args.all:
+        cmd = [
+            "python", "./bin/model/zip_data.py",
             "-m", model, "-c", config
         ]
         if force:
