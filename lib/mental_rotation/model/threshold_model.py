@@ -10,7 +10,7 @@ class ThresholdModel(BaseModel):
     def __init__(self, *args, **kwargs):
         super(ThresholdModel, self).__init__(*args, **kwargs)
         self.direction = None
-        self._thresh = 0.6 * np.exp(self._log_const)
+        self._thresh = 0.8 * np.exp(self._log_const)
 
     ##################################################################
     # Sampling

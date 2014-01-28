@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from mental_rotation.model import ThresholdModel
 from mental_rotation.model.model import log_similarity
@@ -26,15 +25,3 @@ class TestThresholdModel(BaseModel):
                 Xr.vertices, Xb.vertices, model.opts['S_sigma'])
 
         assert np.allclose(log_S, model.log_S_i)
-
-    @pytest.mark.smallrot
-    def test_threshold(self, model):
-        for i in xrange(200):
-            model.status = "ready"
-            model.sample()
-            assert model.R_i.size < 10
-
-    @pytest.mark.full
-    def test_threshold_2(self, model):
-        model.sample()
-        assert model.R_i.size < 75

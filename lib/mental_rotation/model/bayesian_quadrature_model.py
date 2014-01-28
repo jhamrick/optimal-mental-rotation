@@ -438,6 +438,7 @@ class BayesianQuadratureModel(BaseModel):
         state['_V1'] = self._V1
         state['bqs'] = pickle.dumps(self.bqs)
         state['bq_opts'] = pickle.dumps(self.bq_opts)
+        state['direction'] = self.direction
         return state
 
     def __setstate__(self, state):
@@ -448,3 +449,4 @@ class BayesianQuadratureModel(BaseModel):
         self._V1 = state['_V1']
         self.bqs = pickle.loads(state['bqs'])
         self.bq_opts = pickle.loads(state['bq_opts'])
+        self.direction = state['direction']
