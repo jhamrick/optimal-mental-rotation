@@ -42,7 +42,7 @@ class BayesianQuadratureModel(BaseModel):
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
 
         self.bq_opts = {}
-        self.bq_opts['candidate_thresh'] = self.opts['step'] / 2.
+        self.bq_opts['candidate_thresh'] = 0.1
         self.bq_opts['kernel'] = PeriodicKernel
         self.bq_opts['optim_method'] = 'Powell'
         self.bq_opts['x_mean'] = 0
