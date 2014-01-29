@@ -8,17 +8,18 @@ from path import path
 
 def plot(data, fig_path, seed):
     np.random.seed(seed)
-    fig, axes = plt.subplots(1, 5, sharex=True)
 
-    order = ['exp', 'oc', 'th', 'hc', 'bq']
+    order = ['exp', 'oc', 'th', 'hc', 'bq', 'bqp']
     titles = {
         'exp': "Human",
         'oc': "Oracle",
         'th': "Threshold",
-        'hc': "Hill climbing",
-        'bq': "Bayesian quadrature"
+        'hc': "HC",
+        'bq': "BQ (equal prior)",
+        'bqp': "BQ (unequal prior)"
     }
 
+    fig, axes = plt.subplots(1, len(order), sharex=True)
     for i, key in enumerate(order):
         ax = axes[i]
         df = data[key]
@@ -34,7 +35,7 @@ def plot(data, fig_path, seed):
                 label=flipped, lw=3)
 
         ax.set_xlabel("Rotation", fontsize=14)
-        ax.set_xticks(np.arange(0, 200, 20))
+        ax.set_xticks(np.arange(0, 200, 30))
         ax.set_xlim(-10, 190)
 
         ax.set_title(titles[key], fontsize=14)
@@ -49,6 +50,7 @@ def plot(data, fig_path, seed):
         util.outward_ticks(ax)
 
     axes[0].legend(title="Stimuli", loc=0, frameon=False)
+    util.sync_ylims(axes[order.index('bq')], axes[order.index('bqp')])
 
     fig.set_figheight(3)
     fig.set_figwidth(18)

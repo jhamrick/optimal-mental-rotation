@@ -8,17 +8,18 @@ from path import path
 
 def plot(data, fig_path, seed):
     np.random.seed(seed)
-    fig, axes = plt.subplots(1, 5, sharey=True)
 
-    order = ['exp', 'oc', 'th', 'hc', 'bq']
+    order = ['exp', 'oc', 'th', 'hc', 'bq', 'bqp']
     titles = {
         'exp': "Human",
         'oc': "Oracle",
         'th': "Threshold",
-        'hc': "Hill climbing",
-        'bq': "Bayesian quadrature"
+        'hc': "HC",
+        'bq': "BQ (equal prior)",
+        'bqp': "BQ (unequal prior)"
     }
 
+    fig, axes = plt.subplots(1, len(order), sharey=True)
     for i, key in enumerate(order):
         ax = axes[i]
         df = data[key]

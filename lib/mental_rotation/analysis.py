@@ -73,12 +73,17 @@ def load_all(version, data_path, human=None):
         'oc': load_model("OracleModel", version, data_path),
         'th': load_model("ThresholdModel", version, data_path),
         'hc': load_model("HillClimbingModel", version, data_path),
-        'bq': load_model("BayesianQuadratureModel", version, data_path)
     }
+
+    bq = load_model("BayesianQuadratureModel", version, data_path)
+    data['bq'] = bq.groupby('prior').get_group(0.5)
+    data['bqp'] = bq.groupby('prior').get_group(0.6)
+
     if human is None:
         data.update(load_human(version, data_path)[1])
     else:
         data.update(human)
+
     return data
 
 

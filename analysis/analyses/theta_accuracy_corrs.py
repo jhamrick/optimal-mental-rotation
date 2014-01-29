@@ -7,7 +7,7 @@ from path import path
 
 def run(data, results_path, seed):
     np.random.seed(seed)
-    keys = ['exp', 'hc', 'bq']
+    keys = ['exp', 'hc', 'bq', 'bqp']
 
     pth = results_path.joinpath("theta_accuracy_corrs.tex")
     with open(pth, "w") as fh:

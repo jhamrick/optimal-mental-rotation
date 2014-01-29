@@ -9,13 +9,14 @@ from path import path
 
 def plot(data, fig_path, seed):
     np.random.seed(seed)
-    order = ['oc', 'th', 'hc', 'bq']
+    order = ['oc', 'th', 'hc', 'bq', 'bqp']
     titles = {
         'exp': "Human",
         'oc': "Oracle",
         'th': "Threshold",
-        'hc': "Hill climbing",
-        'bq': "Bayesian quadrature"
+        'hc': "HC",
+        'bq': "BQ (equal prior)",
+        'bqp': "BQ (unequal prior)"
     }
 
     response_means = {}

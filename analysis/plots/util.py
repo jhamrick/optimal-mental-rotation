@@ -150,3 +150,26 @@ def save(path, fignum=None, close=True, width=None, height=None,
 
     if verbose:
         sys.stdout.write("Done\n")
+
+
+def sync_ylims(*axes):
+    """Synchronize the y-axis data limits for multiple axes. Uses the maximum
+    upper limit and minimum lower limit across all given axes.
+
+    Parameters
+    ----------
+    *axes : axis objects
+        List of matplotlib axis objects to format
+
+    Returns
+    -------
+    out : ymin, ymax
+        The computed bounds
+
+    """
+    ymins, ymaxs = zip(*[ax.get_ylim() for ax in axes])
+    ymin = min(ymins)
+    ymax = max(ymaxs)
+    for ax in axes:
+        ax.set_ylim(ymin, ymax)
+    return ymin, ymax

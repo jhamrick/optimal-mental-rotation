@@ -8,7 +8,7 @@ from path import path
 
 def run(data, results_path, seed):
     np.random.seed(seed)
-    keys = ['exp', 'bq', 'hc']
+    keys = ['exp', 'hc', 'bq', 'bqp']
 
     accuracy_means = {}
     for key in keys:

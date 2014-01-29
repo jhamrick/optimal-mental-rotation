@@ -9,11 +9,12 @@ from path import path
 
 def plot(data, fig_path, seed):
     np.random.seed(seed)
-    order = ['hc', 'bq']
+    order = ['hc', 'bq', 'bqp']
     titles = {
         'exp': "Human",
-        'hc': "Hill climbing",
-        'bq': "Bayesian quadrature"
+        'hc': "HC",
+        'bq': "BQ (equal prior)",
+        'bqp': "BQ (unequal prior)"
     }
 
     accuracy_means = {}
@@ -24,7 +25,6 @@ def plot(data, fig_path, seed):
     accuracy_means = pd.DataFrame(accuracy_means).unstack('flipped')
 
     fig, axes = plt.subplots(1, len(order), sharey=True, sharex=True)
-
     for i, model in enumerate(order):
         ax = axes[i]
 
@@ -46,7 +46,7 @@ def plot(data, fig_path, seed):
     axes[0].legend(loc=0, numpoints=1)
 
     fig.set_figheight(3)
-    fig.set_figwidth(7)
+    fig.set_figwidth(8)
     plt.draw()
     plt.tight_layout()
 

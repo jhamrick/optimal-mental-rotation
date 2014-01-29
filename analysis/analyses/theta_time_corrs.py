@@ -7,7 +7,7 @@ from path import path
 
 def run(data, results_path, seed):
     np.random.seed(seed)
-    keys = ['exp', 'oc', 'th', 'hc', 'bq']
+    keys = ['exp', 'oc', 'th', 'hc', 'bq', 'bqp']
 
     pth = results_path.joinpath("theta_time_corrs.tex")
     with open(pth, "w") as fh:

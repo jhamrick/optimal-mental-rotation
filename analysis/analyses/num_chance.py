@@ -7,7 +7,7 @@ from path import path
 
 def run(data, results_path, seed):
     np.random.seed(seed)
-    keys = ['exp', 'bq', 'hc']
+    keys = ['exp', 'bq', 'bqp', 'hc']
 
     pth = results_path.joinpath("num_chance.tex")
     with open(pth, "w") as fh:
