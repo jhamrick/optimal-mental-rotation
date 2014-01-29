@@ -62,7 +62,7 @@
 \input{../../results/D/theta_time_corrs.tex}
 \input{../../results/D/theta_accuracy_corrs.tex}
 
-\title{Modeling mental rotation}
+\title{Modeling mental simulation: a computational analysis of mental rotation}
  
 \author{{\large \bf Jessica B. Hamrick (jhamrick@berkeley.edu)} \\
   {\large \bf Thomas L. Griffiths (tom\_griffiths@berkeley.edu)} \\
@@ -114,10 +114,10 @@ is known, how do people know which direction to rotate the objects?
 And finally, how do people know when to stop rotating and give a
 response? 
 
-In this paper, we attempt to address these questions through a
-rational analysis \cite{Marr:1983to,anderson90,Shepard:1987tt} of four
-models of mental rotation. First, we discuss the previous literature
-on mental imagery. Second, we outline computational- and
+In this paper, we explore these questions through rational analysis
+\cite{Marr:1983to,anderson90,Shepard:1987tt} and compare four models
+of mental rotation. First, we discuss the previous literature on
+mental imagery. Second, we outline computational- and
 algorithmic-level analyses of the problem of mental rotation. Then, we
 describe a behavioral experiment based on the classic mental rotation
 studies \cite<e.g.,>{Cooper:1975wp}, and compare the results of the
@@ -126,6 +126,10 @@ the strengths and weaknesses of each model, and lay out directions for
 future work.
 
 \section{Background}
+
+\TODO{say something here}
+
+\subsection{Mechanisms behind mental rotation}
 
 Previous models of mental rotation have, for the most part, focused
 mostly on the representation of mental images, rather than how people
@@ -144,50 +148,47 @@ run is the parallel-process model of mental rotation by
 \citeA{Funt:1983wn}. He determines the direction and axis of rotation
 using the method-of-moments method; once this target rotation
 computed, his model rotates one object until the target rotation is
-reached, and then compares the two to see if they are
-congruent. \TODO{?}
+reached, and then compares the two to see if they are congruent. This
+is a somewhat unsatisfying explanation, however: why would it be
+necessary to perform the rotation if the answer is already known?
 
-However, there is evidence that people do not actually rotate until
-the objects are congruent, but rather pay attention to certain salient
-features of the object, rather than a holistic representation
-\cite{Just1976,Yuille:1982tx}. More recent evidence shows that when
-people perform physical rotations, they do not rotate until congruency
-is reached and may even rotate \textit{away} from near perfect matches
-\cite{Gardony:2013gn}. Moreover, the state-of-the-art in computer
-vision suggests that there is more to shape matching than simply
-checking for congruency, particularly when shapes are complex or when
-the shapes might not be exactly the same
+Perhaps people do not engage in a single trajectory of rotation that
+ends with congruency. Some evidence suggests that people do not
+perform a holistic rotation until the objects are congruent, but
+rather pay attention to certain salient features of the object
+\cite{Just1976,Yuille:1982tx}. A more recent study shows that when
+performing \textit{physical} rotations, people do not rotate until
+congruency is reached, and may even rotate \textit{away} from near
+perfect matches \cite{Gardony:2013gn}. Moreover, the state-of-the-art
+in computer vision suggests that there is more to shape matching than
+simply checking for congruency, particularly when shapes are complex
+or when the shapes might not be exactly the same
 \cite<e.g.,>{Belongie:2002tj,Sebastian:2003vm}.
 
-so what are they actually doing?
-
-perhaps they are performing mental manipulations of an image, but not
-a single trajectory of rotation
 
 \subsection{A rational analysis of mental rotation}
 
-rational analysis \cite{Marr:1983to,anderson90,Shepard:1987tt}
-
-1) the problem: determine something about the spatial transformations
-that an object has undergone
-2) the goal: make this determiniation while using the least amount of
-resources
-3) the solution: perform those rotations and reflections which will
-give the most information (?) about the answer until an answer is
-found
+It may be useful to take a step back and try to analyze mental
+rotation from using rational analysis
+\cite{Marr:1983to,anderson90,Shepard:1987tt}. At the computational
+level, we could say that the \textit{problem} is to determine
+something about the spatial transformations that an object has
+undergone. At the algorithmic level, we are constrained by the notion
+that mental images must be transformed in an analog manner (or at
+least in a way that is approximately analog), and that mental images
+are time-consuming and effortful to generate. Thus, the \textit{goal}
+is to make this determiniation while using the least amount of
+resources. Due to the sequential constratiant, the minimum amount of
+computation will coincide with the minimum angle of rotation. So, the
+rational \textit{solution} will be something that only rotates through
+the minimum angle.
 
 motivate the active searching approach
 \cite{Gureckis:2012gu,Markant:2012uu} \cite{Markant:2012uu,Nelson2007}
 
-we focus less on the representation, and more on the process, assuming
-a spatial representation (because you need both to make a claim,
-\cite{Anderson1978})
-
 problem solving \cite{Hegarty2004, Schwartz1999}
 
 symbolic vs simulation \cite{Schwartz:1996uy}
-
-eye tracking \cite{Just1976}
 
 \section{Modeling mental rotation}
 
@@ -266,7 +267,7 @@ current mental image is $\Xt$, then:
   \label{eq:actions}
 \end{equation}
 where $\epsilon\sim \mathcal{N}(0, \sigma_\epsilon)$ and
-$\sigma_\epsilon=0.7$ is the standard deviation of the step size in
+$\sigma_\epsilon=0.6$ is the standard deviation of the step size in
 radians.
 
 To summarize, we approximate the likelihood term of
@@ -348,14 +349,14 @@ While the previous few models have all focused on \textit{searching}
 for the global maximum, the goal is really to just approximate
 Eq.~\ref{eq:lh-ratio} while still obeying the constraint of sequential
 rotations. Instead of perfoming a search, we could try maintaining a
-probability distribution over our \textit{estimate}, and then choose
-actions which are expected to improve the estimate of
-Eq.~\ref{eq:lh-ratio}. This strategy has several obvious
-benefits. First, it does not make assumptions about the shape or scale
-of the similarity function. Second, by choosing to sample places which
-are informative, this method implicitly minimizes the amount of
-rotation, but because it is constrained to sequential rotations,
-should still exhibit the linear effect of the angle.
+probability distribution over our \textit{estimate} of
+Eq.~\ref{eq:lh-ratio}, and then choose actions which are expected to
+improve the accuracy of the estimate. This strategy has several
+obvious benefits. First, it does not make assumptions about the shape
+or scale of the similarity function. Second, by choosing to sample
+places which are informative, this method implicitly minimizes the
+amount of rotation, but because it is constrained to sequential
+rotations, should still exhibit the linear effect of the angle.
 
 Formally, we denote $Z_h$ as our estimate of the likelihood for
 hypothesis $h$, and write its distribution as:
@@ -501,8 +502,6 @@ them informed of their score.
 
 \section{Results}
 
-\subsection{General analysis}
-
 Out of the 247 participants, 200 (81\%) were included in our
 analyses. Of the rest, we excluded 10 (4\%) because of an experimental
 error, 6 (2.4\%) because they had already compelted a previous version
@@ -538,6 +537,16 @@ the 50\% mark.
   \caption{\textbf{Effect of learning.} \TODO{}}
   \label{fig:learning}
 \end{figure}
+
+\subsection{Practice effects} 
+
+There was a significant effect of learning both on response time
+(\ExpTrialTimeCorr{}) and on accuracy (\ExpTrialAccuracyCorr{}),
+though the effect on accuracy was not significant during the second
+half of the experiment (\ExpaTrialAccuracyCorr{} for the first half
+vs. \ExpbTrialAccuracyCorr{} for the second
+half). Fig.~\ref{fig:learning}
+
 
 \subsection{Response times}
 
@@ -584,15 +593,6 @@ effect for the \Hc{} model (\HcThetaAccuracyCorr{}) and the
 There was a moderate correlation between the accuracy of the \Hc{}
 model and human accuracy (\ExpHcAccuracyCorr{}). The \Bq{} model had a
 similar correlation, with \ExpBqAccuracyCorr{}.
-
-\subsection{Practice effects} 
-
-There was a significant effect of learning both on response time
-(\ExpTrialTimeCorr{}) and on accuracy (\ExpTrialAccuracyCorr{}),
-though the effect on accuracy was not significant during the second
-half of the experiment (\ExpaTrialAccuracyCorr{} for the first half
-vs. \ExpbTrialAccuracyCorr{} for the second
-half). Fig.~\ref{fig:learning}
 
 
 \section{Discussion}
