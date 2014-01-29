@@ -10,7 +10,7 @@ from itertools import product
 from mental_rotation.stimulus import Stimulus2D
 
 S_sigma = 0.15
-step = np.radians(25)
+step = 0.5
 prior = 0.5
 
 

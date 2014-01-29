@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.optimize as optim
 import logging
 
 from . import BaseModel
@@ -69,7 +68,7 @@ class OracleModel(BaseModel):
             return
 
         R = self.model['R'].value
-        if np.abs(self._unwrap(R - self.target)) < self.opts['step']:
+        if np.abs(self._unwrap(R - self.target)) < (2 * self.opts['step']):
             self.model['R'].value = self.target
             self.status = 'done'
 
