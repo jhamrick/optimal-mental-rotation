@@ -358,7 +358,7 @@ def update_git(args):
     instances = get_instances(conn, active_only=True)
     for inst in instances:
         print "Updating git repo on instance '%s'..." % inst.id
-        cmd = "cd project/optimal-mental-rotation && git pull"
+        cmd = "cd project/optimal-mental-rotation && git checkout cogsci-2014 && git pull"
         ssh_call(zone, inst, cmd, False)
 
 
