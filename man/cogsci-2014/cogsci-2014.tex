@@ -98,8 +98,6 @@ representation of mental images \cite<e.g.,>{Kosslyn:2009tj,
   Pylyshyn:2002vk}. Despite this vast literature, there have been
 surprisingly few computational models of mental imagery.
 
-\section{Background}
-
 In the classic experiment by \citeA{Shepard1971}, participants viewed
 images of three-dimensional objects and had to determine whether the
 images depicted the same object (which differed by a rotation) or two
@@ -114,31 +112,52 @@ solving that are not explained by the alignment hypothesis: how do
 people know the axis around which to rotate the objects? If the axis
 is known, how do people know which direction to rotate the objects?
 And finally, how do people know when to stop rotating and give a
-response?
+response? 
 
-Previous models of mental rotation have, for the most part, not
-addressed these questions. \citeA{Kosslyn:1977tv} focus primarily on
-simulating the visual simulation buffer rather than the decision of
-\textit{what} should be simulated. Similarly, \citeA{Glasgow:1992tj}
-are more concerned with the representation of imagery than the
-process. Although \citeA{Anderson1978} emphasizes the importance of
-considering both representation and process, he dismisses the problem
-of determining the direction and axis of rotation as merely a
-``technical difficulty''.
+In this paper, we attempt to address these questions through a
+rational analysis \cite{Marr:1983to,anderson90,Shepard:1987tt} of four
+models of mental rotation. First, we discuss the previous literature
+on mental imagery. Second, we outline computational- and
+algorithmic-level analyses of the problem of mental rotation. Then, we
+describe a behavioral experiment based on the classic mental rotation
+studies \cite<e.g.,>{Cooper:1975wp}, and compare the results of the
+experiment with each of the models. We conclude with a discussion of
+the strengths and weaknesses of each model, and lay out directions for
+future work.
+
+\section{Background}
+
+Previous models of mental rotation have, for the most part, focused
+mostly on the representation of mental images, rather than how people
+decide \textit{which} mental images to
+simulate. \citeA{Kosslyn:1977tv} propose a model of mental imagery's
+visual buffer, but not the planning process of how it is used;
+similarly, \citeA{Glasgow:1992tj} are mostly concerned with the
+knowledge representation of imagery. Although \citeA{Anderson1978}
+emphasizes the importance of considering both representation and
+process, he dismisses the problem of determining the direction and
+axis of rotation as merely a ``technical difficulty''.
 
 The only model (of which the authors are aware) that has more
-seriously attempted to address these concerns is the parallel-process
-model of mental rotation by \citeA{Funt:1983wn}. He determines the
-direction and axis of rotation using the method-of-moments method;
-once this target rotation computed, his model rotates one object until
-the target rotation is reached, and then compares the two to see if
-they are congruent.
+seriously attempted to address concerns regarding which simulation to
+run is the parallel-process model of mental rotation by
+\citeA{Funt:1983wn}. He determines the direction and axis of rotation
+using the method-of-moments method; once this target rotation
+computed, his model rotates one object until the target rotation is
+reached, and then compares the two to see if they are
+congruent. \TODO{?}
 
-More recently, evidence has come to light that people \textit{do not}
-actually rotate until the objects are congruent. Eye-tracking studies
-suggest people pay attention to certain salient features of the
-object, rather than a holistic representation \cite{Just1976}, and 
-\citeA{Yuille:1982tx} e.g. rotating away from near-perfect matches \cite{Gardony:2013gn}
+However, there is evidence that people do not actually rotate until
+the objects are congruent, but rather pay attention to certain salient
+features of the object, rather than a holistic representation
+\cite{Just1976,Yuille:1982tx}. More recent evidence shows that when
+people perform physical rotations, they do not rotate until congruency
+is reached and may even rotate \textit{away} from near perfect matches
+\cite{Gardony:2013gn}. Moreover, the state-of-the-art in computer
+vision suggests that there is more to shape matching than simply
+checking for congruency, particularly when shapes are complex or when
+the shapes might not be exactly the same
+\cite<e.g.,>{Belongie:2002tj,Sebastian:2003vm}.
 
 so what are they actually doing?
 
@@ -191,16 +210,17 @@ depict the same object, and $h=1$ is the hypothesis that the images
 depict mirror-image objects. The posterior probability of each
 hypothesis given the observed shapes is then:
 \begin{equation}
-  p(h\ \vert\ X_a, X_b) \propto \int p(X_b\ \vert\ X_a, \theta, h)p(X_a)p(h)p(\theta)\dif\theta.
+  p(h\ \vert\ X_a, X_b) \propto \int p(X_b\ \vert\ X_a, \theta, h)p(X_a)p(h)p(\theta)\dif\theta,
   \label{eq:posterior}
 \end{equation}
-Because we ultimately want to determine which hypothesis is more
-likely, the quantity of interest is a ratio $\ell:=p(h=0\ \vert\ X_a,
-X_b) / p(h=1\ \vert\ X_a, X_b)$ which (assuming the two hypotheses are
-equally likely \textit{a priori}, and that all rotations are equally
-likely) simplifies to:
+where $p(X_b\ \vert\ X_a, \theta, h)$ is the probability that $X_b$
+was generated from $X_a$, and $p(X_a)$ is the probability of observing
+$X_a$. Because we ultimately want to determine which hypothesis is
+more likely, the quantity of interest is a ratio $\ell:=p(h=0\ \vert\
+X_a, X_b) / p(h=1\ \vert\ X_a, X_b)$ which (assuming that all
+rotations are equally likely) simplifies to:
 \begin{equation}
-  \ell = \frac{\int p(X_b\ \vert\ X_a, \theta, \hi)\dif\theta}{\int p(X_b\ \vert\ X_a, \theta, \hf)\dif\theta}.
+  \ell = \frac{\left(\int p(X_b\ \vert\ X_a, \theta, \hi)\dif\theta\right)p(h=0)}{\left(\int p(X_b\ \vert\ X_a, \theta, \hf)\dif\theta\right)p(h=1)}.
   \label{eq:lh-ratio}
 \end{equation}
 If $\ell > 1$, then we accept the hypothesis that the images depict
@@ -209,22 +229,16 @@ that the images depict flipped objects ($\hf$).
 
 \subsection{Algorithmic assumptions}
 
-If we represent a shape of $N$ vertices with a $N\times 2$ coordinate
-matrix $\mathbf{X}=[\mathbf{x}_1, \ldots{}, \mathbf{x}_N]$, then the
-transformation $f$ is $f(\mathbf{X}, h,
-\theta):=\mathbf{X}\F_h^T\R^T$, where $\R$ is a rotation matrix,
-$\F_0$ is the identity matrix $\I$, and $\F_1$ is a reflection matrix
-across the $y$-axis. Assuming no computational constraints, the
-simplest solution is to compute the left inverse of $\Xa\F_h^T$ and,
-for each $h$, check whether $(\Xa
-\F_h^T)_\mathrm{left}^{-1}\cdot{}\Xb$ is a valid rotation matrix.
-
-However, we assume that the ability to compute left inverses is not
-available. Instead, the observed shapes may only be transformed by a
-small amount at a time, and each transformation is costly in terms of
-computational resources. The goal, then is to estimate the integrals
-in Eq.~\ref{eq:lh-ratio} by evaluating $p(\Xb\ \vert\ \Xa, \theta, h)$
-as few times as possible. 
+We represent a shape of $N$ vertices with a $N\times 2$ coordinate
+matrix $\mathbf{X}=[\mathbf{x}_1, \ldots{}, \mathbf{x}_N]$, and denote
+the rotation and/or reflection transformation as $f(\mathbf{X}, h,
+\theta):=\mathbf{X}\F_h^T\R^T$, where $\R$ is a rotation matrix, and
+$\F_h$ is either the identity matrix $\I$ (when $h=0$) or a reflection
+matrix across the $y$-axis (when $h=1$).  We assume that the observed
+shapes may only be transformed by a small amount at a time, and each
+transformation is costly in terms of computational resources. The
+goal, then is to estimate the integrals in Eq.~\ref{eq:lh-ratio} by
+evaluating $p(\Xb\ \vert\ \Xa, \theta, h)$ as few times as possible.
 
 We define $p(\Xb\ \vert\ \Xa, \theta, h)$ to be the similarity between
 $\Xb$ and a transformation of $\Xa$:
@@ -255,23 +269,55 @@ then:
   \label{eq:actions}
 \end{equation}
 
+To summarize, we approximate the likelihood term of
+Eq.~\ref{eq:lh-ratio} using the similarity function defined in
+Eq.~\ref{eq:similarity}. Because we assume analog rotations, this
+similarity can only be computed at sequential locations, i.e. the
+actions listed in Eq.~\ref{eq:actions}.
+
+\subsection{Specific models}
+
+The last decision we need to make is which algorithm to use to
+approximate Eq.~\ref{eq:lh-ratio} using samples of the similarity
+function. The algorithm must do two things: first, it must choose
+\textit{which} places to sample, and second, it must decide when to
+stop sampling.
+
 \subsubsection{\Oc{} model}
 
-The previous hypothesis in the literature is that people perform a
-mental rotation in the shortest direction until a match is found, and
-that determining this direction is an implementation detail \TODO{cite
-  anderson?}. To reflect this hypothesis, we created an ``oracle''
-model which knows the correct rotation \textit{a priori}, and simply
-performs rotations in the shortest direction until it reaches the
-point where the shapes are aligned.
+One hypothesis in the literature is that people perform a mental
+rotation in the shortest direction until a match is found
+\cite{Shepard1971, Cooper:1975wp}, and that determining this direction
+is an implementation detail \cite{Anderson1978}, or that it is
+computed beforehand \cite{Funt:1983wn}.  To reflect this hypothesis,
+we created an ``oracle'' model which first computes the correct
+rotation and then simply takes actions in the shortest direction until
+it reaches the point where the shapes are aligned.
+
+To determine the correct rotation, we solve for the rotation matrix by
+computing $(\Xa \F_h^T)_\mathrm{left}^{-1}\cdot{}\Xb$, where
+$(\Xa\F_h^T)_\mathrm{left}^{-1}$ is the left inverse of
+$\Xa\F_h^T$. For each $h$, we then check whether the resulting matrix
+is a valid rotation matrix.
 
 \subsubsection{\Th{} model}
 
-An intuitive and simple model which does not assume the direction is
-known might first rotate in the direction that increases similarity,
-and then stop rotating once a ``match'' is found, as determined by a
-threshold on the value of $S$. If all rotations have been exhausted,
-then flip, and try rotating again.
+An intuitive and simple model which does not know which way to rotate
+\textit{a priori} might first rotate in the direction that increases
+similarity, and then stop rotating once a ``match'' is found, as
+determined by a threshold on the value of $S$. If all rotations have
+been exhausted, then flip, and try rotating again.
+
+We note, however, that it is not always clear what constitutes a good
+enough ``match''. In the current formulation of the problem, we know
+the exact geometry of the shapes, and know that a linear
+transformation exists which will perfectly align the shapes. However,
+shapes could be more complex and/or three-dimensional, be subject to
+perceptual uncertainty, or even be not exactly identical. In these
+cases, it is not clear how to choose a reasonable threshold \textit{a
+  priori}, as the global optimum will depend on many factors. Thus, it
+is unlikely that the \Th{} model will not be robust beyond this
+domain.
 
 The consequence of doing a search for a match is that
 Eq.~\ref{eq:lh-ratio} becomes a likelihood ratio test, where $\theta$
@@ -283,39 +329,32 @@ is set to the MLE value, rather than being marginalized:
 
 \subsubsection{Hill climbing model}
 
-Unfortunately, it is not always clear what constitutes a good enough
-``match''. In the current formulation of the problem, we know the
-exact geometry of the shapes, and know that a linear transformation
-exists which will perfectly align the shapes. However, more generally,
-shapes could be more complex and/or three-dimensional, be subject to
-perceptual uncertainty, or even be not exactly identical. In these
-cases, the problem of choosing a threshold becomes much harder: it is
-not clear how to choose a reasonable threshold \textit{a priori}, as
-the global optimum will depend on many factors. Indeed, shape matching
-is a non-trivial problem in computer vision, requiring sophisticated
-algorithms to achieve reasonable performance
-\cite<e.g.,>{Belongie:2002tj,Sebastian:2003vm}.
-
-Thus, the \Th{} model will not be robust beyond this domain. One
-obvious alternative would be to perform an exhaustive search or use a
-global optimisation strategy. However, this would not result in the
-linear response time found by \citeA{Shepard1971}. A second
-alternative (which would potentially demonstrate the linear response
-time result) could instead just perform a Hill Climbing (\Hc{}) search
-for a \textit{local} maximum. Similar to the \Th{} model, we use the
-(local) MLE estimate of $\theta$, as in Eq.~\ref{eq:mle-lh-ratio}.
+One way to deal with the problem of choosing a threshold would simply
+be to perform an exhaustive search or use a global optimisation
+strategy. However, these strategies would not result in the linear
+response time found by \citeA{Shepard1971}. A second alternative,
+which could potentially demonstrate the linear response time result,
+might instead just perform a Hill Climbing (\Hc{}) search for a
+\textit{local} maximum. However, it is not necessarily the case that
+all local maxima for the correct hypothesis will be higher than all
+the local maxima for the incorrect hypothesis: thus, we would expect
+the \Hc{} model to have difficulties reliably choosing the correct
+hypothesis.
 
 \subsubsection{Bayesian quadrature model}
 
-An alternative to the previous models is not to perform a search for
-the MLE, but to approximate the integrals in Eq.~\ref{eq:lh-ratio} by
-picking locations to sample which will most improve accuracy of the
-estimate. \TODO{Really need to motivate this better: why do we need
-  something so complex? Talk about how it's robust to the shape of the
-  function, the scale, noise, etc. It's complicated, but it should be
-  able to handle these things, so let's try it and see if it works at
-  all. If it does, we can work towards somethign more succinct in the
-  future.}
+While the previous few models have all focused on \textit{searching}
+for the global maximum, the goal is really to just approximate
+Eq.~\ref{eq:lh-ratio} while still obeying the constraint of sequential
+rotations. Instead of perfoming a search, we could try maintaining a
+probability distribution over our \textit{estimate}, and then choose
+actions which are expected to improve the estimate of
+Eq.~\ref{eq:lh-ratio}. This strategy has several obvious
+benefits. First, it does not make assumptions about the shape or scale
+of the similarity function. Second, by choosing to sample places which
+are informative, this method implicitly minimizes the amount of
+rotation, but because it is constrained to sequential rotations,
+should still exhibit the linear effect of the angle.
 
 Rather than a point estimate of the ratio, or even a simple
 Monte Carlo estimate, we can infer a distribution by placing priors
@@ -477,11 +516,9 @@ trials were defined to be those for which the presented shapes
 differed by a rotation of no more than 20 degrees.
 
 We ran model simulations for the same stimuli that participants
-viewed. We ran 10 samples of each stimulus under the \Oc{} model, and
-100 samples of each stimulus for the \Th{}, \Hc{}, and
-\Bq{} models, with the exception of stimuli where
-$\theta=0$ or $\theta=180$, in which case we ran double the number of
-samples.
+viewed. We ran 10 samples of each stimulus under each of the modesl,
+with the exception of stimuli where $\theta=0$ or $\theta=180$, in
+which case we ran double the number of samples.
 
 For analyses of response time, confidence intervals were computed
 using a bootstrap analysis (sampling with replacement) with 1000
