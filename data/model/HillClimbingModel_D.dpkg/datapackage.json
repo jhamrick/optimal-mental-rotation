@@ -13,7 +13,7 @@
   "image": null, 
   "datapackage_version": "1.0-beta.5", 
   "sources": [], 
-  "last_modified": "2014-01-29 04:27:51.737740", 
+  "last_modified": "2014-01-29 23:16:33.608104", 
   "keywords": null, 
   "licenses": [
     {
@@ -23,15 +23,15 @@
   ], 
   "name": "HillClimbingModel_D.dpkg", 
   "title": null, 
-  "version": "1.11.0", 
+  "version": "1.12.0", 
   "homepage": null, 
   "resources": [
     {
-      "hash": "b55d05f5b0aeb427591c7d8f05a60f51", 
+      "hash": "32031f87104291b2f80e56d106cf544e", 
       "name": "model.csv", 
       "format": "csv", 
-      "bytes": 3475524, 
-      "modified": "2014-01-29 04:27:51.478050", 
+      "bytes": 3496227, 
+      "modified": "2014-01-29 23:16:33.344210", 
       "path": "./model.csv"
     }
   ]

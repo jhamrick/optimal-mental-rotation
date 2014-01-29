@@ -13,7 +13,7 @@
   "image": null, 
   "datapackage_version": "1.0-beta.5", 
   "sources": [], 
-  "last_modified": "2014-01-29 04:20:38.389174", 
+  "last_modified": "2014-01-29 22:02:12.039836", 
   "keywords": null, 
   "licenses": [
     {
@@ -23,15 +23,15 @@
   ], 
   "name": "ThresholdModel_D.dpkg", 
   "title": null, 
-  "version": "1.9.0", 
+  "version": "1.10.0", 
   "homepage": null, 
   "resources": [
     {
-      "hash": "3e4708ec0afff90c88a07b280e44f0c3", 
+      "hash": "298e8358b277eec418e6b03d732e4b55", 
       "name": "model.csv", 
       "format": "csv", 
-      "bytes": 3503795, 
-      "modified": "2014-01-29 04:20:38.127677", 
+      "bytes": 3241528, 
+      "modified": "2014-01-29 22:02:11.797100", 
       "path": "./model.csv"
     }
   ]
