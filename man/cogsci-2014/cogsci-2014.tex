@@ -81,8 +81,6 @@
 \TODO{}
 \end{abstract}
 
-\TODO{put correlations in figures} 
-
 \TODO{need a figure with an example similarity curve, and example
   stimuli}
 
@@ -509,7 +507,8 @@ of the experiment, and 31 (12.6\%) because they failed a comprehension
 check. A participant was marked as passing the comprehension check if
 they answered at least 85\% of ``easy'' trials correctly. ``Easy''
 trials were defined to be those for which the presented shapes
-differed by a rotation of no more than 20 degrees.
+differed by a rotation of no more than 20 degrees. \TODO{mention
+  excluding trials where people took a really long time to respond}
 
 We ran model simulations for the same stimuli that participants
 viewed. We ran 10 samples of each stimulus under each of the modesl,
@@ -519,16 +518,15 @@ which case we ran double the number of samples.
 For analyses of response time, confidence intervals were computed
 using a bootstrap analysis (sampling with replacement) with 1000
 bootstrap samples. Response times were only only considered for
-correct responses.
+correct responses.  We also used a bootstrap analysis (with 10000
+bootstrap samples) to compute the confidence intervals for both
+Spearman ($r_s$) and Pearson ($r$) correlations.
 
-For analyses of accuracy, confidence intervals were
-computed from a binomial proportion with a Jeffrey's beta prior.  For
-correlations, we performed a bootstrap analysis (sampling with
-replacement) over Spearman correlations using 10000 bootstrap samples.
-
-To test if participants or a model was above chance on a particular
-stimulus, we used the same posterior and checked whether $p>0.05$ for
-the 50\% mark.
+For analyses of accuracy, confidence intervals were computed from a
+binomial proportion with a Jeffrey's beta prior.  To test if
+participants or a model was above chance on a particular stimulus, we
+used the same binomial proportion, and simply tested whether $p>0.05$
+for the 50\% mark.
 
 \begin{figure}[t]
   \centering
