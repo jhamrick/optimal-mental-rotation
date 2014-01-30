@@ -22,7 +22,7 @@ def run(data, results_path, seed):
                 thetas = x['modtheta']
                 times = x['time']
 
-                corr = dict(util.bootcorr(thetas, times))
+                corr = dict(util.bootcorr(thetas, times, method='spearman'))
 
                 print "%s (%s): %s" % (
                     key, flipped, util.report_spearman.format(**corr))
@@ -40,7 +40,7 @@ def run(data, results_path, seed):
             thetas = x['modtheta']
             times = x['time']
 
-            corr = dict(util.bootcorr(thetas, times))
+            corr = dict(util.bootcorr(thetas, times, method='spearman'))
 
             print "%s (all): %s" % (
                 key, util.report_spearman.format(**corr))
