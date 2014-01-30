@@ -20,6 +20,9 @@
 
 \documentclass[10pt,letterpaper]{article}
 
+%% For better looking math (but it takes up more space):
+% \AtBeginDocument{\RequirePackage{lmodern, times}}
+
 \usepackage{cogsci}
 \usepackage{pslatex}
 \usepackage{apacite}
@@ -52,6 +55,10 @@
   \setlength{\parsep}{0pt}
 }{\end{itemize}}
 
+\addtolength{\abovecaptionskip}{-0.25cm}
+\addtolength{\belowcaptionskip}{-0.2cm}
+\addtolength{\textfloatsep}{-2mm}	% space below "Figure 1: ..."
+
 \input{../../results/D/response_time.tex}
 \input{../../results/D/response_time_corrs.tex}
 \input{../../results/D/accuracy.tex}
@@ -62,7 +69,7 @@
 \input{../../results/D/theta_time_corrs.tex}
 \input{../../results/D/theta_accuracy_corrs.tex}
 
-\title{Modeling mental simulation: a computational analysis of mental rotation}
+\title{What to simulate? Inferring the direction for mental rotation}
  
 \author{{\large \bf Jessica B. Hamrick (jhamrick@berkeley.edu)} \\
   {\large \bf Thomas L. Griffiths (tom\_griffiths@berkeley.edu)} \\
@@ -81,11 +88,6 @@
 \TODO{}
 \end{abstract}
 
-\TODO{need a figure with an example similarity curve, and example
-  stimuli}
-
-\TODO{fix title}
-
 \section{Introduction}
 
 One of our most astonishing cognitive feats is the ability to
@@ -93,8 +95,9 @@ envision, manipulate, and plan with objects -- all without actually
 perceiving them. This capacity for ``mental simulation'' has been
 widely studied and has sparked intense debate about the underlying
 representation of mental images \cite<e.g.,>{Kosslyn:2009tj,
-  Pylyshyn:2002vk}. Despite this vast literature, there have been
-surprisingly few computational models of mental imagery.
+  Pylyshyn:2002vk}. But this debate hasn't addressed one of the most
+fundamental questions about mental simulation: how people decide what
+they should simulate.
 
 In the classic experiment by \citeA{Shepard1971}, participants viewed
 images of three-dimensional objects and had to determine whether the
@@ -276,6 +279,14 @@ actions listed in Eq.~\ref{eq:actions}.
 
 \subsection{Specific models of mental rotation}
 
+\begin{figure*}[t]
+  \begin{center}
+    \includegraphics[width=\textwidth]{../../figures/D/model-traces.pdf}
+    \caption{\textbf{Model traces.} \TODO{}}
+    \label{fig:model-traces}
+  \end{center}
+\end{figure*}
+
 In order to approximate Eq.~\ref{eq:lh-ratio} using samples of the
 similarity function, we must decide \textit{which} places to sample
 and \textit{when} stop sampling. The models below differ in how they
@@ -422,14 +433,14 @@ value.
 
 \subsection{Stimuli}
 
-We randomly generated 20 shapes of 5 or 6 vertices (e.g., $\Xa$ in
-Figure \ref{fig:stimuli}). For each shape, we computed 20 ``same'' and
-20 ``flipped'' stimuli pairs, with $\theta$ spaced at $20^\prime$
-increments between 0 and 360 (with 0 and 180 degree rotations repeated
-twice, in order to gather an equal number of responses for each angle
-between 0 and 180). ``Same'' pairs were created by rotating $\Xa$ by
-$\theta$; ``flipped'' pairs first reflected $\Xa$ across the $y$-axis,
-then rotated by $\theta$.
+We randomly generated 20 shapes of 5 or 6 vertices (e.g., the stimuli
+in Fig.~\ref{fig:model-traces}). For each shape, we computed 20
+``same'' and 20 ``flipped'' stimuli pairs, with $\theta$ spaced at
+$20^\prime$ increments between 0 and 360 (with 0 and 180 degree
+rotations repeated twice, in order to gather an equal number of
+responses for each angle between 0 and 180). ``Same'' pairs were
+created by rotating $\Xa$ by $\theta$; ``flipped'' pairs first
+reflected $\Xa$ across the $y$-axis, then rotated by $\theta$.
 
 We generated 5 shapes to be used in the practice block. Across all the
 practice 10 stimuli, each shape and each angle (60, 120, 180, 240, or
@@ -595,15 +606,6 @@ similar correlation, with \ExpBqAccuracyCorr{}.
 
 \section{Discussion}
 
-\begin{figure*}[t]
-  \begin{center}
-    \includegraphics[width=\textwidth]{../../figures/D/model-traces.pdf}
-    \caption{\textbf{Model traces.} \TODO{} \TODO{put pictures of the
-        stimuli here}}
-    \label{fig:model-traces}
-  \end{center}
-\end{figure*}
-
 We replicated the previous monotonic response time result, though not
 the linear resulte. Actually kind of similar to \cite{Gardony:2013gn}
 \TODO{elaborate}
@@ -637,16 +639,16 @@ Other problems: evidence that rotations aren't actually holistic
   is harder than was previous thought, and that this is a first step
   towards detangling these issues.}
 
-\section{Acknowledgments}
+%% TODO: Uncomment this for final version:
 
-This research was supported by ONR MURI grant number N00014-13-1-0341,
-and a Berkeley Fellowship awarded to JBH.
+% \section{Acknowledgments}
+% {\small This research was supported by ONR MURI grant number
+% N00014-13-1-0341, and a Berkeley Fellowship awarded to JBH. }
 
 \bibliographystyle{apacite}
-
+\renewcommand{\bibliographytypesize}{\small}
 \setlength{\bibleftmargin}{.125in}
 \setlength{\bibindent}{-\bibleftmargin}
-
 \bibliography{references}
 
 \end{document}
