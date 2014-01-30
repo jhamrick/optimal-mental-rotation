@@ -25,6 +25,24 @@ class ThresholdModel(BaseModel):
 
             return
 
+        elif self._current_iter == 1:
+            self.model['R'].value = 0
+            self.model['F'].value = 1
+
+            if np.exp(self.model['log_S'].logp) > self._thresh:
+                self.status = 'done'
+
+            # start with the hypothesis that has the most weight at
+            # the beginning
+            S0 = self.log_S_i[0]
+            S1 = self.model['log_S'].logp
+            if S0 > S1:
+                self.tally()
+                self._current_iter += 1
+                self.model['F'].value = 0
+
+            return
+
         R = self.model['R'].value
         log_S = self.model['log_S'].logp
 
