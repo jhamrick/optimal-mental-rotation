@@ -26,6 +26,8 @@ class ThresholdModel(BaseModel):
             return
 
         R = self.model['R'].value
+        log_S = self.model['log_S'].logp
+
         if self.direction is None:
             step = self._random_step()
             self.direction = np.sign(step)
@@ -36,15 +38,26 @@ class ThresholdModel(BaseModel):
                 self.status = 'done'
                 return
 
+            # we want to start rotating in the direction that
+            # increases similarity -- so turn around if this new point
+            # is going downhill
+            if new_log_S < log_S:
+                self.tally()
+                self._current_iter += 1
+                self.direction *= -1
+                self.model['R'].value = R
+
         else:
             step = self.direction * np.abs(self._random_step())
             self.model['R'].value = R + step
-            new_log_S = self.model['log_S'].logp
 
+            new_log_S = self.model['log_S'].logp
             if np.exp(new_log_S) > self._thresh:
                 self.status = 'done'
                 return
 
+            # we've made it all the way around, so let's flip and see
+            # if we can find the threshold with that
             if (R > 0 and (R + step) < 0) or (R < 0 and (R + step) > 0):
                 self.tally()
                 self._current_iter += 1
