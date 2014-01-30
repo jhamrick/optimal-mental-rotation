@@ -29,6 +29,8 @@ def plot(data, fig_path, seed):
         ax = axes[0, i]
         df = data[key]
 
+        maxy = -np.inf
+        miny = np.inf
         for flipped, df2 in df[df['correct']].groupby('flipped'):
             time = df2.groupby('modtheta')['time']
             stats = time.apply(util.bootstrap).unstack(1)
@@ -40,6 +42,11 @@ def plot(data, fig_path, seed):
                 color=colors[flipped],
                 ecolor=colors[flipped])
 
+            if stats['upper'].max() > maxy:
+                maxy = stats['upper'].max()
+            if stats['lower'].min() < miny:
+                miny = stats['lower'].min()
+
         ax.set_xticks(np.arange(0, 200, 30))
         ax.set_xlim(-10, 190)
 
@@ -49,10 +56,8 @@ def plot(data, fig_path, seed):
             ax.set_ylabel("Response time", fontsize=14)
         else:
             ax.set_ylabel("Number of actions", fontsize=14)
-
-        util.clear_right(ax)
-        util.clear_top(ax)
-        util.outward_ticks(ax)
+            buff = np.ceil((np.round(maxy) - np.round(miny)) * 0.05)
+            ax.set_ylim(np.round(miny) - buff, np.round(maxy) + buff)
 
     util.sync_ylims(axes[0, order.index('bq')], axes[0, order.index('bqp')])
 
@@ -75,11 +80,14 @@ def plot(data, fig_path, seed):
         ax.set_ylim(25, 105)
         ax.set_xticks(np.arange(0, 200, 30))
         ax.set_xlabel("Rotation", fontsize=14)
+
+        ax.set_ylabel("Percent correct", fontsize=14)
+
+    for ax in axes.flat:
         util.clear_right(ax)
         util.clear_top(ax)
         util.outward_ticks(ax)
-
-        ax.set_ylabel("Percent correct", fontsize=14)
+        ax.set_axis_bgcolor('0.95')
 
     p0 = plt.Rectangle(
         (0, 0), 1, 1,
@@ -96,7 +104,6 @@ def plot(data, fig_path, seed):
         loc='lower center',
         title='Stimuli')
     frame = leg.get_frame()
-    frame.set_facecolor('0.9')
     frame.set_edgecolor('#FFFFFF')
 
     util.sync_ylabel_coords(axes.flat, -0.175)
