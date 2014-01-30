@@ -36,8 +36,7 @@ def plot(data, fig_path, seed):
             upper = stats['upper'] - stats['median']
             ax.errorbar(
                 stats.index, stats['median'],
-                yerr=[lower, upper],
-                label=flipped, lw=3,
+                yerr=[lower, upper], lw=3,
                 color=colors[flipped],
                 ecolor=colors[flipped])
 
@@ -68,8 +67,7 @@ def plot(data, fig_path, seed):
             upper = stats['upper'] - stats['median']
             ax.errorbar(
                 stats.index, stats['median'],
-                yerr=[lower, upper],
-                label=flipped, lw=3,
+                yerr=[lower, upper], lw=3,
                 color=colors[flipped],
                 ecolor=colors[flipped])
 
@@ -83,7 +81,24 @@ def plot(data, fig_path, seed):
 
         ax.set_ylabel("Percent correct", fontsize=14)
 
-    axes[1, 0].legend(title="Stimuli", loc=0, frameon=False)
+    p0 = plt.Rectangle(
+        (0, 0), 1, 1,
+        fc=colors['same'],
+        ec=colors['same'])
+    p1 = plt.Rectangle(
+        (0, 0), 1, 1,
+        fc=colors['flipped'],
+        ec=colors['flipped'])
+
+    leg = axes[1, 0].legend(
+        [p0, p1], ["\"same\" pairs", "\"flipped\" pairs"],
+        numpoints=1, fontsize=12,
+        loc='lower center',
+        title='Stimuli')
+    frame = leg.get_frame()
+    frame.set_facecolor('0.9')
+    frame.set_edgecolor('#FFFFFF')
+
     util.sync_ylabel_coords(axes.flat, -0.175)
 
     fig.set_figheight(5)
