@@ -49,6 +49,25 @@ def clear_top(ax=None):
     ax.xaxis.set_ticks_position('bottom')
 
 
+def clear_top_bottom(ax=None):
+    """Remove the top and bottom edges of the axis bounding box.
+
+    Parameters
+    ----------
+    ax : axis object (default=pyplot.gca())
+
+    References
+    ----------
+    http://matplotlib.org/examples/pylab_examples/spine_placement_demo.html
+
+    """
+    if ax is None:
+        ax = plt.gca()
+    ax.spines['top'].set_color('none')
+    ax.spines['bottom'].set_color('none')
+    ax.xaxis.set_ticks([])
+
+
 def outward_ticks(ax=None, axis='both'):
     """Make axis ticks face outwards rather than inwards (which is the
     default).
@@ -173,3 +192,72 @@ def sync_ylims(*axes):
     for ax in axes:
         ax.set_ylim(ymin, ymax)
     return ymin, ymax
+
+
+def sync_xlims(*axes):
+    """Synchronize the x-axis data limits for multiple axes. Uses the maximum
+    upper limit and minimum lower limit across all given axes.
+
+    Parameters
+    ----------
+    *axes : axis objects
+        List of matplotlib axis objects to format
+
+    Returns
+    -------
+    out : xmin, xmax
+        The computed bounds
+
+    """
+    xmins, xmaxs = zip(*[ax.get_xlim() for ax in axes])
+    xmin = min(xmins)
+    xmax = max(xmaxs)
+    for ax in axes:
+        ax.set_xlim(xmin, xmax)
+    return xmin, xmax
+
+
+def sync_xlabel_coords(axes, y, x=0.5):
+    """Set the y-coordinate (and optionally the x-coordinate) of the x-axis
+    labels.
+
+    Parameters
+    ----------
+    axes : list
+        list of axis objects
+    y : float
+        y-coordinate for the label
+    x : float (default=0.5)
+        x-coordinate for the label
+    ax : axis object (default=pyplot.gca())
+
+    References
+    ----------
+    http://matplotlib.org/faq/howto_faq.html#align-my-ylabels-across-multiple-subplots
+
+    """
+    for ax in axes:
+        ax.xaxis.set_label_coords(x, y)
+
+
+def sync_ylabel_coords(axes, x, y=0.5):
+    """Set the x-coordinate (and optionally the y-coordinate) of the y-axis
+    labels.
+
+    Parameters
+    ----------
+    axes : list
+        list of axis objects
+    x : float
+        x-coordinate for the label
+    y : float (default=0.5)
+        y-coordinate for the label
+    ax : axis object (default=pyplot.gca())
+
+    References
+    ----------
+    http://matplotlib.org/faq/howto_faq.html#align-my-ylabels-across-multiple-subplots
+
+    """
+    for ax in axes:
+        ax.yaxis.set_label_coords(x, y)

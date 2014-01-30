@@ -190,15 +190,19 @@ class BaseModel(object):
 
         return lines
 
-    def plot_trace(self, ax, legend=True):
+    def plot_trace(self, ax, legend=True, scale_points=True):
         Fi = self.F_i
-        Si = self.log_S_i - self._log_const
-        Si = (Si - Si.min() + 1) * 10
         Ri = self.R_i
         ti = np.arange(Ri.size)
         ci = np.empty((Ri.size, 3))
         ci[Fi == 0] = np.array([1, 0, 0])
         ci[Fi == 1] = np.array([0, 0, 1])
+
+        if scale_points:
+            Si = self.log_S_i - self._log_const
+            Si = (Si - Si.min() + 1) * 10
+        else:
+            Si = np.zeros(Ri.size) + 30
 
         ax.plot(ti, Ri, 'k-')
         ax.scatter(ti, Ri, c=ci, s=Si, edgecolor=ci)
