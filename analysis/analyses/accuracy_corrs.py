@@ -17,24 +17,21 @@ def run(data, results_path, seed):
         accuracy_means[key] = y.apply(util.beta).unstack(-1)['median']
     accuracy_means = pd.DataFrame(accuracy_means)
 
-    pth = results_path.joinpath("accuracy_corrs.tex")
-    with open(pth, "w") as fh:
-        fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
-        for key in keys:
-            if key == 'exp':
-                continue
+    results = {}
+    for key in keys:
+        if key == 'exp':
+            continue
 
-            corr = dict(util.bootcorr(
-                accuracy_means['exp'],
-                accuracy_means[key],
-                method='pearson'))
+        corr = util.bootcorr(
+            accuracy_means['exp'],
+            accuracy_means[key],
+            method='pearson')
+        results[key] = corr
+        print "exp v. %s: %s" % (key, util.report_pearson.format(**dict(corr)))
 
-            print "exp v. %s: %s" % (key, util.report_pearson.format(**corr))
-            cmd = util.newcommand(
-                "Exp%sAccuracyCorr" % key.capitalize(),
-                util.latex_pearson.format(**corr))
-            fh.write(cmd)
-
+    results = pd.DataFrame.from_dict(results, orient='index')
+    pth = results_path.joinpath("accuracy_corrs.csv")
+    results.to_csv(pth)
     return pth
 
 

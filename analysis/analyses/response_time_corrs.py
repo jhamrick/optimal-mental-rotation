@@ -18,24 +18,22 @@ def run(data, results_path, seed):
         response_means[key] = y.mean()
     response_means = pd.DataFrame(response_means)
 
-    pth = results_path.joinpath("response_time_corrs.tex")
-    with open(pth, "w") as fh:
-        fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
-        for key in keys:
-            if key == 'exp':
-                continue
+    results = {}
+    for key in keys:
+        if key == 'exp':
+            continue
 
-            corr = dict(util.bootcorr(
-                response_means['exp'],
-                response_means[key],
-                method='pearson'))
+        corr = util.bootcorr(
+            response_means['exp'],
+            response_means[key],
+            method='pearson')
 
-            print "exp v. %s: %s" % (key, util.report_pearson.format(**corr))
-            cmd = util.newcommand(
-                "Exp%sTimeCorr" % key.capitalize(),
-                util.latex_pearson.format(**corr))
-            fh.write(cmd)
+        print "exp v. %s: %s" % (key, util.report_pearson.format(**dict(corr)))
+        results[key] = corr
 
+    results = pd.DataFrame.from_dict(results, orient='index')
+    pth = results_path.joinpath("response_time_corrs.csv")
+    results.to_csv(pth)
     return pth
 
 

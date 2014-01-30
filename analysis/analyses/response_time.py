@@ -2,34 +2,30 @@
 
 import numpy as np
 import util
+import pandas as pd
 from path import path
 
 
 def run(data, results_path, seed):
     np.random.seed(seed)
 
-    pth = results_path.joinpath("response_time.tex")
-    with open(pth, "w") as fh:
-        fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
+    results = {}
+    for name in sorted(data.keys()):
+        # overall mean
+        mean = data[name]['time'].mean()
+        means = data[name]\
+            .groupby(['stimulus', 'theta', 'flipped'])['time']\
+            .mean()
+        min = means.min()
+        max = means.max()
+        results[name] = pd.Series({'mean': mean, 'min': min, 'max': max})
+        print "%s:\t%.2f [%.2f, %.2f]" % (name, mean, min, max)
 
-        for name in sorted(data.keys()):
-            # overall mean
-            mean = data[name]['time'].mean()
-            means = data[name]\
-                .groupby(['stimulus', 'theta', 'flipped'])['time']\
-                .mean()
-            min = means.min()
-            max = means.max()
-
-            print "%s:\t%.2f [%.2f, %.2f]" % (name, mean, min, max)
-            fh.write(util.newcommand(
-                "%sTime" % name.capitalize(), "%.2f" % mean))
-            fh.write(util.newcommand(
-                "%sTimeMin" % name.capitalize(), "%.2f" % min))
-            fh.write(util.newcommand(
-                "%sTimeMax" % name.capitalize(), "%.2f" % max))
-
+    results = pd.DataFrame.from_dict(results, orient='index')
+    pth = results_path.joinpath("response_time.csv")
+    results.to_csv(pth)
     return pth
+
 
 if __name__ == "__main__":
     config = util.load_config("config.ini")

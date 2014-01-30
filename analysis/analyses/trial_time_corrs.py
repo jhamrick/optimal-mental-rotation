@@ -2,6 +2,7 @@
 
 import numpy as np
 import util
+import pandas as pd
 from path import path
 
 
@@ -9,24 +10,22 @@ def run(data, results_path, seed):
     np.random.seed(seed)
     keys = ['exp', 'expA', 'expB']
 
-    pth = results_path.joinpath("trial_time_corrs.tex")
-    with open(pth, "w") as fh:
-        fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
+    results = {}
+    for key in keys:
+        df = data[key]
+        trials = df[df['correct']]['trial'].drop_duplicates()
+        trials.sort()
+        times = df[df['correct']].groupby('trial')['time'].mean()
+        corr = util.bootcorr(trials, times, method='spearman')
 
-        for key in keys:
-            df = data[key]
-            trials = df[df['correct']]['trial'].drop_duplicates()
-            trials.sort()
-            times = df[df['correct']].groupby('trial')['time'].mean()
-            corr = dict(util.bootcorr(trials, times, method='spearman'))
+        print "%s: %s" % (key, util.report_spearman.format(**dict(corr)))
+        results[key] = corr
 
-            print "%s: %s" % (key, util.report_spearman.format(**corr))
-            cmd = util.newcommand(
-                "%sTrialTimeCorr" % key.capitalize(),
-                util.latex_spearman.format(**corr))
-            fh.write(cmd)
-
+    results = pd.DataFrame.from_dict(results, orient='index')
+    pth = results_path.joinpath("trial_time_corrs.csv")
+    results.to_csv(pth)
     return pth
+
 
 if __name__ == "__main__":
     config = util.load_config("config.ini")

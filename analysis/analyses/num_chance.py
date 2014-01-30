@@ -2,6 +2,7 @@
 
 import numpy as np
 import util
+import pandas as pd
 from path import path
 
 
@@ -9,20 +10,18 @@ def run(data, results_path, seed):
     np.random.seed(seed)
     keys = ['exp', 'bq', 'bqp', 'hc']
 
-    pth = results_path.joinpath("num_chance.tex")
-    with open(pth, "w") as fh:
-        fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
-        for key in keys:
-            df = data[key]
-            y = df.groupby(['stimulus', 'theta', 'flipped'])['correct']
-            num = (y.apply(util.beta, [0.05]) <= 0.5).sum()
-            total = len(y.groups)
-            print "%s: %d / %d" % (key, num, total)
-            cmd = util.newcommand(
-                "%sNumChance" % key.capitalize(),
-                "%d" % num)
-            fh.write(cmd)
+    results = {}
+    for key in keys:
+        df = data[key]
+        y = df.groupby(['stimulus', 'theta', 'flipped'])['correct']
+        num = (y.apply(util.beta, [0.05]) <= 0.5).sum()
+        total = len(y.groups)
+        results[key] = pd.Series({'num': num, 'total': total})
+        print "%s: %d / %d" % (key, num, total)
 
+    results = pd.DataFrame.from_dict(results, orient='index')
+    pth = results_path.joinpath("num_chance.csv")
+    results.to_csv(pth)
     return pth
 
 

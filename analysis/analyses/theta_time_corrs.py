@@ -2,6 +2,7 @@
 
 import numpy as np
 import util
+import pandas as pd
 from path import path
 
 
@@ -9,30 +10,9 @@ def run(data, results_path, seed):
     np.random.seed(seed)
     keys = ['exp', 'oc', 'th', 'hc', 'bq', 'bqp']
 
-    pth = results_path.joinpath("theta_time_corrs.tex")
-    with open(pth, "w") as fh:
-        fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
-
-        for key in keys:
-            for flipped, df in data[key].groupby('flipped'):
-                x = df[df['correct']]\
-                    .groupby(['stimulus', 'modtheta'])['time']\
-                    .mean()\
-                    .reset_index()
-                thetas = x['modtheta']
-                times = x['time']
-
-                corr = dict(util.bootcorr(thetas, times, method='spearman'))
-
-                print "%s (%s): %s" % (
-                    key, flipped, util.report_spearman.format(**corr))
-                cmd = util.newcommand(
-                    "%sThetaTimeCorr%s" % (
-                        key.capitalize(), flipped.capitalize()),
-                    util.latex_spearman.format(**corr))
-                fh.write(cmd)
-
-            df = data[key]
+    results = {}
+    for key in keys:
+        for flipped, df in data[key].groupby('flipped'):
             x = df[df['correct']]\
                 .groupby(['stimulus', 'modtheta'])['time']\
                 .mean()\
@@ -40,16 +20,31 @@ def run(data, results_path, seed):
             thetas = x['modtheta']
             times = x['time']
 
-            corr = dict(util.bootcorr(thetas, times, method='spearman'))
+            corr = util.bootcorr(thetas, times, method='spearman')
+            print "%s (%s): %s" % (
+                key, flipped, util.report_spearman.format(**dict(corr)))
+            results[(key, flipped)] = corr
 
-            print "%s (all): %s" % (
-                key, util.report_spearman.format(**corr))
-            cmd = util.newcommand(
-                "%sThetaTimeCorr" % key.capitalize(),
-                util.latex_spearman.format(**corr))
-            fh.write(cmd)
+        df = data[key]
+        x = df[df['correct']]\
+            .groupby(['stimulus', 'modtheta'])['time']\
+            .mean()\
+            .reset_index()
+        thetas = x['modtheta']
+        times = x['time']
 
+        corr = util.bootcorr(thetas, times, method='spearman')
+        print "%s (all): %s" % (
+            key, util.report_spearman.format(**dict(corr)))
+        results[(key, 'all')] = corr
+
+    results = pd.DataFrame.from_dict(results, orient='index')
+    results.index = pd.MultiIndex.from_tuples(
+        results.index, names=['model', 'flipped'])
+    pth = results_path.joinpath("theta_time_corrs.csv")
+    results.to_csv(pth)
     return pth
+
 
 if __name__ == "__main__":
     config = util.load_config("config.ini")

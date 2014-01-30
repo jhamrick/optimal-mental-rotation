@@ -2,27 +2,23 @@
 
 import numpy as np
 import util
+import pandas as pd
 from path import path
 
 
 def run(data, results_path, seed):
     np.random.seed(seed)
 
-    pth = results_path.joinpath("accuracy.tex")
-    with open(pth, "w") as fh:
-        fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
+    results = {}
+    for name in sorted(data.keys()):
+        df = data[name]
+        a = util.beta(df['correct']) * 100
+        results[name] = a
+        print "%s:\t %s" % (name, util.report_percent.format(**dict(a)))
 
-        for name in sorted(data.keys()):
-            df = data[name]
-            a = dict(util.beta(df['correct']) * 100)
-
-            print "%s:\t %s" % (name, util.report_percent.format(**a))
-            cmd = util.newcommand(
-                "%sAccuracy" % name.capitalize(),
-                util.latex_percent.format(**a))
-
-            fh.write(cmd)
-
+    results = pd.DataFrame.from_dict(results, orient='index')
+    pth = results_path.joinpath("accuracy.csv")
+    results.to_csv(pth)
     return pth
 
 if __name__ == "__main__":
