@@ -19,9 +19,14 @@ def plot(data, fig_path, seed):
         'bqp': "BQ (unequal prior)"
     }
 
-    fig, axes = plt.subplots(1, len(order), sharex=True)
+    colors = {
+        'same': 'r',
+        'flipped': 'b'
+    }
+
+    fig, axes = plt.subplots(2, len(order), sharex=True)
     for i, key in enumerate(order):
-        ax = axes[i]
+        ax = axes[0, i]
         df = data[key]
 
         for flipped, df2 in df[df['correct']].groupby('flipped'):
@@ -32,9 +37,10 @@ def plot(data, fig_path, seed):
             ax.errorbar(
                 stats.index, stats['median'],
                 yerr=[lower, upper],
-                label=flipped, lw=3)
+                label=flipped, lw=3,
+                color=colors[flipped],
+                ecolor=colors[flipped])
 
-        ax.set_xlabel("Rotation", fontsize=14)
         ax.set_xticks(np.arange(0, 200, 30))
         ax.set_xlim(-10, 190)
 
@@ -49,16 +55,45 @@ def plot(data, fig_path, seed):
         util.clear_top(ax)
         util.outward_ticks(ax)
 
-    axes[0].legend(title="Stimuli", loc=0, frameon=False)
-    util.sync_ylims(axes[order.index('bq')], axes[order.index('bqp')])
+    util.sync_ylims(axes[0, order.index('bq')], axes[0, order.index('bqp')])
 
-    fig.set_figheight(3)
+    for i, key in enumerate(order):
+        ax = axes[1, i]
+        df = data[key]
+
+        for flipped, df2 in df.groupby('flipped'):
+            correct = df2.groupby('modtheta')['correct']
+            stats = correct.apply(util.beta).unstack(1) * 100
+            lower = stats['median'] - stats['lower']
+            upper = stats['upper'] - stats['median']
+            ax.errorbar(
+                stats.index, stats['median'],
+                yerr=[lower, upper],
+                label=flipped, lw=3,
+                color=colors[flipped],
+                ecolor=colors[flipped])
+
+        ax.set_xlim(-10, 190)
+        ax.set_ylim(25, 105)
+        ax.set_xticks(np.arange(0, 200, 30))
+        ax.set_xlabel("Rotation", fontsize=14)
+        util.clear_right(ax)
+        util.clear_top(ax)
+        util.outward_ticks(ax)
+
+        ax.set_ylabel("Percent correct", fontsize=14)
+
+    axes[1, 0].legend(title="Stimuli", loc=0, frameon=False)
+    util.sync_ylabel_coords(axes.flat, -0.175)
+
+    fig.set_figheight(5)
     fig.set_figwidth(18)
 
     plt.draw()
     plt.tight_layout()
+    plt.subplots_adjust(wspace=0.4)
 
-    pths = [fig_path.joinpath("response_time.%s" % ext)
+    pths = [fig_path.joinpath("response_time_accuracy.%s" % ext)
             for ext in ('png', 'pdf')]
     for pth in pths:
         util.save(pth, close=False)
