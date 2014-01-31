@@ -8,21 +8,21 @@ from path import path
 
 
 def plot(results_path, fig_path):
-    keys = ['exp', 'oc', 'th', 'hc', 'bq', 'bqp']
-    corrs = pd.read_csv(results_path.joinpath("theta_time_corrs.csv"))\
-              .set_index(['model', 'flipped'])\
-              .unstack('flipped')\
-              .reindex(keys)
+    keys = ['oc', 'th', 'hc', 'bq', 'bqp']
+
+    time = pd.read_csv(results_path.joinpath("response_time_corrs.csv"))\
+             .set_index(['model', 'flipped'])\
+             .unstack('flipped')\
+             .reindex(keys)
+    acc = pd.read_csv(results_path.joinpath("accuracy_corrs.csv"))\
+            .set_index(['model', 'flipped'])\
+            .unstack('flipped')\
+            .reindex(keys)
 
     fig, ax = plt.subplots()
-    width = 1
+    width = 0.8
     offset = width * 5 / 2.
-    colors = {
-        'same': '#ff5555',
-        'flipped': '#5555ff'
-    }
     titles = {
-        'exp': "Human",
         'oc': "Oracle",
         'th': "Threshold",
         'hc': "HC",
@@ -30,21 +30,35 @@ def plot(results_path, fig_path):
         'bqp': "BQ\n(unequal)"
     }
 
-    order = ['same', 'flipped']
-    for i, flipped in enumerate(order):
-        y = corrs.xs(flipped, axis=1, level='flipped')
-        median = y['median']
-        lerr = median - y['lower']
-        uerr = y['upper'] - median
-        ax.bar(
-            i * width + np.arange(len(median)) * offset,
-            median,
-            yerr=[lerr, uerr],
-            color=colors[flipped],
-            ecolor='k',
-            width=width,
-            edgecolor='none',
-            capsize=0)
+    colors = ['#55cc77', '#cc55aa']
+
+    y = time.xs('all', axis=1, level='flipped')
+    median = y['median']
+    lerr = median - y['lower']
+    uerr = y['upper'] - median
+    ax.bar(
+        np.arange(len(median)) * offset,
+        median,
+        yerr=[lerr, uerr],
+        color=colors[0],
+        ecolor='k',
+        width=width,
+        edgecolor='none',
+        capsize=0)
+
+    y = acc.xs('all', axis=1, level='flipped')
+    median = y['median']
+    lerr = median - y['lower']
+    uerr = y['upper'] - median
+    ax.bar(
+        width + np.arange(len(median)) * offset,
+        median,
+        yerr=[lerr, uerr],
+        color=colors[1],
+        ecolor='k',
+        width=width,
+        edgecolor='none',
+        capsize=0)
 
     ax.set_ylim(0, 1)
     ax.set_xlim(-width / 2., len(median) * offset)
@@ -55,19 +69,19 @@ def plot(results_path, fig_path):
     util.clear_top(ax)
     util.outward_ticks(ax)
 
-    ax.set_ylabel(r"Spearman correlation ($r_s$)", fontsize=14)
+    ax.set_ylabel(r"Pearson correlation ($r$)", fontsize=14)
 
     p0 = plt.Rectangle(
         (0, 0), 1, 1,
-        fc=colors['same'],
-        ec=colors['same'])
+        fc=colors[0],
+        ec=colors[0])
     p1 = plt.Rectangle(
         (0, 0), 1, 1,
-        fc=colors['flipped'],
-        ec=colors['flipped'])
+        fc=colors[1],
+        ec=colors[1])
 
     leg = ax.legend(
-        [p0, p1], ["\"same\" pairs", "\"flipped\" pairs"],
+        [p0, p1], ["response time", "accuracy"],
         numpoints=1, fontsize=12,
         loc='upper right',
         bbox_to_anchor=(1, 1.05))
@@ -81,7 +95,7 @@ def plot(results_path, fig_path):
     plt.draw()
     plt.tight_layout()
 
-    pths = [fig_path.joinpath("theta_time_corrs.%s" % ext)
+    pths = [fig_path.joinpath("human_model_corrs.%s" % ext)
             for ext in ('png', 'pdf')]
     for pth in pths:
         util.save(pth, close=False)

@@ -55,7 +55,6 @@ def plot(results_path, fig_path):
     util.clear_top(ax)
     util.outward_ticks(ax)
 
-    ax.set_title("Correlation between rotation and accuracy", fontsize=14)
     ax.set_ylabel(r"Spearman correlation ($r_s$)", fontsize=14)
 
     p0 = plt.Rectangle(
@@ -70,10 +69,14 @@ def plot(results_path, fig_path):
     leg = ax.legend(
         [p0, p1], ["\"same\" pairs", "\"flipped\" pairs"],
         numpoints=1, fontsize=12,
-        loc='upper right')
+        loc='upper right',
+        bbox_to_anchor=(1, 1.05))
     frame = leg.get_frame()
     frame.set_facecolor('0.9')
     frame.set_edgecolor('#FFFFFF')
+
+    fig.set_figwidth(5)
+    fig.set_figheight(3)
 
     plt.draw()
     plt.tight_layout()

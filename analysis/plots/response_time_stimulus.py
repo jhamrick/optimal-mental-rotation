@@ -8,7 +8,7 @@ from path import path
 
 
 def plot(results_path, fig_path):
-    order = ['exp', 'oc', 'th', 'hc', 'bq', 'bqp']
+    order = ['exp', 'th', 'bqp']
     titles = {
         'exp': "Human",
         'oc': "Oracle",
@@ -23,17 +23,17 @@ def plot(results_path, fig_path):
         'flipped': 'b'
     }
 
-    time_results = pd.read_csv(
-        results_path.joinpath("theta_time.csv"))
-    acc_results = pd.read_csv(
-        results_path.joinpath("theta_accuracy.csv"))
+    means = pd.read_csv(
+        results_path.joinpath("response_time_means.csv"))\
+        .set_index(['stimulus', 'flipped', 'model'])\
+        .groupby(level='stimulus').get_group(2)
 
-    fig, axes = plt.subplots(2, len(order), sharex=True)
+    fig, axes = plt.subplots(1, len(order), sharex=True)
     for i, key in enumerate(order):
-        ax = axes[0, i]
-        df = time_results.groupby('model').get_group(key)
+        ax = axes[i]
+        df = means.groupby(level='model').get_group(key)
 
-        for flipped, stats in df.groupby('flipped'):
+        for flipped, stats in df.groupby(level='flipped'):
             if key == 'exp':
                 median = stats['median'] / 1000.
                 lower = (stats['median'] - stats['lower']) / 1000.
@@ -51,7 +51,7 @@ def plot(results_path, fig_path):
 
         ax.set_xticks(np.arange(0, 200, 30))
         ax.set_xlim(-10, 190)
-
+        ax.set_xlabel("Rotation")
         ax.set_title(titles[key], fontsize=14)
 
         if key == 'exp':
@@ -59,27 +59,7 @@ def plot(results_path, fig_path):
         else:
             ax.set_ylabel("Number of actions", fontsize=14)
 
-    util.sync_ylims(axes[0, order.index('bq')], axes[0, order.index('bqp')])
-
-    for i, key in enumerate(order):
-        ax = axes[1, i]
-        df = acc_results.groupby('model').get_group(key)
-
-        for flipped, stats in df.groupby('flipped'):
-            lower = stats['median'] - stats['lower']
-            upper = stats['upper'] - stats['median']
-            ax.errorbar(
-                stats['modtheta'], stats['median'],
-                yerr=[lower, upper], lw=3,
-                color=colors[flipped],
-                ecolor=colors[flipped])
-
-        ax.set_xlim(-10, 190)
-        ax.set_ylim(25, 105)
-        ax.set_xticks(np.arange(0, 200, 30))
-        ax.set_xlabel("Rotation", fontsize=14)
-
-        ax.set_ylabel("Percent correct", fontsize=14)
+    # util.sync_ylims(axes[order.index('bq')], axes[order.index('bqp')])
 
     for ax in axes.flat:
         util.clear_right(ax)
@@ -96,24 +76,23 @@ def plot(results_path, fig_path):
         fc=colors['flipped'],
         ec=colors['flipped'])
 
-    leg = axes[1, 1].legend(
-        [p0, p1], ["\"same\" pairs", "\"flipped\" pairs"],
+    leg = axes[0].legend(
+        [p0, p1], ["same", "flipped"],
         numpoints=1, fontsize=12,
-        loc='lower center',
-        title='Stimuli')
+        loc='lower right')
     frame = leg.get_frame()
     frame.set_edgecolor('#FFFFFF')
 
     util.sync_ylabel_coords(axes.flat, -0.175)
 
-    fig.set_figheight(4)
-    fig.set_figwidth(18)
+    fig.set_figheight(3)
+    fig.set_figwidth(9)
 
     plt.draw()
     plt.tight_layout()
     plt.subplots_adjust(wspace=0.4)
 
-    pths = [fig_path.joinpath("response_time_accuracy.%s" % ext)
+    pths = [fig_path.joinpath("response_time_stimulus.%s" % ext)
             for ext in ('png', 'pdf')]
     for pth in pths:
         util.save(pth, close=False)
