@@ -29,7 +29,8 @@
 \usepackage{graphicx}
 \usepackage{color}
 \usepackage{amsmath, amsthm, amssymb}
-\usepackage{subfig}
+\usepackage{subcaption}
+\usepackage{caption}
 
 \newcommand{\TODO}[1]{\textcolor{red}{[TODO: #1]}}
 \newcommand{\Xa}[0]{\mathbf{X}_a}
@@ -64,6 +65,8 @@
 \input{../../results/D/num_chance.tex}
 \input{../../results/D/trial_accuracy_corrs.tex}
 \input{../../results/D/trial_time_corrs.tex}
+\input{../../results/D/response_time_corrs.tex}
+\input{../../results/D/accuracy_corrs.tex}
 
 \title{What to simulate? Inferring the direction for mental rotation}
  
@@ -78,9 +81,20 @@
 
 
 \begin{abstract}
-\TODO{}
+  When people use mental imagery to solve tasks, how do they decide
+  \textit{which} images to generate? To answer this question, we
+  explored how mental simulation should used in the classic
+  psychological task of determining if two images depict the same
+  object in different orientations \citeA{Shepard1971}. Through a
+  rational analysis of mental rotation, we formalized four models and
+  compared them to human performance on a 2D mental rotation
+  task. None of the models were a particularly satisfying explanation
+  of human behavior, leading us to suggest that the question of ``what
+  to simulate?'' is more difficult than has previously been
+  assumed. While only exploratory, this work provides the foundation
+  necessary to begin answering this question.
 
-\textbf{Keywords:} mental rotation, computational model
+  \textbf{Keywords:} mental rotation, computational model
 \end{abstract}
 
 \section{Introduction}
@@ -120,10 +134,6 @@ directions for future work.
 
 \section{Background}
 
-\TODO{say something here}
-
-\subsection{Mechanisms behind mental rotation}
-
 Previous models of mental rotation have, for the most part, focused on
 the representation of mental images, rather than how people decide
 \textit{which} mental images to generate. \citeA{Kosslyn:1977tv}
@@ -135,54 +145,48 @@ representational format underlying imagery. Although
 representation and process, he dismisses the problem of determining
 the direction of rotation as a ``technical difficulty''.
 
-The only model (of which the authors are aware) that has seriously
-attempted to address the decision of \textit{what} to simulate is the
-parallel-process model of mental rotation by \citeA{Funt:1983wn}. He
-determines the direction, axis, and extent of rotation by computing
-the objects' principal axes using moments of inertia. One object is
-then rotated through the target rotation, and is checked against the
-other object for congruency. However, this approach assumes that the
-corresponding points on the two objects can be easily identified,
-which is not necessarily the case.
-
-Perhaps people do not engage in a single trajectory of rotation that
-ends with congruency. Some evidence suggests that people do not
-perform a holistic rotation until the objects are congruent, but
-rather pay attention to certain salient features of the object
-\cite{Just1976,Yuille:1982tx}. A more recent study shows that when
-performing \textit{physical} rotations, people do not rotate until
-congruency is reached, and may even rotate \textit{away} from near
-perfect matches \cite{Gardony:2013gn}. Moreover, the state-of-the-art
-in computer vision suggests that there is more to shape matching than
-simply checking for congruency, particularly when shapes are complex
-or when the shapes might not be exactly the same
-\cite<e.g.,>{Belongie:2002tj,Sebastian:2003vm}.
-
+The only models (of which the authors are aware) that have seriously
+attempted to address the decision of \textit{what} to simulate are
+those by \citeA{Funt:1983wn} and \citeA{Just:1985uu}. In both of these
+models, the axis and direction of rotation are computed prior to
+performing the rotation. One object is then rotated through the target
+rotation, and is checked against the other object for
+congruency. However, this approach assumes that the corresponding
+points on the two objects can be easily identified, which is not
+necessarily the case. Indeed, the state-of-the-art in computer vision
+suggests that there is more to shape matching than simply checking for
+congruency, particularly when shapes are complex or when the shapes
+might not be exactly the same
+\cite<e.g.,>{Belongie:2002tj,Sebastian:2003vm}. Additionally, recent
+research shows that when performing \textit{physical} rotations,
+people do not rotate until congruency is reached, and may even rotate
+\textit{away} from near perfect matches \cite{Gardony:2013gn}.
 
 \subsection{A rational analysis of mental rotation}
 
-If people are not performing single-trajectory rotations, what might
-they be doing? To answer this question, we perform a ``rational
-analysis'' of the problem of mental rotation
+If people are not computing the rotation beforehand, what might they
+be doing? To answer this question, we perform a ``rational analysis''
+of the problem of mental rotation
 \cite{Marr:1983to,anderson90,Shepard:1987tt}. At the computational
-level, we could say that the \textit{problem} is to determine
-something about the spatial transformations that an object has
-undergone. At the algorithmic level, we are constrained by the notion
-that mental images must be transformed in an analog manner (or in a
-way that is at least approximately analog), and that mental images are
-time-consuming and effortful to generate. Thus, the \textit{goal} is
-to make this determination while performing a minimum amount of
-computation (i.e., as few rotations as possible).
+level, we could say that the \textit{problem} is to determine which
+spatial transformations an object has undergone based on two
+depictions of that object which do not include information about point
+correspondences across images. At the algorithmic level, we are
+constrained by the notion that mental images must be transformed in an
+analog manner (or in a way that is at least approximately analog), and
+that mental images are time-consuming and effortful to generate. Thus,
+the \textit{goal} is to make this determination while performing a
+minimum amount of computation (i.e., as few rotations as possible).
 
 The original congruency hypothesis \cite{Shepard1971} actually is a
 rational solution which achieves this goal, in the sense that the
 smallest amount of computation coincides with rotating through the
-minimum angle. However, it relies on assumptions of \textit{a priori}
-knowledge (either of the minimum angle or the correspondence of points
-between shapes). Noting that a rational solution need not necessarily
-maintain a single trajectory of rotation, we explore an alternative
-rational model, which--rather than assuming the angle of rotation
-\textit{a priori}--engages in an ``active sampling'' strategy.
+minimum angle. However, it violates the constraint that we do not know
+points correspondences, which is exactly what necessitates the use of
+imagery. Noting that a rational solution need not necessarily maintain
+a single trajectory of rotation, we explore an alternative rational
+model, which--rather than computing the angle of rotation ahead of
+time--engages in an ``active sampling'' strategy.
 
 Active sampling is the idea that, when given information is
 incomplete, people gather new information in a manner that increases
@@ -206,7 +210,7 @@ In the mental rotation task, people are presented with pairs of
 two-dimensional shapes similar to those used by \citeA{Cooper:1975wp};
 example stimuli are shown in Fig.~\ref{fig:model-traces}. The goal is
 to determine whether the two images depict the same shape, or
-mirror-image (flipped) shapes.
+mirror-image shapes.
 
 \subsection{Computational-level analysis}
 
@@ -236,6 +240,21 @@ that the images depict flipped objects ($\hf$).
 
 \subsection{Algorithmic assumptions}
 
+\begin{figure*}[t]
+  \begin{center}
+    \includegraphics[width=\textwidth]{../../figures/D/model-traces.pdf}
+    \caption{\textbf{Example stimuli and model behavior.} On the left
+      are two stimulus pairs, one ``same'' (top) and one ``flipped''
+      (bottom), both with a rotation of $120^\prime$. The grey plots
+      show the actions that each model took for these stimuli. The
+      color of each point (action) indicates whether the model's
+      current mental image was generated under the hypothesis that the
+      objects are the same (red) or flipped (blue). The similarity
+      functions for each of these hypotheses are shown on the right.}
+    \label{fig:model-traces}
+  \end{center}
+\end{figure*}
+
 We represent a shape of $N$ vertices with a $N\times 2$ coordinate
 matrix $\mathbf{X}=[\mathbf{x}_1, \ldots{}, \mathbf{x}_N]$, and denote
 the rotation and/or reflection transformation as $f(\mathbf{X}, h,
@@ -252,14 +271,18 @@ $\Xb$ and a transformation of $\Xa$:
 Example similarity curves are shown in Fig.~\ref{fig:model-traces}.
 
 We do not know which vertices of $\Xb$ correspond to which vertices of
-$\Xa$, so $S$ must marginalize over the set of possible mappings,
-$\mathbb{M}$. For brevity, let $\mathbf{X}_m=\M\cdot{}f(\Xa, h,
-\theta)$ where $\M\in\mathbb{M}$ is a permutation matrix. Then:
+$\Xa$, so $S$ must marginalize over the set of possible mappings. For
+brevity, let $\mathbf{X}_m=\M\cdot{}f(\Xa, h, \theta)$ where $\M$ is a
+permutation matrix. Then:
 \begin{equation}
-  S(\Xb, f(\Xa, h, \theta)):=\frac{1}{|\mathbb{M}|} \sum_{\M} \prod_{n=1}^N \mathcal{N}(\mathbf{x}_{bn}\ \vert \ \mathbf{x}_{mn}, \I\sigma_S^2),
+  S(\Xb, f(\Xa, h, \theta)):=\frac{1}{2N} \sum_{\M} \prod_{n=1}^N \mathcal{N}(\mathbf{x}_{bn}\ \vert \ \mathbf{x}_{mn}, \I\sigma_S^2),
   \label{eq:similarity}
 \end{equation}
-where $\sigma_S=0.15$ is the standard deviation of the similarity.
+where $N$ is the number of vertices, $2N$ is the total number of
+possible mappings,\footnote{It is $2N$ and not $N^2$ because, in polar
+  coordinates, vertices are always connected to their two nearest
+  neighbors in the $\theta$ dimension.}and $\sigma_S=0.15$ is the
+standard deviation of the similarity.
 
 Additionally, we assume that the observed shapes may only be
 transformed by a small amount at a time, and each transformation is
@@ -286,21 +309,6 @@ actions listed in Eq.~\ref{eq:actions}.
 
 \subsection{Specific models of mental rotation}
 
-\begin{figure*}[t]
-  \begin{center}
-    \includegraphics[width=\textwidth]{../../figures/D/model-traces.pdf}
-    \caption{\textbf{Example stimuli and model behavior.} On the left
-      are two stimulus pairs, one ``same'' (top) and one ``flipped''
-      (bottom), both with a rotation of $120^\prime$. The grey plots
-      show the actions that each model took for these stimuli. The
-      color of each point (action) indicates whether the model's
-      current mental image was generated under the hypothesis that the
-      objects are the same (red) or flipped (blue). The similarity
-      functions for each of these hypotheses are shown on the right.}
-    \label{fig:model-traces}
-  \end{center}
-\end{figure*}
-
 In order to approximate Eq.~\ref{eq:lh-ratio} using samples of the
 similarity function, we must decide \textit{which} places to sample
 and \textit{when} stop sampling. The models below differ in how they
@@ -314,9 +322,10 @@ rotation in the shortest direction until a match is found
 \cite{Shepard1971, Cooper:1975wp}, and that determining this direction
 is an implementation detail \cite{Anderson1978}, or that it is
 computed beforehand \cite{Funt:1983wn}.  To reflect this hypothesis,
-we created an ``oracle'' model which first computes the correct
-rotation and then simply takes actions in the shortest direction until
-it reaches the point where the shapes are aligned.
+we created an ``oracle'' model which is told which points on each
+shape correspond. The \Oc{} model first computes the correct rotation
+and then simply takes actions in the shortest direction until it
+reaches the point where the shapes are aligned.
 
 To determine the correct rotation, we solve for the rotation matrix by
 computing $(\Xa \F_h^T)_\mathrm{left}^{-1}\cdot{}\Xb$, where
@@ -352,6 +361,18 @@ uncertainty, and whether the shapes are exactly identical). Thus, it
 is unlikely that the \Th{} model will be robust beyond this domain.
 
 \subsubsection{Hill climbing model}
+
+\begin{figure*}[t]
+  \begin{center}
+    \includegraphics[width=\textwidth]{../../figures/D/response_time_accuracy.pdf}
+    \caption{\textbf{Response time and accuracy comparison.} Top:
+      response time of correct responses as a function of the minimum
+      angle of rotation. Bottom: accuracy as a function of the minimum
+      angle of rotation. All error bars are 95\% confidence
+      intervals.}
+    \label{fig:response-time-accuracy}
+  \end{center}
+\end{figure*}
 
 One way to deal with the problem of choosing a threshold would simply
 be to perform an exhaustive search or use a global optimization
@@ -394,11 +415,9 @@ This is a technique known in the machine-learning literature as
 use a Gaussian Process (GP) prior for $p(S)$, as in
 \citeA{Osborne:2012tm}.\footnote{Because our domain is on a circle, we
   utilize a periodic kernel for the covariance
-  \cite{Rasmussen:2006vz}, i.e. $k(\theta,
-  \theta^\prime)=h^2\exp[-\frac{2}{w^2}\sin^2(\frac{1}{2}(\theta-\theta^\prime))]$.}
-Denoting $S_h=S(\Xb, f(\Xa, \theta, h))$, we first place a GP prior on
-the log of $S_h$ in order to enforce positivity after it is
-exponentiated:
+  \cite{Rasmussen:2006vz}.}  Denoting $S_h=S(\Xb, f(\Xa, \theta, h))$,
+we first place a GP prior on the log of $S_h$ in order to enforce
+positivity after it is exponentiated:
 \begin{equation}
 \mathbb{E}[Z_h] \approx \int \exp(\mu_h(\theta))p(\theta)\dif\theta,
 \end{equation}
@@ -446,22 +465,22 @@ value.
 
 \section{Methods}
 
-\begin{figure}[t]
-  \centering
-  \subfloat{\includegraphics[width=0.24\textwidth]{../../figures/D/trial_accuracy.pdf}}%
-  \subfloat{\includegraphics[width=0.24\textwidth]{../../figures/D/trial_time.pdf}}
-  \caption{\textbf{Effect of learning.} There was a clear effect of
-    learning on participants' responses, especially in the first half
-    of the experiment. Left: accuracy as a function of trial. Right:
-    response time in milliseconds as a function of trial.}
-  \label{fig:learning}
-\end{figure}
+% \begin{figure}[t]
+%   \centering
+%   \subfloat{\includegraphics[width=0.24\textwidth]{../../figures/D/trial_accuracy.pdf}}%
+%   \subfloat{\includegraphics[width=0.24\textwidth]{../../figures/D/trial_time.pdf}}
+%   \caption{\textbf{Effect of learning.} There was a clear effect of
+%     learning on participants' responses, especially in the first half
+%     of the experiment. Left: accuracy as a function of trial. Right:
+%     response time in milliseconds as a function of trial.}
+%   \label{fig:learning}
+% \end{figure}
 
 To evaluate the models described previously, we ran a behavioral
 experiment based on classic mental rotation studies
 \cite<e.g.>{Shepard1971, Cooper:1975wp}.
 
-\subsection{Stimuli}
+\subsubsection{Stimuli}
 
 We randomly generated 20 shapes of 5 or 6 vertices (e.g.,
 Fig.~\ref{fig:model-traces}). For each shape, we computed 20 ``same''
@@ -481,7 +500,7 @@ This shape had both a ``flipped'' and ``same'' version, each rotated
 to 320 degrees.
 
 
-\subsection{Participants and Design}
+\subsubsection{Participants and Design}
 
 We recruited 247 participants on Amazon's Mechanical Turk using the
 psiTurk experiment framework \cite{Mcdonnell12}. Each participant was
@@ -491,17 +510,45 @@ trials. Within a block, trials were presented in a random order.
 
 All participants saw the same 10 practice trials, as described
 above. There were 720 unique experimental stimuli (20 shapes $\times$
-18 angles $\times$ 2 same/flipped), though because stimuli with
+18 angles $\times$ 2 reflections), though because stimuli with
 rotations of $0^\prime$ or $180^\prime$ were repeated twice, there
 were 800 total experimental stimuli. These stimuli were split across 8
 conditions in the following manner: first, stimuli were split into
 four blocks of 200 trials. Within each block, each shape was repeated
-10 times and each rotation was repeated 10 times (5 same, 5 flipped),
-such that across all blocks, each stimulus appeared exactly once. Each
-block was then split in half. Participants completed two half-blocks
-(not necessarily both from the original full block).
+10 times and each rotation was repeated 10 times (5 ``same'', 5
+``flipped''), such that across all blocks, each stimulus appeared
+exactly once. Each block was then split in half. Participants
+completed two half-blocks (not necessarily both from the original full
+block).
 
-\subsection{Procedure}
+\subsubsection{Procedure}
+
+\begin{figure*}[t]
+  \centering
+  \begin{subfigure}[b]{0.32\textwidth}
+    \includegraphics[width=\textwidth]{../../figures/D/theta_time_corrs.pdf}
+    \caption{\textbf{Angle vs. response time}}
+    \label{fig:theta-time-corrs}
+  \end{subfigure}%
+  \begin{subfigure}[b]{0.32\textwidth}
+    \includegraphics[width=\textwidth]{../../figures/D/theta_accuracy_corrs.pdf}
+    \caption{\textbf{Angle vs. accuracy}}
+    \label{fig:theta-accuracy-corrs}
+  \end{subfigure}%
+  \begin{subfigure}[b]{0.32\textwidth}
+    \includegraphics[width=\textwidth]{../../figures/D/human_model_corrs.pdf}
+    \caption{\textbf{Human vs. model}}
+    \label{fig:human-model-corrs}
+  \end{subfigure}
+  \vspace{10pt}
+  \caption{\textbf{Correlations.} (a) Spearman correlations between
+    the minimum angle of rotation and response time. (b) Spearman
+    correlations between the minimum angle of rotation and
+    accuracy. The \Oc{} and \Th{} models had 100\% accuracy;
+    therefore, their correlations are undefined. (c) Pearson
+    correlations between human and model, both for response time and
+    accuracy. All error bars are 95\% confidence intervals.}
+\end{figure*}
 
 Participants were given the following instructions while being shown
 an example ``same'' pair and an example ``flipped'' pair: \textit{``On
@@ -514,9 +561,9 @@ On each trial, participants were instructed to press the `b' key to
 begin and to focus on the fixation cross that appeared for 750
 milliseconds afterwards. The two images were then presented
 side-by-side, each at 300px $\times$ 300px, and participants could
-press `s' to indicate they thought the images depicted the same
-object, or `d' to indicate they thought the images depicted flipped
-objects.
+press `s' to indicate they thought the images depicted the ``same''
+object, or `d' to indicate they thought the images depicted
+``flipped'' objects.
 
 While there was no limit on response time, participants were urged to
 respond as quickly as possible while still being
@@ -524,19 +571,30 @@ accurate. Specifically, we asked them to aim for at least 85\%
 accuracy in the experimental blocks, and provided a counter to keep
 them informed of their score.
 
-\subsection{Analysis}
+\section{Results}
 
-\begin{figure*}[t]
-  \begin{center}
-    \includegraphics[width=\textwidth]{../../figures/D/response_time_accuracy.pdf}
-    \caption{\textbf{Response time and accuracy comparison.} Top:
-      response time of correct responses as a function of the minimum
-      angle of rotation. Bottom: accuracy as a function of the minimum
-      angle of rotation. All error bars are 95\% confidence
-      intervals.}
-    \label{fig:response-time-accuracy}
-  \end{center}
-\end{figure*}
+Out of the 247 participants, 200 (81\%) were included in our
+analyses. Of the rest, we excluded 10 (4\%) because of an experimental
+error, 6 (2.4\%) because they had already completed a previous version
+of the experiment, and 31 (12.6\%) because they failed a comprehension
+check. A participant was marked as passing the comprehension check if
+they answered at least 85\% of ``easy'' trials correctly. ``Easy''
+trials were defined to be those for which the presented shapes
+differed by a rotation of no more than 20 degrees. Additionally, we
+excluded 82 trials for which the response time was either less than
+100 milliseconds or greater than 20 seconds.
+
+For each model, we ran 50 samples for each stimulus that participants
+viewed (with the exception of stimuli with rotations of $0^\prime$ or
+$180^\prime$, in which case we ran double the number of samples). The
+step size parameter ($\sigma_\epsilon$) was approximately fit to each
+of the models, resulting in $\sigma_\epsilon=0.6$ for the \Bq{} model,
+and $\sigma_\epsilon=0.1$ for all other models. We also ran the models
+under two different priors, $p(h=0)=0.5$ (the ``equal'' prior) and
+$p(h=0)=0.55$ (the ``unequal'' prior), though this only had an effect
+for the \Bq{} model. \TODO{actually, did it affect HC?  check this}
+
+\subsubsection{General analysis}
 
 For analyses of response time, confidence intervals around harmonic
 means were computed using a bootstrap analysis using 10000 bootstrap
@@ -551,138 +609,164 @@ participants or a model was above chance on a particular stimulus, we
 used the same binomial proportion, and simply tested whether $p>0.05$
 for the 50\% mark.
 
-\section{Results}
+\subsubsection{Human}
 
-Out of the 247 participants, 200 (81\%) were included in our
-analyses. Of the rest, we excluded 10 (4\%) because of an experimental
-error, 6 (2.4\%) because they had already completed a previous version
-of the experiment, and 31 (12.6\%) because they failed a comprehension
-check. A participant was marked as passing the comprehension check if
-they answered at least 85\% of ``easy'' trials correctly. ``Easy''
-trials were defined to be those for which the presented shapes
-differed by a rotation of no more than 20 degrees. Additionally, we
-excluded 82 individual trials (out of 40000) for which the response
-time was either less than 100 milliseconds or greater than 20 seconds.
+The average response time across all stimuli was \ExpTime{} seconds.
+As illustrated in Fig.~\ref{fig:theta-time-corrs}, the minimum angle
+of rotation was significantly monotonically correlated with average
+per-stimulus response times, both for ``flipped'' and ``same''
+pairs. While this replicates the general result of previous
+experiments \cite<e.g.,>{Shepard1971,Cooper:1975wp}, our results are
+not as perfectly linear. However, \citeA{Gardony:2013gn} found a
+constant effect for ``flipped'' pairs; an average of their results and
+the classic results would produce something similar to ours.
 
-For each model, we ran 50 samples for each stimulus that participants
-viewed (with the exception of stimuli with rotations of $0^\prime$ or
-$180^\prime$, in which case we ran double the number of samples). The
-step size parameter ($\sigma_\epsilon$) was approximately fit to each
-of the models, resulting in $\sigma_\epsilon=0.6$ for the \Bq{} model,
-and $\sigma_\epsilon=0.1$ for all other models. We also ran the models
-under two different priors, $p(h=0)=0.5$ (the ``equal'' prior) and
-$p(h=0)=0.55$ (the ``unequal'' prior), though this only had an effect
-for the \Bq{} model. \TODO{actually, did it affect HC?  check this}
-
-\subsection{Practice effects} 
+The average accuracy across all stimuli was \ExpAccuracy{}, though
+there were \ExpNumChance{} individual stimuli (out of 720) for which
+people were not above chance.  The minimum angle was also correlated
+with participants' average per-stimulus accuracy, as shown in
+Fig.~\ref{fig:theta-accuracy-corrs}, though significantly more so for
+``same'' pairs. This is the same result found both by
+\citeA{Cooper:1975wp} and \citeA{Gardony:2013gn}.
 
 There was a significant effect of learning both on response time
 (\ExpTrialTimeCorr{}) and on accuracy (\ExpTrialAccuracyCorr{}),
 though the effect on accuracy was not significant during the second
 half of the experiment (\ExpaTrialAccuracyCorr{} for the first half
-vs. \ExpbTrialAccuracyCorr{} for the second
-half). Fig.~\ref{fig:learning} shows scatterplots illustrating these
-trends.
+vs. \ExpbTrialAccuracyCorr{} for the second half). These practice
+effects may have contributed to the not-quite-linearity of the human
+response times; future work will need to collect more data per
+participant to mitigate this effect.
 
-\subsection{Response times}
+\subsubsection{\Oc{} model}
 
-% The average response time across all stimuli was \ExpTime{} seconds.
-% As expected, the minimum angle of rotation was significantly
-% monotonically correlated with average per-stimulus response times,
-% both for flipped pairs (\ExpThetaTimeCorrFlipped{}) and same pairs
-% (\ExpThetaTimeCorrSame{}). This was also the case for the number of
-% actions taken by the \Oc{} model (\OcThetaTimeCorr{}), the \Th{} model
-% (\ThThetaTimeCorr{}), and the \Bq{} model (\BqThetaTimeCorr{}), but
-% not the \Hc{} model (\HcThetaTimeCorr{}). The top row of
-% Fig.~\ref{fig:response-time-accuracy} shows the overall effect of
-% rotation on response times.
+As we would expect, the number of actions taken by the \Oc{} model was
+perfectly correlated with the minimum angle of rotation
+(Fig.~\ref{fig:theta-time-corrs}), both for ``same'' and ``flipped''
+pairs. Unsurprisingly, then, \Oc{} model was the best fit to human
+response times, with a correlation of \OcTimeCorr{}
+(Fig.~\ref{fig:human-model-corrs}).  However, the \Oc{} model was
+100\% accurate, and therefore the correlation between minimum angle
+and accuracy was undefined (Fig.~\ref{fig:theta-accuracy-corrs}).
 
-% The number of actions taken by the \Oc{} model was the best predictor
-% of human response times, with a correlation of \ExpOcTimeCorr{}. The
-% \Th{} model \Bq{} model with $p(h=0)=0.55$ were the next best (for
-% \Th{}, \ExpThTimeCorr{}; for \Bq{}, \ExpBqpTimeCorr{}). Not far behind
-% was the BQ model with equal prior (\ExpBqTimeCorr{}). The \Hc{} model
-% was barely correlated with people (\ExpHcTimeCorr{}).
+\subsubsection{\Th{} model}
 
-% Across all stimuli, participants' response times for ``flipped'' pairs
-% were significantly higher than those for ``same'' pairs
-% \TODO{confidence intervals} \TODO{flipped response times higher than
-%   same response times for smaller angles?}
+The number of actions taken by the \Th{} model was about as correlated
+with the minimum angle as human response times were
+(Fig.~\ref{fig:theta-time-corrs}), though this effect was less strong
+for individual shapes (e.g.,
+Fig.~\ref{fig:response-time-stimulus}). Like the \Oc{} model, the
+\Th{} model had 100\% accuracy, and thus there was no correlation
+between minimum angle and accuracy. The \Th{} was able to explain a
+moderate amount of the variance in human response times, with a
+correlation of \ThTimeCorr{} (Fig.~\ref{fig:human-model-corrs}).
 
-\subsection{Accuracy}
+\subsubsection{\Hc{} model}
 
-% The average accuracy across all stimuli was \ExpAccuracy{}, though
-% there were \ExpNumChance{} individual stimuli (out of 720) for which
-% people were not above chance. Of the models, the \Oc{} and \Th{}
-% models performed perfectly, with 100\% accuracy. The \Bq{} model was
-% very accurate overall (equal prior: \BqAccuracy{}, unequal prior:
-% \BqpAccuracy{}). With the equal prior, there was \BqNumChance{}
-% stimulus for which it was not above chance; with the unequal prior,
-% there were \BqpNumChance{}. The \Hc{} model was not particularly
-% accurate, and although it did perform above chance overall
-% (\HcAccuracy{}), there were \HcNumChance{} individual stimuli for
-% which it was not above chance.
-
-% The minimum angle was also correlated with participants' average
-% per-stimulus accuracy: for flipped pairs,
-% \ExpThetaAccuracyCorrFlipped{}, and for same pairs,
-% \ExpThetaAccuracyCorrSame{}. There was also a significant effect for
-% the \Hc{} model (\HcThetaAccuracyCorr{}) and the \Bq{} model (equal
-% prior: \BqThetaAccuracyCorr{}, unequal prior:
-% \BqpThetaAccuracyCorr{}). The bottom row of
-% Fig.~\ref{fig:response-time-accuracy} shows the effect of angle on
-% accuracy for both participants and models.
-
-% There was a moderate correlation between the accuracy of the \Hc{}
-% model and human accuracy (\ExpHcAccuracyCorr{}). The \Bq{} model had a
-% similar correlation (equal prior: \ExpBqAccuracyCorr{}, unequal prior:
-% \ExpBqpAccuracyCorr{}). Correlations for the other models were
-% undefined, because they had 100\% accuracy.
-
-\begin{figure*}[t]
+\begin{figure}[t]
   \begin{center}
-    \subfloat{\includegraphics[width=0.33\textwidth]{../../figures/D/theta_time_corrs.pdf}}
-    \subfloat{\includegraphics[width=0.33\textwidth]{../../figures/D/theta_accuracy_corrs.pdf}}
-    \subfloat{\includegraphics[width=0.33\textwidth]{../../figures/D/response_time_corrs.pdf}}
-    \caption{}
-    \label{fig:response-time-corrs}
+    \includegraphics[width=0.48\textwidth]{../../figures/D/response_time_stimulus.pdf}
+    \caption{\textbf{Typical response time curves for a single shape.}
+      These plots correspond to the shape shown in
+      Fig.~\ref{fig:model-traces}. Left: human curves are either
+      linear (as with the ``same'' pairs), or linear and then flat (as
+      with the ``flipped'' pairs). Middle: the \Th{} model tends to
+      have highly inconsitent within-shape response times. Right: the
+      \Bq{} model is roughly linear.}
+    \label{fig:response-time-stimulus}
   \end{center}
-\end{figure*}
+\end{figure}
+
+The \Hc{} was the only model for which there was no effect of rotation
+on response time (Fig.~\ref{fig:theta-time-corrs}). Although there was
+a significant effect of rotation on accuracy
+(Fig.~\ref{fig:theta-accuracy-corrs}), the \Hc{} model was barely
+above chance (\HcAccuracy{}) and there were \HcNumChance{} individual
+stimuli for which it was not above chance. The \Hc{} model was not a
+particularly good predictor of human response times (\HcTimeCorr{}),
+though it was a moderate predictor of accuracy (\HcAccuracyCorr{}), as
+shown in Fig.~\ref{fig:human-model-corrs}.
+
+\subsubsection{\Bq{} model}
+
+As with most of the other models, there was a significant effect of
+rotation on the number of steps taken by the \Bq{} model
+(Fig.~\ref{fig:theta-time-corrs}). The \Bq{} model explained variance
+in human response times about as well as the \Th{} model
+(Fig.~\ref{fig:human-model-corrs}), with a correlation of
+\BqTimeCorr{} for the equal prior and \BqpTimeCorr{} for the unequal
+prior.  
+
+The \Bq{} model was quite accurate overall, both with the equal prior
+(\BqAccuracy{}) and unequal prior (\BqpAccuracy{}). With the equal
+prior, there was \BqNumChance{} stimulus for which it was not above
+chance; with the unequal prior, there were \BqpNumChance{}. There was
+a significant effect of rotation on the \Bq{} model's accuracy
+(Fig.~\ref{fig:theta-accuracy-corrs}), and itt explained about the
+same amount of variance in people's accuracy as the \Hc{} model: for
+the equal prior, \BqAccuracyCorr{}; for the unequal prior,
+\BqpAccuracyCorr{}.
+
+Because the \Bq{} model relied on Eq.~\ref{eq:lh-ratio} for its
+stopping criteria (as opposed to just finding a maximum), the prior
+$p(h)$ had a fairly significant effect, as shown in
+Fig.~\ref{fig:response-time-accuracy}. With just a small bias of
+$p(h=0)=0.55$, there is a clear separation in response times that is
+similar to the separation seen in human response times. The prior also
+had an effect on accuracy, though this effect did not reflect the
+trends in human behavior.
 
 \section{Discussion}
 
-We replicated the previous monotonic response time result, though not
-the linear result. Actually kind of similar to \cite{Gardony:2013gn}
-\TODO{elaborate}
+We set out to answer the question: how do people decide \textit{what}
+to simulate when using mental imagery? Focusing on the specific case
+of determining the direction and extent of mental rotation, we
+formalized four models and compared their performance with the results
+of a behavioral experiment. The \Oc{} model was the best fit to human
+response times, but failed to capture anything regarding accuracy. The
+\Th{} model was a slightly worse fit to human response times, and also
+did not capture any trends in accuracy. The \Bq{} model fit human
+reponse time data as well as the \Th{} model, and captured a small
+amount of the variance in people's accuracy. The \Hc{} model barely
+fit human response time data, though it did fit accuracy as well as
+the \Bq{} model with an equal prior.
 
-Also replicated the constant accuracy for flipped stimuli, but not for
-same stimuli, from \cite{Cooper:1975wp}. Why is this? Maybe the
-strategy is ``they are different until proven the same''.
+While it is clear that none of the models fully capture human behavior
+on the mental rotation task, it is worth noting where they shed light
+on aspects that have previously gone unexplained.  For example, the
+\Bq{} model's adaptive stopping rule is sensitive to the prior, and
+thus provides a possible explanation for why people are slower to
+respond on ``flipped'' stimulus pairs.
 
-None of the models were particularly good fits to human data. The best
-fit was the \Oc{} model, though this is not satisfying because the
-\Oc{} model knows the answer beforehand, which people obviously do
-not. The next best model, the \Th{} model, is also not a
-particularly satisfying account, because it knows the global maximum
-\textit{a priori}, which is not a reasonable assumption. \TODO{explain
-  why it is faster for 180 than mid angles -- it is because for a lot
-  of stimuli, there is rotational symmetry at 180, so it almost always
-  starts checking the correct version first. For mid angles, it might
-  check the wrong version first, meaning it takes much longer.}
+Additionally, a closer look at individual shapes reveals several
+interesting points (Fig.~\ref{fig:response-time-stimulus} shows curves
+for one particular shape; these curves are fairly typical relative to
+other shapes). First, the curves for the human response times on
+specific shapes tend to either be linear, or linear first, then
+flat. Second, while the \Th{} model appears to capture the concavity
+of human response times overall, it is actually fairly inconsistent
+within shapes. Third, the linearity of the \Bq{} model's response time
+curves \textit{is} consistent within shapes, though it does not
+exhibit the same ``plateau'' effect that sometimes appears in the
+human curves.
 
-The \Bq{} model makes more reasonable assumptions about the observer's
-knowledge, but has its own problems. Because it is forced to take
-small steps, it often gets stuck sampling the same region over and
-over again, particularly for stimuli with larger rotations
-(Fig.~\ref{fig:model-traces}). As a result, its response time curve is
-convex rather than concave.
+How could the models we evaluated be improved? First, all of the
+models use holistic rotations, however there is evidence that people
+might compare individual features of shapes rather than the entire
+shape at once \cite{Just1976,Yuille:1982tx}. Second, there are other
+possible ``active sampling'' approaches that could combine the best
+features from the \Th{} and \Bq{} models, such as maintaining a
+distribution over the location and value of the global maximum, rather
+than over the integral. Third, studying rotations with 3D objects of
+varying levels of complexity may be more informative than the
+extremely simple 2D objects used in this experiment.
 
-Other problems: evidence that rotations aren't actually holistic
-\cite{Yuille:1982tx}, eye movements \cite{Just1976}
-
-\TODO{talk about how these results suggest a model of mental rotation
-  is harder than was previous thought, and that this is a first step
-  towards detangling these issues.}
+As a parting comment, we note that the question of how people decide
+\textit{which} rotations to perform is more difficult to answer than
+previously assumed. Although we examined four well-motivated models,
+none came close to explaining the full range of human behavior on this
+task. We suggest that such metacognitive questions are fertile areas
+for future research.
 
 %% TODO: Uncomment this for final version:
 
