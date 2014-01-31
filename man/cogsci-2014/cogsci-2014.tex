@@ -59,15 +59,11 @@
 \addtolength{\belowcaptionskip}{-0.2cm}
 \addtolength{\textfloatsep}{-2mm}	% space below "Figure 1: ..."
 
-\input{../../results/D/response_time.tex}
-\input{../../results/D/response_time_corrs.tex}
-\input{../../results/D/accuracy.tex}
-\input{../../results/D/accuracy_corrs.tex}
-\input{../../results/D/trial_time_corrs.tex}
-\input{../../results/D/trial_accuracy_corrs.tex}
+\input{../../results/D/overall_response_time.tex}
+\input{../../results/D/overall_accuracy.tex}
 \input{../../results/D/num_chance.tex}
-\input{../../results/D/theta_time_corrs.tex}
-\input{../../results/D/theta_accuracy_corrs.tex}
+\input{../../results/D/trial_accuracy_corrs.tex}
+\input{../../results/D/trial_time_corrs.tex}
 
 \title{What to simulate? Inferring the direction for mental rotation}
  
@@ -179,7 +175,7 @@ to make this determination while performing a minimum amount of
 computation (i.e., as few rotations as possible).
 
 The original congruency hypothesis \cite{Shepard1971} actually is a
-rational solution which acheives this goal, in the sense that the
+rational solution which achieves this goal, in the sense that the
 smallest amount of computation coincides with rotating through the
 minimum angle. However, it relies on assumptions of \textit{a priori}
 knowledge (either of the minimum angle or the correspondence of points
@@ -358,7 +354,7 @@ is unlikely that the \Th{} model will be robust beyond this domain.
 \subsubsection{Hill climbing model}
 
 One way to deal with the problem of choosing a threshold would simply
-be to perform an exhaustive search or use a global optimisation
+be to perform an exhaustive search or use a global optimization
 strategy. However, these strategies would not result in the linear
 response time found by \citeA{Shepard1971}. A second alternative,
 which could potentially demonstrate the linear response time result,
@@ -450,6 +446,17 @@ value.
 
 \section{Methods}
 
+\begin{figure}[t]
+  \centering
+  \subfloat{\includegraphics[width=0.24\textwidth]{../../figures/D/trial_accuracy.pdf}}%
+  \subfloat{\includegraphics[width=0.24\textwidth]{../../figures/D/trial_time.pdf}}
+  \caption{\textbf{Effect of learning.} There was a clear effect of
+    learning on participants' responses, especially in the first half
+    of the experiment. Left: accuracy as a function of trial. Right:
+    response time in milliseconds as a function of trial.}
+  \label{fig:learning}
+\end{figure}
+
 To evaluate the models described previously, we ran a behavioral
 experiment based on classic mental rotation studies
 \cite<e.g.>{Shepard1971, Cooper:1975wp}.
@@ -462,7 +469,7 @@ and 20 ``flipped'' stimuli pairs, with rotations ($\theta$) spaced at
 $20^\prime$ increments between 0 and 360 (with 0 and 180 degree
 rotations repeated twice, in order to gather an equal number of
 responses for each angle between 0 and 180). ``Same'' pairs were
-created by rotating $\Xa$ by $\theta$; ``flipped'' pairs first
+created by rotating $\Xa$ by $\theta$; ``flipped'' pairs were first
 reflected $\Xa$ across the $y$-axis, then rotated by $\theta$.
 
 We generated 5 additional shapes to be used in a practice block of 10
@@ -503,7 +510,7 @@ an example ``same'' pair and an example ``flipped'' pair: \textit{``On
   objects. The task is to determine whether the two images show the
   \textbf{same} object or \textbf{flipped} objects.''}
 
-On each trial, particpants were instructed to press the `b' key to
+On each trial, participants were instructed to press the `b' key to
 begin and to focus on the fixation cross that appeared for 750
 milliseconds afterwards. The two images were then presented
 side-by-side, each at 300px $\times$ 300px, and participants could
@@ -512,19 +519,31 @@ object, or `d' to indicate they thought the images depicted flipped
 objects.
 
 While there was no limit on response time, participants were urged to
-repond as quickly as possible while still being
+respond as quickly as possible while still being
 accurate. Specifically, we asked them to aim for at least 85\%
 accuracy in the experimental blocks, and provided a counter to keep
 them informed of their score.
 
 \subsection{Analysis}
 
-For analyses of response time, confidence intervals were computed
-using a bootstrap analysis (sampling with replacement) with 1000
-bootstrap samples. Response times were only only considered for
-correct responses.  We also used a bootstrap analysis (with 10000
-bootstrap samples) to compute the confidence intervals for both
-Spearman ($r_s$) and Pearson ($r$) correlations.
+\begin{figure*}[t]
+  \begin{center}
+    \includegraphics[width=\textwidth]{../../figures/D/response_time_accuracy.pdf}
+    \caption{\textbf{Response time and accuracy comparison.} Top:
+      response time of correct responses as a function of the minimum
+      angle of rotation. Bottom: accuracy as a function of the minimum
+      angle of rotation. All error bars are 95\% confidence
+      intervals.}
+    \label{fig:response-time-accuracy}
+  \end{center}
+\end{figure*}
+
+For analyses of response time, confidence intervals around harmonic
+means were computed using a bootstrap analysis using 10000 bootstrap
+samples (sampled with replacement). Response times were only
+considered for correct responses.  We also used a bootstrap analysis
+of 10000 bootstrap samples to compute the confidence intervals around
+both Spearman ($r_s$) and Pearson ($r$) correlations.
 
 For analyses of accuracy, confidence intervals were computed from a
 binomial proportion with a Jeffrey's beta prior.  To test if
@@ -536,36 +555,24 @@ for the 50\% mark.
 
 Out of the 247 participants, 200 (81\%) were included in our
 analyses. Of the rest, we excluded 10 (4\%) because of an experimental
-error, 6 (2.4\%) because they had already compelted a previous version
+error, 6 (2.4\%) because they had already completed a previous version
 of the experiment, and 31 (12.6\%) because they failed a comprehension
 check. A participant was marked as passing the comprehension check if
 they answered at least 85\% of ``easy'' trials correctly. ``Easy''
 trials were defined to be those for which the presented shapes
 differed by a rotation of no more than 20 degrees. Additionally, we
-excluded individual trials for which the response time exceeded 20
-seconds.
+excluded 82 individual trials (out of 40000) for which the response
+time was either less than 100 milliseconds or greater than 20 seconds.
 
-For each model, we ran 50 samples for each of the same stimuli that
-participants viewed (with the exception of stimuli with rotations of
-$0^\prime$ or $180^\prime$, in which case we ran double the number of
-samples). The step size parameter ($\sigma_\epsilon$) was
-approximately fit to each of the models, resulting in
-$\sigma_\epsilon=0.6$ for the \Bq{} model, and $\sigma_\epsilon=0.1$
-for all other models. We also ran the models under two different
-priors, $p(h=0)=0.5$ (the ``equal'' prior) and $p(h=0)=0.55$ (the
-``unequal'' prior), though this only had an effect for the \Bq{}
-model. \TODO{actually, did it affect HC?  check this}
-
-\begin{figure}[t]
-  \centering
-  \subfloat{\includegraphics[width=0.24\textwidth]{../../figures/D/trial_accuracy.pdf}}%
-  \subfloat{\includegraphics[width=0.24\textwidth]{../../figures/D/trial_time.pdf}}
-  \caption{\textbf{Effect of learning.} There was a clear effect of
-    learning on participants' responses, especially in the first half
-    of the experiment. Left: accuracy as a function of trial. Right:
-    response time as a function of trial.}
-  \label{fig:learning}
-\end{figure}
+For each model, we ran 50 samples for each stimulus that participants
+viewed (with the exception of stimuli with rotations of $0^\prime$ or
+$180^\prime$, in which case we ran double the number of samples). The
+step size parameter ($\sigma_\epsilon$) was approximately fit to each
+of the models, resulting in $\sigma_\epsilon=0.6$ for the \Bq{} model,
+and $\sigma_\epsilon=0.1$ for all other models. We also ran the models
+under two different priors, $p(h=0)=0.5$ (the ``equal'' prior) and
+$p(h=0)=0.55$ (the ``unequal'' prior), though this only had an effect
+for the \Bq{} model. \TODO{actually, did it affect HC?  check this}
 
 \subsection{Practice effects} 
 
@@ -579,78 +586,73 @@ trends.
 
 \subsection{Response times}
 
-The average response time across all stimuli was \ExpTime{} seconds,
-and the average response time for an individual stimulus ranged from
-\ExpTimeMin{} to \ExpTimeMax{} seconds.  As expected, the minimum
-angle of rotation was significanty monotonically correlated with
-average per-stimulus response times, both for flipped pairs
-(\ExpThetaTimeCorrFlipped{}) and same pairs
-(\ExpThetaTimeCorrSame{}). This was also the case for the number of
-actions taken by the \Oc{} model (\OcThetaTimeCorr{}), the \Th{} model
-(\ThThetaTimeCorr{}), and the \Bq{} model (\BqThetaTimeCorr{}), but
-not the \Hc{} model (\HcThetaTimeCorr{}). The top row of
-Fig.~\ref{fig:response-time-accuracy} shows the overall effect of
-rotation on response times.
+% The average response time across all stimuli was \ExpTime{} seconds.
+% As expected, the minimum angle of rotation was significantly
+% monotonically correlated with average per-stimulus response times,
+% both for flipped pairs (\ExpThetaTimeCorrFlipped{}) and same pairs
+% (\ExpThetaTimeCorrSame{}). This was also the case for the number of
+% actions taken by the \Oc{} model (\OcThetaTimeCorr{}), the \Th{} model
+% (\ThThetaTimeCorr{}), and the \Bq{} model (\BqThetaTimeCorr{}), but
+% not the \Hc{} model (\HcThetaTimeCorr{}). The top row of
+% Fig.~\ref{fig:response-time-accuracy} shows the overall effect of
+% rotation on response times.
 
-The number of actions taken by the \Oc{} model was the best predictor
-of human response times, with a correlation of \ExpOcTimeCorr{}. The
-\Th{} model \Bq{} model with $p(h=0)=0.55$ were the next best (for
-\Th{}, \ExpThTimeCorr{}; for \Bq{}, \ExpBqpTimeCorr{}). Not far behind
-was the BQ model with equal prior (\ExpBqTimeCorr{}). The \Hc{} model
-was barely correlated with people (\ExpHcTimeCorr{}).
+% The number of actions taken by the \Oc{} model was the best predictor
+% of human response times, with a correlation of \ExpOcTimeCorr{}. The
+% \Th{} model \Bq{} model with $p(h=0)=0.55$ were the next best (for
+% \Th{}, \ExpThTimeCorr{}; for \Bq{}, \ExpBqpTimeCorr{}). Not far behind
+% was the BQ model with equal prior (\ExpBqTimeCorr{}). The \Hc{} model
+% was barely correlated with people (\ExpHcTimeCorr{}).
 
-Across all stimuli, participants' response times for ``flipped'' pairs
-were significantly higher than those for ``same'' pairs
-\TODO{confidence intervals} \TODO{flipped response times higher than
-  same response times for smaller angles?}
+% Across all stimuli, participants' response times for ``flipped'' pairs
+% were significantly higher than those for ``same'' pairs
+% \TODO{confidence intervals} \TODO{flipped response times higher than
+%   same response times for smaller angles?}
 
 \subsection{Accuracy}
 
-The average accuracy across all stimuli was \ExpAccuracy{}, though
-there were \ExpNumChance{} individual stimuli (out of 720) for which
-people were not above chance. Of the models, the \Oc{} and \Th{}
-models peformed perfectly, with 100\% accuracy. The \Bq{} model was
-very accurate overall (equal prior: \BqAccuracy{}, unequal prior:
-\BqpAccuracy{}). With the equal prior, there was \BqNumChance{}
-stimulus for which it was not above chance; with the unequal prior,
-there were \BqpNumChance{}. The \Hc{} model was not particularly
-accurate, and although it did perform above chance overall
-(\HcAccuracy{}), there were \HcNumChance{} individual stimuli for
-which it was not above chance.
+% The average accuracy across all stimuli was \ExpAccuracy{}, though
+% there were \ExpNumChance{} individual stimuli (out of 720) for which
+% people were not above chance. Of the models, the \Oc{} and \Th{}
+% models performed perfectly, with 100\% accuracy. The \Bq{} model was
+% very accurate overall (equal prior: \BqAccuracy{}, unequal prior:
+% \BqpAccuracy{}). With the equal prior, there was \BqNumChance{}
+% stimulus for which it was not above chance; with the unequal prior,
+% there were \BqpNumChance{}. The \Hc{} model was not particularly
+% accurate, and although it did perform above chance overall
+% (\HcAccuracy{}), there were \HcNumChance{} individual stimuli for
+% which it was not above chance.
 
-The minimum angle was also correlated with participants' average
-per-stimulus accuracy: for flipped pairs,
-\ExpThetaAccuracyCorrFlipped{}, and for same pairs,
-\ExpThetaAccuracyCorrSame{}. There was also a significant effect for
-the \Hc{} model (\HcThetaAccuracyCorr{}) and the \Bq{} model (equal
-prior: \BqThetaAccuracyCorr{}, unequal prior:
-\BqpThetaAccuracyCorr{}). The bottom row of
-Fig.~\ref{fig:response-time-accuracy} shows the effect of angle on
-accuracy for both participants and models.
+% The minimum angle was also correlated with participants' average
+% per-stimulus accuracy: for flipped pairs,
+% \ExpThetaAccuracyCorrFlipped{}, and for same pairs,
+% \ExpThetaAccuracyCorrSame{}. There was also a significant effect for
+% the \Hc{} model (\HcThetaAccuracyCorr{}) and the \Bq{} model (equal
+% prior: \BqThetaAccuracyCorr{}, unequal prior:
+% \BqpThetaAccuracyCorr{}). The bottom row of
+% Fig.~\ref{fig:response-time-accuracy} shows the effect of angle on
+% accuracy for both participants and models.
 
-There was a moderate correlation between the accuracy of the \Hc{}
-model and human accuracy (\ExpHcAccuracyCorr{}). The \Bq{} model had a
-similar correlation (equal prior: \ExpBqAccuracyCorr{}, unequal prior:
-\ExpBqpAccuracyCorr{}). Correlations for the other models were
-undefined, because they had 100\% accuracy.
-
+% There was a moderate correlation between the accuracy of the \Hc{}
+% model and human accuracy (\ExpHcAccuracyCorr{}). The \Bq{} model had a
+% similar correlation (equal prior: \ExpBqAccuracyCorr{}, unequal prior:
+% \ExpBqpAccuracyCorr{}). Correlations for the other models were
+% undefined, because they had 100\% accuracy.
 
 \begin{figure*}[t]
   \begin{center}
-    \includegraphics[width=\textwidth]{../../figures/D/response_time_accuracy.pdf}
-    \caption{\textbf{Response time and accuracy comparison.} Top:
-      response time of correct responses as a function of the minimum
-      angle of rotation. Bottom: accuracy as a function of the minumum
-      angle of rotation. All error bars are 95\% confidence
-      intervals.}
-    \label{fig:response-time-accuracy}
+    \subfloat{\includegraphics[width=0.33\textwidth]{../../figures/D/theta_time_corrs.pdf}}
+    \subfloat{\includegraphics[width=0.33\textwidth]{../../figures/D/theta_accuracy_corrs.pdf}}
+    \subfloat{\includegraphics[width=0.33\textwidth]{../../figures/D/response_time_corrs.pdf}}
+    \caption{}
+    \label{fig:response-time-corrs}
   \end{center}
 \end{figure*}
 
 \section{Discussion}
 
 We replicated the previous monotonic response time result, though not
-the linear resulte. Actually kind of similar to \cite{Gardony:2013gn}
+the linear result. Actually kind of similar to \cite{Gardony:2013gn}
 \TODO{elaborate}
 
 Also replicated the constant accuracy for flipped stimuli, but not for
