@@ -15,7 +15,8 @@ def run(data, results_path, seed):
     for key in keys:
         df = data[key]
         times = df[df['correct']].groupby('trial')['time']
-        results[key] = times.apply(util.bootstrap)
+        results[key] = times.apply(
+            lambda x: 1. / util.bootstrap_mean(1. / x))
 
     results = pd.DataFrame.from_dict(results, orient='index')
     results.index.name = 'model'

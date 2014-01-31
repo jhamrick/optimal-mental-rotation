@@ -12,14 +12,7 @@ def run(data, results_path, seed):
 
     results = {}
     for name in sorted(data.keys()):
-        # overall mean
-        mean = data[name]['time'].mean()
-        means = data[name]\
-            .groupby(['stimulus', 'theta', 'flipped'])['time']\
-            .mean()
-        min = means.min()
-        max = means.max()
-        results[name] = pd.Series({'mean': mean, 'min': min, 'max': max})
+        results[name] = 1. / util.bootstrap_mean(1. / data[name]['time'])
 
     results = pd.DataFrame.from_dict(results, orient='index')
     results.index.name = 'model'
