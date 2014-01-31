@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import util
 
+filename = "response_time_corrs.csv"
+
 
 def run(data, results_path, seed):
     np.random.seed(seed)
@@ -26,7 +28,7 @@ def run(data, results_path, seed):
 
     results = pd.DataFrame.from_dict(results, orient='index')
     results.index.name = 'model'
-    pth = results_path.joinpath("response_time_corrs.csv")
+    pth = results_path.joinpath(filename)
     results.to_csv(pth)
     return pth
 

@@ -4,6 +4,8 @@ import numpy as np
 import util
 import pandas as pd
 
+filename = "response_time_means.csv"
+
 
 def run(data, results_path, seed):
     np.random.seed(seed)
@@ -19,7 +21,7 @@ def run(data, results_path, seed):
         results.index, names=['stimulus', 'modtheta', 'flipped', 'stat'])
     results.columns.name = 'model'
     results = results.stack().unstack('stat')
-    pth = results_path.joinpath("response_time_means.csv")
+    pth = results_path.joinpath(filename)
     results.to_csv(pth)
     return pth
 

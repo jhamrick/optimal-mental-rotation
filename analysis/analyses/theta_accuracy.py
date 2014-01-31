@@ -4,6 +4,8 @@ import numpy as np
 import util
 import pandas as pd
 
+filename = "theta_accuracy.csv"
+
 
 def run(data, results_path, seed):
     np.random.seed(seed)
@@ -22,7 +24,7 @@ def run(data, results_path, seed):
     results.columns = pd.MultiIndex.from_tuples(
         results.columns, names=['modtheta', 'stat'])
     results = results.stack('modtheta')
-    pth = results_path.joinpath("theta_accuracy.csv")
+    pth = results_path.joinpath(filename)
     results.to_csv(pth)
     return pth
 
