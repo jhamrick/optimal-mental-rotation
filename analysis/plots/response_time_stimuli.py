@@ -1,26 +1,27 @@
 #!/usr/bin/env python
 
 import matplotlib.pyplot as plt
-import numpy as np
 import util
+import pandas as pd
 from path import path
 
 
-def plot_key(key, data, fig_path, seed):
-    np.random.seed(seed)
+def plot_key(key, results_path, fig_path):
     fig, axes = plt.subplots(4, 5, sharey=True, sharex=True)
 
-    df = data[key]
-    for i, (stim, sdf) in enumerate(df[df['correct']].groupby('stimulus')):
+    means = pd.read_csv(
+        results_path.joinpath("response_time_means.csv"))\
+        .set_index(['stimulus', 'flipped', 'model'])\
+        .groupby(level='model').get_group(key)
+
+    for i, (stim, sdf) in enumerate(means.groupby(level='stimulus')):
         ax = axes.flat[i]
 
-        for flipped, df2 in sdf.groupby('flipped'):
-            time = df2.groupby('modtheta')['time']
-            stats = time.apply(util.bootstrap).unstack(1)
+        for flipped, stats in sdf.groupby(level='flipped'):
             lower = stats['median'] - stats['lower']
             upper = stats['upper'] - stats['median']
             ax.errorbar(
-                stats.index, stats['median'],
+                stats['modtheta'], stats['median'],
                 yerr=[lower, upper],
                 label=flipped, lw=3)
 
@@ -45,10 +46,10 @@ def plot_key(key, data, fig_path, seed):
     return pths
 
 
-def plot(data, fig_path, seed):
+def plot(results_path, fig_path):
     pths = []
     for key in ['exp', 'th', 'hc', 'bq']:
-        pths.extend(plot_key(key, data, fig_path, seed))
+        pths.extend(plot_key(key, results_path, fig_path))
     return pths
 
 

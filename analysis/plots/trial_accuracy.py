@@ -1,23 +1,22 @@
 #!/usr/bin/env python
 
 import matplotlib.pyplot as plt
-import numpy as np
 import util
+import pandas as pd
 from path import path
 
 
-def plot(data, fig_path, seed):
-    np.random.seed(seed)
+def plot(results_path, fig_path):
+    data = pd.read_csv(
+        results_path.joinpath("trial_accuracy_means.csv"))\
+        .groupby('model').get_group('exp')\
+        .sort('trial')
 
-    df = data['exp']
-    trials = df['trial'].drop_duplicates()
-    trials.sort()
-    acc = df.groupby('trial')['correct']\
-        .apply(util.beta)\
-        .unstack(-1)['median'] * 100
+    trials = data['trial']
+    acc = data['median'] * 100
 
     fig, ax = plt.subplots()
-    ax.plot(np.asarray(trials), np.asarray(acc), 'k.')
+    ax.plot(trials, acc, 'k.')
     ax.set_xlim(1, 200)
     ax.set_ylim(70, 100)
     ax.set_xlabel("Trial", fontsize=14)

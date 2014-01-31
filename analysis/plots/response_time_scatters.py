@@ -1,17 +1,14 @@
 #!/usr/bin/env python
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import util
 from path import path
 
 
-def plot(data, fig_path, seed):
-    np.random.seed(seed)
+def plot(results_path, fig_path):
     order = ['oc', 'th', 'hc', 'bq', 'bqp']
     titles = {
-        'exp': "Human",
         'oc': "Oracle",
         'th': "Threshold",
         'hc': "HC",
@@ -19,27 +16,23 @@ def plot(data, fig_path, seed):
         'bqp': "BQ (unequal prior)"
     }
 
-    response_means = {}
-    for model in order + ['exp']:
-        df = data[model]
-        y = df[df['correct']].groupby(
-            ['stimulus', 'modtheta', 'flipped'])['time']
-        response_means[model] = y.mean()
-    response_means = pd.DataFrame(response_means).unstack('flipped')
+    results = pd.read_csv(
+        results_path.joinpath("response_time_means.csv"))\
+        .set_index(['stimulus', 'modtheta', 'flipped', 'model'])['median']\
+        .unstack(['model', 'flipped'])
 
     fig, axes = plt.subplots(1, len(order), sharey=True, sharex=False)
 
-    for i, model in enumerate(order):
+    for i, key in enumerate(order):
         ax = axes[i]
-
-        for key in ('flipped', 'same'):
+        for flipped in ['same', 'flipped']:
             ax.plot(
-                response_means[model][key],
-                response_means['exp'][key],
+                results[(key, flipped)],
+                results[('exp', flipped)],
                 '.', alpha=0.8, label=key)
 
         ax.set_xlabel("Model response time", fontsize=14)
-        ax.set_title(titles[model], fontsize=14)
+        ax.set_title(titles[key], fontsize=14)
         util.clear_right(ax)
         util.clear_top(ax)
         util.outward_ticks(ax)
@@ -62,8 +55,6 @@ def plot(data, fig_path, seed):
 if __name__ == "__main__":
     config = util.load_config("config.ini")
     version = config.get("global", "version")
-    data_path = path(config.get("paths", "data"))
-    data = util.load_all(version, data_path)
+    results_path = path(config.get("paths", "results")).joinpath(version)
     fig_path = path(config.get("paths", "figures")).joinpath(version)
-    seed = config.getint("global", "seed")
-    print plot(data, fig_path, seed)
+    print plot(results_path, fig_path)

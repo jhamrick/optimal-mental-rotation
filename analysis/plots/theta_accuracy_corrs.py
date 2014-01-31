@@ -7,27 +7,12 @@ import util
 from path import path
 
 
-def plot(data, fig_path, seed):
-    np.random.seed(seed)
-
-    def makecorr(df):
-        x = df.groupby(['stimulus', 'modtheta'])['correct']\
-              .mean()\
-              .reset_index()
-        thetas = x['modtheta']
-        acc = 1 - x['correct']
-        corr = util.bootcorr(thetas, acc, method="spearman")
-        return corr
-
+def plot(results_path, fig_path):
     keys = ['exp', 'oc', 'th', 'hc', 'bq', 'bqp']
-    corrs = {}
-    for key in keys:
-        for flipped, df in data[key].groupby('flipped'):
-            corrs[(key, flipped)] = makecorr(df)
-
-    df = pd.DataFrame.from_dict(corrs, orient='index').fillna(0)
-    df.index = pd.MultiIndex.from_tuples(df.index, names=['model', 'stimuli'])
-    df = df.unstack('stimuli').reindex(keys).stack('stimuli')
+    corrs = pd.read_csv(results_path.joinpath("theta_accuracy_corrs.csv"))\
+              .set_index(['model', 'flipped'])\
+              .unstack('flipped')\
+              .reindex(keys)
 
     fig, ax = plt.subplots()
     width = 1
@@ -46,15 +31,15 @@ def plot(data, fig_path, seed):
     }
 
     order = ['same', 'flipped']
-    for flipped, y in df.groupby(level='stimuli'):
-        i = order.index(flipped)
+    for i, flipped in enumerate(order):
+        y = corrs.xs(flipped, axis=1, level='flipped')
         median = y['median']
         lerr = median - y['lower']
         uerr = y['upper'] - median
         ax.bar(
             i * width + np.arange(len(median)) * offset,
-            median,
-            yerr=[lerr, uerr],
+            -median,
+            yerr=[-uerr, -lerr],
             color=colors[flipped],
             ecolor='k',
             width=width,
@@ -85,5 +70,4 @@ if __name__ == "__main__":
     data_path = path(config.get("paths", "data"))
     data = util.load_all(version, data_path)
     fig_path = path(config.get("paths", "figures")).joinpath(version)
-    seed = config.getint("global", "seed")
-    print plot(data, fig_path, seed)
+    print plot(data, fig_path)

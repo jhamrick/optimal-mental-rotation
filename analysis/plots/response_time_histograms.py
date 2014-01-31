@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 
 import matplotlib.pyplot as plt
-import numpy as np
 import util
+import pickle
 from path import path
 
 
-def plot(data, fig_path, seed):
-    np.random.seed(seed)
-
+def plot(results_path, fig_path):
     order = ['exp', 'oc', 'th', 'hc', 'bq', 'bqp']
     titles = {
         'exp': "Human",
@@ -19,16 +17,20 @@ def plot(data, fig_path, seed):
         'bqp': "BQ (unequal prior)"
     }
 
+    pth = results_path.joinpath("all_response_times.pkl")
+    with open(pth, "r") as fh:
+        times = pickle.load(fh)
+
     fig, axes = plt.subplots(1, len(order), sharey=True)
     for i, key in enumerate(order):
         ax = axes[i]
-        df = data[key]
-        if 'nstep' in df:
-            bins = df['nstep'].ptp() + 1
-        else:
-            bins = 100
 
-        ax.hist(df['time'], bins=bins, normed=True, color='k')
+        if key == 'exp':
+            bins = 100
+        else:
+            bins = times[key].ptp() + 1
+
+        ax.hist(times[key], bins=bins, normed=True, color='k')
         ax.set_title(titles[key], fontsize=14)
 
         util.clear_right(ax)
@@ -61,5 +63,4 @@ if __name__ == "__main__":
     data_path = path(config.get("paths", "data"))
     data = util.load_all(version, data_path)
     fig_path = path(config.get("paths", "figures")).joinpath(version)
-    seed = config.getint("global", "seed")
-    print plot(data, fig_path, seed)
+    print plot(data, fig_path)

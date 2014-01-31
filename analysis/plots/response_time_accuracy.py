@@ -3,12 +3,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import util
+import pandas as pd
 from path import path
 
 
-def plot(data, fig_path, seed):
-    np.random.seed(seed)
-
+def plot(results_path, fig_path):
     order = ['exp', 'oc', 'th', 'hc', 'bq', 'bqp']
     titles = {
         'exp': "Human",
@@ -24,20 +23,23 @@ def plot(data, fig_path, seed):
         'flipped': 'b'
     }
 
+    time_results = pd.read_csv(
+        results_path.joinpath("theta_time.csv"))
+    acc_results = pd.read_csv(
+        results_path.joinpath("theta_accuracy.csv"))
+
     fig, axes = plt.subplots(2, len(order), sharex=True)
     for i, key in enumerate(order):
         ax = axes[0, i]
-        df = data[key]
+        df = time_results.groupby('model').get_group(key)
 
         maxy = -np.inf
         miny = np.inf
-        for flipped, df2 in df[df['correct']].groupby('flipped'):
-            time = df2.groupby('modtheta')['time']
-            stats = time.apply(util.bootstrap).unstack(1)
+        for flipped, stats in df.groupby('flipped'):
             lower = stats['median'] - stats['lower']
             upper = stats['upper'] - stats['median']
             ax.errorbar(
-                stats.index, stats['median'],
+                stats['modtheta'], stats['median'],
                 yerr=[lower, upper], lw=3,
                 color=colors[flipped],
                 ecolor=colors[flipped])
@@ -63,15 +65,13 @@ def plot(data, fig_path, seed):
 
     for i, key in enumerate(order):
         ax = axes[1, i]
-        df = data[key]
+        df = acc_results.groupby('model').get_group(key)
 
-        for flipped, df2 in df.groupby('flipped'):
-            correct = df2.groupby('modtheta')['correct']
-            stats = correct.apply(util.beta).unstack(1) * 100
+        for flipped, stats in df.groupby('flipped'):
             lower = stats['median'] - stats['lower']
             upper = stats['upper'] - stats['median']
             ax.errorbar(
-                stats.index, stats['median'],
+                stats['modtheta'], stats['median'],
                 yerr=[lower, upper], lw=3,
                 color=colors[flipped],
                 ecolor=colors[flipped])
@@ -128,5 +128,4 @@ if __name__ == "__main__":
     data_path = path(config.get("paths", "data"))
     data = util.load_all(version, data_path)
     fig_path = path(config.get("paths", "figures")).joinpath(version)
-    seed = config.getint("global", "seed")
-    print plot(data, fig_path, seed)
+    print plot(data, fig_path)

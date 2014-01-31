@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import util
 from path import path
 
 
-def plot(data, fig_path, seed):
-    np.random.seed(seed)
+def plot(results_path, fig_path):
     order = ['hc', 'bq', 'bqp']
     titles = {
         'exp': "Human",
@@ -17,25 +15,23 @@ def plot(data, fig_path, seed):
         'bqp': "BQ (unequal prior)"
     }
 
-    accuracy_means = {}
-    for model in order + ['exp']:
-        df = data[model]
-        y = df.groupby(['stimulus', 'modtheta', 'flipped'])['correct']
-        accuracy_means[model] = y.apply(util.beta).unstack(-1)['median'] * 100
-    accuracy_means = pd.DataFrame(accuracy_means).unstack('flipped')
+    results = pd.read_csv(
+        results_path.joinpath("accuracy_means.csv"))\
+        .set_index(['stimulus', 'modtheta', 'flipped', 'model'])['median']\
+        .unstack(['model', 'flipped']) * 100
 
     fig, axes = plt.subplots(1, len(order), sharey=True, sharex=True)
-    for i, model in enumerate(order):
-        ax = axes[i]
 
-        for key in ('flipped', 'same'):
+    for i, key in enumerate(order):
+        ax = axes[i]
+        for flipped in ['same', 'flipped']:
             ax.plot(
-                accuracy_means[model][key],
-                accuracy_means['exp'][key],
+                results[(key, flipped)],
+                results[('exp', flipped)],
                 '.', alpha=0.8, label=key)
 
         ax.set_xlabel("Model accuracy", fontsize=14)
-        ax.set_title(titles[model], fontsize=14)
+        ax.set_title(titles[key], fontsize=14)
         util.clear_right(ax)
         util.clear_top(ax)
         util.outward_ticks(ax)

@@ -7,28 +7,12 @@ import util
 from path import path
 
 
-def plot(data, fig_path, seed):
-    np.random.seed(seed)
-
-    def makecorr(df):
-        x = df[df['correct']]\
-            .groupby(['stimulus', 'modtheta'])['time']\
-            .mean()\
-            .reset_index()
-        thetas = x['modtheta']
-        times = x['time']
-        corr = util.bootcorr(thetas, times, method="spearman")
-        return corr
-
+def plot(results_path, fig_path):
     keys = ['exp', 'oc', 'th', 'hc', 'bq', 'bqp']
-    corrs = {}
-    for key in keys:
-        for flipped, df in data[key].groupby('flipped'):
-            corrs[(key, flipped)] = makecorr(df)
-
-    df = pd.DataFrame.from_dict(corrs, orient='index')
-    df.index = pd.MultiIndex.from_tuples(df.index, names=['model', 'stimuli'])
-    df = df.unstack('stimuli').reindex(keys).stack('stimuli')
+    corrs = pd.read_csv(results_path.joinpath("theta_time_corrs.csv"))\
+              .set_index(['model', 'flipped'])\
+              .unstack('flipped')\
+              .reindex(keys)
 
     fig, ax = plt.subplots()
     width = 1
@@ -47,8 +31,8 @@ def plot(data, fig_path, seed):
     }
 
     order = ['same', 'flipped']
-    for flipped, y in df.groupby(level='stimuli'):
-        i = order.index(flipped)
+    for i, flipped in enumerate(order):
+        y = corrs.xs(flipped, axis=1, level='flipped')
         median = y['median']
         lerr = median - y['lower']
         uerr = y['upper'] - median
@@ -86,5 +70,4 @@ if __name__ == "__main__":
     data_path = path(config.get("paths", "data"))
     data = util.load_all(version, data_path)
     fig_path = path(config.get("paths", "figures")).joinpath(version)
-    seed = config.getint("global", "seed")
-    print plot(data, fig_path, seed)
+    print plot(data, fig_path)

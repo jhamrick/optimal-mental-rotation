@@ -1,21 +1,22 @@
 #!/usr/bin/env python
 
 import matplotlib.pyplot as plt
-import numpy as np
 import util
+import pandas as pd
 from path import path
 
 
-def plot(data, fig_path, seed):
-    np.random.seed(seed)
+def plot(results_path, fig_path):
+    data = pd.read_csv(
+        results_path.joinpath("trial_time_means.csv"))\
+        .groupby('model').get_group('exp')\
+        .sort('trial')
 
-    df = data['exp']
-    trials = df[df['correct']]['trial'].drop_duplicates()
-    trials.sort()
-    times = df[df['correct']].groupby('trial')['time'].mean()
+    trials = data['trial']
+    times = data['median']
 
     fig, ax = plt.subplots()
-    ax.plot(np.asarray(trials), np.asarray(times), 'k.')
+    ax.plot(trials, times, 'k.')
     ax.set_xlim(1, 200)
     ax.set_xlabel("Trial", fontsize=14)
     ax.set_ylabel("Response time", fontsize=14)
