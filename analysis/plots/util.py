@@ -4,7 +4,6 @@ import os
 import sys
 
 from mental_rotation.analysis import load_human, load_all
-from mental_rotation.analysis import bootstrap, beta, bootcorr
 
 
 def load_config(pth):

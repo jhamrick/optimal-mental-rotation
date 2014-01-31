@@ -1,4 +1,5 @@
 import util
+
 import response_time_histograms
 import response_time_stimuli
 import response_time_scatters
@@ -9,6 +10,8 @@ import trial_accuracy
 import response_time_accuracy
 import theta_time_corrs
 import theta_accuracy_corrs
+import response_time_corrs
+import accuracy_corrs
 
 __all__ = [
     'response_time_histograms',
@@ -21,4 +24,6 @@ __all__ = [
     'response_time_accuracy',
     'theta_time_corrs',
     'theta_accuracy_corrs',
+    'response_time_corrs',
+    'accuracy_corrs',
 ]

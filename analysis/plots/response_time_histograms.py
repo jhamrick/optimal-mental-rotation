@@ -21,7 +21,7 @@ def plot(results_path, fig_path):
     with open(pth, "r") as fh:
         times = pickle.load(fh)
 
-    fig, axes = plt.subplots(1, len(order), sharey=True)
+    fig, axes = plt.subplots(1, len(order))
     for i, key in enumerate(order):
         ax = axes[i]
 
@@ -30,7 +30,7 @@ def plot(results_path, fig_path):
         else:
             bins = times[key].ptp() + 1
 
-        ax.hist(times[key], bins=bins, normed=True, color='k')
+        ax.hist(times[key], bins=bins, color='k')
         ax.set_title(titles[key], fontsize=14)
 
         util.clear_right(ax)
@@ -42,7 +42,7 @@ def plot(results_path, fig_path):
         else:
             ax.set_xlabel("Number of actions", fontsize=14)
 
-    axes[0].set_ylabel("Fraction of responses", fontsize=14)
+    axes[0].set_ylabel("Number of responses", fontsize=14)
 
     fig.set_figheight(3)
     fig.set_figwidth(16)
@@ -60,7 +60,6 @@ def plot(results_path, fig_path):
 if __name__ == "__main__":
     config = util.load_config("config.ini")
     version = config.get("global", "version")
-    data_path = path(config.get("paths", "data"))
-    data = util.load_all(version, data_path)
+    results_path = path(config.get("paths", "results")).joinpath(version)
     fig_path = path(config.get("paths", "figures")).joinpath(version)
-    print plot(data, fig_path)
+    print plot(results_path, fig_path)
