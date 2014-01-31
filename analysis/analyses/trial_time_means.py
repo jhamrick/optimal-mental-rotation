@@ -4,25 +4,24 @@ import numpy as np
 import util
 import pandas as pd
 
-filename = "trial_accuracy_corrs.csv"
+filename = "trial_time_means.csv"
 
 
 def run(data, results_path, seed):
     np.random.seed(seed)
     keys = ['exp', 'expA', 'expB']
 
-    means = pd.read_csv(results_path.joinpath("trial_accuracy_means.csv"))
-
     results = {}
     for key in keys:
-        df = means.groupby('model').get_group(key)
-        trials = df['trial']
-        accuracy = df['median']
-        corr = util.bootcorr(trials, accuracy)
-        results[key] = corr
+        df = data[key]
+        times = df[df['correct']].groupby('trial')['time']
+        results[key] = times.apply(util.bootstrap)
 
     results = pd.DataFrame.from_dict(results, orient='index')
     results.index.name = 'model'
+    results.columns = pd.MultiIndex.from_tuples(
+        results.columns, names=['trial', 'stat'])
+    results = results.stack('trial')
     pth = results_path.joinpath(filename)
     results.to_csv(pth)
     return pth

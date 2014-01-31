@@ -11,12 +11,13 @@ def run(data, results_path, seed):
     np.random.seed(seed)
     keys = ['exp', 'expA', 'expB']
 
+    means = pd.read_csv(results_path.joinpath("trial_time_means.csv"))
+
     results = {}
     for key in keys:
-        df = data[key]
-        trials = df[df['correct']]['trial'].drop_duplicates()
-        trials.sort()
-        times = df[df['correct']].groupby('trial')['time'].mean()
+        df = means.groupby('model').get_group(key)
+        trials = df['trial']
+        times = df['median']
         corr = util.bootcorr(trials, times, method='spearman')
         results[key] = corr
 

@@ -14,6 +14,8 @@ import theta_accuracy
 import all_response_times
 import response_time_means
 import accuracy_means
+import trial_time_means
+import trial_accuracy_means
 
 __all__ = [
     # across all stimuli
@@ -42,6 +44,8 @@ __all__ = [
     'theta_accuracy_corrs',
 
     # human only, for practice effects
+    'trial_time_means',
+    'trial_accuracy_means',
     'trial_time_corrs',
     'trial_accuracy_corrs',
 
