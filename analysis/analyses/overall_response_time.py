@@ -3,7 +3,6 @@
 import numpy as np
 import util
 import pandas as pd
-from path import path
 
 
 def run(data, results_path, seed):
@@ -19,19 +18,13 @@ def run(data, results_path, seed):
         min = means.min()
         max = means.max()
         results[name] = pd.Series({'mean': mean, 'min': min, 'max': max})
-        print "%s:\t%.2f [%.2f, %.2f]" % (name, mean, min, max)
 
     results = pd.DataFrame.from_dict(results, orient='index')
-    pth = results_path.joinpath("response_time.csv")
+    results.index.name = 'model'
+    pth = results_path.joinpath("overall_response_time.csv")
     results.to_csv(pth)
     return pth
 
 
 if __name__ == "__main__":
-    config = util.load_config("config.ini")
-    version = config.get("global", "version")
-    data_path = path(config.get("paths", "data"))
-    data = util.load_all(version, data_path)
-    results_path = path(config.get("paths", "results")).joinpath(version)
-    seed = config.getint("global", "seed")
-    print run(data, results_path, seed)
+    util.run_analysis(run)

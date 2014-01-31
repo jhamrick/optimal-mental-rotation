@@ -3,44 +3,19 @@
 import numpy as np
 import util
 import pandas as pd
-from path import path
 
 
 def run(data, results_path, seed):
     np.random.seed(seed)
-    keys = ['exp', 'hc', 'bq', 'bqp']
 
+    means = pd.read_csv(results_path.joinpath("accuracy_means.csv"))
     results = {}
-    for key in keys:
-        for flipped, df in data[key].groupby('flipped'):
-            x = df.groupby(['stimulus', 'modtheta'])['correct']\
-                  .apply(util.beta)\
-                  .unstack(-1)['median']\
-                  .reset_index()
-            thetas = x['modtheta']
-            accuracy = x['median']
-
-            corr = util.bootcorr(
-                thetas, accuracy, method='spearman')
-
-            print "%s (%s): %s" % (
-                key, flipped, util.report_spearman.format(**dict(corr)))
-            results[(key, flipped)] = corr
-
-        df = data[key]
-        x = df.groupby(['stimulus', 'modtheta'])['correct']\
-              .apply(util.beta)\
-              .unstack(-1)['median']\
-              .reset_index()
-        thetas = x['modtheta']
-        accuracy = x['median']
-
-        corr = util.bootcorr(
-            thetas, accuracy, method='spearman')
-
-        print "%s (all): %s" % (
-            key, util.report_spearman.format(**dict(corr)))
-        results[(key, 'all')] = corr
+    exclude = ['expA', 'expB', 'gs']
+    for (model, flipped), df in means.groupby(['model', 'flipped']):
+        if model in exclude:
+            continue
+        results[(model, flipped)] = util.bootcorr(
+            df['modtheta'], df['median'], method='spearman')
 
     results = pd.DataFrame.from_dict(results, orient='index')
     results.index = pd.MultiIndex.from_tuples(
@@ -51,10 +26,4 @@ def run(data, results_path, seed):
 
 
 if __name__ == "__main__":
-    config = util.load_config("config.ini")
-    version = config.get("global", "version")
-    data_path = path(config.get("paths", "data"))
-    data = util.load_all(version, data_path)
-    results_path = path(config.get("paths", "results")).joinpath(version)
-    seed = config.getint("global", "seed")
-    print run(data, results_path, seed)
+    util.run_analysis(run)
