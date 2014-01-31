@@ -5,6 +5,7 @@ import util
 import pandas as pd
 
 filename = "trial_time_corrs.csv"
+texname = "trial_time_corrs.tex"
 
 
 def run(data, results_path, seed):
@@ -25,6 +26,15 @@ def run(data, results_path, seed):
     results.index.name = 'model'
     pth = results_path.joinpath(filename)
     results.to_csv(pth)
+
+    with open(results_path.joinpath(texname), "w") as fh:
+        fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
+        for model, stats in results.iterrows():
+            cmd = util.newcommand(
+                "%sTrialTimeCorr" % model.capitalize(),
+                util.latex_spearman.format(**dict(stats)))
+            fh.write(cmd)
+
     return pth
 
 

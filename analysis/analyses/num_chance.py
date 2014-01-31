@@ -5,6 +5,7 @@ import util
 import pandas as pd
 
 filename = "num_chance.csv"
+texname = "num_chance.tex"
 
 
 def run(data, results_path, seed):
@@ -24,6 +25,15 @@ def run(data, results_path, seed):
     results.index.name = 'model'
     pth = results_path.joinpath(filename)
     results.to_csv(pth)
+
+    with open(results_path.joinpath(texname), "w") as fh:
+        fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
+        for model, stats in results.iterrows():
+            cmd = util.newcommand(
+                "%sNumChance" % model.capitalize(),
+                stats['num'])
+            fh.write(cmd)
+
     return pth
 
 

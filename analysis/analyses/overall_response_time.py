@@ -5,6 +5,7 @@ import util
 import pandas as pd
 
 filename = "overall_response_time.csv"
+texname = "overall_response_time.tex"
 
 
 def run(data, results_path, seed):
@@ -18,6 +19,15 @@ def run(data, results_path, seed):
     results.index.name = 'model'
     pth = results_path.joinpath(filename)
     results.to_csv(pth)
+
+    with open(results_path.joinpath(texname), "w") as fh:
+        fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
+        for model, stats in results.iterrows():
+            cmd = util.newcommand(
+                "%sTime" % model.capitalize(),
+                util.latex_mean.format(**dict(stats)))
+            fh.write(cmd)
+
     return pth
 
 
