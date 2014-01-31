@@ -5,6 +5,7 @@ import numpy as np
 import util
 
 filename = "response_time_corrs.csv"
+texname = "response_time_corrs.tex"
 
 
 def run(data, results_path, seed):
@@ -38,6 +39,17 @@ def run(data, results_path, seed):
         results.index, names=['model', 'flipped'])
     pth = results_path.joinpath(filename)
     results.to_csv(pth)
+
+    with open(results_path.joinpath(texname), "w") as fh:
+        fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
+        for (model, flipped), stats in results.iterrows():
+            if flipped != 'all':
+                continue
+            cmd = util.newcommand(
+                "%sTimeCorr" % model.capitalize(),
+                util.latex_pearson.format(**dict(stats)))
+            fh.write(cmd)
+
     return pth
 
 
