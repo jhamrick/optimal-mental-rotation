@@ -33,21 +33,21 @@ def plot(results_path, fig_path):
         ax = axes[0, i]
         df = time_results.groupby('model').get_group(key)
 
-        maxy = -np.inf
-        miny = np.inf
         for flipped, stats in df.groupby('flipped'):
-            lower = stats['median'] - stats['lower']
-            upper = stats['upper'] - stats['median']
+            if key == 'exp':
+                median = stats['median'] / 1000.
+                lower = (stats['median'] - stats['lower']) / 1000.
+                upper = (stats['upper'] - stats['median']) / 1000.
+            else:
+                median = stats['median']
+                lower = stats['median'] - stats['lower']
+                upper = stats['upper'] - stats['median']
+
             ax.errorbar(
-                stats['modtheta'], stats['median'],
+                stats['modtheta'], median,
                 yerr=[lower, upper], lw=3,
                 color=colors[flipped],
                 ecolor=colors[flipped])
-
-            if stats['upper'].max() > maxy:
-                maxy = stats['upper'].max()
-            if stats['lower'].min() < miny:
-                miny = stats['lower'].min()
 
         ax.set_xticks(np.arange(0, 200, 30))
         ax.set_xlim(-10, 190)
@@ -58,8 +58,6 @@ def plot(results_path, fig_path):
             ax.set_ylabel("Response time", fontsize=14)
         else:
             ax.set_ylabel("Number of actions", fontsize=14)
-            buff = np.ceil((np.round(maxy) - np.round(miny)) * 0.05)
-            ax.set_ylim(np.round(miny) - buff, np.round(maxy) + buff)
 
     util.sync_ylims(axes[0, order.index('bq')], axes[0, order.index('bqp')])
 

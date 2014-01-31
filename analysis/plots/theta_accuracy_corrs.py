@@ -43,7 +43,8 @@ def plot(results_path, fig_path):
             color=colors[flipped],
             ecolor='k',
             width=width,
-            edgecolor='none')
+            edgecolor='none',
+            capsize=0)
 
     ax.set_ylim(0, 1)
     ax.set_xlim(-width / 2., len(median) * offset)
@@ -56,6 +57,26 @@ def plot(results_path, fig_path):
 
     ax.set_title("Correlation between rotation and accuracy", fontsize=14)
     ax.set_ylabel(r"Spearman correlation ($r_s$)", fontsize=14)
+
+    p0 = plt.Rectangle(
+        (0, 0), 1, 1,
+        fc=colors['same'],
+        ec=colors['same'])
+    p1 = plt.Rectangle(
+        (0, 0), 1, 1,
+        fc=colors['flipped'],
+        ec=colors['flipped'])
+
+    leg = ax.legend(
+        [p0, p1], ["\"same\" pairs", "\"flipped\" pairs"],
+        numpoints=1, fontsize=12,
+        loc='upper right')
+    frame = leg.get_frame()
+    frame.set_facecolor('0.9')
+    frame.set_edgecolor('#FFFFFF')
+
+    plt.draw()
+    plt.tight_layout()
 
     pths = [fig_path.joinpath("theta_accuracy_corrs.%s" % ext)
             for ext in ('png', 'pdf')]
