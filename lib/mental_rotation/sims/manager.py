@@ -97,23 +97,6 @@ class TaskManager(object):
         logger.debug("Allocating task '%s'", task_name)
         return json.dumps(task)
 
-    def extract_data(self, task_name, zip_path):
-        # extract the tar archive that was sent over
-        task = self.tasks[task_name]
-        data_path = path(task['data_path'])
-        zip_path = path(zip_path)
-        if not zip_path.exists():
-            raise IOError("Not found: %s", zip_path)
-
-        if data_path.exists():
-            data_path.rmtree_p()
-
-        logger.debug("Extracting data for task '%s'", task_name)
-        cmd = ['tar', '-xf', zip_path, '-m', '-C', data_path.dirname()]
-        run_command(logger, cmd)
-
-        zip_path.remove()
-
     def set_complete(self, task_name):
         if self.completed[task_name]:
             raise RuntimeError(
@@ -187,7 +170,6 @@ def run(host, port, params, force):
     server.register_function(manager.load_tasks, 'panda_reload')
     server.register_function(manager.get_sim_root, 'panda_connect')
     server.register_function(manager.get_next_task, 'panda_request')
-    server.register_function(manager.extract_data, 'panda_extract')
     server.register_function(manager.set_complete, 'panda_complete')
     server.register_function(manager.set_error, 'panda_error')
     server.register_function(manager.get_status, 'panda_status')

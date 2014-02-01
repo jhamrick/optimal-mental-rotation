@@ -148,15 +148,6 @@ def worker_job(host, port):
                 else:
                     break
 
-            # tell the server to extract it
-            while True:
-                try:
-                    pandaserver.panda_extract(task_name, str(dst_path))
-                except:
-                    time.sleep(1)
-                else:
-                    break
-
             # then mark it as complete
             while True:
                 try:
