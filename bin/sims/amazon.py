@@ -387,6 +387,8 @@ def fetch_data(args):
     cmd = [
         "scp", "-r",
         "-i", "%s/.ssh/aws/kp_%s.pem" % (HOME, zone),
+        "-o", "StrictHostKeyChecking=no",
+        "-o", "UserKnownHostsFile=/dev/null",
         "%s:project/optimal-mental-rotation/data/model/%s_%s.dpkg" % (
             addr, args.model, args.version),
         "data/model/"]
@@ -395,6 +397,8 @@ def fetch_data(args):
     cmd = [
         "scp", "-r",
         "-i", "%s/.ssh/aws/kp_%s.pem" % (HOME, zone),
+        "-o", "StrictHostKeyChecking=no",
+        "-o", "UserKnownHostsFile=/dev/null",
         "%s:project/optimal-mental-rotation/data/sim-raw/%s/%s.tar.gz" % (
             addr, args.model, args.version),
         "data/sim-raw/%s/" % args.model]
