@@ -1,4 +1,4 @@
-% 
+ 
 % Annual Cognitive Science Conference
 % Sample LaTeX Paper -- Proceedings Format
 % 
@@ -153,10 +153,12 @@ performing the rotation. One object is then rotated through the target
 rotation, and is checked against the other object for
 congruency. However, this approach assumes that the corresponding
 points on the two objects can be easily identified, which is not
-necessarily the case. Indeed, the state-of-the-art in computer vision
-suggests that there is more to shape matching than simply checking for
-congruency, particularly when shapes are complex or when the shapes
-might not be exactly the same
+necessarily the case. 
+
+Indeed, the state-of-the-art in computer vision suggests that there is
+more to shape matching than simply checking for congruency,
+particularly when shapes are complex or when the shapes might not be
+exactly the same
 \cite<e.g.,>{Belongie:2002tj,Sebastian:2003vm}. Additionally, recent
 research shows that when performing \textit{physical} rotations,
 people do not rotate until congruency is reached, and may even rotate
@@ -178,8 +180,8 @@ that mental images are time-consuming and effortful to generate. Thus,
 the \textit{goal} is to make this determination while performing a
 minimum amount of computation (i.e., as few rotations as possible).
 
-The original congruency hypothesis \cite{Shepard1971} actually is a
-rational solution which achieves this goal, in the sense that the
+The original ``congruency'' hypothesis \cite{Shepard1971} actually is
+a rational solution which achieves this goal, in the sense that the
 smallest amount of computation coincides with rotating through the
 minimum angle. However, it violates the constraint that we do not know
 points correspondences, which is exactly what necessitates the use of
@@ -198,19 +200,12 @@ do not know the minimum angle beforehand, then actively performing
 rotations may be the best way to gather evidence about the similarity
 between the observed shapes.
 
-In the following section, we formalize this rational analysis, and
-propose four models of mental rotation: one based on the original
-hypothesis by \citeA{Shepard1971}; two which are extensions of the
-first but with relaxed assumptions; and one based on the active
-sampling approach.
-
 \section{Modeling mental rotation}
 
-In the mental rotation task, people are presented with pairs of
-two-dimensional shapes similar to those used by \citeA{Cooper:1975wp};
-example stimuli are shown in Fig.~\ref{fig:model-traces}. The goal is
-to determine whether the two images depict the same shape, or
-mirror-image shapes.
+In this section, we formalize our rational analysis, and propose four
+models of mental rotation: one based on existing models; two which are
+extensions of the first but with relaxed assumptions; and one based on
+the active sampling approach.
 
 \subsection{Computational-level analysis}
 
@@ -263,26 +258,22 @@ $\F_h$ is either the identity matrix $\I$ (when $\hi$) or a reflection
 matrix across the $y$-axis (when $\hf$).
 
 We define $p(\Xb\ \vert\ \Xa, \theta, h)$ to be the similarity between
-$\Xb$ and a transformation of $\Xa$:
-\begin{equation}
-  p(\Xb\ \vert\ \Xa, \theta, h):= S(\Xb, f(\Xa, h, \theta)).
-  \label{eq:likelihood}
-\end{equation}
-Example similarity curves are shown in Fig.~\ref{fig:model-traces}.
-
-We do not know which vertices of $\Xb$ correspond to which vertices of
-$\Xa$, so $S$ must marginalize over the set of possible mappings. For
-brevity, let $\mathbf{X}_m=\M\cdot{}f(\Xa, h, \theta)$ where $\M$ is a
-permutation matrix. Then:
+$\Xb$ and a transformation of $\Xa$: $p(\Xb\ \vert\ \Xa, \theta, h):=
+S(\Xb, f(\Xa, h, \theta))$.  We do not know which vertices of $\Xb$
+correspond to which vertices of $\Xa$, so $S$ must marginalize over
+the set of possible mappings. For brevity, let
+$\mathbf{X}_m=\M\cdot{}f(\Xa, h, \theta)$ where $\M$ is a permutation
+matrix. Then:
 \begin{equation}
   S(\Xb, f(\Xa, h, \theta)):=\frac{1}{2N} \sum_{\M} \prod_{n=1}^N \mathcal{N}(\mathbf{x}_{bn}\ \vert \ \mathbf{x}_{mn}, \I\sigma_S^2),
   \label{eq:similarity}
 \end{equation}
-where $N$ is the number of vertices, $2N$ is the total number of
-possible mappings,\footnote{It is $2N$ and not $N^2$ because, in polar
-  coordinates, vertices are always connected to their two nearest
-  neighbors in the $\theta$ dimension.}and $\sigma_S=0.15$ is the
-standard deviation of the similarity.
+where $2N$ is the total number of possible mappings,\footnote{It is
+  $2N$ and not $N^2$ because, in polar coordinates, vertices are
+  always connected to their two nearest neighbors in the $\theta$
+  dimension.}and $\sigma_S=0.15$ is the standard deviation of the
+similarity. Example similarity curves are shown in
+Fig.~\ref{fig:model-traces}.
 
 Additionally, we assume that the observed shapes may only be
 transformed by a small amount at a time, and each transformation is
@@ -290,14 +281,14 @@ costly in terms of computational resources. Specifically, if the
 current mental image is $\Xt$, then:
 \begin{equation}
   \mathbf{X}_{t+1} = \left\{ \begin{array}{ll}
-      f(\Xt, 0, |\epsilon|) &\mbox{ rotate by $\epsilon$,} \\
+      f(\Xt, 0, \epsilon) &\mbox{ continue rotating by $\epsilon$,} \\
       f(\Xt, 1, 0) &\mbox{ flip,} \\
       f(\Xa, 0, 0) &\mbox{ reset, or} \\
       f(\Xa, 1, 0) &\mbox{ reset and flip,} \\
     \end{array} \right.
   \label{eq:actions}
 \end{equation}
-where $\epsilon\sim \mathcal{N}(0, \sigma_\epsilon)$ and
+where $\epsilon\sim \left|\mathcal{N}(0, \sigma_\epsilon)\right|$ and
 $\sigma_\epsilon$ is the standard deviation of the step size in
 radians.
 
@@ -317,15 +308,13 @@ their behavior).
 
 \subsubsection{Oracle model}
 
-One hypothesis in the literature is that people perform a mental
-rotation in the shortest direction until a match is found
-\cite{Shepard1971, Cooper:1975wp}, and that determining this direction
-is an implementation detail \cite{Anderson1978}, or that it is
-computed beforehand \cite{Funt:1983wn}.  To reflect this hypothesis,
-we created an ``oracle'' model which is told which points on each
-shape correspond. The \Oc{} model first computes the correct rotation
-and then simply takes actions in the shortest direction until it
-reaches the point where the shapes are aligned.
+One hypothesis in the literature is that people compute the direction
+and extent of rotation beforehand using \textit{a prior} knowledge of
+the correspondence between points in the images
+\cite{Funt:1983wn,Just:1985uu}.  To reflect this hypothesis, we
+created an ``oracle'' model which is told which points on each shape
+correspond. From that correspondence, it computes the correct rotation
+and rotates through it.
 
 To determine the correct rotation, we solve for the rotation matrix by
 computing $(\Xa \F_h^T)_\mathrm{left}^{-1}\cdot{}\Xb$, where
@@ -351,15 +340,6 @@ of $S$ which is greater than the threshold corresponds to the true
 $\theta$, or a point near the true $\theta$. So, as with the \Oc{}
 model, Eq.~\ref{eq:lh-ratio} becomes a likelihood ratio.
 
-In the current formulation of the problem, choosing the threshold is
-straightforward because we know both the exact geometry of the shapes
-and that a linear transformation exists which will perfectly align
-them. However, it is not always clear how to choose a reasonable
-threshold \textit{a priori}, as the global optimum will depend on many
-factors (such as shape complexity, dimensionality, perceptual
-uncertainty, and whether the shapes are exactly identical). Thus, it
-is unlikely that the \Th{} model will be robust beyond this domain.
-
 \subsubsection{Hill climbing model}
 
 \begin{figure*}[t]
@@ -374,17 +354,21 @@ is unlikely that the \Th{} model will be robust beyond this domain.
   \end{center}
 \end{figure*}
 
-One way to deal with the problem of choosing a threshold would simply
-be to perform an exhaustive search or use a global optimization
-strategy. However, these strategies would not result in the linear
-response time found by \citeA{Shepard1971}. A second alternative,
-which could potentially demonstrate the linear response time result,
-might instead just perform a Hill Climbing (\Hc{}) search for a
-\textit{local} maximum. As with the \Oc{} and \Th{} models,
-Eq.~\ref{eq:lh-ratio} becomes a maximum likelihood ratio. Unlike the
-global maximum, however, it is not guaranteed that a local maximum of
-the correct hypothesis will be greater than a local maximum of the
-incorrect hypothesis.
+In the current formulation of the problem, choosing the threshold is
+straightforward because we know both the exact geometry of the shapes
+and that a linear transformation exists which will perfectly align
+them. However, this choice is not always clear \textit{a priori}, as
+the global optimum will depend on many factors (e.g., shape
+complexity, dimensionality, perceptual uncertainty, and whether the
+shapes are identical).  One way to deal with the problem of choosing a
+threshold would simply be to perform an exhaustive search or use a
+global optimization strategy. However, these strategies would not
+result in the linear response time found by \citeA{Shepard1971}. A
+second alternative, which could potentially demonstrate the linear
+response time result, might instead just perform a Hill Climbing
+(\Hc{}) search for a \textit{local} maximum. As with the \Oc{} and
+\Th{} models, Eq.~\ref{eq:lh-ratio} becomes a maximum likelihood
+ratio.
 
 \subsubsection{Bayesian quadrature model}
 
@@ -409,21 +393,18 @@ hypothesis $h$, and write its distribution as:
 \begin{equation}
   p(Z_h) = \int \left[\int S(\Xb, f(\Xa, \theta, h))p(\theta)\dif\theta\right] p(S)\dif S.
 \end{equation}
+
 This is a technique known in the machine-learning literature as
 \textit{Bayesian Quadrature} (BQ)
 \cite{Diaconis:1988uo,OHagan:1991tx,Osborne:2012tm}. Specifically, we
 use a Gaussian Process (GP) prior for $p(S)$, as in
-\citeA{Osborne:2012tm}.\footnote{Because our domain is on a circle, we
-  utilize a periodic kernel for the covariance
-  \cite{Rasmussen:2006vz}.}  Denoting $S_h=S(\Xb, f(\Xa, \theta, h))$,
-we first place a GP prior on the log of $S_h$ in order to enforce
-positivity after it is exponentiated:
-\begin{equation}
-\mathbb{E}[Z_h] \approx \int \exp(\mu_h(\theta))p(\theta)\dif\theta,
-\end{equation}
-where $\mu_h:=\mu(\log S_h)$ is the mean of the log-GP. However, this
-integral is still intractable. To approximate it, we fit a second GP
-over points sampled from the log-GP, which we denote as
+\citeA{Osborne:2012tm}.  Denoting $S_h=S(\Xb, f(\Xa, \theta, h))$, we
+first place a GP prior on the log of $S_h$ in order to enforce
+positivity after it is exponentiated, i.e. $\mathbb{E}[Z_h] \approx
+\int \exp(\mu_h(\theta))p(\theta)\dif\theta$, where $\mu_h:=\mu(\log
+S_h)$ is the mean of the log-GP.  However, this integral is still
+intractable. To approximate it, we fit a second GP over points sampled
+from the log-GP, which we denote as
 $\bar{S}_h:=\exp(\mu_h)$.\footnote{Note that the approach used here
   differs slightly from the one presented in \citeA{Osborne:2012tm}
   and is based on personal communication with one of the authors
@@ -445,10 +426,10 @@ p(\ell)\approx\frac{\mathcal{N}(Z_0\ \vert\ \mathbb{E}[Z_0], \mathbb{V}(Z_0))\ p
 \end{equation}
 This distribution cannot easily be calculated; however, we really are
 just interested in whether $Z_0>Z_1$ or $Z_1>Z_0$. Thus, rather than
-computing $p(\ell)$, we use $Z_D=Z_0-Z_1$:
-\begin{equation}
-  p(Z_D)\propto\mathcal{N}(\mathbb{E}[Z_0] - \mathbb{E}[Z_1], \mathbb{V}(Z_0) + \mathbb{V}(Z_1)).
-\end{equation}
+computing $p(\ell)$, we use $Z_D=Z_0-Z_1$ and compute:
+$p(Z_D)\propto\mathcal{N}(\mathbb{E}[Z_0] - \mathbb{E}[Z_1],
+\mathbb{V}(Z_0) + \mathbb{V}(Z_1))$.
+
 We then sample new observations until we are at least 95\% confident
 that $Z_D\neq 0$. In other words, when $p(Z_D<0)<0.025$, we accept
 $\hi$, and when $p(Z_D<0)>0.975$, we accept $\hf$. To determine which
@@ -601,13 +582,12 @@ means were computed using a bootstrap analysis using 10000 bootstrap
 samples (sampled with replacement). Response times were only
 considered for correct responses.  We also used a bootstrap analysis
 of 10000 bootstrap samples to compute the confidence intervals around
-both Spearman ($r_s$) and Pearson ($r$) correlations.
-
-For analyses of accuracy, confidence intervals were computed from a
-binomial proportion with a Jeffrey's beta prior.  To test if
-participants or a model was above chance on a particular stimulus, we
-used the same binomial proportion, and simply tested whether $p>0.05$
-for the 50\% mark.
+both Spearman ($r_s$) and Pearson ($r$) correlations.  For analyses of
+accuracy, confidence intervals were computed from a binomial
+proportion with a Jeffrey's beta prior.  To test if participants or a
+model was above chance on a particular stimulus, we used the same
+binomial proportion, and simply tested whether $p>0.05$ for the 50\%
+mark.
 
 \subsubsection{Human}
 
@@ -722,21 +702,12 @@ We set out to answer the question: how do people decide \textit{what}
 to simulate when using mental imagery? Focusing on the specific case
 of determining the direction and extent of mental rotation, we
 formalized four models and compared their performance with the results
-of a behavioral experiment. The \Oc{} model was the best fit to human
-response times, but failed to capture anything regarding accuracy. The
-\Th{} model was a slightly worse fit to human response times, and also
-did not capture any trends in accuracy. The \Bq{} model fit human
-reponse time data as well as the \Th{} model, and captured a small
-amount of the variance in people's accuracy. The \Hc{} model barely
-fit human response time data, though it did fit accuracy as well as
-the \Bq{} model with an equal prior.
-
-While it is clear that none of the models fully capture human behavior
-on the mental rotation task, it is worth noting where they shed light
-on aspects that have previously gone unexplained.  For example, the
-\Bq{} model's adaptive stopping rule is sensitive to the prior, and
-thus provides a possible explanation for why people are slower to
-respond on ``flipped'' stimulus pairs.
+of a behavioral experiment. While it is clear that none of the models
+fully captured human behavior on the mental rotation task, it is worth
+noting where they shed light on aspects that have previously gone
+unexplained.  For example, the \Bq{} model's adaptive stopping rule is
+sensitive to the prior, and thus provides a possible explanation for
+why people are slower to respond on ``flipped'' stimulus pairs.
 
 Additionally, a closer look at individual shapes reveals several
 interesting points (Fig.~\ref{fig:response-time-stimulus} shows curves
