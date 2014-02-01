@@ -8,7 +8,7 @@ from path import path
 
 
 def plot(results_path, fig_path):
-    keys = ['oc', 'th', 'hc', 'bq', 'bqp']
+    keys = ['exp', 'oc', 'th', 'hc', 'bq', 'bqp']
 
     time = pd.read_csv(results_path.joinpath("response_time_corrs.csv"))\
              .set_index(['model', 'flipped'])\
@@ -20,9 +20,10 @@ def plot(results_path, fig_path):
             .reindex(keys)
 
     fig, ax = plt.subplots()
-    width = 0.8
+    width = 1
     offset = width * 5 / 2.
     titles = {
+        'exp': "Human",
         'oc': "Oracle",
         'th': "Threshold",
         'hc': "HC",
