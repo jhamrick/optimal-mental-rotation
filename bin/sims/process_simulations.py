@@ -21,10 +21,12 @@ def load(task):
     model_class = getattr(m, task['model'])
     data_path = path(task['data_path'])
     stim_path = path(task['stim_path'])
+    extracted = False
 
     # is it a tar archive? if so, extract it
     tar_path = data_path + ".tar.gz"
     if not data_path.exists() and tar_path.exists():
+        extracted = True
         logger.info("Extracting '%s'", tar_path)
         with tarfile.open(tar_path, "r") as tar:
             tar.extractall(path=data_path.dirname())
@@ -56,6 +58,10 @@ def load(task):
         data['flipped'] = flip
         data.update(opts)
         all_data.append(data)
+
+    if extracted:
+        logger.info("Cleaning up extracted files")
+        data_path.rmtree_p()
 
     return task['task_name'], all_data
 
