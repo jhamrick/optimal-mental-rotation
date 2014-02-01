@@ -8,6 +8,7 @@ import logging
 import pandas as pd
 import multiprocessing as mp
 import tarfile
+import tempdir
 
 from mental_rotation import MODELS
 from mental_rotation import model as m
@@ -21,23 +22,21 @@ def load(task):
     model_class = getattr(m, task['model'])
     data_path = path(task['data_path'])
     stim_path = path(task['stim_path'])
-    extracted = False
 
-    # is it a tar archive? if so, extract it
+    # open the tar archive
     tar_path = data_path + ".tar.gz"
-    if not data_path.exists() and tar_path.exists():
-        extracted = True
-        logger.info("Extracting '%s'", tar_path)
-        with tarfile.open(tar_path, "r") as tar:
-            tar.extractall(path=data_path.dirname())
+    tar = tarfile.open(tar_path, "r")
+    tmp = path(tempdir.mkdtemp())
 
     all_data = []
 
     for iopt, opts in model_opts.iteritems():
-        samppth = data_path.joinpath("part_%s" % iopt)
-        stimname = stim_path.namebase
+        samppth = data_path.name.joinpath("part_%s" % iopt)
+        tar.extractall(members=samppth, path=tmp)
+        model = model_class.load(tmp.joinpath(samppth))
+        tmp.joinpath(samppth).remove()
 
-        model = model_class.load(samppth)
+        stimname = stim_path.namebase
         stim, rot, flip = stimname.split("_")
         rot = float(rot)
 
@@ -59,9 +58,8 @@ def load(task):
         data.update(opts)
         all_data.append(data)
 
-    if extracted:
-        logger.info("Cleaning up extracted files")
-        data_path.rmtree_p()
+    # remove temporary directory
+    tmp.rmtree_p()
 
     return task['task_name'], all_data
 
