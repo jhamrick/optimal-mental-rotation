@@ -26,13 +26,14 @@ def load(task):
     # open the tar archive
     tar_path = data_path + ".tar.gz"
     tar = tarfile.open(tar_path, "r:gz")
+    tmp = path(tempfile.mkdtemp())
+    tar.extractall(path=tmp)
 
     all_data = []
 
     for iopt, opts in model_opts.iteritems():
-        samppth = data_path.name.joinpath("part_%s" % iopt)
-        fh = tar.extractfile(samppth)
-        model = model_class.load(fh)
+        samppth = tmp.joinpath(data_path.name, "part_%s" % iopt)
+        model = model_class.load(samppth)
 
         stimname = stim_path.namebase
         stim, rot, flip = stimname.split("_")
@@ -55,6 +56,8 @@ def load(task):
         data['flipped'] = flip
         data.update(opts)
         all_data.append(data)
+
+    tmp.rmtree_p()
 
     return task['task_name'], all_data
 
