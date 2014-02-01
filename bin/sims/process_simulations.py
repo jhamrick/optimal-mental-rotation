@@ -27,9 +27,7 @@ def load(task):
     if not data_path.exists() and tar_path.exists():
         logger.info("Extracting '%s'", tar_path)
         with tarfile.open(tar_path, "r") as tar:
-            tar.extractall(
-                members=[data_path.name],
-                path=data_path.dirname())
+            tar.extractall(path=data_path.dirname())
 
     all_data = []
 
