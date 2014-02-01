@@ -31,7 +31,7 @@ def load_human(version, data_path):
         .get_group(True)
 
     # convert seconds to milliseconds
-    exp['time'] = exp['time'] * 1000
+    exp.loc[:, 'time'] *= 1000
 
     # remove trials where people took a ridiculous amount of time
     # (i.e., greater than 20 seconds) or they took way too little time
@@ -42,20 +42,20 @@ def load_human(version, data_path):
     exp = exp.drop(too_long)
 
     # compute correct responses
-    exp['correct'] = exp['flipped'] == exp['response']
+    exp.loc[:, 'correct'] = exp['flipped'] == exp['response']
 
     # compute modtheta, where all angles are between 0 and 180
-    exp['modtheta'] = exp['theta'].apply(modtheta)
+    exp.loc[:, 'modtheta'] = exp['theta'].apply(modtheta)
 
     # make stimulus names be integers
-    exp['stimulus'] = [int(x) for x in exp['stimulus']]
+    exp.loc[:, 'stimulus'] = [int(x) for x in exp['stimulus']]
 
     # split into the two different blocks
     expA = exp.groupby('mode').get_group('experimentA')
     expB = exp.groupby('mode').get_group('experimentB')
-    expB['trial'] += expA['trial'].max()
-    exp['trial'].ix[expA.index] = expA['trial']
-    exp['trial'].ix[expB.index] = expB['trial']
+    expB.loc[:, 'trial'] += expA['trial'].max()
+    exp.loc[expA.index, 'trial'] = expA['trial']
+    exp.loc[expB.index, 'trial'] = expB['trial']
 
     exp_data = {
         'expA': expA,
@@ -85,8 +85,12 @@ def load_all(version, data_path, human=None):
     }
 
     bq = load_model("BayesianQuadratureModel", version, data_path)
-    data['bq'] = bq.groupby('prior').get_group(0.5)
-    data['bqp'] = bq.groupby('prior').get_group(0.55)
+    data['bq'] = bq.groupby(['step', 'prior']).get_group((0.6, 0.5))
+    data['bqp'] = bq.groupby(['step', 'prior']).get_group((0.6, 0.55))
+
+    data['oc'] = data['oc'].groupby(['step', 'prior']).get_group((0.1, 0.5))
+    data['th'] = data['th'].groupby(['step', 'prior']).get_group((0.6, 0.5))
+    data['hc'] = data['hc'].groupby(['step', 'prior']).get_group((0.1, 0.55))
 
     if human is None:
         data.update(load_human(version, data_path)[1])
