@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 import util
 import pickle
+import numpy as np
 from path import path
 
 
@@ -30,7 +31,7 @@ def plot(results_path, fig_path):
         else:
             bins = times[key].ptp() + 1
 
-        ax.hist(times[key], bins=bins, color='k')
+        ax.hist(np.asarray(times[key]), bins=bins, color='k')
         ax.set_title(titles[key], fontsize=14)
 
         util.clear_right(ax)
