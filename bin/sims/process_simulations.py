@@ -8,7 +8,7 @@ import logging
 import pandas as pd
 import multiprocessing as mp
 import tarfile
-import tempdir
+import tempfile
 
 from mental_rotation import MODELS
 from mental_rotation import model as m
@@ -26,7 +26,7 @@ def load(task):
     # open the tar archive
     tar_path = data_path + ".tar.gz"
     tar = tarfile.open(tar_path, "r")
-    tmp = path(tempdir.mkdtemp())
+    tmp = path(tempfile.mkdtemp())
 
     all_data = []
 
