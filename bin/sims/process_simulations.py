@@ -32,7 +32,8 @@ def load(task):
 
     for iopt, opts in model_opts.iteritems():
         samppth = data_path.name.joinpath("part_%s" % iopt)
-        tar.extractall(members=samppth, path=tmp)
+        member = tar.getmember(samppth)
+        tar.extractall(members=[member], path=tmp)
         model = model_class.load(tmp.joinpath(samppth))
         tmp.joinpath(samppth).remove()
 
