@@ -315,13 +315,17 @@ class BaseModel(object):
 
     @classmethod
     def load(cls, loc):
-        loc = path(loc)
-        if not loc.exists():
-            raise IOError("path does not exist: %s" % loc.abspath())
+        if hasattr(loc, "read"):
+            tar = tarfile.open(fileobj=loc, mode="r")
+
+        else:
+            loc = path(loc)
+            if not loc.exists():
+                raise IOError("path does not exist: %s" % loc.abspath())
+            tar = tarfile.open(loc, "r")
 
         traces = {}
 
-        tar = tarfile.open(loc, "r")
         for member in tar.getmembers():
             if member.name == "state.json":
                 fh = tar.extractfile(member)
