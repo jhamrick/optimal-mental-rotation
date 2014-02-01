@@ -155,6 +155,7 @@ class TestBaseModel(object):
 
         model.sample()
         model.save(tmppath)
+        assert tmppath.exists()
 
     @pytest.mark.once
     def test_save(self, model, tmppath):
@@ -162,6 +163,7 @@ class TestBaseModel(object):
             pytest.skip("class is BaseModel")
 
         model.save(tmppath)
+        assert tmppath.exists()
 
     @pytest.mark.once
     def test_force_save(self, model, tmppath):
@@ -172,6 +174,7 @@ class TestBaseModel(object):
         with pytest.raises(IOError):
             model.save(tmppath)
         model.save(tmppath, force=True)
+        assert tmppath.exists()
 
     @pytest.mark.once
     def test_load(self, model, tmppath):
@@ -183,6 +186,7 @@ class TestBaseModel(object):
 
         model.sample()
         model.save(tmppath)
+        assert tmppath.exists()
 
         m2 = self.cls.load(tmppath)
         m2.print_stats()
@@ -193,6 +197,8 @@ class TestBaseModel(object):
             pytest.skip("class is BaseModel")
 
         model.save(tmppath)
+        assert tmppath.exists()
+
         m2 = self.cls.load(tmppath)
         m2.sample()
         m2.print_stats()

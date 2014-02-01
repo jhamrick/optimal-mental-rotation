@@ -90,7 +90,11 @@ def tmppath(config, request, tmpdir):
     pth = path(tmpdir.strpath).joinpath("save")
 
     def fin():
-        pth.rmtree_p()
+        if pth.exists():
+            if pth.isdir():
+                pth.rmtree_p()
+            else:
+                pth.remove()
     request.addfinalizer(fin)
 
     return pth

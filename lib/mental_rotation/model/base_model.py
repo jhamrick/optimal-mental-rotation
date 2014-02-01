@@ -2,6 +2,8 @@ import numpy as np
 import json
 import matplotlib.pyplot as plt
 import scipy.stats
+import tarfile
+import tempfile
 
 from path import path
 from . import model
@@ -284,24 +286,32 @@ class BaseModel(object):
         if loc.exists() and not force:
             raise IOError("path %s already exists" % loc.abspath())
         elif loc.exists() and force:
-            loc.rmtree_p()
+            loc.remove()
 
-        loc.mkdir_p()
+        tar = tarfile.open(loc, "w")
+        tmp = path(tempfile.mkdtemp())
 
         state = self.__getstate__()
         traces = state['_traces']
         del state['_traces']
 
-        with open(loc.joinpath("state.json"), "w") as fh:
+        statepth = tmp.joinpath("state.json")
+        with open(statepth, "w") as fh:
             json.dump(state, fh)
+        tar.add(statepth, arcname="state.json")
 
         if traces is not None:
-            tloc = loc.joinpath("traces")
+            tloc = tmp.joinpath("traces")
             tloc.mkdir_p()
 
             for name in traces:
                 trace = traces[name]
                 np.save(tloc.joinpath(name + ".npy"), trace)
+
+            tar.add(tloc, arcname="traces")
+
+        tar.close()
+        tmp.rmtree_p()
 
     @classmethod
     def load(cls, loc):
@@ -309,17 +319,32 @@ class BaseModel(object):
         if not loc.exists():
             raise IOError("path does not exist: %s" % loc.abspath())
 
-        with open(loc.joinpath("state.json"), "r") as fh:
-            state = json.load(fh)
+        traces = {}
 
-        tloc = loc.joinpath("traces")
-        if tloc.exists():
-            traces = {}
-            for trace in tloc.listdir():
-                traces[trace.namebase] = np.load(trace)
-            state['_traces'] = traces
-        else:
+        tar = tarfile.open(loc, "r")
+        for member in tar.getmembers():
+            if member.name == "state.json":
+                fh = tar.extractfile(member)
+                state = json.load(fh)
+                fh.close()
+
+            elif member.name == "traces":
+                continue
+
+            elif path(member.name).dirname() == "traces":
+                fh = tar.extractfile(member)
+                traces[path(member.name).namebase] = np.load(fh)
+                fh.close()
+
+            else:
+                raise IOError("unexpected file: %s" % member.name)
+
+        tar.close()
+
+        if traces == {}:
             state['_traces'] = None
+        else:
+            state['_traces'] = traces
 
         model = cls.__new__(cls)
         model.__setstate__(state)
