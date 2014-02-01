@@ -31,8 +31,7 @@ def load(task):
 
     for iopt, opts in model_opts.iteritems():
         samppth = data_path.name.joinpath("part_%s" % iopt)
-        member = tar.getmember(samppth)
-        fh = tar.extractfile(member)
+        fh = tar.extractfile(samppth)
         model = model_class.load(fh)
 
         stimname = stim_path.namebase
