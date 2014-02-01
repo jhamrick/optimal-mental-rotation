@@ -25,7 +25,7 @@ def load(task):
 
     # open the tar archive
     tar_path = data_path + ".tar.gz"
-    tar = tarfile.open(tar_path, "r")
+    tar = tarfile.open(tar_path, "r:gz")
 
     all_data = []
 
