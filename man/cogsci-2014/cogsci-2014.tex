@@ -97,6 +97,8 @@
   \textbf{Keywords:} mental rotation, computational model
 \end{abstract}
 
+\TODO{need to compute better human vs human correlations}
+
 \section{Introduction}
 
 One of our most astonishing cognitive feats is the ability to
@@ -569,12 +571,15 @@ excluded 82 trials for which the response time was either less than
 For each model, we ran 50 samples for each stimulus that participants
 viewed (with the exception of stimuli with rotations of $0^\prime$ or
 $180^\prime$, in which case we ran double the number of samples). The
-step size parameter ($\sigma_\epsilon$) was approximately fit to each
-of the models, resulting in $\sigma_\epsilon=0.6$ for the \Bq{} model,
-and $\sigma_\epsilon=0.1$ for all other models. We also ran the models
-under two different priors, $p(h=0)=0.5$ (the ``equal'' prior) and
-$p(h=0)=0.55$ (the ``unequal'' prior), though this only had an effect
-for the \Bq{} model. \TODO{actually, did it affect HC?  check this}
+step size parameter ($\sigma_\epsilon$) was fit to human data for each
+of the models, resulting in $\sigma_\epsilon=0.6$ for the \Th{} and
+\Bq{} models and $\sigma_\epsilon=0.1$ for the \Oc{} and \Hc{}
+models. We also ran the models under two different priors,
+$p(h=0)=0.5$ (the ``equal'' prior) and $p(h=0)=0.55$ (the ``unequal''
+prior). This had an effect on accuracy for the \Hc{} model, and an
+effect on both accuracy and response time for the \Bq{} model. Below,
+we report results for the \Hc{} model with an unequal prior, and the
+\Bq{} model with both priors.
 
 \subsubsection{General analysis}
 
@@ -592,11 +597,11 @@ mark.
 
 \subsubsection{Human}
 
-The average response time across all stimuli was \ExpTime{} seconds.
-As illustrated in Fig.~\ref{fig:theta-time-corrs}, the minimum angle
-of rotation was significantly monotonically correlated with average
-per-stimulus response times, both for ``flipped'' and ``same''
-pairs. While this replicates the general result of previous
+The average response time across all stimuli was \ExpTime{}
+milliseconds.  As illustrated in Fig.~\ref{fig:theta-time-corrs}, the
+minimum angle of rotation was significantly monotonically correlated
+with average per-stimulus response times, both for ``flipped'' and
+``same'' pairs. While this replicates the general result of previous
 experiments \cite<e.g.,>{Shepard1971,Cooper:1975wp}, our results are
 not as perfectly linear. However, \citeA{Gardony:2013gn} found a
 constant effect for ``flipped'' pairs; an average of their results and
@@ -624,7 +629,7 @@ participant to mitigate this effect.
 As we would expect, the number of actions taken by the \Oc{} model was
 perfectly correlated with the minimum angle of rotation
 (Fig.~\ref{fig:theta-time-corrs}), both for ``same'' and ``flipped''
-pairs. Unsurprisingly, then, \Oc{} model was the best fit to human
+pairs. Unsurprisingly, the \Oc{} model was the best fit to human
 response times, with a correlation of \OcTimeCorr{}
 (Fig.~\ref{fig:human-model-corrs}).  However, the \Oc{} model was
 100\% accurate, and therefore the correlation between minimum angle
@@ -641,6 +646,10 @@ Fig.~\ref{fig:response-time-stimulus}). Like the \Oc{} model, the
 between minimum angle and accuracy. The \Th{} was able to explain a
 moderate amount of the variance in human response times, with a
 correlation of \ThTimeCorr{} (Fig.~\ref{fig:human-model-corrs}).
+
+\TODO{say something about the large step size -- actually produces
+  non-intuitive results, even though they are a better fit. with small
+  step size (where it doesn't over-rotate) it does even worse!}
 
 \subsubsection{\Hc{} model}
 
@@ -664,9 +673,9 @@ a significant effect of rotation on accuracy
 (Fig.~\ref{fig:theta-accuracy-corrs}), the \Hc{} model was barely
 above chance (\HcAccuracy{}) and there were \HcNumChance{} individual
 stimuli for which it was not above chance. The \Hc{} model was not a
-particularly good predictor of human response times (\HcTimeCorr{}),
-though it was a moderate predictor of accuracy (\HcAccuracyCorr{}), as
-shown in Fig.~\ref{fig:human-model-corrs}.
+particularly good predictor of human behavior, neither for response
+times (\HcTimeCorr{}) nor accuracy (\HcAccuracyCorr{}), as shown in
+Fig.~\ref{fig:human-model-corrs}.
 
 \subsubsection{\Bq{} model}
 
@@ -683,9 +692,9 @@ The \Bq{} model was quite accurate overall, both with the equal prior
 prior, there was \BqNumChance{} stimulus for which it was not above
 chance; with the unequal prior, there were \BqpNumChance{}. There was
 a significant effect of rotation on the \Bq{} model's accuracy
-(Fig.~\ref{fig:theta-accuracy-corrs}), and itt explained about the
-same amount of variance in people's accuracy as the \Hc{} model: for
-the equal prior, \BqAccuracyCorr{}; for the unequal prior,
+(Fig.~\ref{fig:theta-accuracy-corrs}), and it explained about the same
+amount of variance in people's accuracy as the \Hc{} model: for the
+equal prior, \BqAccuracyCorr{}; for the unequal prior,
 \BqpAccuracyCorr{}.
 
 Because the \Bq{} model relied on Eq.~\ref{eq:lh-ratio} for its
