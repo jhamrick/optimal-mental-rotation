@@ -7,6 +7,7 @@ import json
 import logging
 import pandas as pd
 import multiprocessing as mp
+import tarfile
 
 from mental_rotation import MODELS
 from mental_rotation import model as m
@@ -20,6 +21,13 @@ def load(task):
     model_class = getattr(m, task['model'])
     data_path = path(task['data_path'])
     stim_path = path(task['stim_path'])
+
+    # is it a tar archive? if so, extract it
+    tar_path = data_path + ".tar.gz"
+    if not data_path.exists() and tar_path.exists():
+        logger.info("Extracting '%s'", tar_path)
+        with tarfile.open(tar_path, "r") as tar:
+            tar.extract(data_path, path=data_path.dirname())
 
     all_data = []
 
