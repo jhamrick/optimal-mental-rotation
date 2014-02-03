@@ -56,9 +56,11 @@
   \setlength{\parsep}{0pt}
 }{\end{itemize}}
 
+% space between figure and caption
 \addtolength{\abovecaptionskip}{-0.25cm}
-\addtolength{\belowcaptionskip}{-0.2cm}
-\addtolength{\textfloatsep}{-2mm}	% space below "Figure 1: ..."
+
+% space below "Figure 1: ...", but only for inline figures
+\addtolength{\textfloatsep}{-0.5cm}
 
 \input{../../results/D/overall_response_time.tex}
 \input{../../results/D/overall_accuracy.tex}
@@ -67,6 +69,7 @@
 \input{../../results/D/trial_time_corrs.tex}
 \input{../../results/D/response_time_corrs.tex}
 \input{../../results/D/accuracy_corrs.tex}
+\input{../../results/D/human_corrs.tex}
 
 \title{What to simulate? Inferring the direction for mental rotation}
  
@@ -96,8 +99,6 @@
 
   \textbf{Keywords:} mental rotation, computational model
 \end{abstract}
-
-\TODO{need to compute better human vs human correlations}
 
 \section{Introduction}
 
@@ -529,9 +530,9 @@ block).
     correlations between the minimum angle of rotation and
     accuracy. The \Oc{} and \Th{} models had 100\% accuracy;
     therefore, their correlations are undefined. (c) Pearson
-    correlations between human and model, both for response time and
-    accuracy. The first set of bars is human vs. human, to give an
-    upper bound. All error bars are 95\% confidence intervals.}
+    correlations between human and model (except the first set of
+    bars, which is human vs. human), both for response time and
+    accuracy. All error bars are 95\% confidence intervals.}
 \end{figure*}
 
 Participants were given the following instructions while being shown
@@ -615,6 +616,15 @@ Fig.~\ref{fig:theta-accuracy-corrs}, though significantly more so for
 ``same'' pairs. This is the same result found both by
 \citeA{Cooper:1975wp} and \citeA{Gardony:2013gn}.
 
+To gauge between-subject reliability, we randomly split subjects into
+two groups, computed the average response time and accuracy per
+stimulus for each group, and then computed correlations for these two
+measures. We repeated this procedure 100 times, and from those samples
+computed the median correlations and 95\% confidence intervals. For
+response time, the between-subjects correlation was \ExpTimeCorr{},
+and for accuracy, it was \ExpAccuracyCorr{} (also shown in
+Fig.~\ref{fig:human-model-corrs}).
+
 There was a significant effect of learning both on response time
 (\ExpTrialTimeCorr{}) and on accuracy (\ExpTrialAccuracyCorr{}),
 though the effect on accuracy was not significant during the second
@@ -647,9 +657,14 @@ between minimum angle and accuracy. The \Th{} was able to explain a
 moderate amount of the variance in human response times, with a
 correlation of \ThTimeCorr{} (Fig.~\ref{fig:human-model-corrs}).
 
-\TODO{say something about the large step size -- actually produces
-  non-intuitive results, even though they are a better fit. with small
-  step size (where it doesn't over-rotate) it does even worse!}
+As noted above, we fit $\sigma_\epsilon=0.6$ for the \Th{} model. This
+has the interesting effect of actually causing the \Th{} to
+\textit{over}rotate (e.g., the ``flipped'' pair trace in
+Fig.~\ref{fig:model-traces}). This is because the step size is large
+enough that it sometimes misses the global maximum, and has to do
+another full rotation to find it. However, when we use a lower step
+size (so that it does not miss the maximum), the fit to human data is
+slightly worse.
 
 \subsubsection{\Hc{} model}
 
