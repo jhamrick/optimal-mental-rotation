@@ -34,12 +34,6 @@ def run(data, results_path, seed):
             method='pearson')
         results[(key, 'all')] = corr
 
-    corr = util.bootcorr(
-        means['expA'],
-        means['expB'],
-        method='pearson')
-    results[('exp', 'all')] = corr
-
     results = pd.DataFrame.from_dict(results, orient='index')
     results.index = pd.MultiIndex.from_tuples(
         results.index, names=['model', 'flipped'])

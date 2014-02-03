@@ -10,14 +10,21 @@ from path import path
 def plot(results_path, fig_path):
     keys = ['exp', 'oc', 'th', 'hc', 'bq', 'bqp']
 
-    time = pd.read_csv(results_path.joinpath("response_time_corrs.csv"))\
+    human = pd.read_csv(results_path.joinpath("human_corrs.csv"))\
+              .set_index('measure')
+    human['flipped'] = 'all'
+
+    time = pd.read_csv(results_path.joinpath("response_time_corrs.csv"))
+    time = time.append(human.xs('time'))\
+               .set_index(['model', 'flipped'])\
+               .unstack('flipped')\
+               .reindex(keys)
+
+    acc = pd.read_csv(results_path.joinpath("accuracy_corrs.csv"))
+    acc = acc.append(human.xs('accuracy'))\
              .set_index(['model', 'flipped'])\
              .unstack('flipped')\
              .reindex(keys)
-    acc = pd.read_csv(results_path.joinpath("accuracy_corrs.csv"))\
-            .set_index(['model', 'flipped'])\
-            .unstack('flipped')\
-            .reindex(keys)
 
     fig, ax = plt.subplots()
     width = 1

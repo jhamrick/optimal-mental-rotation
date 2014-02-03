@@ -16,6 +16,7 @@ import response_time_means
 import accuracy_means
 import trial_time_means
 import trial_accuracy_means
+import human_corrs
 
 __all__ = [
     # across all stimuli
@@ -31,6 +32,7 @@ __all__ = [
 
     # correlations between human and model means for each
     # shape/rotation/reflection
+    'human_corrs',
     'response_time_corrs',
     'accuracy_corrs',
 
