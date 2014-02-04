@@ -56,11 +56,8 @@
   \setlength{\parsep}{0pt}
 }{\end{itemize}}
 
-% space between figure and caption
-\addtolength{\abovecaptionskip}{-0.25cm}
-
 % space below "Figure 1: ...", but only for inline figures
-\addtolength{\textfloatsep}{-0.5cm}
+%\addtolength{\textfloatsep}{-0.5cm}
 
 \input{../../results/D/overall_response_time.tex}
 \input{../../results/D/overall_accuracy.tex}
@@ -71,7 +68,8 @@
 \input{../../results/D/accuracy_corrs.tex}
 \input{../../results/D/human_corrs.tex}
 
-\title{What to simulate? Inferring the direction for mental rotation}
+\title{What to simulate? Inferring the right direction for mental
+  rotation}
  
 \author{{\large \bf Jessica B. Hamrick (jhamrick@berkeley.edu)} \\
   {\large \bf Thomas L. Griffiths (tom\_griffiths@berkeley.edu)} \\
@@ -84,18 +82,17 @@
 
 
 \begin{abstract}
-  When people use mental imagery to solve tasks, how do they decide
-  \textit{which} images to generate? To answer this question, we
-  explored how mental simulation should used in the classic
-  psychological task of determining if two images depict the same
-  object in different orientations \citeA{Shepard1971}. Through a
-  rational analysis of mental rotation, we formalized four models and
-  compared them to human performance on a 2D mental rotation
-  task. None of the models were a particularly satisfying explanation
-  of human behavior, leading us to suggest that the question of ``what
-  to simulate?'' is more difficult than has previously been
-  assumed. While only exploratory, this work provides the foundation
-  necessary to begin answering this question.
+  When people use mental imagery, how do they decide \textit{which}
+  images to generate? To answer this question, we explored how mental
+  simulation should used in the classic psychological task of
+  determining if two images depict the same object in different
+  orientations \cite{Shepard1971}. Through a rational analysis of
+  mental rotation, we formalized four models and compared them to
+  human performance. \TODO{None of the models were a particularly
+    satisfying explanation of human behavior, leading us to suggest
+    that the question of ``what to simulate?'' is more difficult than
+    has previously been assumed.} While only exploratory, this work
+  provides the foundation necessary to begin answering this question.
 
   \textbf{Keywords:} mental rotation, computational model
 \end{abstract}
@@ -111,44 +108,45 @@ representation of mental images \cite<e.g.,>{Kosslyn:2009tj,
 fundamental questions about mental simulation: how people decide what
 they should simulate.
 
-In the classic experiment by \citeA{Shepard1971}, participants viewed
-images of three-dimensional objects and had to determine whether the
-images depicted the same object (which differed by a rotation) or two
-separate objects (which differed by a reflection and a rotation). The
-result was that people's response times had a strong linear
-correlation with the minimum angle of rotation, leading to the
-conclusion that people solve this task by ``mentally rotating'' the
-objects until they are congruent.  This conclusion leaves several
-questions unanswered, however. How do people know the axis around
-which to rotate the objects? If the axis is known, how do people know
-which direction to rotate the objects?  And finally, how do people
-know how long to rotate?
+Mental rotation provides a simple example of the decision problem
+posed by simulation.  In the classic experiment by
+\citeA{Shepard1971}, participants viewed images of three-dimensional
+objects and had to determine whether the images depicted the same
+object (which differed by a rotation) or two separate objects (which
+differed by a reflection and a rotation). The result was that people's
+response times had a strong linear correlation with the minimum angle
+of rotation, leading to the conclusion that people solve this task by
+``mentally rotating'' the objects until they are congruent.  This
+conclusion leaves several questions unanswered, however. How do people
+know the axis around which to rotate the objects? If the axis is
+known, how do people know which direction to rotate the objects?  And
+finally, how do people know how long to rotate?
 
 In this paper, we explore these questions through rational analysis
 \cite{Marr:1983to,anderson90,Shepard:1987tt} and compare four models
-of mental rotation. First, we discuss the previous literature on
-mental imagery. Second, we outline computational- and
-algorithmic-level analyses of the problem of mental rotation. Third,
-we describe a behavioral experiment based on the classic mental
-rotation studies \cite<e.g.,>{Cooper:1975wp}, and compare the results
-of the experiment with each of the models. We conclude with a
-discussion of the strengths and weaknesses of each model, and lay out
-directions for future work.
+of mental rotation. We begin the paper by discussing the previous
+literature on mental imagery. Next, we outline computational- and
+algorithmic-level analyses of the problem of mental rotation.  We then
+describe a behavioral experiment based on the classic mental rotation
+studies \cite<e.g.,>{Cooper:1975wp}, and compare the results of the
+experiment with each of the models. We conclude with a discussion of
+the strengths and weaknesses of each model, and lay out directions for
+future work.
 
-\section{Background}
+\section{Modeling mental rotation}
 
 Previous models of mental rotation have, for the most part, focused on
 the representation of mental images, rather than how people decide
 \textit{which} mental images to generate. \citeA{Kosslyn:1977tv}
-propose a model of the mental imagery buffer, but not the planning
+proposed a model of the mental imagery buffer, but not the planning
 process of how it is used. Similarly, \citeA{Julstrom:1985va} and
-\citeA{Glasgow:1992tj} are mostly concerned with modeling the
+\citeA{Glasgow:1992tj} were mostly concerned with modeling the
 representational format underlying imagery. Although
-\citeA{Anderson1978} emphasizes the importance of considering both
-representation and process, he dismisses the problem of determining
+\citeA{Anderson1978} emphasized the importance of considering both
+representation and process, he dismissed the problem of determining
 the direction of rotation as a ``technical difficulty''.
 
-The only models (of which the authors are aware) that have seriously
+The only models (of which the authors are aware) that seriously
 attempted to address the decision of \textit{what} to simulate are
 those by \citeA{Funt:1983wn} and \citeA{Just:1985uu}. In both of these
 models, the axis and direction of rotation are computed prior to
@@ -156,7 +154,7 @@ performing the rotation. One object is then rotated through the target
 rotation, and is checked against the other object for
 congruency. However, this approach assumes that the corresponding
 points on the two objects can be easily identified, which is not
-necessarily the case. 
+necessarily the case.
 
 Indeed, the state-of-the-art in computer vision suggests that there is
 more to shape matching than simply checking for congruency,
@@ -166,8 +164,6 @@ exactly the same
 research shows that when performing \textit{physical} rotations,
 people do not rotate until congruency is reached, and may even rotate
 \textit{away} from near perfect matches \cite{Gardony:2013gn}.
-
-\subsection{A rational analysis of mental rotation}
 
 If people are not computing the rotation beforehand, what might they
 be doing? To answer this question, we perform a ``rational analysis''
@@ -184,14 +180,14 @@ the \textit{goal} is to make this determination while performing a
 minimum amount of computation (i.e., as few rotations as possible).
 
 The original ``congruency'' hypothesis \cite{Shepard1971} actually is
-a rational solution which achieves this goal, in the sense that the
-smallest amount of computation coincides with rotating through the
-minimum angle. However, it violates the constraint that we do not know
-points correspondences, which is exactly what necessitates the use of
-imagery. Noting that a rational solution need not necessarily maintain
-a single trajectory of rotation, we explore an alternative rational
-model, which--rather than computing the angle of rotation ahead of
-time--engages in an ``active sampling'' strategy.
+a rational solution to this problem, in the sense that the smallest
+amount of computation coincides with rotating through the minimum
+angle. However, it violates the constraint that we do not know the
+points of correspondence between the images, which is exactly what
+necessitates the use of imagery. Noting that a rational solution need
+not necessarily maintain a single trajectory of rotation, we explore
+an alternative rational model, which--rather than computing the angle
+of rotation ahead of time--engages in an ``active sampling'' strategy.
 
 Active sampling is the idea that, when given information is
 incomplete, people gather new information in a manner that increases
@@ -203,7 +199,7 @@ do not know the minimum angle beforehand, then actively performing
 rotations may be the best way to gather evidence about the similarity
 between the observed shapes.
 
-\section{Modeling mental rotation}
+\section{How should we rotate?}
 
 In this section, we formalize our rational analysis, and propose four
 models of mental rotation: one based on existing models; two which are
@@ -236,7 +232,7 @@ If $\ell > 1$, then we accept the hypothesis that the images depict
 the same object ($\hi$); if $\ell < 1$, then we accept the hypothesis
 that the images depict flipped objects ($\hf$).
 
-\subsection{Algorithmic assumptions}
+\subsection{Algorithmic constraints}
 
 \begin{figure*}[t]
   \begin{center}
@@ -325,8 +321,9 @@ $(\Xa\F_h^T)_\mathrm{left}^{-1}$ is the left inverse of
 $\Xa\F_h^T$. We then check each $h$ to see if the computation produces
 a valid rotation matrix; the $h$ that does is the correct
 hypothesis. This approach gives us the true value of $\theta$, so
-Eq.~\ref{eq:lh-ratio} becomes a maximum likelihood ratio test, where
-$\theta$ is set to the MLE value, rather than being marginalized:
+Eq.~\ref{eq:lh-ratio} becomes a generalized likelihood ratio test,
+where $\theta$ is set to the MLE value, rather than being
+marginalized:
 \begin{equation}
   \ell = \frac{\max_\theta p(\Xb\ \vert\ \Xa, \theta, \hi)p(\hi)}{\max_\theta p(\Xb\ \vert\ \Xa, \theta, \hf)p(\hf)}.
   \label{eq:mle-lh-ratio}
@@ -343,7 +340,7 @@ of $S$ which is greater than the threshold corresponds to the true
 $\theta$, or a point near the true $\theta$. So, as with the \Oc{}
 model, Eq.~\ref{eq:lh-ratio} becomes a likelihood ratio.
 
-\subsubsection{Hill climbing model}
+\subsubsection{Hill Climbing model}
 
 \begin{figure*}[t]
   \begin{center}
@@ -370,10 +367,10 @@ result in the linear response time found by \citeA{Shepard1971}. A
 second alternative, which could potentially demonstrate the linear
 response time result, might instead just perform a Hill Climbing
 (\Hc{}) search for a \textit{local} maximum. As with the \Oc{} and
-\Th{} models, Eq.~\ref{eq:lh-ratio} becomes a maximum likelihood
-ratio.
+\Th{} models, Eq.~\ref{eq:lh-ratio} becomes a generalized likelihood
+ratio test.
 
-\subsubsection{Bayesian quadrature model}
+\subsubsection{Bayesian Quadrature model}
 
 While the previous few models have all focused on \textit{searching}
 for the global maximum, the goal is really to just approximate
@@ -466,7 +463,7 @@ experiment based on classic mental rotation studies
 
 \subsubsection{Stimuli}
 
-We randomly generated 20 shapes of 5 or 6 vertices (e.g.,
+We randomly generated 20 shapes of five or six vertices (e.g.,
 Fig.~\ref{fig:model-traces}). For each shape, we computed 20 ``same''
 and 20 ``flipped'' stimuli pairs, with rotations ($\theta$) spaced at
 $20^\prime$ increments between 0 and 360 (with 0 and 180 degree
@@ -475,13 +472,13 @@ responses for each angle between 0 and 180). ``Same'' pairs were
 created by rotating $\Xa$ by $\theta$; ``flipped'' pairs were first
 reflected $\Xa$ across the $y$-axis, then rotated by $\theta$.
 
-We generated 5 additional shapes to be used in a practice block of 10
-trials. Across these trials, each shape and each angle (60, 120, 180,
-240, or 300) was repeated twice (once ``flipped'' and once ``same'')
-such that no shape was presented at the same angle twice. We also
-generated a sixth shape to be included along with the instructions.
-This shape had both a ``flipped'' and ``same'' version, each rotated
-to 320 degrees.
+We generated five additional shapes to be used in a practice block of
+10 trials. Across these trials, each shape and each angle (60, 120,
+180, 240, or 300) was repeated twice (once ``flipped'' and once
+``same'') such that no shape was presented at the same angle twice. We
+also generated a sixth shape to be included along with the
+instructions.  This shape had both a ``flipped'' and ``same'' version,
+each rotated to 320 degrees.
 
 
 \subsubsection{Participants and Design}
@@ -496,14 +493,14 @@ All participants saw the same 10 practice trials, as described
 above. There were 720 unique experimental stimuli (20 shapes $\times$
 18 angles $\times$ 2 reflections), though because stimuli with
 rotations of $0^\prime$ or $180^\prime$ were repeated twice, there
-were 800 total experimental stimuli. These stimuli were split across 8
-conditions in the following manner: first, stimuli were split into
-four blocks of 200 trials. Within each block, each shape was repeated
-10 times and each rotation was repeated 10 times (5 ``same'', 5
-``flipped''), such that across all blocks, each stimulus appeared
-exactly once. Each block was then split in half. Participants
-completed two half-blocks (not necessarily both from the original full
-block).
+were 800 total experimental stimuli. These stimuli were split across
+eight conditions in the following manner: first, stimuli were split
+into four blocks of 200 trials. Within each block, each shape was
+repeated ten times and each rotation was repeated ten times (five
+``same'', five ``flipped''), such that across all blocks, each
+stimulus appeared exactly once. Each block was then split in
+half. Participants completed two half-blocks (not necessarily both
+from the original full block).
 
 \subsubsection{Procedure}
 
@@ -560,8 +557,8 @@ them informed of their score.
 
 Out of the 247 participants, 200 (81\%) were included in our
 analyses. Of the rest, we excluded 10 (4\%) because of an experimental
-error, 6 (2.4\%) because they had already completed a previous version
-of the experiment, and 31 (12.6\%) because they failed a comprehension
+error, 6 (2.4\%) because they had already completed a related
+experiment, and 31 (12.6\%) because they failed a comprehension
 check. A participant was marked as passing the comprehension check if
 they answered at least 85\% of ``easy'' trials correctly. ``Easy''
 trials were defined to be those for which the presented shapes
@@ -625,7 +622,7 @@ response time, the between-subjects correlation was \ExpTimeCorr{},
 and for accuracy, it was \ExpAccuracyCorr{} (also shown in
 Fig.~\ref{fig:human-model-corrs}).
 
-There was a significant effect of learning both on response time
+There was a significant effect of trial number both on response time
 (\ExpTrialTimeCorr{}) and on accuracy (\ExpTrialAccuracyCorr{}),
 though the effect on accuracy was not significant during the second
 half of the experiment (\ExpaTrialAccuracyCorr{} for the first half
@@ -723,8 +720,8 @@ trends in human behavior.
 
 \section{Discussion}
 
-We set out to answer the question: how do people decide \textit{what}
-to simulate when using mental imagery? Focusing on the specific case
+We set out to answer the question of how people decide \textit{what}
+to simulate when using mental imagery. Focusing on the specific case
 of determining the direction and extent of mental rotation, we
 formalized four models and compared their performance with the results
 of a behavioral experiment. While it is clear that none of the models
@@ -734,17 +731,17 @@ unexplained.  For example, the \Bq{} model's adaptive stopping rule is
 sensitive to the prior, and thus provides a possible explanation for
 why people are slower to respond on ``flipped'' stimulus pairs.
 
-Additionally, a closer look at individual shapes reveals several
-interesting points (Fig.~\ref{fig:response-time-stimulus} shows curves
-for one particular shape; these curves are fairly typical relative to
-other shapes). First, the curves for the human response times on
-specific shapes tend to either be linear, or linear first, then
-flat. Second, while the \Th{} model appears to capture the concavity
-of human response times overall, it is actually fairly inconsistent
-within shapes. Third, the linearity of the \Bq{} model's response time
-curves \textit{is} consistent within shapes, though it does not
-exhibit the same ``plateau'' effect that sometimes appears in the
-human curves.
+Additionally, a closer look at performance on individual shapes
+reveals several interesting points
+(Fig.~\ref{fig:response-time-stimulus} shows curves for one particular
+shape; these curves are fairly typical relative to other
+shapes). First, the curves for the human response times on specific
+shapes tend to either be linear, or linear first, then flat. Second,
+while the \Th{} model appears to capture the concavity of human
+response times overall, it is actually fairly inconsistent within
+shapes. Third, the linearity of the \Bq{} model's response time curves
+\textit{is} consistent within shapes, though it does not exhibit the
+same ``plateau'' effect that sometimes appears in the human curves.
 
 How could the models we evaluated be improved? First, all of the
 models use holistic rotations, however there is evidence that people
