@@ -28,7 +28,7 @@ def plot(results_path, fig_path):
             ax.plot(
                 results[(key, flipped)],
                 results[('exp', flipped)],
-                '.', alpha=0.8, label=key)
+                '.', alpha=0.8, label=flipped)
 
         ax.set_xlabel("Model accuracy", fontsize=14)
         ax.set_title(titles[key], fontsize=14)
