@@ -29,7 +29,7 @@ def log_factorial(long n):
 
 
 cpdef float64_t log_const(long n, long d, float64_t S_sigma):
-    cdef float64_t const = -0.5 * (log(S_sigma) + log(2 * M_PI)) * n * d - log(2 * n)
+    cdef float64_t const = -0.5 * (log(S_sigma ** 2) + log(2 * M_PI)) * n * d - log(2 * n)
     return const
 
 
@@ -68,7 +68,7 @@ cpdef float64_t log_similarity(float64_t[:, ::1] X0, float64_t[:, ::1] X1, float
     # covariance matrix
     S[:, :] = 0
     for i in xrange(D):
-        S[i, i] = S_sigma
+        S[i, i] = S_sigma ** 2
     la.cho_factor(S, S)
     logdet = la.logdet(S)
 

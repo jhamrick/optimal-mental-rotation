@@ -49,8 +49,8 @@ def slow_log_similarity(X0, X1, S_sigma):
     # number of points and number of dimensions
     n, D = X0.shape
     # covariance matrix
-    Sigma = np.eye(D) * S_sigma
-    invSigma = np.eye(D) * (1. / S_sigma)
+    Sigma = np.eye(D) * (S_sigma ** 2)
+    invSigma = np.eye(D) * (1. / (S_sigma ** 2))
     # constants
     Z0 = D * np.log(2 * np.pi)
     Z1 = np.linalg.slogdet(Sigma)[1]
