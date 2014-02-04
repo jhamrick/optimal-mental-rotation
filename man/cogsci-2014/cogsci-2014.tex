@@ -270,7 +270,7 @@ matrix. Then:
 where $2N$ is the total number of possible mappings,\footnote{It is
   $2N$ and not $N^2$ because, in polar coordinates, vertices are
   always connected to their two nearest neighbors in the $\theta$
-  dimension.}and $\sigma_S=0.15$ is the standard deviation of the
+  dimension.}and $\sigma_S^2=0.15$ is the variance of the
 similarity. Example similarity curves are shown in
 Fig.~\ref{fig:model-traces}.
 
@@ -287,9 +287,8 @@ current mental image is $\Xt$, then:
     \end{array} \right.
   \label{eq:actions}
 \end{equation}
-where $\epsilon\sim \left|\mathcal{N}(0, \sigma_\epsilon)\right|$ and
-$\sigma_\epsilon$ is the standard deviation of the step size in
-radians.
+where $\epsilon\sim \left|\mathcal{N}(0, \sigma_\epsilon^2)\right|$
+and $\sigma_\epsilon^2$ is the variance of the step size in radians.
 
 To summarize, we approximate the likelihood term of
 Eq.~\ref{eq:lh-ratio} using the similarity function defined in
