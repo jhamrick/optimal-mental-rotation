@@ -99,10 +99,10 @@
 
 \section{Introduction}
 
-One of our most astonishing cognitive feats is the ability to
+One of the most astonishing cognitive feats is our ability to
 envision, manipulate, and plan with objects -- all without actually
 perceiving them. This capacity for ``mental simulation'' has been
-widely studied and has sparked intense debate about the underlying
+widely studied, including an intense debate about the underlying
 representation of mental images \cite<e.g.,>{Kosslyn:2009tj,
   Pylyshyn:2002vk}. But this debate hasn't addressed one of the most
 fundamental questions about mental simulation: how people decide what
@@ -113,14 +113,15 @@ posed by simulation.  In the classic experiment by
 \citeA{Shepard1971}, participants viewed images of three-dimensional
 objects and had to determine whether the images depicted the same
 object (which differed by a rotation) or two separate objects (which
-differed by a reflection and a rotation). The result was that people's
+differed by a reflection and a rotation). They found that people's
 response times had a strong linear correlation with the minimum angle
-of rotation, leading to the conclusion that people solve this task by
-``mentally rotating'' the objects until they are congruent.  This
-conclusion leaves several questions unanswered, however. How do people
-know the axis around which to rotate the objects? If the axis is
-known, how do people know which direction to rotate the objects?  And
-finally, how do people know how long to rotate?
+of rotation, a result which led to the conclusion that people solve
+this task by ``mentally rotating'' the objects until they are
+congruent.  This explanation leaves several questions unanswered,
+however. How do people know the axis around which to rotate the
+objects? If the axis is known, how do people know which direction to
+rotate the objects?  And finally, how do people know how long to
+rotate?
 
 In this paper, we explore these questions through rational analysis
 \cite{Marr:1983to,anderson90,Shepard:1987tt} and compare four models
@@ -135,8 +136,8 @@ future work.
 
 \section{Modeling mental rotation}
 
-Previous models of mental rotation have, for the most part, focused on
-the representation of mental images, rather than how people decide
+Previous models of mental rotation have largely focused on the
+representation of mental images, rather than how people decide
 \textit{which} mental images to generate. \citeA{Kosslyn:1977tv}
 proposed a model of the mental imagery buffer, but not the planning
 process of how it is used. Similarly, \citeA{Julstrom:1985va} and
@@ -166,18 +167,18 @@ people do not rotate until congruency is reached, and may even rotate
 \textit{away} from near perfect matches \cite{Gardony:2013gn}.
 
 If people are not computing the rotation beforehand, what might they
-be doing? To answer this question, we perform a ``rational analysis''
-of the problem of mental rotation
+be doing? To answer this question, we perform a rational analysis of
+the problem of mental rotation
 \cite{Marr:1983to,anderson90,Shepard:1987tt}. At the computational
-level, we could say that the \textit{problem} is to determine which
-spatial transformations an object has undergone based on two
-depictions of that object which do not include information about point
-correspondences across images. At the algorithmic level, we are
-constrained by the notion that mental images must be transformed in an
-analog manner (or in a way that is at least approximately analog), and
-that mental images are time-consuming and effortful to generate. Thus,
-the \textit{goal} is to make this determination while performing a
-minimum amount of computation (i.e., as few rotations as possible).
+level, we can say that the \textit{problem} is to determine which
+spatial transformations an object has undergone based on two images of
+that object (which do not include information about point
+correspondences). At the algorithmic level, we are constrained by the
+notion that mental images must be transformed in an analog manner (or
+in a way that is at least approximately analog), and that mental
+images are time-consuming and effortful to generate. Thus, the
+\textit{goal} is to make this determination while performing a minimum
+amount of computation (i.e., as few rotations as possible).
 
 The original ``congruency'' hypothesis \cite{Shepard1971} actually is
 a rational solution to this problem, in the sense that the smallest
@@ -187,12 +188,13 @@ points of correspondence between the images, which is exactly what
 necessitates the use of imagery. Noting that a rational solution need
 not necessarily maintain a single trajectory of rotation, we explore
 an alternative rational model, which--rather than computing the angle
-of rotation ahead of time--engages in an ``active sampling'' strategy.
+of rotation ahead of time--engages in an \textit{active sampling}
+strategy.
 
-Active sampling is the idea that, when given information is
-incomplete, people gather new information in a manner that increases
-certainty about the problem space. This notion has recently gained
-support in several areas of cognitive science
+Active sampling is the idea that when initial information is
+incomplete, people will gather new information in a manner that
+increases certainty about the problem space. This notion has recently
+gained support in several areas of cognitive science
 \cite<e.g.,>{Nelson2007,Gureckis:2012gu}, including other spatial
 domains \cite{Juni:2011vo}. In the case of mental rotation, if people
 do not know the minimum angle beforehand, then actively performing
@@ -201,7 +203,7 @@ between the observed shapes.
 
 \section{How should we rotate?}
 
-In this section, we formalize our rational analysis, and propose four
+In this section, we formalize our rational analysis and propose four
 models of mental rotation: one based on existing models; two which are
 extensions of the first but with relaxed assumptions; and one based on
 the active sampling approach.
@@ -223,7 +225,7 @@ was generated from $X_a$, and $p(X_a)$ is the probability of observing
 $X_a$. Because we ultimately want to determine which hypothesis is
 more likely, the quantity of interest is a ratio $\ell:=p(\hi\ \vert\
 X_a, X_b) / p(\hf\ \vert\ X_a, X_b)$ which (assuming that all
-rotations are equally likely) simplifies to:
+rotations are equally likely) is equivalent to:
 \begin{equation}
   \ell = \frac{\left(\int p(X_b\ \vert\ X_a, \theta, \hi)\dif\theta\right)p(\hi)}{\left(\int p(X_b\ \vert\ X_a, \theta, \hf)\dif\theta\right)p(\hf)}.
   \label{eq:lh-ratio}
@@ -239,7 +241,7 @@ that the images depict flipped objects ($\hf$).
     \includegraphics[width=\textwidth]{../../figures/D/model-traces.pdf}
     \caption{\textbf{Example stimuli and model behavior.} On the left
       are two stimulus pairs, one ``same'' (top) and one ``flipped''
-      (bottom), both with a rotation of $120^\prime$. The grey plots
+      (bottom), both with a rotation of $120^\circ$. The grey plots
       show the actions that each model took for these stimuli. The
       color of each point (action) indicates whether the model's
       current mental image was generated under the hypothesis that the
@@ -306,9 +308,9 @@ their behavior).
 
 \subsubsection{Oracle model}
 
-One hypothesis in the literature is that people compute the direction
-and extent of rotation beforehand using \textit{a prior} knowledge of
-the correspondence between points in the images
+One hypothesis is that people compute the direction and extent of
+rotation beforehand using \textit{a prior} knowledge of the
+correspondence between points in the images
 \cite{Funt:1983wn,Just:1985uu}.  To reflect this hypothesis, we
 created an ``oracle'' model which is told which points on each shape
 correspond. From that correspondence, it computes the correct rotation
@@ -330,14 +332,15 @@ marginalized:
 
 \subsubsection{Threshold model}
 
-An intuitive and simple model which does not know which way to rotate
-\textit{a priori} might first rotate in the direction that increases
-similarity, and then stop rotating once a ``match'' is found, as
-determined by a threshold on the value of $S$. If all rotations have
-been exhausted, then flip, and try rotating again. We assume the value
-of $S$ which is greater than the threshold corresponds to the true
-$\theta$, or a point near the true $\theta$. So, as with the \Oc{}
-model, Eq.~\ref{eq:lh-ratio} becomes a likelihood ratio.
+What if the point correspondences are unknown? An intuitive and simple
+model which obeys this constraint first rotate in the direction that
+increases similarity, and then stop rotating once a ``match'' is
+found, as determined by a threshold on the value of $S$. If all
+rotations have been exhausted, then flip, and try rotating again. We
+assume that the locations where $S$ is greater than the threshold
+correspond to the true $\theta$ (or points near the true
+$\theta$). So, as with the \Oc{} model, Eq.~\ref{eq:lh-ratio} becomes
+a likelihood ratio.
 
 \subsubsection{Hill Climbing model}
 
@@ -357,17 +360,16 @@ In the current formulation of the problem, choosing the threshold is
 straightforward because we know both the exact geometry of the shapes
 and that a linear transformation exists which will perfectly align
 them. However, this choice is not always clear \textit{a priori}, as
-the global optimum will depend on many factors (e.g., shape
-complexity, dimensionality, perceptual uncertainty, and whether the
-shapes are identical).  One way to deal with the problem of choosing a
-threshold would simply be to perform an exhaustive search or use a
-global optimization strategy. However, these strategies would not
-result in the linear response time found by \citeA{Shepard1971}. A
-second alternative, which could potentially demonstrate the linear
-response time result, might instead just perform a Hill Climbing
-(\Hc{}) search for a \textit{local} maximum. As with the \Oc{} and
-\Th{} models, Eq.~\ref{eq:lh-ratio} becomes a generalized likelihood
-ratio test.
+the global optimum depends on many factors (e.g., shape complexity,
+dimensionality, perceptual uncertainty, and whether the shapes are
+identical).  One way to deal with the problem of choosing a threshold
+would simply be to perform an exhaustive search or use a global
+optimization strategy. However, these strategies would not result in
+the linear response time found by \citeA{Shepard1971}. A second
+alternative, which could potentially demonstrate the linear response
+time result, might instead just perform a Hill Climbing (\Hc{}) search
+for a \textit{local} maximum. As with the \Oc{} and \Th{} models,
+Eq.~\ref{eq:lh-ratio} becomes a generalized likelihood ratio test.
 
 \subsubsection{Bayesian Quadrature model}
 
@@ -383,27 +385,26 @@ Eq.~\ref{eq:lh-ratio}, and then sample actions which are expected to
 improve that estimate.  This strategy has several benefits. First, it
 does not make assumptions about the shape or scale of the similarity
 function. Second, by choosing to sample places which are informative,
-this method implicitly minimizes the amount of rotation; yet, because
-it is constrained to sequential rotations, it should still exhibit the
-linear effect of the angle.
+this method implicitly minimizes the amount of rotation.
 
 Formally, we denote $Z_h$ as our estimate of the likelihood for
 hypothesis $h$, and write its distribution as:
 \begin{equation}
-  p(Z_h) = \int \left[\int S(\Xb, f(\Xa, \theta, h))p(\theta)\dif\theta\right] p(S)\dif S.
+  p(Z_h) = \int \left[\int S(\Xb, f(\Xa, \theta, h))p(\theta)\dif\theta\right] p(S)\dif S,
 \end{equation}
+where $S$ is the similarity function, and $p(S)$ is a prior over
+similarity functions.  This method of estimating an integral is known
+in the machine-learning literature as \textit{Bayesian Quadrature}
+\cite{Diaconis:1988uo,OHagan:1991tx,Osborne:2012tm}, or BQ. 
 
-This is a technique known in the machine-learning literature as
-\textit{Bayesian Quadrature} (BQ)
-\cite{Diaconis:1988uo,OHagan:1991tx,Osborne:2012tm}. Specifically, we
-use a Gaussian Process (GP) prior for $p(S)$, as in
-\citeA{Osborne:2012tm}.  Denoting $S_h=S(\Xb, f(\Xa, \theta, h))$, we
-first place a GP prior on the log of $S_h$ in order to enforce
-positivity after it is exponentiated, i.e. $\mathbb{E}[Z_h] \approx
-\int \exp(\mu_h(\theta))p(\theta)\dif\theta$, where $\mu_h:=\mu(\log
-S_h)$ is the mean of the log-GP.  However, this integral is still
-intractable. To approximate it, we fit a second GP over points sampled
-from the log-GP, which we denote as
+Denoting $S_h=S(\Xb, f(\Xa, \theta, h))$, we first place a
+\textit{Gaussian Process} \cite{Rasmussen:2006vz}, or GP, prior on the
+log of $S_h$ in order to enforce positivity after it is exponentiated,
+i.e. $\mathbb{E}[Z_h] \approx \int
+\exp(\mu_h(\theta))p(\theta)\dif\theta$, where $\mu_h:=\mu(\log S_h)$
+is the mean of the log-GP \cite{Osborne:2012tm}.  However, this
+integral is still intractable. To approximate it, we fit a second GP
+over points sampled from the log-GP, which we denote as
 $\bar{S}_h:=\exp(\mu_h)$.\footnote{Note that the approach used here
   differs slightly from the one presented in \citeA{Osborne:2012tm}
   and is based on personal communication with one of the authors
@@ -411,7 +412,7 @@ $\bar{S}_h:=\exp(\mu_h)$.\footnote{Note that the approach used here
 \begin{align}
   \mathbb{E}[Z_h] &\approx \int \bar{\mu}_h(\theta)p(\theta)\dif\theta,\\
   \mathbb{V}(Z_h) &\approx \iint \mathrm{Cov}_h(\theta,
-  \theta^\prime)\bar{\mu}_h(\theta)\bar{\mu}_h(\theta^\prime)p(\theta)p(\theta^\prime)\dif\theta\dif\theta^\prime,
+  \theta^\circ)\bar{\mu}_h(\theta)\bar{\mu}_h(\theta^\circ)p(\theta)p(\theta^\circ)\dif\theta\dif\theta^\circ,
 \end{align}
 where $\bar{\mu}_h:=\mu(\bar{S}_h)$ is the mean of the second GP, and
 $\mathrm{Cov}_h:=\mathrm{Cov}(\log S_h)$ is the covariance of the
@@ -464,20 +465,21 @@ experiment based on classic mental rotation studies
 
 We randomly generated 20 shapes of five or six vertices (e.g.,
 Fig.~\ref{fig:model-traces}). For each shape, we computed 20 ``same''
-and 20 ``flipped'' stimuli pairs, with rotations ($\theta$) spaced at
-$20^\prime$ increments between 0 and 360 (with 0 and 180 degree
-rotations repeated twice, in order to gather an equal number of
-responses for each angle between 0 and 180). ``Same'' pairs were
-created by rotating $\Xa$ by $\theta$; ``flipped'' pairs were first
-reflected $\Xa$ across the $y$-axis, then rotated by $\theta$.
+and 20 ``flipped'' stimuli pairs, with 18 rotations ($\theta$) spaced
+at $20^\circ$ increments between $0^\circ$ and $360^\circ$ (with
+$0^\circ$ and $180^\circ$ repeated twice, in order to gather an equal
+number of responses for each angle between $0^\circ$ and
+$180^\circ$). ``Same'' pairs were created by rotating $\Xa$ by
+$\theta$; ``flipped'' pairs were first reflected $\Xa$ across the
+$y$-axis, then rotated by $\theta$.
 
 We generated five additional shapes to be used in a practice block of
-10 trials. Across these trials, each shape and each angle (60, 120,
-180, 240, or 300) was repeated twice (once ``flipped'' and once
-``same'') such that no shape was presented at the same angle twice. We
-also generated a sixth shape to be included along with the
-instructions.  This shape had both a ``flipped'' and ``same'' version,
-each rotated to 320 degrees.
+10 trials. Across these trials, there was one ``flipped'' and one
+``same'' repetition of each shape and each angle ($60^\circ$,
+$120^\circ$, $180^\circ$, $240^\circ$, or $300^\circ$) such that no
+shape was presented at the same angle twice. We also generated a sixth
+shape to include with the instructions.  This shape had both a
+``flipped'' and ``same'' version, each rotated to $320^\circ$.
 
 
 \subsubsection{Participants and Design}
@@ -488,18 +490,18 @@ paid \$1.00 for approximately 15 minutes of work, consisting of one
 block of 10 practice trials followed by two blocks of 100 experiment
 trials. Within a block, trials were presented in a random order.
 
-All participants saw the same 10 practice trials, as described
+All participants saw the same 10 practice trials as described
 above. There were 720 unique experimental stimuli (20 shapes $\times$
 18 angles $\times$ 2 reflections), though because stimuli with
-rotations of $0^\prime$ or $180^\prime$ were repeated twice, there
-were 800 total experimental stimuli. These stimuli were split across
-eight conditions in the following manner: first, stimuli were split
-into four blocks of 200 trials. Within each block, each shape was
-repeated ten times and each rotation was repeated ten times (five
-``same'', five ``flipped''), such that across all blocks, each
-stimulus appeared exactly once. Each block was then split in
-half. Participants completed two half-blocks (not necessarily both
-from the original full block).
+rotations of $0^\circ$ or $180^\circ$ were repeated twice, there were
+800 total experimental stimuli. These stimuli were split across eight
+conditions in the following manner: first, stimuli were split into
+four blocks of 200 trials. Within each block, each shape was repeated
+ten times and each rotation was repeated ten times (five ``same'',
+five ``flipped''), such that across all blocks, each stimulus appeared
+exactly once. Each block was then split in half. Participants
+completed two half-blocks (not necessarily both from the original full
+block).
 
 \subsubsection{Procedure}
 
@@ -558,25 +560,22 @@ Out of the 247 participants, 200 (81\%) were included in our
 analyses. Of the rest, we excluded 10 (4\%) because of an experimental
 error, 6 (2.4\%) because they had already completed a related
 experiment, and 31 (12.6\%) because they failed a comprehension
-check. A participant was marked as passing the comprehension check if
-they answered at least 85\% of ``easy'' trials correctly. ``Easy''
-trials were defined to be those for which the presented shapes
-differed by a rotation of no more than 20 degrees. Additionally, we
-excluded 82 trials for which the response time was either less than
-100 milliseconds or greater than 20 seconds.
+check. Comprehension was defined as correctly answering at least 85\%
+of stimuli with a minimum rotation of $0^\circ$ or $20^\circ$.
+Additionally, we excluded 82 trials for which the response time was
+either less than 100 milliseconds or greater than 20 seconds.
 
-For each model, we ran 50 samples for each stimulus that participants
-viewed (with the exception of stimuli with rotations of $0^\prime$ or
-$180^\prime$, in which case we ran double the number of samples). The
-step size parameter ($\sigma_\epsilon$) was fit to human data for each
-of the models, resulting in $\sigma_\epsilon=0.6$ for the \Th{} and
-\Bq{} models and $\sigma_\epsilon=0.1$ for the \Oc{} and \Hc{}
-models. We also ran the models under two different priors,
-$p(h=0)=0.5$ (the ``equal'' prior) and $p(h=0)=0.55$ (the ``unequal''
-prior). This had an effect on accuracy for the \Hc{} model, and an
-effect on both accuracy and response time for the \Bq{} model. Below,
-we report results for the \Hc{} model with an unequal prior, and the
-\Bq{} model with both priors.
+For each model, we ran 50 samples for each of the 800 experimental
+stimuli. The step size parameter ($\sigma_\epsilon$) was fit to human
+response times for each of the models, resulting in
+$\sigma_\epsilon=0.6$ for the \Th{} and \Bq{} models and
+$\sigma_\epsilon=0.1$ for the \Oc{} and \Hc{} models. We also ran the
+models under two different priors, $p(h=0)=0.5$ (the ``equal'' prior)
+and $p(h=0)=0.55$ (the ``unequal'' prior). This only had an effect on
+the stopping criteria for the \Bq{} model.\footnote{The prior also had
+  a small effect on the accuracy of the \Hc{} model, because sometimes
+  the local maxima were small enough that Eq.~\ref{eq:mle-lh-ratio}
+  became dominated by the prior.}
 
 \subsubsection{General analysis}
 
@@ -585,12 +584,15 @@ means were computed using a bootstrap analysis using 10000 bootstrap
 samples (sampled with replacement). Response times were only
 considered for correct responses.  We also used a bootstrap analysis
 of 10000 bootstrap samples to compute the confidence intervals around
-both Spearman ($r_s$) and Pearson ($r$) correlations.  For analyses of
-accuracy, confidence intervals were computed from a binomial
-proportion with a Jeffrey's beta prior.  To test if participants or a
-model was above chance on a particular stimulus, we used the same
-binomial proportion, and simply tested whether $p>0.05$ for the 50\%
-mark.
+both Spearman ($r_s$) and Pearson ($r$) correlations.  Unless
+otherwise specified, all correlations were computed over 720
+datapoints (one for each stimulus). For analyses of accuracy,
+confidence intervals were computed from a binomial proportion with a
+Jeffrey's beta prior.  To test if participants or a model was above
+chance on a particular stimulus, we used the same binomial proportion,
+and simply tested whether $p>0.05$ for the 50\% mark.
+
+\TODO{need to recompute correlations}
 
 \subsubsection{Human}
 
@@ -605,9 +607,9 @@ constant effect for ``flipped'' pairs; an average of their results and
 the classic results would produce something similar to ours.
 
 The average accuracy across all stimuli was \ExpAccuracy{}, though
-there were \ExpNumChance{} individual stimuli (out of 720) for which
-people were not above chance.  The minimum angle was also correlated
-with participants' average per-stimulus accuracy, as shown in
+there were \ExpNumChance{} stimuli (out of 720) for which people were
+not above chance.  The minimum angle was also correlated with
+participants' average per-stimulus accuracy, as shown in
 Fig.~\ref{fig:theta-accuracy-corrs}, though significantly more so for
 ``same'' pairs. This is the same result found both by
 \citeA{Cooper:1975wp} and \citeA{Gardony:2013gn}.
@@ -643,24 +645,24 @@ and accuracy was undefined (Fig.~\ref{fig:theta-accuracy-corrs}).
 
 \subsubsection{\Th{} model}
 
-The number of actions taken by the \Th{} model was about as correlated
-with the minimum angle as human response times were
-(Fig.~\ref{fig:theta-time-corrs}), though this effect was less strong
-for individual shapes (e.g.,
-Fig.~\ref{fig:response-time-stimulus}). Like the \Oc{} model, the
-\Th{} model had 100\% accuracy, and thus there was no correlation
-between minimum angle and accuracy. The \Th{} was able to explain a
-moderate amount of the variance in human response times, with a
-correlation of \ThTimeCorr{} (Fig.~\ref{fig:human-model-corrs}).
+The number of actions taken by the \Th{} model was significantly
+correlated with the minimum angle (Fig.~\ref{fig:theta-time-corrs}),
+though this effect was less strong for individual shapes (e.g.,
+Fig.~\ref{fig:response-time-stimulus}).  The \Th{} model was able to
+explain a moderate amount of the variance in human response times,
+with a correlation of \ThTimeCorr{}
+(Fig.~\ref{fig:human-model-corrs}). Like the \Oc{} model, the \Th{}
+model had 100\% accuracy, and thus there was no correlation between
+minimum angle and accuracy.
 
 As noted above, we fit $\sigma_\epsilon=0.6$ for the \Th{} model. This
 has the interesting effect of actually causing the \Th{} to
-\textit{over}rotate (e.g., the ``flipped'' pair trace in
+\textit{over}rotate (see, for example, the ``flipped'' pair trace in
 Fig.~\ref{fig:model-traces}). This is because the step size is large
-enough that it sometimes misses the global maximum, and has to do
-another full rotation to find it. However, when we use a lower step
-size (so that it does not miss the maximum), the fit to human data is
-slightly worse.
+enough that it sometimes misses the global maximum, and must do
+another full rotation to find it. However, when the step size is small
+enough to always find the maximum, the fit to human data is slightly
+worse.
 
 \subsubsection{\Hc{} model}
 
@@ -698,24 +700,24 @@ in human response times about as well as the \Th{} model
 \BqTimeCorr{} for the equal prior and \BqpTimeCorr{} for the unequal
 prior.  
 
-The \Bq{} model was quite accurate overall, both with the equal prior
-(\BqAccuracy{}) and unequal prior (\BqpAccuracy{}). With the equal
-prior, there was \BqNumChance{} stimulus for which it was not above
-chance; with the unequal prior, there were \BqpNumChance{}. There was
-a significant effect of rotation on the \Bq{} model's accuracy
+The \Bq{} model was quite accurate overall (equal prior:
+(\BqAccuracy{}; unequal prior: \BqpAccuracy{}). With the equal prior,
+there was \BqNumChance{} stimulus for which it was not above chance;
+with the unequal prior, there were \BqpNumChance{}. There was a
+significant effect of rotation on the \Bq{} model's accuracy
 (Fig.~\ref{fig:theta-accuracy-corrs}), and it explained about the same
-amount of variance in people's accuracy as the \Hc{} model: for the
-equal prior, \BqAccuracyCorr{}; for the unequal prior,
-\BqpAccuracyCorr{}.
+amount of variance in people's accuracy as the \Hc{} model (equal
+prior: \BqAccuracyCorr{}; unequal prior: \BqpAccuracyCorr{}).
 
-Because the \Bq{} model relied on Eq.~\ref{eq:lh-ratio} for its
+Because the \Bq{} model relies on Eq.~\ref{eq:lh-ratio} for its
 stopping criteria (as opposed to just finding a maximum), the prior
-$p(h)$ had a fairly significant effect, as shown in
+$p(h)$ has a fairly significant effect, as shown in
 Fig.~\ref{fig:response-time-accuracy}. With just a small bias of
-$p(h=0)=0.55$, there is a clear separation in response times that is
-similar to the separation seen in human response times. The prior also
-had an effect on accuracy, though this effect did not reflect the
-trends in human behavior.
+$p(h=0)=0.55$, there is a clear separation in response times for
+``same'' versus ``flipped'' stimuli; this separation is similar to the
+trend also observed in human response times. While the prior also had
+an effect on accuracy, this effect did not reflect the trends in human
+behavior.
 
 \section{Discussion}
 
