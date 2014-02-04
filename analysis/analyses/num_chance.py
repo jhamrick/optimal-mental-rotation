@@ -7,6 +7,11 @@ import pandas as pd
 filename = "num_chance.csv"
 texname = "num_chance.tex"
 
+words = [
+    'zero', 'one', 'two', 'three', 'four',
+    'five', 'six', 'seven', 'eight', 'nine', 'ten'
+]
+
 
 def run(data, results_path, seed):
     np.random.seed(seed)
@@ -29,9 +34,13 @@ def run(data, results_path, seed):
     with open(results_path.joinpath(texname), "w") as fh:
         fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
         for model, stats in results.iterrows():
+            if stats['num'] < len(words):
+                num = words[stats['num']]
+            else:
+                num = stats['num']
+
             cmd = util.newcommand(
-                "%sNumChance" % model.capitalize(),
-                stats['num'])
+                "%sNumChance" % model.capitalize(), num)
             fh.write(cmd)
 
     return pth
