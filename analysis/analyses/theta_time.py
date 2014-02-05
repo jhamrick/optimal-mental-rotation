@@ -12,19 +12,19 @@ def run(data, results_path, seed):
 
     results = {}
     for key, df in data.iteritems():
-        df = data[key]
-        for flipped, fdf in df[df['correct']].groupby('flipped'):
-            time = fdf.groupby('modtheta')['time']
-            stats = time.apply(
-                lambda x: 1. / util.bootstrap_mean(1. / x)).unstack(1)
-            results[(key, flipped)] = stats.stack()
+        y = df[df['correct']].groupby(
+            ['modtheta', 'flipped'])['time']
+        results[key] = y.apply(
+            lambda x: 1. / util.bootstrap_mean(1. / x))
 
-    results = pd.DataFrame.from_dict(results, orient='index')
+    results = pd.DataFrame.from_dict(results)
     results.index = pd.MultiIndex.from_tuples(
-        results.index, names=['model', 'flipped'])
-    results.columns = pd.MultiIndex.from_tuples(
-        results.columns, names=['modtheta', 'stat'])
-    results = results.stack('modtheta')
+        results.index, names=['modtheta', 'flipped', 'stat'])
+    results.columns.name = 'model'
+    results = results.stack().unstack('stat')
+    results.columns.name = None
+    results = results.reset_index()
+
     pth = results_path.joinpath(filename)
     results.to_csv(pth)
     return pth
