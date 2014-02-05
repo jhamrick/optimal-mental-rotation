@@ -18,32 +18,52 @@ def plot(results_path, fig_path):
 
     results = pd.read_csv(
         results_path.joinpath("response_time_means.csv"))\
-        .set_index(['stimulus', 'modtheta', 'flipped', 'model'])['median']\
-        .unstack(['model', 'flipped'])
+        .set_index(['stimulus', 'theta', 'flipped', 'model'])['median']\
+        .groupby(level='model')\
+        .apply(util.zscore)\
+        .unstack('model')
 
-    fig, axes = plt.subplots(1, len(order), sharey=True, sharex=False)
+    corrs = pd.read_csv(
+        results_path.joinpath("response_time_corrs.csv"))\
+        .set_index(['model', 'flipped'])\
+        .stack()\
+        .unstack(['model', 'flipped'])\
+        .xs('all', level='flipped', axis=1)
+
+    fig, axes = plt.subplots(1, len(order), sharey=True, sharex=True)
 
     for i, key in enumerate(order):
         ax = axes[i]
-        for flipped in ['same', 'flipped']:
-            ax.plot(
-                results[(key, flipped)],
-                results[('exp', flipped)],
-                '.', alpha=0.8, label=flipped)
+        xmean = results[key]
+        ymean = results['exp']
+        corr = util.report_pearson.format(**dict(corrs[key]))
 
-        ax.set_xlabel("Model response time", fontsize=14)
+        ax.plot([-4, 4], [-4, 4], ls='--', color='#666666')
+        ax.plot(xmean, ymean, '.', alpha=0.9, color='k')
+
+        ax.set_xticks([])
+        ax.set_yticks([])
+
         ax.set_title(titles[key], fontsize=14)
+        ax.set_xlabel(corr, fontsize=14)
         util.clear_right(ax)
         util.clear_top(ax)
         util.outward_ticks(ax)
 
-    axes[0].set_ylabel("Human response time", fontsize=14)
-    axes[0].legend(loc=0, numpoints=1)
+        ax.set_axis_bgcolor('0.95')
+
+    util.sync_xlims(axes[order.index('bq')], axes[order.index('bqp')])
+
+    axes[0].set_xlim(-4, 4)
+    axes[0].set_ylim(-4, 4)
+    axes[0].set_ylabel("Human", fontsize=14)
 
     fig.set_figheight(3)
-    fig.set_figwidth(14)
+    fig.set_figwidth(16)
     plt.draw()
     plt.tight_layout()
+
+    plt.subplots_adjust(wspace=0.1)
 
     pths = [fig_path.joinpath("response_time_scatters.%s" % ext)
             for ext in ('png', 'pdf')]
