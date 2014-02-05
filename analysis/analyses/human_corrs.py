@@ -34,17 +34,17 @@ def run(data, results_path, seed):
         df1 = exp.drop(p1, axis=0, level='pid').reset_index()
 
         tm0 = df0[df0['correct']]\
-            .groupby(['stimulus', 'modtheta', 'flipped'])['time']\
+            .groupby(['stimulus', 'theta', 'flipped'])['time']\
             .apply(lambda x: 1. / (1. / x).mean())
         tm1 = df1[df1['correct']]\
-            .groupby(['stimulus', 'modtheta', 'flipped'])['time']\
+            .groupby(['stimulus', 'theta', 'flipped'])['time']\
             .apply(lambda x: 1. / (1. / x).mean())
 
         am0 = df0\
-            .groupby(['stimulus', 'modtheta', 'flipped'])['correct']\
+            .groupby(['stimulus', 'theta', 'flipped'])['correct']\
             .apply(util.beta).unstack(-1)['median']
         am1 = df1\
-            .groupby(['stimulus', 'modtheta', 'flipped'])['correct']\
+            .groupby(['stimulus', 'theta', 'flipped'])['correct']\
             .apply(util.beta).unstack(-1)['median']
 
         means = pd.DataFrame({'tm0': tm0, 'tm1': tm1, 'am0': am0, 'am1': am1})

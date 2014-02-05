@@ -13,7 +13,7 @@ def run(data, results_path, seed):
 
     means = pd.read_csv(results_path.joinpath("accuracy_means.csv"))
     means = means\
-        .set_index(['stimulus', 'modtheta', 'flipped', 'model'])['median']\
+        .set_index(['stimulus', 'theta', 'flipped', 'model'])['median']\
         .unstack('model')
 
     results = {}
