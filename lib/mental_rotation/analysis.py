@@ -90,7 +90,7 @@ def load_all(version, data_path, human=None):
 
     data['oc'] = data['oc'].groupby(['step', 'prior']).get_group((0.1, 0.5))
     data['th'] = data['th'].groupby(['step', 'prior']).get_group((0.6, 0.5))
-    data['hc'] = data['hc'].groupby(['step', 'prior']).get_group((0.1, 0.55))
+    data['hc'] = data['hc'].groupby(['step', 'prior']).get_group((0.1, 0.5))
 
     if human is None:
         data.update(load_human(version, data_path)[1])
