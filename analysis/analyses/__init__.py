@@ -10,7 +10,9 @@ import num_chance
 import theta_accuracy_corrs
 import theta_time_corrs
 import theta_time
+import theta_time_stimulus
 import theta_accuracy
+import theta_accuracy_stimulus
 import all_response_times
 import response_time_means
 import accuracy_means
@@ -38,7 +40,9 @@ __all__ = [
 
     # means for each rotation/reflection
     'theta_time',
+    'theta_time_stimulus',
     'theta_accuracy',
+    'theta_accuracy_stimulus',
 
     # correlations between rotation and means for each
     # shape/reflection

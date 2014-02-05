@@ -19,5 +19,6 @@ for name in __all__:
     print colored("Executing '%s'" % name, 'blue')
     pth = func.run(data, results_path, seed)
     print pth
-    df = pd.read_csv(pth, index_col='model')
-    print df
+    if pth.ext == '.csv':
+        df = pd.read_csv(pth, index_col='model')
+        print df
