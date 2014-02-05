@@ -17,7 +17,7 @@ def plot(results_path, fig_path):
 
     results = pd.read_csv(
         results_path.joinpath("accuracy_means.csv"))\
-        .set_index(['stimulus', 'modtheta', 'flipped', 'model'])['median']\
+        .set_index(['stimulus', 'theta', 'flipped', 'model'])['median']\
         .unstack(['model', 'flipped']) * 100
 
     fig, axes = plt.subplots(1, len(order), sharey=True, sharex=True)

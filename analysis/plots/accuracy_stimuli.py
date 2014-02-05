@@ -10,7 +10,7 @@ def plot_key(key, results_path, fig_path):
     fig, axes = plt.subplots(4, 5, sharey=True, sharex=True)
 
     means = pd.read_csv(
-        results_path.joinpath("accuracy_means.csv"))\
+        results_path.joinpath("theta_accuracy_stimulus.csv"))\
         .set_index(['stimulus', 'flipped', 'model'])\
         .groupby(level='model').get_group(key)
 

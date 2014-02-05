@@ -24,7 +24,7 @@ def plot(results_path, fig_path):
     }
 
     means = pd.read_csv(
-        results_path.joinpath("response_time_means.csv"))\
+        results_path.joinpath("theta_time_stimulus.csv"))\
         .set_index(['stimulus', 'flipped', 'model'])\
         .groupby(level='stimulus').get_group(2)
 
