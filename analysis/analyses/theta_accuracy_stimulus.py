@@ -13,7 +13,7 @@ def run(data, results_path, seed):
     results = {}
     for key, df in data.iteritems():
         y = df.groupby(['stimulus', 'modtheta', 'flipped'])['correct']
-        results[key] = y.apply(util.beta)
+        results[key] = y.apply(util.beta) * 100
 
     results = pd.DataFrame.from_dict(results)
     results.index = pd.MultiIndex.from_tuples(
