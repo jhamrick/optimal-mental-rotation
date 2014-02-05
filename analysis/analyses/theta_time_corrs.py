@@ -5,6 +5,7 @@ import util
 import pandas as pd
 
 filename = "theta_time_corrs.csv"
+texname = "theta_time_corrs.tex"
 
 
 def run(data, results_path, seed):
@@ -24,6 +25,17 @@ def run(data, results_path, seed):
         results.index, names=['model', 'flipped'])
     pth = results_path.joinpath(filename)
     results.to_csv(pth)
+
+    with open(results_path.joinpath(texname), "w") as fh:
+        fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
+        for (model, flipped), stats in results.iterrows():
+            cmd = util.newcommand(
+                "%sThetaTimeCorr%s" % (
+                    model.capitalize(),
+                    flipped.capitalize()),
+                util.latex_spearman.format(**dict(stats)))
+            fh.write(cmd)
+
     return pth
 
 
