@@ -57,7 +57,7 @@ def plot(results_path, fig_path):
         if key == 'exp':
             ax.set_ylabel("Response time", fontsize=14)
         else:
-            ax.set_ylabel("Number of actions", fontsize=14)
+            ax.set_ylabel("# actions", fontsize=14)
 
     util.sync_ylims(axes[0, order.index('bq')], axes[0, order.index('bqp')])
 
@@ -79,7 +79,7 @@ def plot(results_path, fig_path):
         ax.set_xticks(np.arange(0, 200, 30))
         ax.set_xlabel("Rotation", fontsize=14)
 
-        ax.set_ylabel("Percent correct", fontsize=14)
+        ax.set_ylabel("Accuracy", fontsize=14)
 
     for ax in axes.flat:
         util.clear_right(ax)

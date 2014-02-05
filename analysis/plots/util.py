@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 import sys
 
-from mental_rotation.analysis import load_human, load_all
+from mental_rotation.analysis import load_human, load_all, zscore
 
 
 def load_config(pth):
@@ -260,3 +260,6 @@ def sync_ylabel_coords(axes, x, y=0.5):
     """
     for ax in axes:
         ax.yaxis.set_label_coords(x, y)
+
+
+report_pearson = r"$\rho$ = {median:.2f}, 95% CI [{lower:.2f}, {upper:.2f}]"
