@@ -67,6 +67,9 @@
 \input{../../results/D/response_time_corrs.tex}
 \input{../../results/D/accuracy_corrs.tex}
 \input{../../results/D/human_corrs.tex}
+\input{../../results/D/theta_time_corrs.tex}
+\input{../../results/D/theta_accuracy_corrs.tex}
+
 
 \title{What to simulate? Inferring the right direction for mental
   rotation}
@@ -564,19 +567,22 @@ whether $p>0.05$ for the 50\% mark.
 
 The average RT across all stimuli was \ExpTime{} milliseconds.  The
 minimum angle of rotation was significantly monotonically correlated
-with average per-stimulus RTs, both for ``flipped'' and ``same'' pairs
-\TODO{}. While this replicates the general result of previous
-experiments \cite<e.g.,>{Shepard1971,Cooper:1975wp}, our results are
-not as perfectly linear. However, \citeA{Gardony:2013gn} found a
-constant effect for ``flipped'' pairs; an average of their results and
-the classic results would produce something similar to ours.
+with average per-stimulus RTs, both for ``flipped''
+(\ExpThetaTimeCorrFlipped{}) and ``same'' pairs
+(\ExpThetaTimeCorrSame{}). While this replicates the general result of
+previous experiments \cite<e.g.,>{Shepard1971,Cooper:1975wp}, our
+results are not as perfectly linear. However, \citeA{Gardony:2013gn}
+found a constant effect for ``flipped'' pairs; an average of their
+results and the classic results would produce something similar to
+ours.
 
 The average accuracy across all stimuli was \ExpAccuracy{}, though
 there were \ExpNumChance{} stimuli (out of 720) for which people were
 not above chance.  The minimum angle was also correlated with
 participants' average per-stimulus accuracy, though significantly more
-so for ``same'' pairs (\TODO{}). This is the same result found both by
-\citeA{Cooper:1975wp} and \citeA{Gardony:2013gn}.
+so for ``same'' pairs (\ExpThetaAccuracyCorrSame{}) than ``flipped''
+pairs (\ExpThetaAccuracyCorrFlipped{}). This is the same result found
+both by \citeA{Cooper:1975wp} and \citeA{Gardony:2013gn}.
 
 To gauge between-subject reliability, we randomly split subjects into
 two groups, computed the average RT and accuracy per stimulus for each
@@ -636,9 +642,9 @@ worse.
       plots correspond to the shape shown in
       Fig.~\ref{fig:model-traces}. Left: human curves are either
       linear (as with the ``same'' pairs), or linear and then flat (as
-      with the ``flipped'' pairs). Middle: the \Th{} model tends to
-      have highly inconsitent within-shape RTs. Right: the \Bq{} model
-      is roughly linear.}
+      with the ``flipped'' pairs). Middle: the \Th{} model does not
+      have a reliably monotonic relationship with rotation. Right: the
+      \Bq{} model is roughly linear.}
     \label{fig:response-time-stimulus}
   \end{center}
 \end{figure}
@@ -674,9 +680,9 @@ the \Hc{} model (equal prior: \BqAccuracyCorr{}; unequal prior:
 
 Because the \Bq{} model relies on Eq.~\ref{eq:lh-ratio} for its
 stopping criteria (as opposed to just finding a maximum), the prior
-$p(h)$ has a fairly significant effect, as shown in
+$p(h)$ had a fairly significant effect, as shown in
 Fig.~\ref{fig:response-time-accuracy}. With just a small bias of
-$p(h=0)=0.55$, there is a clear separation in RTs for ``same'' versus
+$p(h=0)=0.55$, there was a clear separation in RTs for ``same'' versus
 ``flipped'' stimuli; this separation is similar to the trend also
 observed in human RTs. While the prior also had an effect on accuracy,
 this effect did not reflect the trends in human behavior.
@@ -687,12 +693,21 @@ We set out to answer the question of how people decide \textit{what}
 to simulate when using mental imagery. Focusing on the specific case
 of determining the direction and extent of mental rotation, we
 formalized four models and compared their performance with the results
-of a behavioral experiment. While it is clear that none of the models
-fully captured human behavior on the mental rotation task, it is worth
-noting where they shed light on aspects that have previously gone
-unexplained.  For example, the \Bq{} model's adaptive stopping rule is
-sensitive to the prior, and thus provides a possible explanation for
-why people are slower to respond on ``flipped'' stimulus pairs.
+of a behavioral experiment.
+
+The \Oc{} model was the best predictor of human RTs, but is an
+unsatisfying explanation of human behavior because it relies on
+\textit{a prior} knowledge that people are unlikely to have about
+which points on the two shapes correspond. Similarly, while the \Th{}
+was next best in terms of correlation, it makes the unsatisfying
+assumption that the global maximum is known. Finally, neither of these
+models can explain the difference in people's behavior on ``same'' and
+``flipped'' stimuli.  The \Bq{} model was nearly as good as the \Th{}
+model; in contrast to the other models, the \Bq{} model makes no
+assumptions about people's \textit{a prior} knowledge. Furthermore,
+the \Bq{} model's adaptive stopping rule is sensitive to the prior,
+and thus provides a possible explanation for why people are slower to
+respond on ``flipped'' stimulus pairs.
 
 Additionally, a closer look at performance on individual shapes
 reveals several interesting points
@@ -706,23 +721,28 @@ the \Bq{} model's RT curves \textit{is} consistent within shapes,
 though it does not exhibit the same ``plateau'' effect that sometimes
 appears in the human curves.
 
-How could the models we evaluated be improved? First, all of the
-models use holistic rotations, however there is evidence that people
-might compare individual features of shapes rather than the entire
-shape at once \cite{Just1976,Yuille:1982tx}. Second, there are other
-possible ``active sampling'' approaches that could combine the best
-features from the \Th{} and \Bq{} models, such as maintaining a
-distribution over the location and value of the global maximum, rather
-than over the integral. Third, studying rotations with 3D objects of
-varying levels of complexity may be more informative than the
-extremely simple 2D objects used in this experiment.
+Thus, we suggest that the \Bq{} model offers the most promising
+explanation of people's behavior on the mental rotation task to
+date. It is the only model out of those surveyed which did not make
+assumptions about people's \textit{a priori} knowledge, which was a
+reasonable predictor of people's behavior, and which provided an
+explanation for the longer response times on ``flipped'' stimuli.
+Clearly, though, the \Bq{} model is not a perfect account, and there
+are several immediately obvious ways in which it could be
+improved. For example, while we used holistic rotations in this paper,
+there is evidence that people compare individual features of shapes
+rather than the entire shape at once
+\cite{Just1976,Yuille:1982tx}. Second, there are other possible active
+sampling approaches that could combine the best features from the
+\Th{} and \Bq{} models, such as maintaining a distribution over the
+location and value of the global maximum, rather than over the
+integral.
 
-As a parting comment, we note that the question of how people decide
-\textit{which} rotations to perform is more difficult to answer than
-previously assumed. Although we examined four well-motivated models,
-none came close to explaining the full range of human behavior on this
-task. We suggest that such metacognitive questions are fertile areas
-for future research.
+To conclude, we hypothesize that people decide \textit{what} to
+simulate through an active sampling strategy similar to that used by
+the \Bq{} model. While more research is required to confirm or
+disprove this claim, the work presented in this paper provides the
+foundation necessary to do so.
 
 %% TODO: Uncomment this for final version:
 
