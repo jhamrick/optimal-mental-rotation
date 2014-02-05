@@ -347,11 +347,10 @@ a likelihood ratio.
 \begin{figure*}[t]
   \begin{center}
     \includegraphics[width=\textwidth]{../../figures/D/response_time_accuracy.pdf}
-    \caption{\textbf{Response time and accuracy comparison.} Top:
-      response time of correct responses as a function of the minimum
-      angle of rotation. Bottom: accuracy as a function of the minimum
-      angle of rotation. All error bars are 95\% confidence
-      intervals.}
+    \caption{\textbf{Response time and accuracy comparison.} Top: RT
+      of correct responses as a function of the minimum angle of
+      rotation. Bottom: accuracy as a function of the minimum angle of
+      rotation. All error bars are 95\% confidence intervals.}
     \label{fig:response-time-accuracy}
   \end{center}
 \end{figure*}
@@ -497,7 +496,7 @@ block).
 \begin{figure*}[t]
   \begin{center}
     \includegraphics[width=\textwidth]{../../figures/D/response_time_scatters.pdf}
-    \caption{\textbf{Model vs. human response times.}}
+    \caption{\textbf{Model vs. human RTs.}}
     \label{fig:human-model-scatters}
   \end{center}
 \end{figure*}
@@ -531,47 +530,46 @@ error, 6 (2.4\%) because they had already completed a related
 experiment, and 31 (12.6\%) because they failed a comprehension
 check. Comprehension was defined as correctly answering at least 85\%
 of stimuli with a minimum rotation of $0^\circ$ or $20^\circ$.
-Additionally, we excluded 82 trials for which the response time was
-either less than 100 milliseconds or greater than 20 seconds.
+Additionally, we excluded 82 trials for which the response time (RT)
+was either less than 100 milliseconds or greater than 20 seconds.
 
 For each model, we ran 50 samples for each of the 800 experimental
 stimuli. The step size parameter ($\sigma_\epsilon$) was fit to human
-response times for each of the models, resulting in
-$\sigma_\epsilon=0.6$ for the \Th{} and \Bq{} models and
-$\sigma_\epsilon=0.1$ for the \Oc{} and \Hc{} models. We also ran the
-models under two different priors, $p(h=0)=0.5$ (the ``equal'' prior)
-and $p(h=0)=0.55$ (the ``unequal'' prior). This only had an effect on
-the stopping criteria for the \Bq{} model.\footnote{The prior also had
-  a small effect on the accuracy of the \Hc{} model, because sometimes
-  the local maxima were small enough that Eq.~\ref{eq:mle-lh-ratio}
-  became dominated by the prior.}
+RTs for each of the models, resulting in $\sigma_\epsilon=0.6$ for the
+\Th{} and \Bq{} models and $\sigma_\epsilon=0.1$ for the \Oc{} and
+\Hc{} models. We also ran the models under two different priors,
+$p(h=0)=0.5$ (the ``equal'' prior) and $p(h=0)=0.55$ (the ``unequal''
+prior). This only had an effect on the stopping criteria for the \Bq{}
+model.\footnote{The prior also had a small effect on the accuracy of
+  the \Hc{} model, because sometimes the local maxima were small
+  enough that Eq.~\ref{eq:mle-lh-ratio} became dominated by the
+  prior.}
 
 \subsubsection{General analysis}
 
-For analyses of response time, confidence intervals around harmonic
-means were computed using a bootstrap analysis using 10000 bootstrap
-samples (sampled with replacement). Response times were only
-considered for correct responses.  We also used a bootstrap analysis
-of 10000 bootstrap samples to compute the confidence intervals around
-both Spearman ($r_s$) and Pearson ($\rho$) correlations.  Unless
-otherwise specified, all correlations were computed over 720
-datapoints (one for each stimulus). For analyses of accuracy,
-confidence intervals were computed from a binomial proportion with a
-Jeffrey's beta prior.  To test if participants or a model was above
-chance on a particular stimulus, we used the same binomial proportion,
-and simply tested whether $p>0.05$ for the 50\% mark.
+For analyses of RT, confidence intervals around harmonic means were
+computed using a bootstrap analysis using 10000 bootstrap samples
+(sampled with replacement). RTs were only considered for correct
+responses.  We also used a bootstrap analysis of 10000 bootstrap
+samples to compute the confidence intervals around both Spearman
+($r_s$) and Pearson ($\rho$) correlations.  Unless otherwise
+specified, all correlations were computed over 720 datapoints (one for
+each stimulus). For analyses of accuracy, confidence intervals were
+computed from a binomial proportion with a Jeffrey's beta prior.  To
+test if participants or a model was above chance on a particular
+stimulus, we used the same binomial proportion, and simply tested
+whether $p>0.05$ for the 50\% mark.
 
 \subsubsection{Human}
 
-The average response time across all stimuli was \ExpTime{}
-milliseconds.  The minimum angle of rotation was significantly
-monotonically correlated with average per-stimulus response times,
-both for ``flipped'' and ``same'' pairs \TODO{}. While this replicates
-the general result of previous experiments
-\cite<e.g.,>{Shepard1971,Cooper:1975wp}, our results are not as
-perfectly linear. However, \citeA{Gardony:2013gn} found a constant
-effect for ``flipped'' pairs; an average of their results and the
-classic results would produce something similar to ours.
+The average RT across all stimuli was \ExpTime{} milliseconds.  The
+minimum angle of rotation was significantly monotonically correlated
+with average per-stimulus RTs, both for ``flipped'' and ``same'' pairs
+\TODO{}. While this replicates the general result of previous
+experiments \cite<e.g.,>{Shepard1971,Cooper:1975wp}, our results are
+not as perfectly linear. However, \citeA{Gardony:2013gn} found a
+constant effect for ``flipped'' pairs; an average of their results and
+the classic results would produce something similar to ours.
 
 The average accuracy across all stimuli was \ExpAccuracy{}, though
 there were \ExpNumChance{} stimuli (out of 720) for which people were
@@ -581,28 +579,28 @@ so for ``same'' pairs (\TODO{}). This is the same result found both by
 \citeA{Cooper:1975wp} and \citeA{Gardony:2013gn}.
 
 To gauge between-subject reliability, we randomly split subjects into
-two groups, computed the average response time and accuracy per
-stimulus for each group, and then computed correlations for these two
-measures. We repeated this procedure 100 times, and from those samples
-computed the median correlations and 95\% confidence intervals. For
-response time, the between-subjects correlation was \ExpTimeCorr{},
-and for accuracy, it was \ExpAccuracyCorr{}.
+two groups, computed the average RT and accuracy per stimulus for each
+group, and then computed correlations for these two measures. We
+repeated this procedure 100 times, and from those samples computed the
+median correlations and 95\% confidence intervals. For RT, the
+between-subjects correlation was \ExpTimeCorr{}, and for accuracy, it
+was \ExpAccuracyCorr{}.
 
-There was a significant effect of trial number both on response time
+There was a significant effect of trial number both on RT
 (\ExpTrialTimeCorr{}) and on accuracy (\ExpTrialAccuracyCorr{}),
 though the effect on accuracy was not significant during the second
 half of the experiment (\ExpaTrialAccuracyCorr{} for the first half
 vs. \ExpbTrialAccuracyCorr{} for the second half). These practice
 effects may have contributed to the not-quite-linearity of the human
-response times; future work will need to collect more data per
-participant to mitigate this effect.
+RTs; future work will need to collect more data per participant to
+mitigate this effect.
 
 \subsubsection{\Oc{} model}
 
 As we would expect, the number of actions taken by the \Oc{} model was
 perfectly correlated with the minimum angle of rotation
 (Fig.~\ref{fig:response-time-accuracy}). Unsurprisingly, the \Oc{}
-model was the best fit to human response times, with a correlation of
+model was the best fit to human RTs, with a correlation of
 \OcTimeCorr{} (Fig.~\ref{fig:human-model-scatters}).  However, the
 \Oc{} model was 100\% accurate, and therefore the correlation between
 minimum angle and accuracy was undefined.
@@ -612,10 +610,10 @@ minimum angle and accuracy was undefined.
 There was an overall monotonic relationship between the minimum angle
 of rotation and the number of actions taken by the \Th{} model
 (Fig.~\ref{fig:response-time-accuracy}). However, the relationship
-between angle and response time for individual shapes was usually not
-monotonic (e.g., Fig.~\ref{fig:response-time-stimulus}).  The \Th{}
-model was able to explain a moderate amount of the variance in human
-response times, with a correlation of \ThTimeCorr{}
+between angle and RT for individual shapes was usually not monotonic
+(e.g., Fig.~\ref{fig:response-time-stimulus}).  The \Th{} model was
+able to explain a moderate amount of the variance in human RTs, with a
+correlation of \ThTimeCorr{}
 (Fig.~\ref{fig:human-model-scatters}). Like the \Oc{} model, the \Th{}
 model had 100\% accuracy, and thus there was no correlation between
 minimum angle and accuracy.
@@ -634,25 +632,25 @@ worse.
 \begin{figure}[t]
   \begin{center}
     \includegraphics[width=0.48\textwidth]{../../figures/D/response_time_stimulus.pdf}
-    \caption{\textbf{Typical response time curves for a single shape.}
-      These plots correspond to the shape shown in
+    \caption{\textbf{Typical RT curves for a single shape.}  These
+      plots correspond to the shape shown in
       Fig.~\ref{fig:model-traces}. Left: human curves are either
       linear (as with the ``same'' pairs), or linear and then flat (as
       with the ``flipped'' pairs). Middle: the \Th{} model tends to
-      have highly inconsitent within-shape response times. Right: the
-      \Bq{} model is roughly linear.}
+      have highly inconsitent within-shape RTs. Right: the \Bq{} model
+      is roughly linear.}
     \label{fig:response-time-stimulus}
   \end{center}
 \end{figure}
 
 The \Hc{} was the only model for which there was no monotonic
-relationship between rotation and response time
+relationship between rotation and RT
 (Fig.~\ref{fig:response-time-accuracy}). Moreover, the \Hc{} model was
 barely above chance (\HcAccuracy{}) and there were \HcNumChance{}
 individual stimuli for which it was not above chance. The \Hc{} model
-was not a particularly good predictor of human response times
-(\HcTimeCorr{}), as shown in Fig.~\ref{fig:human-model-scatters}. It
-was a moderately good predictor of human accuracy (\HcAccuracyCorr{}).
+was not a particularly good predictor of human RTs (\HcTimeCorr{}), as
+shown in Fig.~\ref{fig:human-model-scatters}. It was a moderately good
+predictor of human accuracy (\HcAccuracyCorr{}).
 
 \subsubsection{\Bq{} model}
 
@@ -661,7 +659,7 @@ relationship between rotation and the number of steps taken by the
 \Bq{} model (Fig.~\ref{fig:response-time-accuracy}). Unlike the \Th{}
 model, this relationship existed for individual shapes as well (e.g.,
 Fig.~\ref{fig:response-time-stimulus}).  The \Bq{} model explained
-variance in human response times about as well as the \Th{} model
+variance in human RTs about as well as the \Th{} model
 (Fig.~\ref{fig:human-model-scatters}), with a correlation of
 \BqTimeCorr{} for the equal prior and \BqpTimeCorr{} for the unequal
 prior.
@@ -678,11 +676,10 @@ Because the \Bq{} model relies on Eq.~\ref{eq:lh-ratio} for its
 stopping criteria (as opposed to just finding a maximum), the prior
 $p(h)$ has a fairly significant effect, as shown in
 Fig.~\ref{fig:response-time-accuracy}. With just a small bias of
-$p(h=0)=0.55$, there is a clear separation in response times for
-``same'' versus ``flipped'' stimuli; this separation is similar to the
-trend also observed in human response times. While the prior also had
-an effect on accuracy, this effect did not reflect the trends in human
-behavior.
+$p(h=0)=0.55$, there is a clear separation in RTs for ``same'' versus
+``flipped'' stimuli; this separation is similar to the trend also
+observed in human RTs. While the prior also had an effect on accuracy,
+this effect did not reflect the trends in human behavior.
 
 \section{Discussion}
 
@@ -701,13 +698,13 @@ Additionally, a closer look at performance on individual shapes
 reveals several interesting points
 (Fig.~\ref{fig:response-time-stimulus} shows curves for one particular
 shape; these curves are fairly typical relative to other
-shapes). First, the curves for the human response times on specific
-shapes tend to either be linear, or linear first, then flat. Second,
-while the \Th{} model appears to capture the concavity of human
-response times overall, it is actually fairly inconsistent within
-shapes. Third, the linearity of the \Bq{} model's response time curves
-\textit{is} consistent within shapes, though it does not exhibit the
-same ``plateau'' effect that sometimes appears in the human curves.
+shapes). First, the curves for the human RTs on specific shapes tend
+to either be linear, or linear first, then flat. Second, while the
+\Th{} model appears to capture the concavity of human RTs overall, it
+is actually fairly inconsistent within shapes. Third, the linearity of
+the \Bq{} model's RT curves \textit{is} consistent within shapes,
+though it does not exhibit the same ``plateau'' effect that sometimes
+appears in the human curves.
 
 How could the models we evaluated be improved? First, all of the
 models use holistic rotations, however there is evidence that people
