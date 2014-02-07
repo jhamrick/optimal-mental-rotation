@@ -28,7 +28,7 @@ report_percent = "M={median:.1f}%, 95% CI [{lower:.1f}%, {upper:.1f}%]"
 latex_percent = r"$M={median:.1f}\%$, 95\% CI $[{lower:.1f}\%, {upper:.1f}\%]$"
 
 report_mean = "M={median:.1f}, 95% CI [{lower:.1f}, {upper:.1f}]"
-latex_mean = r"$M={median:.1f}$ 95\% CI $[{lower:.1f}, {upper:.1f}]$"
+latex_mean = r"$M={median:.1f}$, 95\% CI $[{lower:.1f}, {upper:.1f}]$"
 
 
 def run_analysis(func):
