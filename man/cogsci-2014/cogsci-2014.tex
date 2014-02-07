@@ -104,7 +104,7 @@
   previously been assumed, and that an active learning approach holds
   promise for uncovering the answer.
 
-  \textbf{Keywords:} mental rotation, computational model
+  \textbf{Keywords:} mental rotation, computational modeling
 \end{abstract}
 
 \section{Introduction}
@@ -115,8 +115,8 @@ perceiving them. This \textit{mental simulation} has been widely
 studied, including an intense debate about the underlying
 representation of mental images \cite<e.g.,>{Kosslyn:2009tj,
   Pylyshyn:2002vk}. But this debate hasn't addressed one of the most
-fundamental questions about mental simulation: how people decide what
-they should simulate.
+fundamental questions about mental simulation: how people decide
+\textit{what} to simulate.
 
 Mental rotation provides a simple example of the decision problem
 posed by simulation.  In the classic experiment by
@@ -139,7 +139,7 @@ of mental rotation. We begin the paper by discussing the previous
 literature on mental imagery. Next, we outline computational- and
 algorithmic-level analyses of the problem of mental rotation.  We then
 describe a behavioral experiment based on the classic mental rotation
-studies \cite<e.g.,>{Cooper:1975wp}, and compare the results of the
+studies \cite<e.g.,>{Cooper:1975wp}, and compare the results of our
 experiment with each of the models. We conclude with a discussion of
 the strengths and weaknesses of each model, and lay out directions for
 future work.
@@ -164,8 +164,8 @@ future work.
 Previous models of mental rotation have largely focused on the
 representation of mental images, rather than how people decide
 \textit{which} mental images to generate. \citeA{Kosslyn:1977tv}
-proposed a model of the mental imagery buffer, but not the planning
-process of how it is used. Similarly, \citeA{Julstrom:1985va} and
+proposed a model of the mental imagery buffer, but did not say
+\textit{how} it should be used. Similarly, \citeA{Julstrom:1985va} and
 \citeA{Glasgow:1992tj} were mostly concerned with modeling the
 representational format underlying imagery. Although
 \citeA{Anderson1978} emphasized the importance of considering both
@@ -180,16 +180,15 @@ performing the rotation. One object is then rotated through the target
 rotation, and is checked against the other object for
 congruency. However, this approach assumes that the corresponding
 points on the two objects can be easily identified, which is not
-necessarily the case.
-
-Indeed, the state-of-the-art in computer vision suggests that there is
-more to shape matching than simply checking for congruency,
-particularly when shapes are complex or when the shapes might not be
-exactly the same
+necessarily the case.  Indeed, the state-of-the-art in computer vision
+suggests that there is more to this problem than simply checking for
+congruency, particularly when shapes are complex or when the shapes
+might not be exactly the same
 \cite<e.g.,>{Belongie:2002tj,Sebastian:2003vm}. Additionally, recent
 research shows that when performing \textit{physical} rotations,
-people do not rotate until congruency is reached, and may even rotate
-\textit{away} from near perfect matches \cite{Gardony:2013gn}.
+people do not fully rotate until congruency is reached; they may even
+rotate \textit{away} from initially near perfect matches
+\cite{Gardony:2013gn}.
 
 If people are not computing the rotation beforehand, what might they
 be doing? To answer this question, we perform a rational analysis of
@@ -241,15 +240,14 @@ depict the same object, and $\hf$ is the hypothesis that the images
 depict mirror-image objects. The posterior probability of each
 hypothesis given the observed shapes is then:
 \begin{equation}
-  p(h\ \vert\ X_a, X_b) \propto \int p(X_b\ \vert\ X_a, \theta, h)p(X_a)p(h)p(\theta)\dif\theta,
+  p(h\ \vert\ X_a, X_b) \propto \int p(X_b\ \vert\ X_a, \theta, h)p(h)p(\theta)\dif\theta,
   \label{eq:posterior}
 \end{equation}
 where $p(X_b\ \vert\ X_a, \theta, h)$ is the probability that $X_b$
-was generated from $X_a$, and $p(X_a)$ is the probability of observing
-$X_a$. Because we ultimately want to determine which hypothesis is
-more likely, the quantity of interest is a ratio $\ell:=p(\hi\ \vert\
-X_a, X_b) / p(\hf\ \vert\ X_a, X_b)$ which (assuming that all
-rotations are equally likely) is equivalent to:
+was generated from $X_a$. Because we ultimately want to determine
+which hypothesis is more likely, the quantity of interest is a ratio
+$\ell:=p(\hi\ \vert\ X_a, X_b) / p(\hf\ \vert\ X_a, X_b)$ which
+(assuming that all rotations are equally likely) is equivalent to:
 \begin{equation}
   \ell = \frac{\left(\int p(X_b\ \vert\ X_a, \theta, \hi)\dif\theta\right)p(\hi)}{\left(\int p(X_b\ \vert\ X_a, \theta, \hf)\dif\theta\right)p(\hf)}.
   \label{eq:lh-ratio}
@@ -281,8 +279,8 @@ matrix across the $y$-axis (when $\hf$).
 We define $p(\Xb\ \vert\ \Xa, \theta, h)$ to be the similarity between
 $\Xb$ and a transformation of $\Xa$: $p(\Xb\ \vert\ \Xa, \theta, h):=
 S(\Xb, f(\Xa, h, \theta))$.  We do not know which vertices of $\Xb$
-correspond to which vertices of $\Xa$, so $S$ must marginalize over
-the set of possible mappings. For brevity, let
+correspond to which vertices of $\Xa$, so the similarity $S$ must
+marginalize over the set of possible mappings. For brevity, let
 $\mathbf{X}_m=\M\cdot{}f(\Xa, h, \theta)$ where $\M$ is a permutation
 matrix. Then:
 \begin{equation}
@@ -296,10 +294,10 @@ where $2N$ is the total number of possible mappings,\footnote{It is
 similarity. Example similarity curves are shown in
 Figure~\ref{fig:model-traces}.
 
-Additionally, we assume that the observed shapes may only be
-transformed by a small amount at a time, and each transformation is
-costly in terms of computational resources. Specifically, if the
-current mental image is $\Xt$, then:
+Additionally, we assume that the observed shapes can only be
+transformed by a small amount at a time, and each transformation takes
+a non-negligible amount of time. Specifically, if the current mental
+image is $\Xt$, then:
 \begin{equation}
   \mathbf{X}_{t+1} = \left\{ \begin{array}{ll}
       f(\Xt, 0, \epsilon) &\mbox{ rotate by $\epsilon$ radians,} \\
@@ -354,8 +352,8 @@ marginalized:
 
 What if the point correspondences are unknown? An intuitive and simple
 model which obeys this constraint first rotate in the direction that
-increases similarity, and then stop rotating once a ``match'' is
-found, as determined by a threshold on the value of $S$. If all
+increases local similarity, and then stop rotating once a ``match'' is
+found, as determined by a threshold on the similarity $S$. If all
 rotations have been exhausted, then flip, and try rotating again. We
 assume that the locations where $S$ is greater than the threshold
 correspond to the true $\theta$ (or points near the true
@@ -402,9 +400,9 @@ performing. Instead of searching for a maximum, we maintain a
 probability distribution over our \textit{estimate} of
 Equation~\ref{eq:lh-ratio}, and then sample actions which are expected
 to improve that estimate.  This strategy has several benefits. First,
-it does not make assumptions about the shape or scale of the
-similarity function. Second, by choosing to sample places which are
-informative, this method implicitly minimizes the amount of rotation.
+it does not make assumptions about the scale of the similarity
+function. Second, by choosing to sample places which are informative,
+this method implicitly minimizes the amount of rotation.
 
 Formally, we denote $Z_h$ as our estimate of the likelihood for
 hypothesis $h$, and write its distribution as:
@@ -573,10 +571,10 @@ all correlations were computed over 720 datapoints (one for each
 stimulus). For analyses of accuracy, confidence intervals were
 computed from a binomial proportion with a Jeffrey's beta prior.  To
 test if participants or a model was above chance on a particular
-stimulus, we used the same binomial proportion, and tested whether the
-cumulative probability of answering correctly more than 50\% of the
-time was greater than $1-\frac{0.05}{720}$, where the denominator is a
-Bonferroni correction for multiple comparisons.
+stimulus, we used the same binomial proportion, and tested whether
+$p\left(p(\textrm{correct})\leq 0.5\right)\leq \frac{0.05}{720}$,
+where $\frac{1}{720}$ is a Bonferroni correction for multiple
+comparisons.
 
 \subsubsection{Human}
 
@@ -635,7 +633,7 @@ had 100\% accuracy, and thus did not exhibit a relationship between
 minimum angle and accuracy.
 
 As noted above, we fit $\sigma_\epsilon=0.6$ for the \Th{} model. This
-has the interesting effect of actually causing the \Th{} to
+has the interesting effect of actually causing the \Th{} model to
 \textit{over}rotate (see, for example, the ``flipped'' pair trace in
 Figure~\ref{fig:model-traces}). This is because the step size is large
 enough that it sometimes misses the global maximum, and must do
@@ -643,6 +641,17 @@ another full rotation to find it. However, when the step size is
 smaller, the fit to human data is slightly worse.
 
 \subsubsection{\Hc{} model}
+
+The \Hc{} was the only model for which there was no monotonic
+relationship between rotation and RT
+(Figure~\ref{fig:response-time-accuracy}). Moreover, the \Hc{} model
+was barely above chance (\HcAccuracy{}) and there were \HcNumChance{}
+individual stimuli for which it was not above chance. The \Hc{} model
+was not a particularly good predictor of human RTs (\HcTimeCorr{}), as
+shown in Figure~\ref{fig:human-model-scatters}. It was a moderately
+good predictor of human accuracy (\HcAccuracyCorr{}).
+
+\subsubsection{\Bq{} model}
 
 \begin{figure}[t]
   \begin{center}
@@ -657,17 +666,6 @@ smaller, the fit to human data is slightly worse.
     \label{fig:response-time-stimulus}
   \end{center}
 \end{figure}
-
-The \Hc{} was the only model for which there was no monotonic
-relationship between rotation and RT
-(Figure~\ref{fig:response-time-accuracy}). Moreover, the \Hc{} model
-was barely above chance (\HcAccuracy{}) and there were \HcNumChance{}
-individual stimuli for which it was not above chance. The \Hc{} model
-was not a particularly good predictor of human RTs (\HcTimeCorr{}), as
-shown in Figure~\ref{fig:human-model-scatters}. It was a moderately
-good predictor of human accuracy (\HcAccuracyCorr{}).
-
-\subsubsection{\Bq{} model}
 
 Like the \Oc{} and \Th{} models, there was an overall monotonic
 relationship between rotation and the number of steps taken by the
