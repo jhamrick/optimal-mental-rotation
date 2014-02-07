@@ -22,23 +22,22 @@ def run(data, results_path, seed):
         if key in exclude:
             continue
         y = df.groupby(['stimulus', 'theta', 'flipped'])['correct']
-        num = (y.apply(util.beta, [0.05]) <= 0.5).sum()
-        total = len(y.groups)
-        results[key] = pd.Series({'num': num, 'total': total})
+        alpha = 0.05 / len(y.groups)
+        chance = y.apply(util.beta, [alpha]).unstack(-1)[alpha] <= 0.5
+        results[key] = chance
 
-    results = pd.DataFrame.from_dict(results, orient='index')
-    results.index.name = 'model'
+    results = pd.DataFrame.from_dict(results).stack().reset_index()
+    results.columns = ['stimulus', 'theta', 'flipped', 'model', 'chance']
+
     pth = results_path.joinpath(filename)
     results.to_csv(pth)
 
     with open(results_path.joinpath(texname), "w") as fh:
         fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")
-        for model, stats in results.iterrows():
-            if stats['num'] < len(words):
-                num = words[stats['num']]
-            else:
-                num = stats['num']
-
+        for model, chance in results.groupby('model')['chance']:
+            num = chance.sum()
+            if num < len(words):
+                num = words[num]
             cmd = util.newcommand(
                 "%sNumChance" % model.capitalize(), num)
             fh.write(cmd)
