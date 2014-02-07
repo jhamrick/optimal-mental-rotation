@@ -21,14 +21,26 @@ def plot(results_path, fig_path):
     with open(pth, "r") as fh:
         times = pickle.load(fh)
 
-    fig, axes = plt.subplots(1, len(order))
+    fig, axes = plt.subplots(1, len(order), sharey=True)
     for i, key in enumerate(order):
         ax = axes[i]
+        bins = 200
 
-        bins = min(100, times[key].ptp() + 1)
-        ax.hist(np.asarray(times[key]), bins=bins, color='k')
+        if key == 'exp':
+            hist, edges = np.histogram(
+                times[key] / 1000., bins=bins,
+                range=(0, times[key].max() / 1000.))
+        else:
+            hist, edges = np.histogram(
+                times[key], bins=bins,
+                range=(0, bins))
+
+        hist = hist * 100 / float(len(times[key]))
+        width = edges[1] - edges[0]
+        ax.bar(edges[:-1], hist, width=width, color='k')
+
+        ax.set_xlim(0, edges[-1])
         ax.set_title(titles[key], fontsize=14)
-
         util.clear_right(ax)
         util.clear_top(ax)
         util.outward_ticks(ax)
@@ -38,9 +50,9 @@ def plot(results_path, fig_path):
         else:
             ax.set_xlabel("Number of actions", fontsize=14)
 
-    axes[0].set_ylabel("Number of responses", fontsize=14)
+    axes[0].set_ylabel("Percent", fontsize=14)
 
-    fig.set_figheight(3)
+    fig.set_figheight(2.5)
     fig.set_figwidth(16)
 
     plt.draw()
