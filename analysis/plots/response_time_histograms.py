@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import util
 import pickle
 import numpy as np
-from path import path
 
 
 def plot(results_path, fig_path):
@@ -26,11 +25,7 @@ def plot(results_path, fig_path):
     for i, key in enumerate(order):
         ax = axes[i]
 
-        if key == 'exp':
-            bins = 100
-        else:
-            bins = times[key].ptp() + 1
-
+        bins = min(100, times[key].ptp() + 1)
         ax.hist(np.asarray(times[key]), bins=bins, color='k')
         ax.set_title(titles[key], fontsize=14)
 
@@ -59,8 +54,4 @@ def plot(results_path, fig_path):
 
 
 if __name__ == "__main__":
-    config = util.load_config("config.ini")
-    version = config.get("global", "version")
-    results_path = path(config.get("paths", "results")).joinpath(version)
-    fig_path = path(config.get("paths", "figures")).joinpath(version)
-    print plot(results_path, fig_path)
+    util.make_plot(plot)

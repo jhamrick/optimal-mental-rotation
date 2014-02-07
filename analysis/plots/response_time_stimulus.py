@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import util
 import pandas as pd
-from path import path
 
 
 def plot(results_path, fig_path):
@@ -100,9 +99,4 @@ def plot(results_path, fig_path):
 
 
 if __name__ == "__main__":
-    config = util.load_config("config.ini")
-    version = config.get("global", "version")
-    data_path = path(config.get("paths", "data"))
-    data = util.load_all(version, data_path)
-    fig_path = path(config.get("paths", "figures")).joinpath(version)
-    print plot(data, fig_path)
+    util.make_plot(plot)

@@ -3,7 +3,6 @@
 import matplotlib.pyplot as plt
 import util
 import pandas as pd
-from path import path
 
 
 def plot_key(key, results_path, fig_path):
@@ -48,17 +47,10 @@ def plot_key(key, results_path, fig_path):
 
 def plot(results_path, fig_path):
     pths = []
-    for key in ['exp', 'th', 'hc', 'bq']:
+    for key in ['exp', 'th', 'hc', 'bq', 'bqp']:
         pths.extend(plot_key(key, results_path, fig_path))
     return pths
 
 
 if __name__ == "__main__":
-    config = util.load_config("config.ini")
-    version = config.get("global", "version")
-    data_path = path(config.get("paths", "data"))
-    data = util.load_all(version, data_path)
-    fig_path = path(config.get("paths", "figures")).joinpath(version)
-    seed = config.getint("global", "seed")
-
-    print plot(data, fig_path, seed)
+    util.make_plot(plot)

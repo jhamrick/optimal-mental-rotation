@@ -3,7 +3,6 @@
 import matplotlib.pyplot as plt
 import util
 import pandas as pd
-from path import path
 
 
 def plot(results_path, fig_path):
@@ -37,10 +36,4 @@ def plot(results_path, fig_path):
 
 
 if __name__ == "__main__":
-    config = util.load_config("config.ini")
-    version = config.get("global", "version")
-    data_path = path(config.get("paths", "data"))
-    data = util.load_human(version, data_path)[1]
-    fig_path = path(config.get("paths", "figures")).joinpath(version)
-    seed = config.getint("global", "seed")
-    print plot(data, fig_path, seed)
+    util.make_plot(plot)

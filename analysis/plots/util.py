@@ -2,6 +2,7 @@ from ConfigParser import SafeConfigParser
 import matplotlib.pyplot as plt
 import os
 import sys
+from path import path
 
 from mental_rotation.analysis import load_human, load_all, zscore
 
@@ -262,4 +263,12 @@ def sync_ylabel_coords(axes, x, y=0.5):
         ax.yaxis.set_label_coords(x, y)
 
 
-report_pearson = r"$\rho$ = {median:.2f}, 95% CI [{lower:.2f}, {upper:.2f}]"
+report_pearson = r"$r$ = {median:.2f}, 95% CI [{lower:.2f}, {upper:.2f}]"
+
+
+def make_plot(func):
+    config = load_config("config.ini")
+    version = config.get("global", "version")
+    results_path = path(config.get("paths", "results")).joinpath(version)
+    fig_path = path(config.get("paths", "figures")).joinpath(version)
+    print func(results_path, fig_path)
