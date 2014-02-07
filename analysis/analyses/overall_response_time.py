@@ -17,6 +17,11 @@ def run(data, results_path, seed):
 
     results = pd.DataFrame.from_dict(results, orient='index')
     results.index.name = 'model'
+    # these are out of order, so fix them
+    results = results.rename(columns={
+        'lower': 'upper',
+        'upper': 'lower'})
+
     pth = results_path.joinpath(filename)
     results.to_csv(pth)
 
