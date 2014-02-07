@@ -13,7 +13,8 @@ def run(data, results_path, seed):
 
     results = {}
     for name in sorted(data.keys()):
-        results[name] = 1. / util.bootstrap_mean(1. / data[name]['time'])
+        correct = data[name][data[name]['correct']]
+        results[name] = 1. / util.bootstrap_mean(1. / correct['time'])
 
     results = pd.DataFrame.from_dict(results, orient='index')
     results.index.name = 'model'
