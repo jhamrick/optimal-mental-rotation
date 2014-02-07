@@ -57,10 +57,10 @@
 }{\end{itemize}}
 
 % space below "Figure 1: ...", but only for inline figures
-\addtolength{\textfloatsep}{-0.5cm}
+%\addtolength{\textfloatsep}{-0.5cm}
 
 \addtolength{\abovecaptionskip}{-0.25cm}
-\addtolength{\belowcaptionskip}{-0.2cm}
+\addtolength{\belowcaptionskip}{-0.3cm}
 
 \input{../../results/D/overall_response_time.tex}
 \input{../../results/D/overall_accuracy.tex}
@@ -94,12 +94,15 @@
   determining if two images depict the same object in different
   orientations \cite{Shepard1971}. Through a rational analysis of
   mental rotation, we formalized four models and compared them to
-  human performance. \TODO{None of the models were a particularly
-    satisfying explanation of human behavior, leading us to suggest
-    that the question of ``what to simulate?'' is more difficult than
-    has previously been assumed. While only exploratory, this work
-    provides the foundation necessary to begin answering this
-    question.}
+  human performance. We found that three of the models, which were
+  based on previous hypotheses in the literature, were unable to
+  account for several aspects of human behavior. The fourth, which is
+  a model based on the idea of \textit{active sampling}
+  \cite<e.g.,>{Gureckis:2012gu}, provides plausible explanations where
+  the other models do not. Based on these results, we suggest that the
+  question of ``what to simulate?'' is more difficult than has
+  previously been assumed, and that an active learning approach holds
+  promise for uncovering the answer.
 
   \textbf{Keywords:} mental rotation, computational model
 \end{abstract}
@@ -107,9 +110,9 @@
 \section{Introduction}
 
 One of the most astonishing cognitive feats is our ability to
-envision, manipulate, and plan with objects -- all without actually
-perceiving them. This capacity for ``mental simulation'' has been
-widely studied, including an intense debate about the underlying
+envision, manipulate, and plan with objects---all without actually
+perceiving them. This \textit{mental simulation} has been widely
+studied, including an intense debate about the underlying
 representation of mental images \cite<e.g.,>{Kosslyn:2009tj,
   Pylyshyn:2002vk}. But this debate hasn't addressed one of the most
 fundamental questions about mental simulation: how people decide what
@@ -121,9 +124,9 @@ posed by simulation.  In the classic experiment by
 objects and had to determine whether the images depicted the same
 object (which differed by a rotation) or two separate objects (which
 differed by a reflection and a rotation). They found that people's
-response times had a strong linear correlation with the minimum angle
-of rotation, a result which led to the conclusion that people solve
-this task by ``mentally rotating'' the objects until they are
+response times (RTs) had a strong linear correlation with the minimum
+angle of rotation, a result which led to the conclusion that people
+solve this task by ``mentally rotating'' the objects until they are
 congruent.  However, this explanation leaves several questions
 unanswered. How do people know the axis around which to rotate the
 objects? If the axis is known, how do people know which direction to
@@ -209,9 +212,8 @@ angle. However, it violates the constraint that we do not know the
 points of correspondence between the images, which is exactly what
 necessitates the use of imagery. Noting that a rational solution need
 not necessarily maintain a single trajectory of rotation, we explore
-an alternative rational model, which--rather than computing the angle
-of rotation ahead of time--engages in an \textit{active sampling}
-strategy.
+an alternative model, which---rather than explicitly computing the
+angle of rotation---engages in an \textit{active sampling} strategy.
 
 Active sampling is the idea that when initial information is
 incomplete, people will gather new information in a manner that
@@ -300,7 +302,7 @@ costly in terms of computational resources. Specifically, if the
 current mental image is $\Xt$, then:
 \begin{equation}
   \mathbf{X}_{t+1} = \left\{ \begin{array}{ll}
-      f(\Xt, 0, \epsilon) &\mbox{ continue rotating by $\epsilon$,} \\
+      f(\Xt, 0, \epsilon) &\mbox{ rotate by $\epsilon$ radians,} \\
       f(\Xt, 1, 0) &\mbox{ flip,} \\
       f(\Xa, 0, 0) &\mbox{ reset, or} \\
       f(\Xa, 1, 0) &\mbox{ reset and flip,} \\
@@ -308,7 +310,7 @@ current mental image is $\Xt$, then:
   \label{eq:actions}
 \end{equation}
 where $\epsilon\sim \left|\mathcal{N}(0, \sigma_\epsilon^2)\right|$
-and $\sigma_\epsilon^2$ is the variance of the step size in radians.
+and $\sigma_\epsilon^2$ is the variance of the step size.
 
 To summarize, we approximate the likelihood term of
 Equation~\ref{eq:lh-ratio} using the similarity function defined in
@@ -321,8 +323,8 @@ actions listed in Equation~\ref{eq:actions}.
 In order to approximate Equation~\ref{eq:lh-ratio} using samples of
 the similarity function, we must decide \textit{which} places to
 sample and \textit{when} stop sampling. The models below differ in how
-they make these decisions (see Figure~\ref{fig:model-traces} for
-examples of their behavior).
+they make these decisions; see Figure~\ref{fig:model-traces} for an
+example.
 
 \subsubsection{Oracle model}
 
@@ -339,7 +341,7 @@ computing $(\Xa \F_h^T)_\mathrm{left}^{-1}\cdot{}\Xb$, where
 $(\Xa\F_h^T)_\mathrm{left}^{-1}$ is the left inverse of
 $\Xa\F_h^T$. We then check each $h$ to see if the computation produces
 a valid rotation matrix; the $h$ that does is the correct
-hypothesis. This approach gives us the true value of $\theta$, so
+hypothesis. This gives us the true value of $\theta$, so
 Equation~\ref{eq:lh-ratio} becomes a generalized likelihood ratio
 test, where $\theta$ is set to the MLE value, rather than being
 marginalized:
@@ -366,9 +368,9 @@ becomes a likelihood ratio.
   \begin{center}
     \includegraphics[width=\textwidth]{../../figures/D/response_time_scatters.pdf}
     \caption{\textbf{Model vs. human RTs.} Each subplot shows the
-      z-scored model response times ($x$-axis) vs. the z-scored human
-      response times ($y$-axis). Pearson correlations are shown
-      beneath each subplot. The dotted lines are $x=y$.}
+      z-scored model RTs ($x$-axis) vs. the z-scored human RTs
+      ($y$-axis). Pearson correlations are shown beneath each
+      subplot. The dotted lines are $x=y$.}
     \label{fig:human-model-scatters}
   \end{center}
 \end{figure*}
@@ -382,10 +384,9 @@ dimensionality, perceptual uncertainty, and whether the shapes are
 identical).  One way to deal with the problem of choosing a threshold
 would simply be to perform an exhaustive search or use a global
 optimization strategy. However, these strategies would not result in
-the linear response time found by \citeA{Shepard1971}. A second
-alternative, which could potentially demonstrate the linear response
-time result, might instead just perform a Hill Climbing (\Hc{}) search
-for a \textit{local} maximum. As with the \Oc{} and \Th{} models,
+the linear RT found by \citeA{Shepard1971}. A second alternative might
+instead just perform a Hill Climbing (\Hc{}) search for a
+\textit{local} maximum. As with the \Oc{} and \Th{} models,
 Equation~\ref{eq:lh-ratio} becomes a generalized likelihood ratio
 test.
 
@@ -426,12 +427,10 @@ over points sampled from the log-GP, which we denote as
 $\bar{S}_h:=\exp(\mu_h)$.\footnote{Note that the approach used here
   differs slightly from the one presented in \citeA{Osborne:2012tm}
   and is based on personal communication with one of the authors
-  \cite{Duvenaud:2013td}.} Then, from \citeA{Duvenaud:2013td}:
-\begin{align}
-  \mathbb{E}[Z_h] &\approx \int \bar{\mu}_h(\theta)p(\theta)\dif\theta,\\
-  \mathbb{V}(Z_h) &\approx \iint \mathrm{Cov}_h(\theta,
-  \theta^\prime)\bar{\mu}_h(\theta)\bar{\mu}_h(\theta^\prime)p(\theta)p(\theta^\prime)\dif\theta\dif\theta^\prime,
-\end{align}
+  \cite{Duvenaud:2013td}.} Then, from \citeA{Duvenaud:2013td}, we have
+$\mathbb{E}[Z_h] \approx \int \bar{\mu}_h(\theta)p(\theta)\dif\theta$
+and $\mathbb{V}(Z_h) \approx \iint \mathrm{Cov}_h(\theta,
+\theta^\prime)\bar{\mu}_h(\theta)\bar{\mu}_h(\theta^\prime)p(\theta)p(\theta^\prime)\dif\theta\dif\theta^\prime$,
 where $\bar{\mu}_h:=\mu(\bar{S}_h)$ is the mean of the second GP, and
 $\mathrm{Cov}_h:=\mathrm{Cov}(\log S_h)$ is the covariance of the
 log-GP.
@@ -537,22 +536,21 @@ press `s' to indicate they thought the images depicted the ``same''
 object, or `d' to indicate they thought the images depicted
 ``flipped'' objects.
 
-While there was no limit on response time, participants were urged to
-respond as quickly as possible while still being
-accurate. Specifically, we asked them to aim for at least 85\%
-accuracy in the experimental blocks, and provided a counter to keep
-them informed of their score.
+While there was no limit on RT, participants were urged to respond as
+quickly as possible while still being accurate. Specifically, we asked
+them to aim for at least 85\% accuracy in the experimental blocks, and
+provided a counter to keep them informed of their score.
 
 \section{Results}
 
 Out of the 247 participants, 200 (81\%) were included in our
-analyses. Of the rest, we excluded 10 (4\%) because of an experimental
-error, 6 (2.4\%) because they had already completed a related
-experiment, and 31 (12.6\%) because they failed a comprehension
-check. Comprehension was defined as correctly answering at least 85\%
-of stimuli with a minimum rotation of $0^\circ$ or $20^\circ$.
-Additionally, we excluded 82 trials for which the response time (RT)
-was either less than 100 milliseconds or greater than 20 seconds.
+analyses. Of the other 47, we excluded 10 (4\%) because of an
+experimental error, 6 (2.4\%) because they had already completed a
+related experiment, and 31 (12.6\%) because they failed a
+comprehension check. Comprehension was defined as correctly answering
+at least 85\% of stimuli with a minimum rotation of $0^\circ$ or
+$20^\circ$.  Additionally, we excluded 82 trials for which the RT was
+either less than 100 milliseconds or greater than 20 seconds.
 
 For each model, we ran 50 samples for each of the 800 experimental
 stimuli. The step size parameter ($\sigma_\epsilon$) was fit to human
@@ -561,10 +559,7 @@ RTs for each of the models, resulting in $\sigma_\epsilon=0.6$ for the
 \Hc{} models. We also ran the models under two different priors,
 $p(h=0)=0.5$ (the ``equal'' prior) and $p(h=0)=0.55$ (the ``unequal''
 prior). This only had a major effect on the stopping criteria for the
-\Bq{} model.\footnote{The prior also had a small effect on the
-  accuracy of the \Hc{} model, because sometimes the local maxima were
-  small enough that Equation~\ref{eq:mle-lh-ratio} became dominated by
-  the prior.}
+\Bq{} model.
 
 \subsubsection{General analysis}
 
@@ -586,7 +581,7 @@ Bonferroni correction for multiple comparisons.
 \subsubsection{Human}
 
 The average RT across all correctly-judged stimuli was \ExpTime{}
-milliseconds; the full histogram of response times can be seen in
+milliseconds; the full histogram of RTs can be seen in
 Figure~\ref{fig:histograms}. The minimum angle of rotation was
 significantly rank-order (Spearman) correlated with average
 per-stimulus RTs, both for ``flipped'' (\ExpThetaTimeCorrFlipped{})
@@ -634,19 +629,18 @@ between angle and RT for individual shapes was usually not monotonic
 able to explain a moderate amount of the variance in human RTs, with a
 correlation of \ThTimeCorr{}
 (Figure~\ref{fig:human-model-scatters}). Like the \Oc{} model,
-however, the overall distribution of its response times did not match
-that of people (Figure~\ref{fig:histograms}). Additionally, the \Th{}
-model had 100\% accuracy, and thus did not exhibit a relationship
-between minimum angle and accuracy.
+however, the overall distribution of its RTs did not match that of
+people (Figure~\ref{fig:histograms}). Additionally, the \Th{} model
+had 100\% accuracy, and thus did not exhibit a relationship between
+minimum angle and accuracy.
 
 As noted above, we fit $\sigma_\epsilon=0.6$ for the \Th{} model. This
 has the interesting effect of actually causing the \Th{} to
 \textit{over}rotate (see, for example, the ``flipped'' pair trace in
 Figure~\ref{fig:model-traces}). This is because the step size is large
 enough that it sometimes misses the global maximum, and must do
-another full rotation to find it. However, when the step size is small
-enough to always find the maximum, the fit to human data is slightly
-worse.
+another full rotation to find it. However, when the step size is
+smaller, the fit to human data is slightly worse.
 
 \subsubsection{\Hc{} model}
 
@@ -711,48 +705,45 @@ of determining the direction and extent of mental rotation, we
 formalized four models and compared their performance with the results
 of a behavioral experiment.
 
-The \Oc{} model was the best predictor of human RTs, but is an
-unsatisfying explanation of human behavior because it relies on
-\textit{a priori} knowledge that people are unlikely to have about
-which points on the two shapes correspond. Similarly, while the \Th{}
-was next best in terms of correlation, it makes the unsatisfying
-assumption that the global maximum is known. Finally, neither of these
-models can explain the difference in people's behavior on ``same'' and
-``flipped'' stimuli.  The \Bq{} model was nearly as good as the \Th{}
-model; in contrast to the other models, the \Bq{} model makes no
-assumptions about people's \textit{a prior} knowledge. Furthermore,
-the \Bq{} model's adaptive stopping rule is sensitive to the prior,
-and thus provides a possible explanation for why people are slower to
-respond on ``flipped'' stimulus pairs.
+The \Oc{} and \Th{} models were---in terms of correlations---the best
+predictors of human RTs. However, both are somewhat unsatisfying
+explanations because they rely on \textit{a priori} knowledge that
+people are unlikely to have. Moreover, they offer no explanation of
+several aspects of human behavior. First, their overall RT
+distributions look nothing like people's
+(Figure~\ref{fig:histograms}).  Second, they both are 100\% accurate,
+and so cannot explain the systematic relationship between rotation and
+accuracy found in people
+(Figure~\ref{fig:response-time-accuracy}). Third, neither model can
+explain the difference in people's behavior on ``same'' and
+``flipped'' stimuli.
 
-Additionally, a closer look at performance on individual shapes
-reveals several interesting points
-(Figure~\ref{fig:response-time-stimulus} shows curves for one
-particular shape; these curves are fairly typical relative to other
-shapes). First, the curves for the human RTs on specific shapes tend
-to either be linear, or linear first, then flat. Second, while the
-\Th{} model appears to capture the concavity of human RTs overall, it
-is actually fairly inconsistent within shapes. Third, the linearity of
-the \Bq{} model's RT curves \textit{is} consistent within shapes,
-though it does not exhibit the same ``plateau'' effect that sometimes
-appears in the human curves.
+In contrast, the \Bq{} model was nearly as good as the \Th{} model,
+yet it makes no assumptions about people's \textit{a priori}
+knowledge. Furthermore, the \Bq{} model matches people's behavior
+better than the \Oc{} or \Th{} models in several ways. Its overall RT
+histogram has the same general shape as people's
+(Figure~\ref{fig:histograms}).  Moreover, a closer look shows that the
+\Bq{} model maintains the monotonic relationship between angle and RT
+even on individual stimuli, while the \Th{} model does not
+(Figure~\ref{fig:response-time-stimulus}). Finally, the \Bq{} model's
+adaptive stopping rule is sensitive to the prior, and thus provides a
+possible explanation for why people are slower to respond on
+``flipped'' stimulus pairs.
 
 Thus, we suggest that the \Bq{} model offers the most promising
 explanation of people's behavior on the mental rotation task to
-date. It is the only model out of those surveyed which did not make
-assumptions about people's \textit{a priori} knowledge, which was a
-reasonable predictor of people's behavior, and which provided an
-explanation for the longer response times on ``flipped'' stimuli.
-Clearly, though, the \Bq{} model is not a perfect account, and there
-are several immediately obvious ways in which it could be
-improved. For example, while we used holistic rotations in this paper,
-there is evidence that people compare individual features of shapes
-rather than the entire shape at once
-\cite{Just1976,Yuille:1982tx}. Second, there are other possible active
-sampling approaches that could combine the best features from the
-\Th{} and \Bq{} models, such as maintaining a distribution over the
-location and value of the global maximum, rather than over the
-integral.
+date. While it is not a perfect account, there are several ways in
+which it could be improved. For example, while we used holistic
+rotations in this paper, there is evidence that people compare
+individual features of shapes
+\cite{Just1976,Yuille:1982tx}. Additionally, a different active
+sampling approach could maintain a distribution over the location and
+value of the global maximum, rather than over the integral. We intend
+to explore these possibilities in future work, building upon the
+foundation established in this paper and working towards a better
+understanding of \textit{what} people should choose to simulate.
+
 
 %% TODO: Uncomment this for final version:
 
