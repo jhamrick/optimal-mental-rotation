@@ -57,12 +57,12 @@ def plot(results_path, fig_path):
     axes[0].set_ylim(-4, 4)
     axes[0].set_ylabel("Human", fontsize=14)
 
-    fig.set_figheight(3)
+    fig.set_figheight(2.5)
     fig.set_figwidth(16)
     plt.draw()
     plt.tight_layout()
 
-    plt.subplots_adjust(wspace=0.1)
+    plt.subplots_adjust(wspace=0.1, bottom=0.2, top=0.9)
 
     pths = [fig_path.joinpath("response_time_scatters.%s" % ext)
             for ext in ('png', 'pdf')]
