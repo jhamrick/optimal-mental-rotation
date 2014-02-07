@@ -29,12 +29,14 @@ def plot(results_path, fig_path):
         if key == 'exp':
             hist, edges = np.histogram(
                 times[key] / 1000., bins=bins,
-                range=(0, times[key].max() / 1000.))
+                range=(0, 20))
         else:
             hist, edges = np.histogram(
                 times[key], bins=bins,
                 range=(0, bins))
 
+        edges = edges[:101]
+        hist = hist[:100]
         hist = hist * 100 / float(len(times[key]))
         width = edges[1] - edges[0]
         ax.bar(edges[:-1], hist, width=width, color='k')
@@ -46,10 +48,9 @@ def plot(results_path, fig_path):
         util.outward_ticks(ax)
 
         if key == 'exp':
-            ax.set_xlabel("Response time", fontsize=14)
+            ax.set_xlabel("RT (seconds)", fontsize=14)
         else:
             ax.set_xlabel("Number of actions", fontsize=14)
-
     axes[0].set_ylabel("Percent", fontsize=14)
 
     fig.set_figheight(2.5)
