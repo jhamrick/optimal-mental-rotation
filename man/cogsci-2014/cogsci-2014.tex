@@ -57,7 +57,10 @@
 }{\end{itemize}}
 
 % space below "Figure 1: ...", but only for inline figures
-%\addtolength{\textfloatsep}{-0.5cm}
+\addtolength{\textfloatsep}{-0.5cm}
+
+\addtolength{\abovecaptionskip}{-0.25cm}
+\addtolength{\belowcaptionskip}{-0.2cm}
 
 \input{../../results/D/overall_response_time.tex}
 \input{../../results/D/overall_accuracy.tex}
@@ -361,11 +364,12 @@ becomes a likelihood ratio.
 
 \begin{figure*}[t]
   \begin{center}
-    \includegraphics[width=\textwidth]{../../figures/D/response_time_histograms.pdf}
-    \caption{\textbf{Response time histograms.} Each subplot shows a
-      histogram of RTs for people (left) or one of the models (only
-      for trials which were answered correctly).}
-    \label{fig:histograms}
+    \includegraphics[width=\textwidth]{../../figures/D/response_time_scatters.pdf}
+    \caption{\textbf{Model vs. human RTs.} Each subplot shows the
+      z-scored model response times ($x$-axis) vs. the z-scored human
+      response times ($y$-axis). Pearson correlations are shown
+      beneath each subplot. The dotted lines are $x=y$.}
+    \label{fig:human-model-scatters}
   \end{center}
 \end{figure*}
 
@@ -510,12 +514,11 @@ block).
 
 \begin{figure*}[t]
   \begin{center}
-    \includegraphics[width=\textwidth]{../../figures/D/response_time_scatters.pdf}
-    \caption{\textbf{Model vs. human RTs.} Each subplot shows the
-      z-scored model response times ($x$-axis) vs. the z-scored human
-      response times ($y$-axis). Pearson correlations are shown
-      beneath each subplot. The dotted lines are $x=y$.}
-    \label{fig:human-model-scatters}
+    \includegraphics[width=\textwidth]{../../figures/D/response_time_histograms.pdf}
+    \caption{\textbf{Response time histograms.} Each subplot shows the
+      distribution of RTs on correct trials for people and the
+      models.}
+    \label{fig:histograms}
   \end{center}
 \end{figure*}
 
@@ -575,22 +578,22 @@ all correlations were computed over 720 datapoints (one for each
 stimulus). For analyses of accuracy, confidence intervals were
 computed from a binomial proportion with a Jeffrey's beta prior.  To
 test if participants or a model was above chance on a particular
-stimulus, we used the same binomial proportion, and simply tested
-whether $p>\frac{0.05}{720}$ for the 50\% mark, where the denominator
-is a Bonferroni correction for multiple comparisons.
+stimulus, we used the same binomial proportion, and tested whether the
+cumulative probability of answering correctly more than 50\% of the
+time was greater than $1-\frac{0.05}{720}$, where the denominator is a
+Bonferroni correction for multiple comparisons.
 
 \subsubsection{Human}
 
-The average RT across all stimuli was \ExpTime{} milliseconds.  The
-minimum angle of rotation was significantly rank-order (Spearman)
-correlated with average per-stimulus RTs, both for ``flipped''
-(\ExpThetaTimeCorrFlipped{}) and ``same'' pairs
-(\ExpThetaTimeCorrSame{}). While this replicates the general result of
-previous experiments \cite<e.g.,>{Shepard1971,Cooper:1975wp}, our
-results are not as perfectly linear. However, \citeA{Gardony:2013gn}
-found a constant effect for ``flipped'' pairs; an average of their
-results and the classic results would produce something similar to
-ours.
+The average RT across all correctly-judged stimuli was \ExpTime{}
+milliseconds; the full histogram of response times can be seen in
+Figure~\ref{fig:histograms}. The minimum angle of rotation was
+significantly rank-order (Spearman) correlated with average
+per-stimulus RTs, both for ``flipped'' (\ExpThetaTimeCorrFlipped{})
+and ``same'' pairs (\ExpThetaTimeCorrSame{}). While this replicates
+the general result of previous experiments
+\cite<e.g.,>{Shepard1971,Cooper:1975wp}, our results are not as
+perfectly linear.
 
 The average accuracy across all stimuli was \ExpAccuracy{}, though
 there were \ExpNumChance{} stimuli (out of 720) for which people were
@@ -615,9 +618,11 @@ As we would expect, the number of actions taken by the \Oc{} model was
 perfectly correlated with the minimum angle of rotation
 (Figure~\ref{fig:response-time-accuracy}). Unsurprisingly, the \Oc{}
 model was the best fit to human RTs, with a correlation of
-\OcTimeCorr{} (Figure~\ref{fig:human-model-scatters}).  However, the
-\Oc{} model was 100\% accurate, and therefore the correlation between
-minimum angle and accuracy was undefined.
+\OcTimeCorr{} (Figure~\ref{fig:human-model-scatters}).  However,
+distribution of response times did not match that of people
+(Figure~\ref{fig:histograms}). Moreover, the \Oc{} model was 100\%
+accurate, and therefore could not explain the relationship between
+rotation and accuracy which was demonstrated by people.
 
 \subsubsection{\Th{} model}
 
@@ -628,8 +633,10 @@ between angle and RT for individual shapes was usually not monotonic
 (e.g., Figure~\ref{fig:response-time-stimulus}).  The \Th{} model was
 able to explain a moderate amount of the variance in human RTs, with a
 correlation of \ThTimeCorr{}
-(Figure~\ref{fig:human-model-scatters}). Like the \Oc{} model, the
-\Th{} model had 100\% accuracy, and thus there was no correlation
+(Figure~\ref{fig:human-model-scatters}). Like the \Oc{} model,
+however, the overall distribution of its response times did not match
+that of people (Figure~\ref{fig:histograms}). Additionally, the \Th{}
+model had 100\% accuracy, and thus did not exhibit a relationship
 between minimum angle and accuracy.
 
 As noted above, we fit $\sigma_\epsilon=0.6$ for the \Th{} model. This
@@ -676,11 +683,12 @@ relationship between rotation and the number of steps taken by the
 explained variance in human RTs about as well as the \Th{} model
 (Figure~\ref{fig:human-model-scatters}), with a correlation of
 \BqTimeCorr{} for the equal prior and \BqpTimeCorr{} for the unequal
-prior.
+prior. The RT distribution from the \Bq{} model had the same overall
+shape as that of people (Figure~\ref{fig:histograms}).
 
 The \Bq{} model was quite accurate overall (equal prior:
 (\BqAccuracy{}; unequal prior: \BqpAccuracy{}). With the equal prior,
-there were \BqNumChance{} stimulii for which it was not above chance;
+there were \BqNumChance{} stimuli for which it was not above chance;
 with the unequal prior, there were \BqpNumChance{}. The \Bq{} model
 had about the same correlation with people's accuracy as the \Hc{}
 model (equal prior: \BqAccuracyCorr{}; unequal prior:
