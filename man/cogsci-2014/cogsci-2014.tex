@@ -96,13 +96,12 @@
   mental rotation, we formalized four models and compared them to
   human performance. We found that three models based on previous
   hypotheses in the literature were unable to account for several
-  aspects of human behavior. The fourth, which is a model based on the
-  idea of \textit{active sampling} \cite<e.g.,>{Gureckis:2012gu},
-  provides plausible explanations where the other models do not. Based
-  on these results, we suggest that the question of ``what to
-  simulate?'' is more difficult than has previously been assumed, and
-  that an active learning approach holds promise for uncovering the
-  answer.
+  aspects of human behavior. The fourth, which is based on the idea of
+  \textit{active sampling} \cite<e.g.,>{Gureckis:2012gu}, provides
+  plausible explanations where the other models do not. Based on these
+  results, we suggest that the question of ``what to simulate?'' is
+  more difficult than has previously been assumed, and that an active
+  learning approach holds promise for uncovering the answer.
 
   \textbf{Keywords:} mental rotation, computational modeling
 \end{abstract}
@@ -214,10 +213,9 @@ not necessarily maintain a single trajectory of rotation, we explore
 an alternative model, which---rather than explicitly computing the
 angle of rotation---engages in an \textit{active sampling} strategy.
 
-Active sampling is the idea that when initial information is
-incomplete, people will gather new information in a manner that
-increases certainty about the problem space. This notion has recently
-gained support in several areas of cognitive science
+Active sampling is the idea people gather new information in a manner
+that increases certainty about the problem space. This notion has
+recently gained support in several areas of cognitive science
 \cite<e.g.,>{Gureckis:2012gu}, including other spatial domains
 \cite{Juni:2011vo}. In the case of mental rotation, if people do not
 know the minimum angle beforehand, then actively performing rotations
@@ -347,14 +345,17 @@ marginalized:
 
 \subsubsection{Threshold model}
 
-What if the point correspondences are unknown? A model which obeys
-this constraint could first rotate in the direction that increases
-local similarity, and then stop rotating once a ``match'' is found, as
-determined by a threshold on the similarity $S$. If all rotations have
-been exhausted, then flip, and try rotating again. We assume that the
-locations where $S$ is greater than the threshold correspond to the
-true $\theta$ (or points near the true $\theta$). So, as with the
-\Oc{} model, we use Equation~\ref{eq:mle-lh-ratio}.
+A model which does not know point correspondences could use the
+following algorithm: (1) pick a random direction; (2) take a single
+step; (3) if that step decreased similarity, then begin rotating in
+the reverse direction, otherwise continue rotating in the original
+direction; (4) continue rotating in the chosen direction until a
+``match'' is found (defined as finding a value of $S$ that exceeds a
+threshold); and (5) if no match was found, flip, and start over from
+step one.  We assume that the locations where $S$ is greater than the
+threshold correspond to the true $\theta$ (or points near the true
+$\theta$). So, as with the \Oc{} model, we use
+Equation~\ref{eq:mle-lh-ratio}.
 
 \subsubsection{Hill Climbing model}
 
@@ -378,10 +379,13 @@ dimensionality, perceptual uncertainty, and whether the shapes are
 identical).  One way to deal with the problem of choosing a threshold
 would simply be to perform an exhaustive search or use a global
 optimization strategy. However, these strategies would not result in
-the linear RT found by \citeA{Shepard1971}. A second alternative might
-instead just perform a Hill Climbing (\Hc{}) search for a
-\textit{local} maximum. Thus, as with the \Oc{} and \Th{} models, we
-use Equation~\ref{eq:mle-lh-ratio}.
+the linear RT found by \citeA{Shepard1971}. A second alternative is to
+perform a Hill Climbing (\Hc{}) search; i.e., rotate in the direction
+that increases similarity until no further improvement can be
+found. In contrast with the \Th{} model, this results in arriving in a
+\textit{local} maximum (which may or may not be the global
+maximum). Thus, as with the \Oc{} and \Th{} models, we use
+Equation~\ref{eq:mle-lh-ratio}.
 
 \subsubsection{Bayesian Quadrature model}
 
@@ -528,14 +532,14 @@ provided a counter to keep them informed of their score.
 
 \section{Results}
 
-Out of the 247 participants, 200 (81\%) were included in our
-analyses. Of the other 47, we excluded 10 (4\%) because of an
-experimental error, 6 (2.4\%) because they had already completed a
-related experiment, and 31 (12.6\%) because they failed a
-comprehension check. Comprehension was defined as correctly answering
-at least 85\% of stimuli with a minimum rotation of $0^\circ$ or
-$20^\circ$.  Additionally, we excluded 82 trials for which the RT was
-either less than 100ms or greater than 20s.
+Of the 247 participants, 200 (81\%) were included in our analyses. Of
+the other 47, we excluded 10 (4\%) because of an experimental error, 6
+(2.4\%) because they had already completed a related experiment, and
+31 (12.6\%) because they failed a comprehension check, which was
+defined as correctly answering at least 85\% of stimuli with a minimum
+rotation of $0^\circ$ or $20^\circ$.  Additionally, we excluded 82
+trials for which the RT was either less than 100ms or greater than
+20s.
 
 For each model, we ran 50 samples for each of the 800 experimental
 stimuli. The step size parameter ($\sigma_\epsilon$) was fit to human
@@ -633,10 +637,10 @@ The \Hc{} was the only model for which there was no monotonic
 relationship between rotation and RT
 (Figure~\ref{fig:response-time-accuracy}). Moreover, the \Hc{} model
 was barely above chance (\HcAccuracy{}) and there were \HcNumChance{}
-individual stimuli for which it was not above chance. The \Hc{} model
-was not a particularly good predictor of human RTs (\HcTimeCorr{}), as
-shown in Figure~\ref{fig:human-model-scatters}. It was a moderately
-good predictor of human accuracy (\HcAccuracyCorr{}).
+stimuli for which it was not above chance. The \Hc{} model was not a
+good predictor of human RTs (\HcTimeCorr{}), as shown in
+Figure~\ref{fig:human-model-scatters}. It was a moderately good
+predictor of human accuracy (\HcAccuracyCorr{}).
 
 \subsubsection{\Bq{} model}
 
@@ -690,17 +694,17 @@ of determining the direction and extent of mental rotation, we
 formalized four models and compared their performance with the results
 of a behavioral experiment.
 
-The \Oc{} and \Th{} models were---in terms of correlations---the best
-predictors of human RTs. However, both are somewhat unsatisfying
-explanations because they rely on \textit{a priori} knowledge that
-people are unlikely to have. Moreover, they offer no explanation of
-several aspects of human behavior. First, their overall RT
-distributions look nothing like people's
-(Figure~\ref{fig:histograms}).  Second, they both are 100\% accurate,
-and so cannot explain the systematic relationship between rotation and
-human accuracy (Figure~\ref{fig:response-time-accuracy}). Third,
-neither model can explain the difference in people's behavior on
-``same'' and ``flipped'' stimuli.
+The \Oc{} and \Th{} models were the best predictors of human
+RTs. However, both are somewhat unsatisfying explanations because they
+rely on \textit{a priori} knowledge that people are unlikely to
+have. Moreover, they offer no explanation of several aspects of human
+behavior. First, their overall RT distributions look nothing like
+people's (Figure~\ref{fig:histograms}).  Second, they both are 100\%
+accurate, and so cannot explain the systematic relationship between
+rotation and human accuracy
+(Figure~\ref{fig:response-time-accuracy}). Third, neither model can
+explain the difference in people's behavior on ``same'' and
+``flipped'' stimuli.
 
 In contrast, the \Bq{} model was nearly as good as the \Th{} model,
 yet it makes no assumptions about people's \textit{a priori}
