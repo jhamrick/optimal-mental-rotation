@@ -192,7 +192,7 @@ class BaseModel(object):
 
         return lines
 
-    def plot_trace(self, ax, legend=True, scale_points=True):
+    def plot_trace(self, ax, legend=True, scale_points=10):
         Fi = self.F_i
         Ri = self.R_i
         ti = np.arange(Ri.size)
@@ -202,7 +202,7 @@ class BaseModel(object):
 
         if scale_points:
             Si = self.log_S_i - self._log_const
-            Si = (Si - Si.min() + 1) * 10
+            Si = (Si - Si.min() + 1) * scale_points
         else:
             Si = np.zeros(Ri.size) + 30
 
