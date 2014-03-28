@@ -1,8 +1,7 @@
-from itertools import product as iproduct
 from path import path
+from itertools import product
 import json
 import numpy as np
-from mental_rotation import STIM_PATH
 
 
 class Tasks(dict):
@@ -26,26 +25,52 @@ class Tasks(dict):
         if not sim_root.exists():
             sim_root.makedirs_p()
 
-        stim_paths = [STIM_PATH.joinpath(x) for x in params['stim_paths']]
+        stim_paths = params['stim_paths']
+        num_samples = params['num_samples']
+        chunksize = float(params['chunksize'])
+        opts = params['model_opts']
 
         tasks = cls()
         completed = cls()
         for istim, stim in enumerate(stim_paths):
-            sim_name = stim.namebase
-            data_path = sim_root.joinpath(sim_name)
+            stim = path(stim)
+            rot = float(stim.namebase.split("_")[1])
+            if rot in (0, 180):
+                ns = num_samples * 2
+            else:
+                ns = num_samples
 
-            # Make the task dicts for this sample.
-            tasks[sim_name] = {
-                "model": params["model"],
-                "istim": istim,
-                "stim_path": str(stim),
-                "data_path": str(data_path),
-                "script_root": params["script_root"],
-                "task_name": sim_name,
-                "seed": abs(hash(sim_name)),
-                "num_tries": 0,
-            }
+            opt_names = sorted(opts.keys())
+            param_names = opt_names + ['sample']
+            param_vals = [opts[key] for key in param_names[:-1]]
+            param_vals.append(range(ns))
 
-            completed[sim_name] = False
+            combs = np.array(list(product(*param_vals)))
+            if chunksize == -1:
+                n_chunks = 1
+            else:
+                n_chunks = int(np.ceil(combs.shape[0] / chunksize))
+
+            ichunks = np.array_split(
+                np.arange(len(combs)), n_chunks, axis=0)
+
+            for idx, ichunk in enumerate(ichunks):
+                sim_name = "%s~%d" % (stim.namebase, idx)
+                data_path = sim_root.joinpath(sim_name)
+                model_opts = {
+                    i: dict(zip(param_names, combs[i])) for i in ichunk}
+
+                # Make the task dicts for this sample.
+                tasks[sim_name] = {
+                    "model": params["model"],
+                    "istim": istim,
+                    "stim_path": str(stim),
+                    "data_path": str(data_path),
+                    "task_name": sim_name,
+                    "seed": abs(hash(sim_name)),
+                    "model_opts": model_opts,
+                }
+
+                completed[sim_name] = False
 
         return tasks, completed

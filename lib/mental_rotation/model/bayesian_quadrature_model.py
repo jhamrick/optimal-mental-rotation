@@ -1,19 +1,19 @@
 import numpy as np
 
 import matplotlib.pyplot as plt
-import snippets.graphing as sg
 import logging
 import scipy.stats
+import scipy.optimize as optim
+import pickle
+
 from bayesian_quadrature import BQ
 from gp import PeriodicKernel
 
-from .. import config
 from . import BaseModel
 
 logger = logging.getLogger("mental_rotation.model.bq")
 
-DTYPE = np.dtype(config.get("global", "dtype"))
-EPS = np.finfo(DTYPE).eps
+EPS = np.finfo(np.float64).eps
 MIN = np.log(np.exp2(np.float64(np.finfo(np.float64).minexp + 4)))
 
 
@@ -34,104 +34,196 @@ class BayesianQuadratureModel(BaseModel):
 
     """
 
+    _iter = 150
+    _scale = 100
+    _params = ['h', 'w']
+
     def __init__(self, *args, **kwargs):
-        self.bq_opts = {
-            'n_candidate': config.getint("bq", "n_candidate"),
-            'x_mean': config.getfloat("model", "R_mu"),
-            'x_var': 1. / config.getfloat("model", "R_kappa"),
-            'candidate_thresh': config.getfloat("model", "step"),
-            'kernel': PeriodicKernel
-        }
-
-        if 'bq_opts' in kwargs:
-            self.bq_opts.update(kwargs['bq_opts'])
-            del kwargs['bq_opts']
-
-        self.bqs = {}
-        self.direction = 0
-
         super(BayesianQuadratureModel, self).__init__(*args, **kwargs)
 
-    def sample(self, verbose=0):
-        niter = 4 * np.pi / self.opts['step']
-        super(BaseModel, self).sample(iter=niter, verbose=verbose)
+        self.bq_opts = {}
+        self.bq_opts['candidate_thresh'] = 0.1
+        self.bq_opts['kernel'] = PeriodicKernel
+        self.bq_opts['optim_method'] = 'Powell'
+        self.bq_opts['x_mean'] = 0
+        self.bq_opts['x_var'] = 10.0
+        self.bq_opts['n_candidate'] = 20
 
-    def _loop(self):
-        super(BaseModel, self)._loop()
+        self.bqs = {}
+        self._m0 = None
+        self._V0 = None
+        self._m1 = None
+        self._V1 = None
 
-    def _check_halt(self):
+        self.direction = 0
+
+    def _check_done(self):
         hyp = self.hypothesis_test()
         if hyp == 0 or hyp == 1:
-            self.status = 'halt'
+            self.status = 'done'
             return True
         return False
 
-    def _add_observation(self, R, F):
-        diff = self._unwrap(R - self.model['R'].value)
-        step = self.opts['step']
-        if float(self.model['F'].value) == F and np.isclose(np.abs(diff), step):
-            self.direction = np.sign(diff)
-        else:
-            self.direction = np.sign(R)
-        
+    def _add_observation(self, F, R, direction):
         self.model['R'].value = R
         self.model['F'].value = F
+        self.direction = direction
         logger.debug(
-            "R = %s, F = %s",
-            self.model['R'].value, 
-            float(self.model['F'].value))
+            "F = %s, R = %s, direction = %s",
+            float(self.model['F'].value),
+            self.model['R'].value,
+            self.direction)
 
-        S = np.exp(self.model['log_S'].logp)
+        S = self._scale * np.exp(self.model['log_S'].logp)
         bq = self.bqs[F]
-        if not np.isclose(R, bq.x_s).any():
-            bq.add_observation(R, S)
-            if bq.gp_log_l.log_lh + bq.gp_l.log_lh < MIN:
-                bq.fit_hypers(['h', 'w'])
+        bq.add_observation(R, S)
 
-    def _eval_actions(self):
+        # don't fit hypers if we only have one observation, or if
+        # adding this observation didn't actually change the number of
+        # useful points
+        if bq.x_s.size > 1:
+            self._fit_hypers(F)
+
+    def _get_actions(self):
         R = self.model['R'].value
         F = float(self.model['F'].value)
-        step = self.opts['step']
+        d = self.direction
 
-        actions = np.array(sorted(set([
-            (F, R + step), # rotate right
-            (F, R - step), # rotate left 
-            (F, step),     # go to the beginning and rotate right
-            (F, -step),    # go to the beginning and rotate left
-            (1 - F, step), # go to the beginning, flip, and rotate right
-            (1 - F, -step) # go to the beginning, flip, and rotate right
-        ])), dtype=float)
+        if d == 0:
+            all_actions = [
+                (F, R + np.abs(self._random_step()), 1),
+                (F, R - np.abs(self._random_step()), -1)
+            ]
+        else:
+            all_actions = [
+                (1 - F, 0, 0),
+                (1 - F, R, d),
+                (F, 0, 0),
+                (F, R + d * np.abs(self._random_step()), d),
+            ]
 
+        actions = []
+        for action in all_actions:
+            if action[0] == F and np.isclose(action[1], R):
+                continue
+            actions.append(action)
+
+        actions = np.array(sorted(actions))
         actions[:, 1] = self._unwrap(actions[:, 1])
+        return actions
+
+    def _eval_actions(self, n=50):
+        actions = self._get_actions()
+
         loss = np.empty(actions.shape[0])
-
-        logger.debug("Computing loss for F=0")
-        params = ['h', 'w']
         F0 = actions[:, 0] == 0
-        x_a = actions[F0, 1]
-        fun = lambda: -self.bqs[0].expected_squared_mean(x_a)
-        l0 = self.bqs[0].marginalize([fun], 100, params=params)
-        loss[F0] = l0[0].mean(axis=0)
-
-        logger.debug("Computing loss for F=1")
-        params = ['h', 'w']
         F1 = actions[:, 0] == 1
-        x_a = actions[F1, 1]
-        fun = lambda: -self.bqs[1].expected_squared_mean(x_a)
-        l1 = self.bqs[1].marginalize([fun], 100, params=params)
-        loss[F1] = l1[0].mean(axis=0)
+        x_a0 = np.array(actions[F0, 1])
+        x_a1 = np.array(actions[F1, 1])
+
+        funs = [
+            lambda: self.bqs[0].expected_squared_mean(x_a0),
+            self.bqs[0].Z_mean,
+            self.bqs[0].Z_var
+        ]
+        # l0, m0, V0 = self.bqs[0].marginalize(
+        #     funs, n, params=self._params)
+        l0, m0, V0 = [np.array([f()]) for f in funs]
+
+        funs = [
+            lambda: self.bqs[1].expected_squared_mean(x_a1),
+            self.bqs[1].Z_mean,
+            self.bqs[1].Z_var
+        ]
+        # l1, m1, V1 = self.bqs[1].marginalize(
+        #     funs, n, params=self._params)
+        l1, m1, V1 = [np.array([f()]) for f in funs]
+
+        self._m0 = m0.mean()
+        self._V0 = V0.mean()
+        self._m1 = m1.mean()
+        self._V1 = V1.mean()
+
+        loss[F0] = (V0 + m0 ** 2 - l0.T).mean(axis=1) + self._V1
+        loss[F1] = (V1 + m1 ** 2 - l1.T).mean(axis=1) + self._V0
 
         return actions, loss
 
+    def _fit_hypers(self, F, ntry=10):
+        bq = self.bqs[F]
+        params = self._params * 2
+        nparam = len(self._params)
+
+        def f(x):
+            if x is None or np.isnan(x).any():
+                return -np.inf
+
+            params_tl = dict(zip(params, x[:nparam]))
+            if 'w' in params_tl and params_tl['w'] > (np.pi / 4.):
+                return -np.inf
+
+            params_l = dict(zip(params, x[nparam:]))
+            if 'w' in params_l and params_l['w'] > (np.pi / 4.):
+                return -np.inf
+
+            try:
+                bq._set_gp_log_l_params(params_tl)
+            except (ValueError, np.linalg.LinAlgError):
+                return -np.inf
+
+            try:
+                llh_tl = bq.gp_log_l.log_lh
+            except (ValueError, np.linalg.LinAlgError):
+                return -np.inf
+
+            try:
+                bq._set_gp_l_params(params_l)
+            except (ValueError, np.linalg.LinAlgError):
+                return -np.inf
+
+            try:
+                llh_l = bq.gp_l.log_lh
+            except (ValueError, np.linalg.LinAlgError):
+                return -np.inf
+
+            llh = llh_tl + llh_l
+            return llh
+
+        p0_tl = [self.bqs[F].gp_log_l.get_param(p) for p in self._params]
+        p0_l = [self.bqs[F].gp_l.get_param(p) for p in self._params]
+        p0 = np.array(p0_tl + p0_l)
+
+        for i in xrange(ntry):
+            logger.debug(
+                "Fitting parameters %s for F=%d, attempt %d",
+                self._params, F, i + 1)
+
+            res = optim.minimize(
+                fun=lambda x: -f(x),
+                x0=p0,
+                method='Powell')
+
+            if f(res['x']) > MIN:
+                p0 = res['x']
+                break
+
+            if f(p0) > MIN:
+                break
+
+            p0 = np.abs(np.random.randn(len(self._params) * 2))
+
+        if f(p0) < MIN:
+            raise RuntimeError("couldn't find good parameters")
+
     def _init_bq(self, F):
         Ri = np.array([self.model['R'].value])
-        Si = np.array([np.exp(self.model['log_S'].logp)])
+        Si = self._scale * np.array([np.exp(self.model['log_S'].logp)])
 
         logger.debug("Initializing BQ object for F=%d", F)
         self.bqs[F] = BQ(Ri, Si, **self.bq_opts)
         self.bqs[F].init(
-            params_tl=(8, np.pi / 2., 1, 0.0),
-            params_l=(0.2, np.pi / 4., 1, 0.0))
+            params_tl=(5, np.pi / 8., 1.0, 0.0),
+            params_l=(25, np.pi / 8., 1.0, 0.0))
 
     def draw(self):
         if self._current_iter == 0:
@@ -146,32 +238,19 @@ class BayesianQuadratureModel(BaseModel):
             self._init_bq(1)
             return
 
-        curr_R = self.model['R'].value
-        curr_F = float(self.model['F'].value)
-        
         actions, losses = self._eval_actions()
+        if self._check_done():
+            return
+
         minloss = np.min(losses)
         choices = np.nonzero(np.isclose(losses, minloss))[0]
 
-        logger.debug("actions: \n%s", actions)
-        logger.debug("losses: \n%s", losses)
+        for action, loss in zip(actions, losses):
+            logger.debug("L(%s) = %s" % (action, loss))
 
-        if self.direction != 0:
-            next_R = self._unwrap(curr_R + (self.direction * self.opts['step']))
-            logger.debug("next: %s", (curr_F, next_R))
+        best = np.random.choice(choices)
 
-            for i in choices:
-                if tuple(actions[i]) == (curr_F, next_R):
-                    best = i
-                    break
-            else:
-                best = np.random.choice(choices)
-        else:
-            best = np.random.choice(choices)
-
-        self._add_observation(actions[best, 1], actions[best, 0])
-        self._check_halt()
-            
+        self._add_observation(*actions[best])
 
     ##################################################################
     # The estimated S function
@@ -183,11 +262,11 @@ class BayesianQuadratureModel(BaseModel):
         try:
             len(R)
         except TypeError:
-            R = np.array([R], dtype=DTYPE)
-        return self.bqs[F].l_mean(R)
+            R = np.array([R])
+        return self.bqs[F].l_mean(R) / self._scale
 
     ##################################################################
-    # Estimated dZ_dR and full estimate of Z
+    # Estimated Z
 
     def log_Z(self, F):
         Z = self.Z(F)
@@ -197,10 +276,16 @@ class BayesianQuadratureModel(BaseModel):
         return out
 
     def Z(self, F):
-        mean = self.bqs[F].Z_mean()
-        var = self.bqs[F].Z_var()
+        if F == 0:
+            mean = self._m0 / self._scale
+            var = self._V0 / (self._scale ** 2)
+        elif F == 1:
+            mean = self._m1 / self._scale
+            var = self._V1 / (self._scale ** 2)
+
         lower = mean - 1.96 * np.sqrt(var)
         upper = mean + 1.96 * np.sqrt(var)
+
         out = np.array([mean, lower, upper])
         out[out < 0] = 0
         return out
@@ -208,77 +293,122 @@ class BayesianQuadratureModel(BaseModel):
     ##################################################################
     # Plotting methods
 
-    xmin = -np.pi
-    xmax = np.pi
+    def plot_bq(self, F, f_S=None):
+        if f_S is not None:
+            f_l = lambda x: self._scale * f_S(x)
+        else:
+            f_l = None
 
-    def plot_log_S_gp(self, ax, f_S=None):
-        # plot the regression for S
-        self.bq.plot_gp_log_l(ax, f_l=f_S, xmin=self.xmin, xmax=self.xmax)
-        ax.set_title(r"GPR for $\log(S)$")
-        ax.set_ylabel(r"Similarity ($\log(S)$)")
+        self.bqs[F].plot(f_l=f_l, xmin=-np.pi, xmax=np.pi)
 
-    def plot_S_gp(self, ax, f_S=None):
-        # plot the regression for S
-        self.bq.plot_gp_l(ax, f_l=f_S, xmin=self.xmin, xmax=self.xmax)
-        ax.set_title(r"GPR for $S$")
-        ax.set_xlabel("")
-        ax.set_ylabel(r"Similarity ($S$)")
+    def plot_all(self, f_S0=None, f_S1=None):
+        fig, axes = plt.subplots(2, 3)
 
-    def plot_S(self, ax, f_S=None):
-        # plot the regression for S
-        self.bq.plot_l(ax, f_l=f_S, xmin=self.xmin, xmax=self.xmax)
-        ax.set_title(r"Final GPR for $S$")
-        ax.set_xlabel("")
-        ax.set_ylabel("")
+        if f_S0 is not None:
+            f_l0 = lambda x: self._scale * f_S0(x)
+        else:
+            f_l0 = None
 
-    def plot(self, axes, f_S=None):
-        self.plot_log_S_gp(axes[0], f_S=f_S)
-        self.plot_S_gp(axes[1], f_S=f_S)
-        self.plot_S(axes[2], f_S=f_S)
+        if f_S1 is not None:
+            f_l1 = lambda x: self._scale * f_S1(x)
+        else:
+            f_l1 = None
 
-        # align y-axis labels
-        sg.align_ylabels(-0.12, axes[0], axes[1])
+        xmin = -np.pi
+        xmax = np.pi
 
-        # sync y-axis limits
-        lim = (-0.05, 0.2)
-        axes[1].set_ylim(*lim)
-        axes[2].set_ylim(*lim)
+        self.bqs[0].plot_gp_log_l(axes[0, 0], f_l=f_l0, xmin=xmin, xmax=xmax)
+        self.bqs[0].plot_gp_l(axes[0, 1], f_l=f_l0, xmin=xmin, xmax=xmax)
+        self.bqs[0].plot_l(axes[0, 2], f_l=f_l0, xmin=xmin, xmax=xmax)
 
-        # overall figure settings
-        sg.set_figsize(12, 4)
-        plt.tight_layout()
+        self.bqs[1].plot_gp_log_l(axes[1, 0], f_l=f_l1, xmin=xmin, xmax=xmax)
+        self.bqs[1].plot_gp_l(axes[1, 1], f_l=f_l1, xmin=xmin, xmax=xmax)
+        self.bqs[1].plot_l(axes[1, 2], f_l=f_l1, xmin=xmin, xmax=xmax)
+
+        ymins, ymaxs = zip(*[ax.get_ylim() for ax in axes[:, 1:].flat])
+        ymin = min(ymins)
+        ymax = max(ymaxs)
+        for ax in axes[:, 1:].flat:
+            ax.set_ylim(ymin, ymax)
+
+        ymins, ymaxs = zip(*[ax.get_ylim() for ax in axes[:, 0]])
+        ymin = min(ymins)
+        ymax = max(ymaxs)
+        for ax in axes[:, 0]:
+            ax.set_ylim(ymin, ymax)
+
+        fig.set_figwidth(14)
+        fig.set_figheight(7)
+
+    def plot(self, ax, F, f_S=None, color0='k', color=None):
+        lines = {}
+
+        R = np.linspace(-np.pi, np.pi, 1000)
+        if f_S is not None:
+            S = f_S(R, F)
+            lines['truth'] = ax.plot(R, S, '-', lw=2, color=color0)
+
+        Fi = self.F_i == F
+        if not Fi.any():
+            return lines
+
+        if color is None:
+            if F == 0:
+                color = 'r'
+            elif F == 1:
+                color = 'b'
+
+        S = self.S(R, F)
+        Ss = np.sqrt(self.bqs[F].l_var(R)) / self._scale
+        lower = S - Ss
+        upper = S + Ss
+
+        lines['stddev'] = ax.fill_between(
+            R, lower, upper, color=color, alpha=0.3)
+        lines['approx'] = ax.plot(R, S, '-', lw=2, color=color)
+
+        Ri = self.R_i[Fi]
+        Si = self.S_i[Fi]
+        lines['points'] = ax.plot(Ri, Si, 'o', markersize=5, color=color)
+
+        return lines
 
     ##################################################################
     # Misc
 
     def hypothesis_test(self):
-        m0 = self.bqs[0].Z_mean()
-        V0 = self.bqs[0].Z_var()
-        while V0 < 0:
-            self.bqs[0].fit_hypers(['h', 'w'])
-            m0 = self.bqs[0].Z_mean()
-            V0 = self.bqs[0].Z_var()
+        lp = self.opts['prior']
 
-        m1 = self.bqs[1].Z_mean()
-        V1 = self.bqs[1].Z_var()
-        while V1 < 0:
-            self.bqs[1].fit_hypers(['h', 'w'])
-            m1 = self.bqs[1].Z_mean()
-            V1 = self.bqs[1].Z_var()
+        m0 = lp * self._m0 / self._scale
+        V0 = lp ** 2 * self._V0 / (self._scale ** 2)
+        m1 = (1 - lp) * self._m1 / self._scale
+        V1 = (1 - lp) ** 2 * self._V1 / (self._scale ** 2)
 
         N0 = scipy.stats.norm(m0, np.sqrt(V0))
+        if N0.cdf(0) > 0.025:
+            return None
+
         N1 = scipy.stats.norm(m1, np.sqrt(V1))
+        if N1.cdf(0) > 0.025:
+            return None
 
-        test = N0.rvs(10000) > N1.rvs(10000)
-        m = np.mean(test)
-        s = scipy.stats.sem(test)
+        N = scipy.stats.norm(m0 - m1, np.sqrt(V0 + V1))
+        test = N.cdf(0)
 
-        if (m - s) > 0.95:
-            return 0
-        elif (m + s) < 0.05:
+        if test > 0.975:
             return 1
+        elif test < 0.025:
+            return 0
         else:
             return None
+
+    @property
+    def log_lh_h0(self):
+        return self.log_Z(0)
+
+    @property
+    def log_lh_h1(self):
+        return self.log_Z(1)
 
     def print_stats(self):
         llh0 = self.log_lh_h0
@@ -296,3 +426,27 @@ class BayesianQuadratureModel(BaseModel):
             print "--> STOP and accept hypothesis 0 (same)"
         else: # pragma: no cover
             print "--> UNDECIDED"
+
+    ##################################################################
+    # Copying/Saving
+
+    def __getstate__(self):
+        state = super(BayesianQuadratureModel, self).__getstate__()
+        state['_m0'] = self._m0
+        state['_V0'] = self._V0
+        state['_m1'] = self._m1
+        state['_V1'] = self._V1
+        state['bqs'] = pickle.dumps(self.bqs)
+        state['bq_opts'] = pickle.dumps(self.bq_opts)
+        state['direction'] = self.direction
+        return state
+
+    def __setstate__(self, state):
+        super(BayesianQuadratureModel, self).__setstate__(state)
+        self._m0 = state['_m0']
+        self._V0 = state['_V0']
+        self._m1 = state['_m1']
+        self._V1 = state['_V1']
+        self.bqs = pickle.loads(state['bqs'])
+        self.bq_opts = pickle.loads(state['bq_opts'])
+        self.direction = state['direction']

@@ -1,183 +1,187 @@
+import json
+import logging
+import multiprocessing as mp
+import numpy as np
 import signal
 import sys
-import multiprocessing as mp
-import logging
-from threading import Thread, current_thread
-from utils import parse_address
-from server import ServerManager
-from simulation import Simulation
-from mental_rotation import LOGLEVEL
+import tempfile
+import traceback
+import time
+
+
+from datetime import datetime
+from path import path
+from xmlrpclib import ServerProxy
+
+import mental_rotation.model as m
+from mental_rotation.stimulus import Stimulus2D
+from .util import run_command
 
 logger = logging.getLogger("mental_rotation.sims.client")
 
+
 def signal_handler(signal, frame):
     mp.util.debug("Keyboard interrupt!")
-    sys.exit(100)
+    sys.exit(-2)
 
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def worker_thread(mgr, info_lock, save=False, max_tries=3, timeout=1e5):
+def simulate(task):
+    stim_path = task["stim_path"]
+    model_name = task["model"]
+    seed = task["seed"]
+    data_path = path(task["data_path"])
+    model_opts = task["model_opts"]
 
-    params = mgr.get_params()
-    task_queue = mgr.get_task_queue()
-    done_queue = mgr.get_done_queue()
+    X = Stimulus2D.load(stim_path)
+    Xa = X.copy_from_initial().vertices
+    Xb = X.copy_from_vertices().vertices
 
-    def retry(task):
-        task_queue.put(task)
-        task_queue.task_done()
+    try:
+        model_class = getattr(m, model_name)
+    except AttributeError:
+        raise ValueError("unhandled model: %s" % model_name)
 
-    def finish(task):
-        done_queue.put(task["task_name"])
-        task_queue.task_done()
+    np.random.seed(seed)
+    if not data_path.exists():
+        data_path.makedirs()
 
+    for iopt, opts in model_opts.iteritems():
+        logger.info("Task '%s', part %s", task['task_name'], iopt)
+        dest = data_path.joinpath("part_%s" % iopt)
+        model = model_class(Xa, Xb, **opts)
+        try:
+            model.sample()
+        except SystemExit:
+            raise
+        except:
+            print traceback.format_exc()
+
+        if dest.exists():
+            dest.rmtree_p()
+        model.save(dest)
+
+
+def worker_job(host, port):
+    # connet to the server
+    pandaserver = ServerProxy("http://%s:%d" % (host, port))
     while True:
         try:
-            if task_queue.empty():
-                break
-        except (EOFError, IOError):
-            break
-
-        task = task_queue.get()
-        task_name = task['task_name']
-        job = Simulation(task, params, info_lock, save=save)
-        logger.info("Starting task '%s' (%s)", task_name, job.name)
-        job.start()
-        job.join(timeout=timeout)
-
-        # the thread timed out
-        if job.is_alive():
-            logger.warning("Timeout for task '%s' (%s)", task_name, job.name)
-            job.terminate()
-            job.join()
-            error = True
-
-        elif job.exitcode == 100:
-            logger.warning("Process interrupted, exiting.")
-            retry(task)
-            break
-
-        # there was an error
-        elif job.exitcode != 0:
-            logger.error("Task '%s' (%s) exited with code %d",
-                         task_name, job.name, job.exitcode)
-            error = True
-
+            sim_root = path(pandaserver.panda_connect())
+        except:
+            time.sleep(1)
         else:
-            logger.info("Task '%s' (%s) complete", task_name, job.name)
-            error = False
+            break
 
-        if error:
-            task["num_tries"] += 1
-            if task["num_tries"] >= max_tries:
-                logger.error("%d failed attempts at task '%s'",
-                             task["num_tries"], task_name)
-                task_queue.task_done()
-                break
+    tmpdir = path(tempfile.mkdtemp())
 
+    while True:
+        # get the next task from the pandaserver
+        while True:
+            try:
+                task = pandaserver.panda_request()
+            except:
+                time.sleep(1)
             else:
-                logger.warning("Retrying task '%s' (%d/%d)",
-                               task_name, task["num_tries"], max_tries)
-                retry(task)
+                break
+
+        # no more tasks left
+        if task is None:
+            logger.info("Nothing left to do, shutting down")
+            break
+
+        task = json.loads(task)
+        task_name = task["task_name"]
+        task['data_path'] = tmpdir.joinpath(task_name)
+
+        logger.info("Got task '%s'", task_name)
+        startime = datetime.now()
+        error = simulate(task)
+        dt = (datetime.now() - startime).total_seconds()
+        logger.info("Completed task '%s' in %s seconds", task_name, dt)
+
+        if error is not None:
+            logger.error("Task '%s' failed with error:\n%s", task_name, error)
+            while True:
+                try:
+                    pandaserver.panda_error(task_name)
+                except:
+                    time.sleep(1)
+                else:
+                    break
 
         else:
-            finish(task)
+            data_path = path(task["data_path"])
+            src_path = data_path.dirname().joinpath("%s.tar.gz" % task_name)
 
-    logger.info("Ending thread: %s", current_thread())
-    sys.exit(0)
+            # first compress the data
+            cmd = [
+                'tar', 'czf', src_path, '-C',
+                data_path.dirname(), data_path.name]
+            run_command(logger, cmd)
+
+            # then send it to the server
+            if host in ('localhost', '127.0.0.1'):
+                prefix = ""
+                dst_path = "%s/%s.tar.gz" % (sim_root, task_name)
+                options = []
+            else:
+                prefix = "ubuntu@%s:" % host
+                dst_path = sim_root.joinpath("%s.tar.gz" % task_name)
+                options = [
+                    '-o', 'StrictHostKeyChecking=no',
+                    '-o', 'UserKnownHostsFile=/dev/null'
+                ]
+
+            # build the scp command
+            cmd = ['scp', '-q']
+            cmd.extend(options)
+            cmd.append(src_path)
+            cmd.append(prefix + dst_path)
+
+            while True:
+                try:
+                    run_command(logger, cmd)
+                except:
+                    time.sleep(1)
+                else:
+                    break
+
+            # then mark it as complete
+            while True:
+                try:
+                    pandaserver.panda_complete(task_name)
+                except:
+                    time.sleep(1)
+                else:
+                    break
+
+        task['data_path'].rmtree_p()
+
+    tmpdir.rmtree_p()
 
 
-def run_client(**kwargs):
-    """Run the simulation client manager."""
-
+def run(host, port, nprocess, loglevel):
+    # configure logging
     mplogger = mp.log_to_stderr()
-    mplogger.setLevel(LOGLEVEL)
+    mplogger.setLevel(loglevel)
+    logger.setLevel(loglevel)
+    np.seterr(invalid='ignore')
 
-    save = kwargs.get("save", False)
-    timeout = kwargs.get("timeout", 310)
-    address = kwargs.get("address", ("127.0.0.1", 50000))
-    authkey = kwargs.get("authkey", None)
-    n_procs = kwargs.get("n_procs", mp.cpu_count())
-    max_tries = kwargs.get("max_tries", 3)
+    # create the worker processes
+    if nprocess == 1:
+        worker_job(host, port)
 
-    # Job-specific parameters.
-    kwargs = dict(save=save)
+    else:
+        processes = []
+        for i in xrange(nprocess):
+            p = mp.Process(target=worker_job, args=(host, port))
+            processes.append(p)
+            p.start()
 
-    # Connect to the server manager
-    ServerManager.register_shared(with_callable=False)
-    mgr = ServerManager(address=address, authkey=authkey)
-    mgr.connect()
+        # wait for them to finish
+        for p in processes:
+            p.join()
 
-    # create a lock for printing information
-    info_lock = mp.Lock()
-
-    # Set up params and task parameters.
-    worker_kwargs = {
-        'timeout': timeout,
-        'save': save,
-        'max_tries': max_tries
-    }
-
-    logger.info("Starting processes...")
-    threads = []
-    for ithread in xrange(n_procs):
-        thread = Thread(
-            name="Thread_%02d" % ithread,
-            target=worker_thread,
-            args=(mgr, info_lock),
-            kwargs=worker_kwargs)
-        threads.append(thread)
-        thread.start()
-        thread.join(timeout=0.2)
-
-    for thread in threads:
-        thread.join()
-
-    logger.info("Jobs complete.")
-    sys.exit(0)
-
-
-def parse_and_run_client(args):
-    kwargs = {
-        'save': args.save,
-        'timeout': args.timeout,
-        'address': args.address,
-        'authkey': args.authkey,
-        'n_procs': args.num_procs,
-        'max_tries': args.max_tries
-    }
-    run_client(**kwargs)
-
-
-def create_client_parser(parser):
-    parser.add_argument(
-        "-s", "--save",
-        action="store_true",
-        help="Save data to disk.")
-    parser.add_argument(
-        "-T", "--timeout",
-        default=310,
-        type=int,
-        help="Timeout (in seconds) before process restarts.")
-    parser.add_argument(
-        "-a", "--address",
-        default=("127.0.0.1", 50000),
-        type=parse_address,
-        help="Address (host:port) of server.")
-    parser.add_argument(
-        "-k", "--authkey",
-        default=None,
-        help="Server authentication key.")
-    parser.add_argument(
-        "-n", "--num-processes",
-        default=mp.cpu_count(),
-        dest="num_procs",
-        type=int,
-        help="Number of client processes.")
-    parser.add_argument(
-        "-m", "--max-tries",
-        default=3,
-        dest="max_tries",
-        type=int,
-        help="Number of times to try running a task.")
-    parser.set_defaults(func=parse_and_run_client)
+    logger.info("Worker threads done, shutting down.")

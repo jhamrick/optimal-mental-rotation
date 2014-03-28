@@ -2,7 +2,7 @@ import numpy as np
 import scipy
 
 from .. import Stimulus2D
-from .model_c import log_prior, log_similarity
+from .model_c import log_prior, log_similarity, log_const
 
 
 def memoprop(f):
@@ -49,8 +49,8 @@ def slow_log_similarity(X0, X1, S_sigma):
     # number of points and number of dimensions
     n, D = X0.shape
     # covariance matrix
-    Sigma = np.eye(D) * S_sigma
-    invSigma = np.eye(D) * (1. / S_sigma)
+    Sigma = np.eye(D) * (S_sigma ** 2)
+    invSigma = np.eye(D) * (1. / (S_sigma ** 2))
     # constants
     Z0 = D * np.log(2 * np.pi)
     Z1 = np.linalg.slogdet(Sigma)[1]
@@ -73,7 +73,7 @@ def slow_log_similarity(X0, X1, S_sigma):
         for j in xrange(n):
             e[i+n] += -0.5 * (np.dot(d[j], np.dot(invSigma, d[j])) + Z0 + Z1)
     # overall similarity, marginalizing out order
-    log_S = np.log(np.sum(np.exp(e - np.log(n))))
+    log_S = np.log(np.sum(np.exp(e)) / (2.0*n))
     return log_S
 
 
@@ -106,11 +106,6 @@ class Xi(Variable):
     @property
     def value(self):
         return self._value
-    
-    @value.setter
-    def value(self, val):
-        self._value = val
-        self.clear()
 
     @memoprop
     def logp(self):
@@ -144,15 +139,11 @@ class F(Variable):
 class R(Variable):
     """Rotation"""
 
-    def __init__(self, mu, kappa):
+    def __init__(self):
         super(R, self).__init__("R", [])
 
-        self.mu = mu
-        self.kappa = kappa
         self.observed = False
         self._value = 0
-
-        self._C = -np.log(2 * np.pi * scipy.special.iv(0, self.kappa))
 
     @property
     def value(self):
@@ -160,13 +151,15 @@ class R(Variable):
     
     @value.setter
     def value(self, val):
+        val = float(val) % (2 * np.pi)
+        if val >= np.pi:
+            val -= 2 * np.pi
         self._value = val
         self.clear()
         
     @memoprop
     def logp(self):
-        logp = self._C + (self.kappa * np.cos(self.value - self.mu))
-        return logp
+        return -np.log(2 * np.pi)
         
 
 class Xr(Variable):
@@ -201,21 +194,3 @@ class log_S(Variable):
     @memoprop
     def logp(self):
         return log_similarity(self.Xb.value, self.Xr.value, self.sigma)
-
-
-class log_dZ_dR(Variable):
-
-    def __init__(self, log_S, R, F):
-        super(log_dZ_dR, self).__init__(
-            "log_dZ_dR", [log_S, R, F])
-
-        self.log_S = log_S
-        self.R = R
-        self.F = F
-        
-    @memoprop
-    def logp(self):
-        p_log_S = self.log_S.logp
-        p_R = self.R.logp
-        p_F = self.F.logp
-        return p_log_S + p_R + p_F

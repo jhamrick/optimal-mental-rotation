@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from mental_rotation import STIM_PATH
+from ConfigParser import SafeConfigParser
 from mental_rotation.stimulus import Stimulus2D
+from path import path
 import logging
 import numpy as np
 import sys
 
-logger = logging.getLogger('mental_rotation.experiment')
+logger = logging.getLogger('convert_old_stimuli')
 
 
 def load_stim(file):
@@ -52,12 +53,22 @@ def load_stim(file):
     return (stimname, rot, flipped), stim
 
 
-def convert_stims(stim_path, dest):
-    files = stim_path.listdir()
+def convert_stims(from_path, to_path, stim_path, force):
+    src = stim_path.joinpath(from_path)
+    dest = stim_path.joinpath(to_path)
+
+    if dest.exists() and not force:
+        logger.warning(
+            "Destination already exists, exiting (use --force to override)")
+        return
+
+    files = src.listdir()
     files = [x for x in files if x.endswith(".npz")]
 
-    if not dest.exists():
-        dest.makedirs_p()
+    if dest.exists():
+        dest.rmtree_p()
+
+    dest.makedirs_p()
 
     for f in files:
         (stimname, rot, flipped), stim = load_stim(f)
@@ -82,21 +93,22 @@ if __name__ == "__main__":
         required=True,
         help="new stimulus set name")
     parser.add_argument(
+        "-c", "--config",
+        default="config.ini",
+        help="path to configuration file")
+    parser.add_argument(
         "-f", "--force",
         action="store_true",
         default=False,
         help="force tasks to complete")
 
     args = parser.parse_args()
-    from_path = STIM_PATH.joinpath(args.from_path)
-    to_path = STIM_PATH.joinpath(args.to_path)
 
-    stim_path = to_path.joinpath("stimuli.csv")
-    trial_path = to_path.joinpath("trials.csv")
+    config = SafeConfigParser()
+    config.read(args.config)
 
-    if (stim_path.exists() or trial_path.exists()) and not args.force:
-        logger.warning(
-            "Destination already exists, exiting (use --force to override)")
-        sys.exit(0)
+    loglevel = config.get("global", "loglevel")
+    logging.basicConfig(level=loglevel)
 
-    convert_stims(from_path, to_path)
+    stim_path = path(config.get("paths", "stimuli"))
+    convert_stims(args.from_path, args.to_path, stim_path, args.force)

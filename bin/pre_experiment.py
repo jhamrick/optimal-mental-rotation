@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-from mental_rotation import BIN_PATH
+from ConfigParser import SafeConfigParser
 from termcolor import colored
 import logging
 import subprocess
@@ -22,9 +22,9 @@ if __name__ == "__main__":
         formatter_class=ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(
-        "-e", "--exp",
-        required=True,
-        help="experiment version")
+        "-c", "--config",
+        default="config.ini",
+        help="path to configuration file")
     parser.add_argument(
         "-f", "--force",
         action="store_true",
@@ -60,14 +60,14 @@ if __name__ == "__main__":
         parser.print_help()
         sys.exit(1)
 
-    exp = args.exp
+    config = args.config
     force = args.force
 
     # generate configs
     if args.generate or args.all:
         cmd = [
-            "python", BIN_PATH.joinpath("experiment/generate_configs.py"),
-            "-e", exp
+            "python", "./bin/experiment/generate_configs.py",
+            "-c", config
         ]
         if force:
             cmd.append("-f")
@@ -76,5 +76,6 @@ if __name__ == "__main__":
     # deploy experiment files
     if args.deploy or args.all:
         run_cmd([
-            "python", BIN_PATH.joinpath("experiment/deploy_experiment.py")
+            "python", "./bin/experiment/deploy_experiment.py",
+            "-c", config
         ])

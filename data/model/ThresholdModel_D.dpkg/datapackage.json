@@ -1,0 +1,38 @@
+{
+  "description": null, 
+  "contributors": [
+    {
+      "email": "jhamrick@berkeley.edu", 
+      "name": "Jessica B. Hamrick"
+    }, 
+    {
+      "email": "tom_griffiths@berkeley.edu", 
+      "name": "Thomas L. Griffiths"
+    }
+  ], 
+  "image": null, 
+  "datapackage_version": "1.0-beta.5", 
+  "sources": [], 
+  "last_modified": "2014-02-01 21:43:45.430141", 
+  "keywords": null, 
+  "licenses": [
+    {
+      "url": "http://opendefinition.org/licenses/odc-by", 
+      "id": "odc-by"
+    }
+  ], 
+  "name": "ThresholdModel_D.dpkg", 
+  "title": null, 
+  "version": "1.13.0", 
+  "homepage": null, 
+  "resources": [
+    {
+      "hash": "099ab9f90eaafe934c72a7c3343702cf", 
+      "name": "model.csv", 
+      "format": "csv", 
+      "bytes": 42460606, 
+      "modified": "2014-02-01 21:43:42.280825", 
+      "path": "./model.csv"
+    }
+  ]
+}

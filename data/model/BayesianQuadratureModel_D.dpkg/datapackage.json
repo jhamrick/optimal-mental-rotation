@@ -1,0 +1,38 @@
+{
+  "description": null, 
+  "contributors": [
+    {
+      "email": "jhamrick@berkeley.edu", 
+      "name": "Jessica B. Hamrick"
+    }, 
+    {
+      "email": "tom_griffiths@berkeley.edu", 
+      "name": "Thomas L. Griffiths"
+    }
+  ], 
+  "image": null, 
+  "datapackage_version": "1.0-beta.5", 
+  "sources": [], 
+  "last_modified": "2014-01-29 07:32:01.648265", 
+  "keywords": null, 
+  "licenses": [
+    {
+      "url": "http://opendefinition.org/licenses/odc-by", 
+      "id": "odc-by"
+    }
+  ], 
+  "name": "BayesianQuadratureModel_D.dpkg", 
+  "title": null, 
+  "version": "1.9.0", 
+  "homepage": null, 
+  "resources": [
+    {
+      "hash": "1ba0786c5ead8fe7eaab1a65b72b0049", 
+      "name": "model.csv", 
+      "format": "csv", 
+      "bytes": 10063243, 
+      "modified": "2014-01-29 07:30:51.053864", 
+      "path": "./model.csv"
+    }
+  ]
+}

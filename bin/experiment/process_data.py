@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from ConfigParser import SafeConfigParser
 from datetime import datetime
-from mental_rotation import DATA_PATH
 from path import path
 from snippets import datapackage as dpkg
 import dbtools
 import json
-import logging
 import numpy as np
 import pandas as pd
 import sys
+import logging
 
-logger = logging.getLogger('mental_rotation.experiment')
+logger = logging.getLogger("experiment.process_data")
 
 
 def str2bool(x):
@@ -53,7 +53,7 @@ def parse_timestamp(df, field):
     return timestamp
 
 
-def find_bad_participants(exp, data):
+def find_bad_participants(exp, data, dbpath):
     """Check participant data to make sure they pass the following
     conditions:
 
@@ -109,7 +109,7 @@ def find_bad_participants(exp, data):
             info['note'] = "incomplete"
             continue
 
-        # check to make sure they actually finished
+        # check for duplicated entries
         prestim = df\
             .groupby(['trial_phase'])\
             .get_group('prestim')
@@ -119,7 +119,6 @@ def find_bad_participants(exp, data):
             info['note'] = "duplicate_trials"
             continue
 
-        # check for duplicated entries
         dupes = df.sort('psiturk_time')[['mode', 'trial', 'trial_phase']]\
                   .duplicated().any()
         if dupes:
@@ -128,7 +127,6 @@ def find_bad_participants(exp, data):
             continue
 
         # see if they already did (a version of) the experiment
-        dbpath = DATA_PATH.joinpath("human", "workers.db")
         if dbtools.Table.exists(dbpath, "workers"):
             tbl = dbtools.Table(dbpath, "workers")
             datasets = tbl.select("dataset", where=("pid=?", pid))['dataset']
@@ -148,6 +146,12 @@ def find_bad_participants(exp, data):
             accuracy = (exp_data['flipped'] == exp_data['response']).mean()
             inaccurate = accuracy < 0.75
 
+            if inaccurate:
+                logger.warning(
+                    "%s failed %d%% of trials", pid, 100 * (1 - accuracy))
+                info['note'] = "failed"
+                continue
+
         elif exp == 'C':
             exp_data = df.groupby('trial_phase')\
                          .get_group('stim')\
@@ -158,27 +162,31 @@ def find_bad_participants(exp, data):
             accuracy = (theta0['flipped'] == theta0['response']).mean()
             inaccurate = accuracy < 0.85
 
+            if inaccurate:
+                logger.warning(
+                    "%s failed %d%% of easy trials", pid, 100 * (1 - accuracy))
+                info['note'] = "failed"
+                continue
+
         elif exp == 'D':
-            exp_dataA = df.groupby('trial_phase')\
-                         .get_group('stim')\
-                         .groupby('mode')\
-                         .get_group('experimentA')
-            exp_dataB = df.groupby('trial_phase')\
+            exp_data = df.groupby('trial_phase')\
                          .get_group('stim')\
                          .groupby('mode')\
                          .get_group('experimentB')
-            exp_data = pd.concat([exp_dataA, exp_dataB])
-            accuracy = (exp_data['flipped'] == exp_data['response']).mean()
-            inaccurate = accuracy < 0.8
+            smallrot = lambda x: (x <= 20) or (x >= 340)
+            theta0 = exp_data.set_index('theta').groupby(smallrot).get_group(True)
+            accuracy = (theta0['flipped'] == theta0['response']).mean()
+            inaccurate = accuracy < 0.85
+
+            if inaccurate:
+                logger.warning(
+                    "%s failed %d%% of easy trials", pid, 100 * (1 - accuracy))
+                info['note'] = "failed"
+                continue
 
         else:
             raise ValueError("unhandled experiment: %s" % exp)
 
-        if inaccurate:
-            logger.warning(
-                "%s failed %d%% of trials", pid, 100 * (1 - accuracy))
-            info['note'] = "failed"
-            continue
 
     return participants
 
@@ -220,7 +228,7 @@ def load_meta(data_path):
     return meta, conds, fields
 
 
-def load_data(data_path, conds, fields):
+def load_data(data_path, db_path, conds, fields):
     """Load experiment trial data from the given path. Returns a pandas
     DataFrame.
 
@@ -274,7 +282,7 @@ def load_data(data_path, conds, fields):
         })
     p_info = pd\
         .DataFrame\
-        .from_dict(find_bad_participants(data_path.namebase, data))
+        .from_dict(find_bad_participants(data_path.namebase, data, db_path))
     participants = pd.merge(p_conds, p_info, on=['assignment', 'pid'])\
                      .sort('timestamp')\
                      .set_index('timestamp')
@@ -287,14 +295,18 @@ def load_data(data_path, conds, fields):
     n_incomplete = (p_info['note'] == 'incomplete').sum()
     n_dupe = (p_info['note'] == 'duplicate_trials').sum()
     n_failed = (p_info['note'] == 'failed').sum()
+    n_repeat = (p_info['note'] == 'repeat_worker').sum()
     n_good = len(all_pids) - len(bad_pids)
 
-    n_bad = len(bad_pids) - n_failed - n_incomplete - n_dupe
-    n_complete = n_subj - n_incomplete - n_dupe
+    n_bad = len(bad_pids) - n_failed - n_incomplete - n_repeat
+    n_complete = n_subj - n_incomplete
 
     logger.info(
         "%d/%d (%.1f%%) participants complete",
         n_complete, n_subj, n_complete * 100. / n_subj)
+    logger.info(
+        "%d/%d (%.1f%%) repeat participants",
+        n_repeat, n_complete, n_repeat * 100. / n_complete)
     logger.info(
         "%d/%d (%.1f%%) participants bad",
         n_bad, n_complete, n_bad * 100. / n_complete)
@@ -404,9 +416,9 @@ if __name__ == "__main__":
         formatter_class=ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(
-        "-e", "--exp",
-        required=True,
-        help="Experiment version.")
+        "-c", "--config",
+        default="config.ini",
+        help="Path to configuration file")
     parser.add_argument(
         "-f", "--force",
         action="store_true",
@@ -415,9 +427,19 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # load configuration
+    config = SafeConfigParser()
+    config.read(args.config)
+
+    loglevel = config.get("global", "loglevel")
+    logging.basicConfig(level=loglevel)
+
     # paths to the data and where we will save it
-    data_path = DATA_PATH.joinpath("human-raw", args.exp)
-    dest_path = DATA_PATH.joinpath("human", "%s.dpkg" % args.exp)
+    version = config.get("global", "version")
+    DATA_PATH = path(config.get("paths", "data"))
+    data_path = DATA_PATH.joinpath("human-raw", version)
+    dest_path = DATA_PATH.joinpath("human", "%s.dpkg" % version)
+    db_path = DATA_PATH.joinpath("human", "workers.db")
 
     # don't do anything if the datapackage already exists
     if dest_path.exists() and not args.force:
@@ -429,7 +451,7 @@ if __name__ == "__main__":
 
     # load the data
     meta, conds, fields = load_meta(data_path)
-    data, participants = load_data(data_path, conds, fields)
+    data, participants = load_data(data_path, db_path, conds, fields)
     events = load_events(data_path)
 
     # save it
