@@ -37,3 +37,5 @@ lib/mental_rotation/model/*.c
 lib/mental_rotation/model/*.so
 analysis/.ipynb_checkpoints
 results
+/experiment/.psiturk_history
+/build/
