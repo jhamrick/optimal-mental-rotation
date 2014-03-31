@@ -7,8 +7,8 @@ import tempfile
 
 from path import path
 from . import model
-from tables import *
-from tables.nodes import *
+import tables as tbl
+import tables.nodes.filenode as fn
 from array import array
 
 
@@ -285,33 +285,34 @@ class BaseModel(object):
         self.status = state['status']
 
     def save(self, loc, force=False):
-        # Setup for table columns
-        class Traces(IsDescription):
-            class Xr(IsDescription):
-                _v_pos = 1
-                Xa = Float64Col(pos=0) #shape(6,2)
-                R = Float64Col(pos=1)
-                F = Float64Col(pos=2)
-            F = Float64Col(pos=0)
-            Xr = Xr()
-            R = Float64Col(pos=2)
-            log_S = Float64Col(pos=3)
-
         state = self.__getstate__()
         traces = state['_traces']
         del state['_traces']
 
-        with open_file("data.h5", mode="w", title="Data File") as h5file:
+        # Setup for table columns
+        class Traces(tbl.IsDescription):
+            F = tbl.Float64Col(pos=0)
+            if traces is not None and 'Xr' in traces.keys():
+                Xr = tbl.Float64Col(pos=1,shape=traces['Xr'].shape[1:])
+            else:
+                Xr = tbl.Float64Col(pos=1)
+            R = tbl.Float64Col(pos=2)
+            log_S = tbl.Float64Col(pos=3)
+
+        with tbl.open_file("data.h5", mode="w", title="Data File") as h5file:
             if not h5file.__contains__('/stimuli_group'): 
                 group = h5file.create_group("/", "stimuli_group", "Stimuli #")
                 h5file.create_table(group, "traces_table", Traces, "Traces")
 
-            # Remove existing state filenode because filenode cannot be overwritten, only appended to
-            if h5file.__contains__('/stimuli_group/state_file'):
+            # Remove existing state filenode if force is True
+            if h5file.__contains__('/stimuli_group/state_file') and force:
                 h5file.remove_node(where='/stimuli_group', name='state_file')
+            else:
+                pass
+                #raise IOError("State filenode already exists")
 
             # Save state into PyTable filenode
-            fnode = filenode.new_node(h5file, where='/stimuli_group', name="state_file")
+            fnode = fn.new_node(h5file, where='/stimuli_group', name="state_file")
             json.dump(state, fnode)
             fnode.close()
 
@@ -323,17 +324,7 @@ class BaseModel(object):
             if traces is not None:
                 for i in range(self._current_iter):
                     row['F'] = traces['F'][i]
-
-                    # Passing over errors with strict typing issues for having arrays as cell values
-                    vertices = traces['Xr'][i]
-                    flat_vertices = [vertex for sublist in vertices for vertex in sublist]
-                    try:
-                        row['Xr/Xa'] = array('f', flat_vertices)
-                    except:
-                        pass
-
-                    row['Xr/R'] = traces['R'][i]
-                    row['Xr/F'] = traces['F'][i]
+                    row['Xr'] = traces['Xr'][i]
                     row['R'] = traces['R'][i]
                     row['log_S'] = traces['log_S'][i]
 
@@ -346,7 +337,7 @@ class BaseModel(object):
 
     @classmethod
     def load(cls, loc):
-        with open_file("data.h5", mode="r") as h5file:
+        with tbl.open_file("data.h5", mode="r") as h5file:
 
             table = h5file.root.stimuli_group.traces_table
 
@@ -354,7 +345,7 @@ class BaseModel(object):
 
             # Load state from PyTable filenode
             state_node = h5file.root.stimuli_group.state_file
-            state_file = filenode.open_node(state_node, 'r')
+            state_file = fn.open_node(state_node, 'r')
             state_file.seek(0)
             state = json.load(state_file)
 
@@ -368,10 +359,10 @@ class BaseModel(object):
             else:
                 state['_traces'] = traces
 
-            model = cls.__new__(cls)
-            model.__setstate__(state)
-
             h5file.close()
+
+        model = cls.__new__(cls)
+        model.__setstate__(state)
 
         return model
 
