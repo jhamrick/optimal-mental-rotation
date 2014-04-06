@@ -7,6 +7,7 @@ import tempfile
 
 from path import path
 from . import model
+
 import tables as tbl
 import tables.nodes.filenode as fn
 from array import array
@@ -284,35 +285,35 @@ class BaseModel(object):
 
         self.status = state['status']
 
-    def save(self, loc, force=False):
+    def save(self, loc, stim="stimuli_group", force=False):
         state = self.__getstate__()
         traces = state['_traces']
         del state['_traces']
 
-        # Setup for table columns
-        class Traces(tbl.IsDescription):
-            F = tbl.Float64Col(pos=0)
-            if traces is not None and 'Xr' in traces.keys():
+        if traces is not None:
+            class Traces(tbl.IsDescription):
+                F = tbl.Float64Col(pos=0)
                 Xr = tbl.Float64Col(pos=1,shape=traces['Xr'].shape[1:])
-            else:
-                Xr = tbl.Float64Col(pos=1)
-            R = tbl.Float64Col(pos=2)
-            log_S = tbl.Float64Col(pos=3)
+                R = tbl.Float64Col(pos=2)
+                log_S = tbl.Float64Col(pos=3)
+        else:
+            Traces = None
 
-        with tbl.open_file("data.h5", mode="w", title="Data File") as h5file:
-            if not h5file.__contains__('/stimuli_group'): 
-                group = h5file.create_group("/", "stimuli_group", "Stimuli #")
+        stimuli_group = '/'+stim
+
+        with tbl.open_file(loc, mode='w', title="H5 File") as h5file:
+            if not h5file.__contains__(stimuli_group): 
+                group = h5file.create_group('/', stim, "Stimuli")
                 h5file.create_table(group, "traces_table", Traces, "Traces")
 
             # Remove existing state filenode if force is True
-            if h5file.__contains__('/stimuli_group/state_file') and force:
-                h5file.remove_node(where='/stimuli_group', name='state_file')
+            if h5file.__contains__(stimuli_group+"/state_file") and force:
+                h5file.remove_node(where=stimuli_group, name="state_file")
             else:
-                pass
-                #raise IOError("State filenode already exists")
+                raise IOError("State filenode already exists, cannot overwrite")
 
             # Save state into PyTable filenode
-            fnode = fn.new_node(h5file, where='/stimuli_group', name="state_file")
+            fnode = fn.new_node(h5file, where=stimuli_group , name="state_file")
             json.dump(state, fnode)
             fnode.close()
 
@@ -320,27 +321,21 @@ class BaseModel(object):
             table = group.traces_table
             row = table.row
 
-            # Load traces into table by rows
             if traces is not None:
                 for i in range(self._current_iter):
                     row['F'] = traces['F'][i]
                     row['Xr'] = traces['Xr'][i]
                     row['R'] = traces['R'][i]
                     row['log_S'] = traces['log_S'][i]
-
                     row.append()
 
             table.flush()
-
             h5file.close()
 
-
     @classmethod
-    def load(cls, loc):
-        with tbl.open_file("data.h5", mode="r") as h5file:
-
-            table = h5file.root.stimuli_group.traces_table
-
+    def load(cls, loc, stim="stimuli_group"):
+        with tbl.open_file(loc, mode='r') as h5file:
+            table = h5file.getNode(where="/"+stim+"/traces_table")
             traces = {}
 
             # Load state from PyTable filenode
@@ -365,77 +360,3 @@ class BaseModel(object):
         model.__setstate__(state)
 
         return model
-
-
-    # def save(self, loc, force=False):
-    #     loc = path(loc)
-    #     if loc.exists() and not force:
-    #         raise IOError("path %s already exists" % loc.abspath())
-    #     elif loc.exists() and force:
-    #         loc.remove()
-
-    #     tar = tarfile.open(loc, "w")
-    #     tmp = path(tempfile.mkdtemp())
-
-    #     state = self.__getstate__()
-    #     traces = state['_traces']
-    #     del state['_traces']
-
-    #     statepth = tmp.joinpath("state.json")
-    #     with open(statepth, "w") as fh:
-    #         json.dump(state, fh)
-    #     tar.add(statepth, arcname="state.json")
-
-    #     if traces is not None:
-    #         tloc = tmp.joinpath("traces")
-    #         tloc.mkdir_p()
-
-    #         for name in traces:
-    #             trace = traces[name]
-    #             np.save(tloc.joinpath(name + ".npy"), trace)
-
-    #         tar.add(tloc, arcname="traces")
-
-    #     tar.close()
-    #     tmp.rmtree_p()
-
-    # @classmethod
-    # def load(cls, loc):
-    #     if hasattr(loc, "read"):
-    #         tar = tarfile.open(fileobj=loc, mode="r")
-
-    #     else:
-    #         loc = path(loc)
-    #         if not loc.exists():
-    #             raise IOError("path does not exist: %s" % loc.abspath())
-    #         tar = tarfile.open(loc, "r")
-
-    #     traces = {}
-
-    #     for member in tar.getmembers():
-    #         if member.name == "state.json":
-    #             fh = tar.extractfile(member)
-    #             state = json.load(fh)
-    #             fh.close()
-
-    #         elif member.name == "traces":
-    #             continue
-
-    #         elif path(member.name).dirname() == "traces":
-    #             fh = tar.extractfile(member)
-    #             traces[path(member.name).namebase] = np.load(fh)
-    #             fh.close()
-
-    #         else:
-    #             raise IOError("unexpected file: %s" % member.name)
-
-    #     tar.close()
-
-    #     if traces == {}:
-    #         state['_traces'] = None
-    #     else:
-    #         state['_traces'] = traces
-
-    #     model = cls.__new__(cls)
-    #     model.__setstate__(state)
-    #     return model
