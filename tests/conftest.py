@@ -87,14 +87,11 @@ def seed(config):
 @pytest.fixture
 def tmppath(config, request, tmpdir):
     # handle temporary directories
-    pth = path(tmpdir.strpath).joinpath("save")
+    pth = path(tmpdir.strpath).joinpath("tmp.h5")
 
     def fin():
         if pth.exists():
-            if pth.isdir():
-                pth.rmtree_p()
-            else:
-                pth.remove()
+            pth.remove()
     request.addfinalizer(fin)
 
     return pth
