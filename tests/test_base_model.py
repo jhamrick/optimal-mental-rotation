@@ -81,7 +81,7 @@ class TestBaseModel(object):
         plt.close('all')
 
         fig, ax = plt.subplots()
-        model.plot(ax, 0, f_S = lambda R, F: np.ones_like(R), color='g')
+        model.plot(ax, 0, f_S=lambda R, F: np.ones_like(R), color='g')
         plt.close('all')
 
     @pytest.mark.once
@@ -175,6 +175,9 @@ class TestBaseModel(object):
     def test_load(self, model, task, part):
         if self.cls is BaseModel:
             pytest.skip("class is BaseModel")
+
+        with pytest.raises(IOError):
+            self.cls.load(task, part)
 
         model.sample()
         model.save(task, part)
