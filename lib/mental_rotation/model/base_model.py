@@ -2,15 +2,11 @@ import numpy as np
 import json
 import matplotlib.pyplot as plt
 import scipy.stats
-import tarfile
-import tempfile
 
-from path import path
 from . import model
 
 import tables as tbl
 import tables.nodes.filenode as fn
-from array import array
 
 
 class BaseModel(object):
@@ -86,7 +82,7 @@ class BaseModel(object):
 
         if self.status == "done":
             self._finish()
-            
+
     def loop(self):
         while self._current_iter < self._iter and self.status == 'running':
             self.draw()
@@ -100,7 +96,7 @@ class BaseModel(object):
         self.model['F'].value = self._traces['F'][i]
         self.model['R'].value = self._traces['R'][i]
 
-    ##################################################################
+    #
     # Sampled R_i
 
     @property
@@ -108,7 +104,7 @@ class BaseModel(object):
         R = self.trace('R')
         return R
 
-    ##################################################################
+    #
     # Sampled F_i
 
     @property
@@ -116,7 +112,7 @@ class BaseModel(object):
         F = self.trace('F')
         return F
 
-    ##################################################################
+    #
     # Sampled S_i and the estimated S
 
     @property
@@ -134,7 +130,7 @@ class BaseModel(object):
     def S(self, R, F):
         raise NotImplementedError
 
-    ##################################################################
+    #
     # Log likelihoods for each hypothesis
 
     @property
@@ -166,7 +162,7 @@ class BaseModel(object):
         else:
             return 1
 
-    ##################################################################
+    #
     # Plotting
 
     def plot(self, ax, F, f_S=None, color0='k', color=None):
@@ -192,7 +188,8 @@ class BaseModel(object):
         ii = np.argsort(Ri)
 
         lines['approx'] = ax.plot(Ri[ii], Si[ii], '-', lw=2, color=color)
-        lines['points'] = ax.plot(Ri[ii], Si[ii], 'o', markersize=5, color=color)
+        lines['points'] = ax.plot(
+            Ri[ii], Si[ii], 'o', markersize=5, color=color)
 
         return lines
 
@@ -227,7 +224,7 @@ class BaseModel(object):
                 [p0, p1], ["$h=0$", "$h=1$"],
                 frameon=False, numpoints=1, fontsize=12)
 
-    ##################################################################
+    #
     # Misc
 
     def print_stats(self):
@@ -238,11 +235,11 @@ class BaseModel(object):
         print "log LH(h0) / LH(h1) = %f" % llr
 
         hyp = self.hypothesis_test()
-        if hyp == 1: # pragma: no cover
+        if hyp == 1:  # pragma: no cover
             print "--> STOP and accept hypothesis 1 (flipped)"
-        elif hyp == 0: # pragma: no cover
+        elif hyp == 0:  # pragma: no cover
             print "--> STOP and accept hypothesis 0 (same)"
-        else: # pragma: no cover
+        else:  # pragma: no cover
             print "--> UNDECIDED"
 
     def _wrap(self, x):
@@ -262,7 +259,7 @@ class BaseModel(object):
         R = scipy.stats.norm.rvs(0, step)
         return R
 
-    ##################################################################
+    #
     # Copying/Saving
 
     def __getstate__(self):
@@ -285,66 +282,62 @@ class BaseModel(object):
 
         self.status = state['status']
 
-    def save(self, loc, stim="stimuli_group", force=False):
+    def save(self, task, part, force=False):
         state = self.__getstate__()
         traces = state['_traces']
         del state['_traces']
 
-        if traces is not None:
-            class Traces(tbl.IsDescription):
-                F = tbl.Float64Col(pos=0)
-                Xr = tbl.Float64Col(pos=1,shape=traces['Xr'].shape[1:])
-                R = tbl.Float64Col(pos=2)
-                log_S = tbl.Float64Col(pos=3)
-        else:
-            Traces = None
+        task = str(task)
+        part = str(part)
+        part_loc = '/%s' % part
 
-        stimuli_group = '/'+stim
+        with tbl.open_file('%s.h5' % task, mode='w') as h5file:
+            if part_loc not in h5file:
+                group = h5file.create_group('/', part, part)
+            elif not force:
+                raise IOError("%s already exists, cannot overwrite" % part)
 
-        with tbl.open_file(loc, mode='w', title="H5 File") as h5file:
-            if not h5file.__contains__(stimuli_group): 
-                group = h5file.create_group('/', stim, "Stimuli")
-                h5file.create_table(group, "traces_table", Traces, "Traces")
-
-            # Remove existing state filenode if force is True
-            if h5file.__contains__(stimuli_group+"/state_file") and force:
-                h5file.remove_node(where=stimuli_group, name="state_file")
-            else:
-                raise IOError("State filenode already exists, cannot overwrite")
-
-            # Save state into PyTable filenode
-            fnode = fn.new_node(h5file, where=stimuli_group , name="state_file")
+            fnode = fn.new_node(
+                h5file, where='/%s' % part, name="state_file")
             json.dump(state, fnode)
             fnode.close()
 
-            group = h5file.root.stimuli_group
-            table = group.traces_table
-            row = table.row
-
             if traces is not None:
-                for i in range(self._current_iter):
-                    row['F'] = traces['F'][i]
-                    row['Xr'] = traces['Xr'][i]
-                    row['R'] = traces['R'][i]
-                    row['log_S'] = traces['log_S'][i]
-                    row.append()
+                class TraceTable(tbl.IsDescription):
+                    F = tbl.Float64Col(pos=0)
+                    Xr = tbl.Float64Col(
+                        pos=1, shape=traces['Xr'].shape[1:])
+                    R = tbl.Float64Col(pos=2)
+                    log_S = tbl.Float64Col(pos=3)
 
-            table.flush()
+                table = h5file.create_table(
+                    group, 'trace_table', TraceTable, "TraceTable")
+
+                for i in range(self._current_iter):
+                    table.row['F'] = traces['F'][i]
+                    table.row['Xr'] = traces['Xr'][i]
+                    table.row['R'] = traces['R'][i]
+                    table.row['log_S'] = traces['log_S'][i]
+                    table.row.append()
+                table.flush()
+
             h5file.close()
 
     @classmethod
-    def load(cls, loc, stim="stimuli_group"):
-        with tbl.open_file(loc, mode='r') as h5file:
-            table = h5file.getNode(where="/"+stim+"/traces_table")
+    def load(cls, task, part):
+        with tbl.open_file('%s.h5' % task, mode='r') as h5file:
+            try:
+                group = h5file.getNode(where='/', name=part)
+                table = h5file.getNode(where='/%s' % part, name='trace_table')
+            except tbl.NoSuchNodeError:
+                raise IOError("H5 file missing %s group or trace_table" % part)
             traces = {}
 
-            # Load state from PyTable filenode
-            state_node = h5file.root.stimuli_group.state_file
+            state_node = group.state_file
             state_file = fn.open_node(state_node, 'r')
             state_file.seek(0)
             state = json.load(state_file)
 
-            # Load columns as numpy arrays into the traces dictionary
             cols = table.cols
             for name in cols._v_colnames:
                 traces[name] = cols._f_col(name)[:]
