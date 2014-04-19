@@ -149,58 +149,47 @@ class TestBaseModel(object):
             assert trace.shape[0] == model._current_iter
 
     @pytest.mark.once
-    def test_sample_and_save(self, model, tmppath):
+    def test_sample_and_save(self, model, task, part):
         if self.cls is BaseModel:
             pytest.skip("class is BaseModel")
 
         model.sample()
-        model.save(tmppath)
-        #assert tmppath.exists()
+        model.save(task, part)
 
     @pytest.mark.once
-    def test_save(self, model, tmppath):
+    def test_save(self, model, task, part):
         if self.cls is BaseModel:
             pytest.skip("class is BaseModel")
 
-        model.save(tmppath)
-        #assert tmppath.exists()
+        model.save(task, part)
 
     @pytest.mark.once
-    def test_force_save(self, model, tmppath):
+    def test_force_save(self, model, task, part):
         if self.cls is BaseModel:
             pytest.skip("class is BaseModel")
 
-        model.save(tmppath)
-        #with pytest.raises(IOError):
-        #    model.save(tmppath)
-        model.save(tmppath, force=True)
-        #assert tmppath.exists()
+        model.save(task, path)
+        model.save(task, path, force=True)
 
     @pytest.mark.once
-    def test_load(self, model, tmppath):
+    def test_load(self, model, task, part):
         if self.cls is BaseModel:
             pytest.skip("class is BaseModel")
-
-        #with pytest.raises(IOError):
-        #    self.cls.load(tmppath)
-        #self.cls.load(tmppath)
 
         model.sample()
-        model.save(tmppath)
-        #assert tmppath.exists()
+        model.save(task, part)
 
-        m2 = self.cls.load(tmppath)
+        m2 = self.cls.load(task, part)
         m2.print_stats()
 
     @pytest.mark.once
-    def test_load_and_sample(self, model, tmppath):
+    def test_load_and_sample(self, model, task, part):
         if self.cls is BaseModel:
             pytest.skip("class is BaseModel")
 
-        model.save(tmppath)
-        #assert tmppath.exists()
+        model.save(task, part)
 
-        m2 = self.cls.load(tmppath)
+        m2 = self.cls.load(task, part)
         m2.sample()
         m2.print_stats()
 
