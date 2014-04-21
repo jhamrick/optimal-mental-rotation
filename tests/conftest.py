@@ -85,15 +85,16 @@ def seed(config):
 
 
 @pytest.fixture
-def task():
-    task = 'task_1'
-    return task
+def tmppath(config, request, tmpdir):
+    # handle temporary directories
+    pth = path(tmpdir.strpath).joinpath("tmp.h5")
 
+    def fin():
+        if pth.exists():
+            pth.remove()
+    request.addfinalizer(fin)
 
-@pytest.fixture
-def part():
-    part = 'part_1'
-    return part
+    return pth
 
 
 @pytest.fixture

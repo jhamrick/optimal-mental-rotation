@@ -291,11 +291,16 @@ class BaseModel(object):
         part = str(part)
         part_loc = '/%s' % part
 
-        with tbl.open_file('%s.h5' % task, mode='w') as h5file:
+        with tbl.open_file(task, mode='a') as h5file:
             if part_loc not in h5file:
                 group = h5file.create_group('/', part, part)
-            elif not force:
-                raise IOError("%s already exists, cannot overwrite" % part)
+            elif force:
+                h5file.removeNode('/', name=part, recursive=True)
+                group = h5file.create_group('/', part, part)
+            else:
+                raise IOError(
+                    "%s already exists in %s.h5, cannot overwrite"
+                    % (part, task))
 
             fnode = fn.new_node(
                 h5file, where='/%s' % part, name="state_file")
@@ -325,12 +330,12 @@ class BaseModel(object):
 
     @classmethod
     def load(cls, task, part):
-        with tbl.open_file('%s.h5' % task, mode='r') as h5file:
+        with tbl.open_file(task, mode='r') as h5file:
             try:
                 group = h5file.getNode(where='/', name=part)
                 table = h5file.getNode(where='/%s' % part, name='trace_table')
-            except tbl.NoSuchNodeError:
-                raise IOError("H5 file missing %s group or trace_table" % part)
+            except tbl.NoSuchNodeError as e:
+                raise IOError(e)
             traces = {}
 
             state_node = group.state_file

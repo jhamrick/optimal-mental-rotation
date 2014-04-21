@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pytest
+import tables as tbl
 
-from path import path
 from copy import deepcopy
 
 from mental_rotation.model import BaseModel
@@ -81,7 +81,7 @@ class TestBaseModel(object):
         plt.close('all')
 
         fig, ax = plt.subplots()
-        model.plot(ax, 0, f_S = lambda R, F: np.ones_like(R), color='g')
+        model.plot(ax, 0, f_S=lambda R, F: np.ones_like(R), color='g')
         plt.close('all')
 
     @pytest.mark.once
@@ -154,42 +154,66 @@ class TestBaseModel(object):
             pytest.skip("class is BaseModel")
 
         model.sample()
-        model.save(tmppath)
-        #assert tmppath.exists()
+
+        # make sure stim 1 exists
+        model.save(tmppath, "test_stim_1")
+        assert tmppath.exists()
+        with tbl.open_file(tmppath, mode='r') as h5file:
+            assert "/test_stim_1" in h5file
+            assert not "/test_stim_2" in h5file
+
+        # make sure both stim 1 and stim 2 exist
+        model.save(tmppath, "test_stim_2")
+        with tbl.open_file(tmppath, mode='r') as h5file:
+            assert "/test_stim_1" in h5file
+            assert "/test_stim_2" in h5file
 
     @pytest.mark.once
     def test_save(self, model, tmppath):
         if self.cls is BaseModel:
             pytest.skip("class is BaseModel")
 
-        model.save(tmppath)
-        #assert tmppath.exists()
+        # make sure stim 1 exists
+        model.save(tmppath, "test_stim_1")
+        assert tmppath.exists()
+        with tbl.open_file(tmppath, mode='r') as h5file:
+            assert "/test_stim_1" in h5file
+            assert not "/test_stim_2" in h5file
+
+        # make sure both stim 1 and stim 2 exist
+        model.save(tmppath, "test_stim_2")
+        with tbl.open_file(tmppath, mode='r') as h5file:
+            assert "/test_stim_1" in h5file
+            assert "/test_stim_2" in h5file
 
     @pytest.mark.once
     def test_force_save(self, model, tmppath):
         if self.cls is BaseModel:
             pytest.skip("class is BaseModel")
 
-        model.save(tmppath)
-        #with pytest.raises(IOError):
-        #    model.save(tmppath)
-        model.save(tmppath, force=True)
-        #assert tmppath.exists()
+        model.save(tmppath, "test_stim")
+        with pytest.raises(IOError):
+            model.save(tmppath, "test_stim")
+        model.save(tmppath, "test_stim", force=True)
+        assert tmppath.exists()
+        with tbl.open_file(tmppath, mode='r') as h5file:
+            assert "/test_stim" in h5file
 
     @pytest.mark.once
     def test_load(self, model, tmppath):
         if self.cls is BaseModel:
             pytest.skip("class is BaseModel")
 
-        #with pytest.raises(IOError):
-        #    self.cls.load(tmppath)
-        #self.cls.load(tmppath)
+        with pytest.raises(IOError):
+            self.cls.load(tmppath, "test_stim")
 
         model.sample()
-        model.save(tmppath)
-        #assert tmppath.exists()
+        model.save(tmppath, "test_stim")
+        assert tmppath.exists()
+        with tbl.open_file(tmppath, mode='r') as h5file:
+            assert "/test_stim" in h5file
 
-        m2 = self.cls.load(tmppath)
+        m2 = self.cls.load(tmppath, "test_stim")
         m2.print_stats()
 
     @pytest.mark.once
@@ -197,10 +221,12 @@ class TestBaseModel(object):
         if self.cls is BaseModel:
             pytest.skip("class is BaseModel")
 
-        model.save(tmppath)
-        #assert tmppath.exists()
+        model.save(tmppath, "test_stim")
+        assert tmppath.exists()
+        with tbl.open_file(tmppath, mode='r') as h5file:
+            assert "/test_stim" in h5file
 
-        m2 = self.cls.load(tmppath)
+        m2 = self.cls.load(tmppath, "test_stim")
         m2.sample()
         m2.print_stats()
 
