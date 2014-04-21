@@ -44,12 +44,9 @@ def simulate(task):
         raise ValueError("unhandled model: %s" % model_name)
 
     np.random.seed(seed)
-    if not data_path.exists():
-        data_path.makedirs()
 
     for iopt, opts in model_opts.iteritems():
         logger.info("Task '%s', part %s", task['task_name'], iopt)
-        dest = data_path.joinpath("part_%s" % iopt)
         model = model_class(Xa, Xb, **opts)
         try:
             model.sample()
@@ -58,9 +55,7 @@ def simulate(task):
         except:
             print traceback.format_exc()
 
-        if dest.exists():
-            dest.rmtree_p()
-        model.save(dest)
+        model.save(data_path, "part_%s" % iopt, force=True)
 
 
 def worker_job(host, port):
@@ -93,7 +88,7 @@ def worker_job(host, port):
 
         task = json.loads(task)
         task_name = task["task_name"]
-        task['data_path'] = tmpdir.joinpath(task_name)
+        task["data_path"] = tmpdir.joinpath("%s.h5" % task_name)
 
         logger.info("Got task '%s'", task_name)
         startime = datetime.now()
@@ -113,22 +108,15 @@ def worker_job(host, port):
 
         else:
             data_path = path(task["data_path"])
-            src_path = data_path.dirname().joinpath("%s.tar.gz" % task_name)
-
-            # first compress the data
-            cmd = [
-                'tar', 'czf', src_path, '-C',
-                data_path.dirname(), data_path.name]
-            run_command(logger, cmd)
 
             # then send it to the server
             if host in ('localhost', '127.0.0.1'):
                 prefix = ""
-                dst_path = "%s/%s.tar.gz" % (sim_root, task_name)
+                dst_path = "%s/%s.h5" % (sim_root, task_name)
                 options = []
             else:
                 prefix = "ubuntu@%s:" % host
-                dst_path = sim_root.joinpath("%s.tar.gz" % task_name)
+                dst_path = sim_root.joinpath("%s.h5" % task_name)
                 options = [
                     '-o', 'StrictHostKeyChecking=no',
                     '-o', 'UserKnownHostsFile=/dev/null'
@@ -137,7 +125,7 @@ def worker_job(host, port):
             # build the scp command
             cmd = ['scp', '-q']
             cmd.extend(options)
-            cmd.append(src_path)
+            cmd.append(data_path)
             cmd.append(prefix + dst_path)
 
             while True:
