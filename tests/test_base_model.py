@@ -214,7 +214,21 @@ class TestBaseModel(object):
             assert "/test_stim" in h5file
 
         m2 = self.cls.load(tmppath, "test_stim")
-        m2.print_stats()
+
+        state1 = model.__getstate__()
+        state2 = m2.__getstate__()
+        assert len(state1) == len(state2)
+        for key in state1:
+            if isinstance(state1[key], np.ndarray):
+                assert (state1[key] == state2[key]).all()
+            elif key == "_traces":
+                if state1["_traces"] is None:
+                    assert state2["_traces"] is None
+                else:
+                    for trace in state1[key]:
+                        assert (state1[key][trace] == state2[key][trace]).all()
+            else:
+                assert state1[key] == state2[key]
 
     @pytest.mark.once
     def test_load_and_sample(self, model, tmppath):
@@ -227,6 +241,22 @@ class TestBaseModel(object):
             assert "/test_stim" in h5file
 
         m2 = self.cls.load(tmppath, "test_stim")
+
+        state1 = model.__getstate__()
+        state2 = m2.__getstate__()
+        assert len(state1) == len(state2)
+        for key in state1:
+            if isinstance(state1[key], np.ndarray):
+                assert (state1[key] == state2[key]).all()
+            elif key == "_traces":
+                if state1["_traces"] is None:
+                    assert state2["_traces"] is None
+                else:
+                    for trace in state1[key]:
+                        assert (state1[key][trace] == state2[key][trace]).all()
+            else:
+                assert state1[key] == state2[key]
+
         m2.sample()
         m2.print_stats()
 

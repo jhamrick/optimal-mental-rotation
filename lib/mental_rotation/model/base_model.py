@@ -341,13 +341,12 @@ class BaseModel(object):
             state_file.seek(0)
             state = json.load(state_file)
 
-            if "/trace_table" in h5file:
+            try:
                 traces = {}
                 table = h5file.getNode(where='/%s' % part, name='trace_table')
-                cols = table.cols
-                for name in cols._v_colnames:
-                    traces[name] = cols._f_col(name)[:]
-            else:
+                for name in table.cols._v_colnames:
+                    traces[name] = table.cols._f_col(name)[:]
+            except tbl.NoSuchNodeError:
                 traces = None
 
             state['_traces'] = traces
