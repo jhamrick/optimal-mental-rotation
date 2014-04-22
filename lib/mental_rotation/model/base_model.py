@@ -277,7 +277,7 @@ class BaseModel(object):
         self._make_model(state['Xa'], state['Xb'])
         self._current_iter = state['_current_iter']
         self._traces = state['_traces']
-        if self._current_iter is not None:
+        if self._traces is not None and self._current_iter is not None:
             self._restore(self._current_iter - 1)
 
         self.status = state['status']
@@ -333,24 +333,24 @@ class BaseModel(object):
         with tbl.open_file(task, mode='r') as h5file:
             try:
                 group = h5file.getNode(where='/', name=part)
-                table = h5file.getNode(where='/%s' % part, name='trace_table')
-            except tbl.NoSuchNodeError as e:
-                raise IOError(e)
-            traces = {}
+            except tbl.NoSuchNodeError:
+                raise IOError("%s not saved in %s.h5 file" % (part, task))
 
             state_node = group.state_file
             state_file = fn.open_node(state_node, 'r')
             state_file.seek(0)
             state = json.load(state_file)
 
-            cols = table.cols
-            for name in cols._v_colnames:
-                traces[name] = cols._f_col(name)[:]
-
-            if traces == {}:
-                state['_traces'] = None
+            if "/trace_table" in h5file:
+                traces = {}
+                table = h5file.getNode(where='/%s' % part, name='trace_table')
+                cols = table.cols
+                for name in cols._v_colnames:
+                    traces[name] = cols._f_col(name)[:]
             else:
-                state['_traces'] = traces
+                traces = None
+
+            state['_traces'] = traces
 
             h5file.close()
 
