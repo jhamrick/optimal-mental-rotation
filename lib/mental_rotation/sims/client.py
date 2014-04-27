@@ -58,28 +58,27 @@ def simulate(task):
         model.save(data_path, "part_%s" % iopt, force=True)
 
 
-def worker_job(host, port):
-    # connet to the server
-    pandaserver = ServerProxy("http://%s:%d" % (host, port))
+def do(func, *args):
     while True:
         try:
-            sim_root = path(pandaserver.panda_connect())
+            output = func(*args)
         except:
             time.sleep(1)
         else:
             break
 
+    return output
+
+
+def worker_job(host, port):
+    # connet to the server
+    pandaserver = ServerProxy("http://%s:%d" % (host, port))
+    sim_root = path(do(pandaserver.panda_connect))
     tmpdir = path(tempfile.mkdtemp())
 
     while True:
         # get the next task from the pandaserver
-        while True:
-            try:
-                task = pandaserver.panda_request()
-            except:
-                time.sleep(1)
-            else:
-                break
+        task = do(pandaserver.panda_request)
 
         # no more tasks left
         if task is None:
@@ -98,13 +97,7 @@ def worker_job(host, port):
 
         if error is not None:
             logger.error("Task '%s' failed with error:\n%s", task_name, error)
-            while True:
-                try:
-                    pandaserver.panda_error(task_name)
-                except:
-                    time.sleep(1)
-                else:
-                    break
+            do(pandaserver.panda_error, task_name)
 
         else:
             data_path = path(task["data_path"])
@@ -128,22 +121,10 @@ def worker_job(host, port):
             cmd.append(data_path)
             cmd.append(prefix + dst_path)
 
-            while True:
-                try:
-                    run_command(logger, cmd)
-                except:
-                    time.sleep(1)
-                else:
-                    break
+            do(run_command, logger, cmd)
 
             # then mark it as complete
-            while True:
-                try:
-                    pandaserver.panda_complete(task_name)
-                except:
-                    time.sleep(1)
-                else:
-                    break
+            do(pandaserver.panda_complete, task_name)
 
         task['data_path'].rmtree_p()
 
