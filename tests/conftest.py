@@ -103,6 +103,21 @@ def X0():
     return X
 
 
+@pytest.fixture
+def sim_params(request, tmproot):
+    # TODO: if there are issues with clean up, might have to fix scope
+    params = {}
+    params["tasks_path"] = tmproot.joinpath("tasks.json")
+    params["completed_path"] = tmproot.joinpath("completed.json")
+    params["sim_root"] = tmproot
+    params["stim_paths"] = tmproot
+    params["num_samples"] = 10
+    params["chunksize"] = 2
+    params["model_opts"] = ''
+    params["loglevel"] = "INFO"
+    return params
+
+
 def pytest_generate_tests(metafunc):
     if hasattr(metafunc.function, "full"):
         theta = sorted(range(0, 360, 45) + [39])
