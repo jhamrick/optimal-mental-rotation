@@ -60,7 +60,7 @@
 %\addtolength{\textfloatsep}{-0.5cm}
 
 \addtolength{\abovecaptionskip}{-0.25cm}
-\addtolength{\belowcaptionskip}{-0.3cm}
+\addtolength{\belowcaptionskip}{-0.35cm}
 
 \input{../../results/D/overall_response_time.tex}
 \input{../../results/D/overall_accuracy.tex}
@@ -96,12 +96,14 @@
   mental rotation, we formalized four models and compared them to
   human performance. We found that three models based on previous
   hypotheses in the literature were unable to account for several
-  aspects of human behavior. The fourth, which is based on the idea of
-  \textit{active sampling} \cite<e.g.,>{Gureckis:2012gu}, provides
-  plausible explanations where the other models do not. Based on these
-  results, we suggest that the question of ``what to simulate?'' is
-  more difficult than has previously been assumed, and that an active
-  learning approach holds promise for uncovering the answer.
+  aspects of human behavior. The fourth is based on the idea
+  \textit{active sampling} \cite<e.g.,>{Gureckis:2012gu}, which is a
+  strategy of choosing actions that will provide the most
+  informative. This last model provides a plausible account of how
+  people use mental rotation, where the other models do not. Based on
+  these results, we suggest that the question of ``what to simulate?''
+  is more difficult than has previously been assumed, and that an
+  active learning approach holds promise for uncovering the answer.
 
   \textbf{Keywords:} mental rotation, computational modeling
 \end{abstract}
@@ -145,21 +147,6 @@ future work.
 
 \section{Modeling mental rotation}
 
-\begin{figure*}[t]
-  \begin{center}
-    \includegraphics[width=\textwidth]{../../figures/D/model-traces.pdf}
-    \caption{\textbf{Example stimuli and model behavior.} On the left
-      is a ``flipped'' stimulus pair with a rotation of
-      $120^\circ$. The grey plots show the actions that each model
-      took for this stimulus. The color of each point (action)
-      indicates whether the model's current mental image was generated
-      under the hypothesis that the objects are the same (red) or
-      flipped (blue). The similarity functions for each of these
-      hypotheses are shown on the right.}
-    \label{fig:model-traces}
-  \end{center}
-\end{figure*}
-
 Previous models of mental rotation have largely focused on the
 representation of mental images, rather than how people decide
 \textit{which} mental images to generate. \citeA{Kosslyn:1977tv}
@@ -180,13 +167,12 @@ rotation, and is checked against the other object for
 congruency. However, this approach assumes that the corresponding
 points on the two objects can be easily identified, which is not
 necessarily the case.  Indeed, the state-of-the-art in computer vision
-suggests that there is more to this problem than simply checking for
-congruency, particularly when shapes are complex or when the shapes
-might not be exactly the same
-\cite<e.g.,>{Belongie:2002tj,Sebastian:2003vm}. Additionally, recent
-research shows that when performing \textit{physical} rotations,
-people do not fully rotate until congruency is reached; they may even
-rotate \textit{away} from initially near perfect matches
+suggests that there is more to this problem than checking for
+congruency, particularly when the shapes are complex or not exactly
+the same \cite<e.g.,>{Belongie:2002tj,Sebastian:2003vm}. Additionally,
+recent research shows that when performing \textit{physical}
+rotations, people do not rotate until congruency is reached; they may
+even rotate \textit{away} from initially near perfect matches
 \cite{Gardony:2013gn}.
 
 If people are not computing the rotation beforehand, what might they
@@ -214,13 +200,17 @@ an alternative model, which---rather than explicitly computing the
 angle of rotation---engages in an \textit{active sampling} strategy.
 
 Active sampling is the idea people gather new information in a manner
-that increases certainty about the problem space. This notion has
-recently gained support in several areas of cognitive science
+that increases certainty about the problem space. An everyday example
+of this can be observed in the game of ``20 questions'', in which one
+person thinks of a concept, and another has to guess the concept in 20
+questions or less. The first question is almost always ``person,
+place, or thing?'', because the answer provides the most possible
+information about the concept of interest. Active sampling has
+recently gained support across several areas of cognitive science
 \cite<e.g.,>{Gureckis:2012gu}, including other spatial domains
-\cite{Juni:2011vo}. In the case of mental rotation, if people do not
-know the minimum angle beforehand, then actively performing rotations
-may be the best way to gather evidence about the similarity between
-the observed shapes.
+\cite{Juni:2011vo}. In the case of mental rotation, actively choosing
+rotations may be the best way to gather evidence about the similarity
+between the observed shapes when the angle of rotation is unknown.
 
 \section{How should we rotate?}
 
@@ -230,6 +220,23 @@ extensions of the first but with relaxed assumptions; and one based on
 the active sampling approach.
 
 \subsection{Computational-level analysis}
+
+\begin{figure}[t]
+  \begin{center}
+    \includegraphics[width=0.48\textwidth]{../../figures/stimuli_and_similarity.pdf}
+    \caption{\textbf{Example stimuli and similarities.} This figure
+      shows a ``flipped'' stimulus pair with a rotation of
+      $120^\circ$, and the corresponding similarity functions for each
+      hypothesis. Arrows indicate where each shape lies on the curve.}
+    \label{fig:shapes}
+  \end{center}
+\end{figure}
+
+The task we are interested in modeling involves observing two images
+and determining whether one image depicts the ``same'' object as the
+other image (differing only by a rotation), or a ``flipped'' version
+of the object in the other image (differing by a reflection and then a
+rotation).
 
 Formally, we denote the shapes as $X_a$ and $X_b$ and assume $X_b$ is
 generated by a transformation of $X_a$, i.e. $X_b=f(X_a, \theta, h)$,
@@ -244,12 +251,13 @@ which hypothesis is more likely, the quantity of interest is a ratio
 $\ell:=p(\hi\ \vert\ X_a, X_b) / p(\hf\ \vert\ X_a, X_b)$ which
 (assuming that all rotations are equally likely) is equivalent to:
 \begin{equation}
-  \ell = \frac{\left(\int p(X_b\ \vert\ X_a, \theta, \hi)\dif\theta\right)p(\hi)}{\left(\int p(X_b\ \vert\ X_a, \theta, \hf)\dif\theta\right)p(\hf)}.
+  \ell = \frac{\left(\int p(X_b\ \vert\ X_a, \theta, \hi)\dif\theta\right)\cdot{}p_0}{\left(\int p(X_b\ \vert\ X_a, \theta, \hf)\dif\theta\right)\cdot{}p_1},
   \label{eq:lh-ratio}
 \end{equation}
-If $\ell > 1$, then we accept the hypothesis that the images depict
-the same object ($\hi$); if $\ell < 1$, then we accept the hypothesis
-that the images depict flipped objects ($\hf$).
+where $p_0=p(h=0)$ and $p_1=p(h=1)$, for brevity. If $\ell > 1$, then
+we accept the hypothesis that the images depict the same object
+($\hi$); if $\ell < 1$, then we accept the hypothesis that the images
+depict flipped objects ($\hf$).
 
 \subsection{Algorithmic constraints}
 
@@ -287,7 +295,7 @@ where $2N$ is the total number of possible mappings,\footnote{It is
   always connected to their two nearest neighbors in the $\theta$
   dimension.}and $\sigma_S^2=0.15$ is the variance of the
 similarity. Example similarity curves are shown in
-Figure~\ref{fig:model-traces}.
+Figure~\ref{fig:shapes}.
 
 Additionally, we assume that the observed shapes can only be
 transformed by a small amount at a time, and each transformation takes
@@ -297,7 +305,7 @@ image is $\Xt$, then:
   \mathbf{X}_{t+1} = \left\{ \begin{array}{ll}
       f(\Xt, 0, \epsilon) &\mbox{ rotate by $\epsilon$ radians,} \\
       f(\Xt, 1, 0) &\mbox{ flip,} \\
-      f(\Xa, 0, 0) &\mbox{ reset, or} \\
+      f(\Xa, 0, 0) &\mbox{ reset to $0^\circ$, or} \\
       f(\Xa, 1, 0) &\mbox{ reset and flip,} \\
     \end{array} \right.
   \label{eq:actions}
@@ -316,8 +324,7 @@ actions listed in Equation~\ref{eq:actions}.
 In order to approximate Equation~\ref{eq:lh-ratio} using samples of
 the similarity function, we must decide \textit{which} places to
 sample and \textit{when} stop sampling. The models below differ in how
-they make these decisions; see Figure~\ref{fig:model-traces} for an
-example.
+they make these decisions.
 
 \subsubsection{Oracle model}
 
@@ -339,9 +346,15 @@ Equation~\ref{eq:lh-ratio} becomes a generalized likelihood ratio
 test, where $\theta$ is set to the MLE value, rather than being
 marginalized:
 \begin{equation}
-  \ell = \frac{\max_\theta p(\Xb\ \vert\ \Xa, \theta, \hi)p(\hi)}{\max_\theta p(\Xb\ \vert\ \Xa, \theta, \hf)p(\hf)}.
+  \ell = \frac{\max_\theta p(\Xb\ \vert\ \Xa, \theta, \hi)\cdot{}p_0}{\max_\theta p(\Xb\ \vert\ \Xa, \theta, \hf)\cdot{}p_1}.
   \label{eq:mle-lh-ratio}
 \end{equation}
+
+If we give equal weight to the two hypotheses, then the priors cancel
+out; if we weigh one hypothesis more heavily, then our decision will
+be biased towards that hypothesis. However, unless the likelihood
+ratio is already very close to 1, small biases in the prior will not
+make much of a difference as to whether we accept $\hi$ or $\hf$.
 
 \subsubsection{Threshold model}
 
@@ -355,7 +368,10 @@ threshold); and (5) if no match was found, flip, and start over from
 step one.  We assume that the locations where $S$ is greater than the
 threshold correspond to the true $\theta$ (or points near the true
 $\theta$). So, as with the \Oc{} model, we use
-Equation~\ref{eq:mle-lh-ratio}.
+Equation~\ref{eq:mle-lh-ratio}. Additionally, we only allow for the
+``flip'' action after no match has been found, because there is no
+particularly principled way for the \Th{} model to choose when to
+flip.
 
 \subsubsection{Hill Climbing model}
 
@@ -385,7 +401,10 @@ that increases similarity until no further improvement can be
 found. In contrast with the \Th{} model, this results in arriving in a
 \textit{local} maximum (which may or may not be the global
 maximum). Thus, as with the \Oc{} and \Th{} models, we use
-Equation~\ref{eq:mle-lh-ratio}.
+Equation~\ref{eq:mle-lh-ratio}. We only allow for the ``flip'' action
+after a local maximum has been reached, because like the \Th{} model,
+there is otherwise no principled way for the \Hc{} model to choose
+when to flip.
 
 \subsubsection{Bayesian Quadrature model}
 
@@ -432,24 +451,33 @@ Assuming independence, we can now write $p(Z_h)\approx\mathcal{N}(Z_h\
 \vert\ \mathbb{E}[Z_h], \mathbb{V}(Z_h))$, which gives us a
 distribution over the likelihood ratio in Equation~\ref{eq:lh-ratio}:
 \begin{equation}
-p(\ell)\approx\frac{\mathcal{N}(Z_0\ \vert\ \mathbb{E}[Z_0], \mathbb{V}(Z_0))\ p(\hi)}{\mathcal{N}(Z_1\ \vert\ \mathbb{E}[Z_1], \mathbb{V}(Z_1))\ p(\hf)}.
+p(\ell)\approx\frac{\mathcal{N}(Z_0\ \vert\ \mathbb{E}[Z_0], \mathbb{V}(Z_0))\cdot{}p_0}{\mathcal{N}(Z_1\ \vert\ \mathbb{E}[Z_1], \mathbb{V}(Z_1))\cdot{}p_1}.
 \end{equation}
+
 This distribution cannot easily be calculated; however, we really are
-just interested in whether $Z_0>Z_1$ or $Z_1>Z_0$. Thus, rather than
-computing $p(\ell)$, we use $Z_D=Z_0-Z_1$ and compute:
-$p(Z_D)\propto\mathcal{N}(\mathbb{E}[Z_0] - \mathbb{E}[Z_1],
-\mathbb{V}(Z_0) + \mathbb{V}(Z_1))$.  We then sample new observations
-until we are at least 95\% confident that $Z_D\neq 0$. In other words,
-when $p(Z_D<0)<0.025$, we accept $\hi$, and when $p(Z_D<0)>0.975$, we
-accept $\hf$. To determine which points to sample, we can compute the
-expected variance of $Z_h$ if we sampled a new observation at
-$\theta_a$. From \citeA{Osborne:2012tm}, we compute the expected
-variance as $\mathbb{E}[\mathbb{V}(Z_h|\theta_a)]=\mathbb{V}(Z_h) +
+just interested in whether $Z_0>Z_1$ or $Z_1>Z_0$. Instead, we use
+$Z_D=p_0\cdot{}Z_0-p_1\cdot{}Z_1$ and compute
+$p(Z_D)\propto\mathcal{N}(p_0\cdot{}\mathbb{E}[Z_0] -
+p_1\cdot{}\mathbb{E}[Z_1], p_0^2\cdot{}\mathbb{V}(Z_0) +
+p_1^2\cdot{}\mathbb{V}(Z_1))$.
+We then sample new observations until we are at least 95\% confident
+that $Z_D\neq 0$. In other words, when $p(Z_D<0)<0.025$, we accept
+$\hi$, and when $p(Z_D<0)>0.975$, we accept $\hf$. Because we compare
+the hypotheses in order to determine when to stop sampling, biasing
+the prior towards one hypothesis should result in requiring less
+evidence for that hypothesis before stopping, and more evidence for
+the other hypothesis. This is in contrast to the previous models,
+where we would not expect the prior to have much effect.
+
+To determine which points to sample, we can compute the expected
+variance of $Z_h$ if we sampled a new observation at $\theta_a$. From
+\citeA{Osborne:2012tm}, we compute the expected variance as
+$\mathbb{E}[\mathbb{V}(Z_h|\theta_a)]=\mathbb{V}(Z_h) +
 \mathbb{E}[Z_h] - \int \mathbb{E}[Z_h|\theta_{a}]^2
 \mathcal{N}(\mu_h(\theta_a), \mathrm{Cov}_h(\theta_a,
-qc\theta_a))\dif\log S_h(\theta_a)$ for each of the actions in
-Equation~\ref{eq:actions}, and then choose the action with the lowest
-value.
+qc\theta_a))\dif\log S_h(\theta_a)$
+for each of the actions in Equation~\ref{eq:actions}, and then choose
+the action with the lowest value.
 
 \section{Methods}
 
@@ -460,14 +488,14 @@ experiment based on classic mental rotation studies
 \subsubsection{Stimuli}
 
 We randomly generated 20 shapes of five or six vertices (e.g.,
-Figure~\ref{fig:model-traces}). For each shape, we computed 20
-``same'' and 20 ``flipped'' stimuli pairs, with 18 rotations
-($\theta$) spaced at $20^\circ$ increments between $0^\circ$ and
-$360^\circ$ (with $0^\circ$ and $180^\circ$ repeated twice, in order
-to gather an equal number of responses for each angle between
-$0^\circ$ and $180^\circ$). ``Same'' pairs were created by rotating
-$\Xa$ by $\theta$; ``flipped'' pairs were first reflected $\Xa$ across
-the $y$-axis, then rotated by $\theta$.
+Figure~\ref{fig:shapes}). For each shape, we computed 20 ``same'' and
+20 ``flipped'' stimuli pairs, with 18 rotations ($\theta$) spaced at
+$20^\circ$ increments between $0^\circ$ and $360^\circ$ (with
+$0^\circ$ and $180^\circ$ repeated twice, in order to gather an equal
+number of responses for each angle between $0^\circ$ and
+$180^\circ$). ``Same'' pairs were created by rotating $\Xa$ by
+$\theta$; ``flipped'' pairs were first reflected $\Xa$ across the
+$y$-axis, then rotated by $\theta$.
 
 We generated five additional shapes to be used in a practice block of
 10 trials. Across these trials, there was one ``flipped'' and one
@@ -536,10 +564,10 @@ Of the 247 participants, 200 (81\%) were included in our analyses. Of
 the other 47, we excluded 10 (4\%) because of an experimental error, 6
 (2.4\%) because they had already completed a related experiment, and
 31 (12.6\%) because they failed a comprehension check, which was
-defined as correctly answering at least 85\% of stimuli with a minimum
-rotation of $0^\circ$ or $20^\circ$.  Additionally, we excluded 82
-trials for which the RT was either less than 100ms or greater than
-20s.
+defined as correctly answering at least 85\% of stimuli with a
+rotation of either $0^\circ$, $20^\circ$, or $340^\circ$.
+Additionally, we excluded 82 trials for which the RT was either less
+than 100ms or greater than 20s.
 
 For each model, we ran 50 samples for each of the 800 experimental
 stimuli. The step size parameter ($\sigma_\epsilon$) was fit to human
@@ -547,8 +575,8 @@ RTs for each of the models, resulting in $\sigma_\epsilon=0.6$ for the
 \Th{} and \Bq{} models and $\sigma_\epsilon=0.1$ for the \Oc{} and
 \Hc{} models. We also ran the models under two different priors,
 $p(h=0)=0.5$ (the ``equal'' prior) and $p(h=0)=0.55$ (the ``unequal''
-prior). This only had a major effect on the stopping criteria for the
-\Bq{} model.
+prior). As expected, this only had a major effect on the stopping
+criteria for the \Bq{} model.
 
 \subsubsection{General analysis}
 
@@ -625,11 +653,10 @@ minimum angle and accuracy.
 
 As noted, we fit $\sigma_\epsilon=0.6$ for the \Th{} model. This has
 the interesting effect of actually causing the \Th{} model to
-\textit{over}rotate (see Figure~\ref{fig:model-traces}). This is
-because the step size is large enough that it sometimes misses the
-global maximum, and must do another full rotation to find it. However,
-when the step size is smaller, the fit to human data is slightly
-worse.
+\textit{over}rotate. This is because the step size is large enough
+that it sometimes misses the global maximum, and must do another full
+rotation to find it. However, when the step size is smaller, the fit
+to human data is slightly worse.
 
 \subsubsection{\Hc{} model}
 
@@ -666,24 +693,29 @@ model (equal prior: \BqAccuracyCorr{}; unequal prior:
 Because the \Bq{} model relies on Equation~\ref{eq:lh-ratio} for its
 stopping criteria (as opposed to just finding a maximum), the prior
 $p(h)$ had a fairly significant effect
-(Figure~\ref{fig:response-time-accuracy}). With just a small bias of
-$p(h=0)=0.55$, there was a clear separation in RTs for ``same'' versus
-``flipped'' stimuli; this separation is similar to the trend also
-observed in human RTs. While the prior also had an effect on accuracy,
-this effect did not reflect the trends in human behavior.
+(Figure~\ref{fig:response-time-accuracy}). As expected, with just a
+small bias of $p(h=0)=0.55$, there was a clear separation in RTs for
+``same'' versus ``flipped'' stimuli: because of this bias, the model
+needed less evidence before accepting $h=0$ (thus taking less
+time). This separation is similar to the trend also observed in human
+RTs. The prior also had an effect on accuracy: the bias towards $h=0$
+meant that the model was more likely to judge a pair as ``same'',
+thus, accuracy increased for ``same'' pairs, but decreased for
+``flipped'' pairs. However, this effect on accuracy did not reflect
+the trends in human behavior.
 
 \section{Discussion}
 
 \begin{figure}[t]
   \begin{center}
     \includegraphics[width=0.48\textwidth]{../../figures/D/response_time_stimulus.pdf}
-    \caption{\textbf{Typical RT curves for a single shape.}  These
-      plots correspond to the shape shown in
-      Figure~\ref{fig:model-traces}. Left: human curves are either
-      linear (as with the ``same'' pairs), or linear and then flat (as
-      with the ``flipped'' pairs). Middle: the \Th{} model does not
-      have a reliably monotonic relationship with rotation. Right: the
-      \Bq{} model is roughly linear.}
+    \caption{\textbf{Typical RT curves for a single object.}  These
+      plots correspond to the object shown in
+      Figure~\ref{fig:shapes}. Left: human curves are either linear
+      (as with the ``same'' pairs), or linear and then flat (as with
+      the ``flipped'' pairs). Middle: the \Th{} model does not have a
+      reliably monotonic relationship with rotation. Right: the \Bq{}
+      model is roughly linear.}
     \label{fig:response-time-stimulus}
   \end{center}
 \end{figure}
@@ -735,9 +767,9 @@ understanding of \textit{what} people choose to simulate.
 
 %% TODO: Uncomment this for final version:
 
-% \section{Acknowledgments}
-% {\small This research was supported by ONR MURI grant number
-% N00014-13-1-0341, and a Berkeley Fellowship awarded to JBH. }
+\section{Acknowledgments} {\small This research was supported by ONR
+  MURI grant number N00014-13-1-0341, and a Berkeley Fellowship
+  awarded to JBH. }
 
 \bibliographystyle{apacite}
 \renewcommand{\bibliographytypesize}{\small}
