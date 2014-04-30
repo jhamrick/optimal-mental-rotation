@@ -248,16 +248,17 @@ $p(h\ \vert\ X_a, X_b) \propto \int p(X_b\ \vert\ X_a, \theta,
 h)p(h)p(\theta)\dif\theta$,
 where $p(X_b\ \vert\ X_a, \theta, h)$ is the probability that $X_b$
 was generated from $X_a$. Because we want to determine which
-hypothesis is more likely, the quantity of interest is a ratio
-$\ell:=p(\hi\ \vert\ X_a, X_b) / p(\hf\ \vert\ X_a, X_b)$ which
+hypothesis is more likely, the quantity of interest is a posterior
+odds ratio
+$\mathcal{B}:=p(\hi\ \vert\ X_a, X_b) / p(\hf\ \vert\ X_a, X_b)$ which
 (assuming that all rotations are equally likely) is equivalent to:
 \begin{equation}
-  \ell = \frac{\left(\int p(X_b\ \vert\ X_a, \theta, \hi)\dif\theta\right)\cdot{}p_0}{\left(\int p(X_b\ \vert\ X_a, \theta, \hf)\dif\theta\right)\cdot{}p_1},
-  \label{eq:lh-ratio}
+  \mathcal{B} = \frac{\left(\int p(X_b\ \vert\ X_a, \theta, \hi)\dif\theta\right)\cdot{}p_0}{\left(\int p(X_b\ \vert\ X_a, \theta, \hf)\dif\theta\right)\cdot{}p_1},
+  \label{eq:odds-ratio}
 \end{equation}
-where $p_0=p(h=0)$ and $p_1=p(h=1)$, for brevity. If $\ell > 1$, then
+where $p_0=p(h=0)$ and $p_1=p(h=1)$, for brevity. If $\mathcal{B} > 1$, then
 we accept the hypothesis that the images depict the same object
-($\hi$); if $\ell < 1$, then we accept the hypothesis that the images
+($\hi$); if $\mathcal{B} < 1$, then we accept the hypothesis that the images
 depict flipped objects ($\hf$).
 
 \subsection{Algorithmic constraints}
@@ -314,14 +315,14 @@ where $\epsilon\sim \left|\mathcal{N}(0, \sigma_\epsilon^2)\right|$
 and $\sigma_\epsilon^2$ is the variance of the step size.
 
 To summarize, we approximate the likelihood term of
-Equation~\ref{eq:lh-ratio} using the similarity function defined in
+Equation~\ref{eq:odds-ratio} using the similarity function defined in
 Equation~\ref{eq:similarity}. Because we assume mental rotations are
 performed sequentially, this similarity can only be computed for the
 actions listed in Equation~\ref{eq:actions}.
 
 \subsection{Specific models of mental rotation}
 
-In order to approximate Equation~\ref{eq:lh-ratio} using samples of
+In order to approximate Equation~\ref{eq:odds-ratio} using samples of
 the similarity function, we must decide \textit{which} places to
 sample and \textit{when} stop sampling. The models below differ in how
 they make these decisions.
@@ -342,11 +343,11 @@ $(\Xa\F_h^T)_\mathrm{left}^{-1}$ is the left inverse of
 $\Xa\F_h^T$. We then check each $h$ to see if the computation produces
 a valid rotation matrix; the $h$ that does is the correct
 hypothesis. This gives us the true value of $\theta$, so
-Equation~\ref{eq:lh-ratio} becomes a generalized likelihood ratio
+Equation~\ref{eq:odds-ratio} becomes a generalized likelihood ratio
 test, where $\theta$ is set to the MLE value, rather than being
 marginalized:
 \begin{equation}
-  \ell = \frac{\max_\theta p(\Xb\ \vert\ \Xa, \theta, \hi)\cdot{}p_0}{\max_\theta p(\Xb\ \vert\ \Xa, \theta, \hf)\cdot{}p_1}.
+  \mathcal{B} = \frac{\max_\theta p(\Xb\ \vert\ \Xa, \theta, \hi)\cdot{}p_0}{\max_\theta p(\Xb\ \vert\ \Xa, \theta, \hf)\cdot{}p_1}.
   \label{eq:mle-lh-ratio}
 \end{equation}
 
@@ -408,10 +409,10 @@ choose when to flip.
 
 While the previous few models all focused on \textit{searching} for
 the global maximum, we need only \textit{approximate}
-Equation~\ref{eq:lh-ratio}. We hypothesize a model based on the idea
+Equation~\ref{eq:odds-ratio}. We hypothesize a model based on the idea
 of \textit{active sampling} \cite<e.g.,>{Gureckis:2012gu}: instead of
 searching for a maximum, we maintain a probability distribution over
-our \textit{estimate} of Equation~\ref{eq:lh-ratio}, and then sample
+our \textit{estimate} of Equation~\ref{eq:odds-ratio}, and then sample
 actions which are expected to improve that estimate.  This strategy
 has the benefits that it does not make assumptions about the scale of
 the similarity function; and, by choosing to sample places which are
@@ -445,8 +446,8 @@ Assuming independence, we can now write
 $p(Z_h)\approx\mathcal{N}(Z_h\ \vert\ \mathbb{E}[Z_h],
 \mathbb{V}(Z_h))$,
 which gives us a distribution over the likelihood ratio in
-Equation~\ref{eq:lh-ratio}:
-$p(\ell)\approx\mathcal{N}(Z_0\ \vert\ \mathbb{E}[Z_0],
+Equation~\ref{eq:odds-ratio}:
+$p(\mathcal{B})\approx\mathcal{N}(Z_0\ \vert\ \mathbb{E}[Z_0],
 \mathbb{V}(Z_0))\cdot{}p_0/\mathcal{N}(Z_1\ \vert\ \mathbb{E}[Z_1],
 \mathbb{V}(Z_1))\cdot{}p_1$.
 This distribution cannot easily be calculated, but we are only
@@ -670,7 +671,7 @@ there were \BqNumChance{} stimuli for which it was not above chance;
 with the unequal prior, there were \BqpNumChance{}. The correlation
 with people's accuracy was \BqAccuracyCorr{} (equal prior) and
 \BqpAccuracyCorr{} (unequal prior).\\
-\indent Because the \Bq{} model relies on Equation~\ref{eq:lh-ratio}
+\indent Because the \Bq{} model relies on Equation~\ref{eq:odds-ratio}
 for its stopping criteria (as opposed to just finding a maximum), the
 prior $p(h)$ had an observable effect
 (Figure~\ref{fig:response-time-accuracy}). As expected, with just a
