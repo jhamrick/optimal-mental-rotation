@@ -99,7 +99,7 @@
   aspects of human behavior. The fourth is based on the idea
   \textit{active sampling} \cite<e.g.,>{Gureckis:2012gu}, which is a
   strategy of choosing actions that will provide the most
-  informative. This last model provides a plausible account of how
+  information. This last model provides a plausible account of how
   people use mental rotation, where the other models do not. Based on
   these results, we suggest that the question of ``what to simulate?''
   is more difficult than has previously been assumed, and that an
@@ -135,15 +135,15 @@ rotate the objects?  And finally, how do people know how long to
 rotate?
 
 In this paper, we explore these questions through rational analysis
-\cite{Marr:1983to,Anderson:1990,Shepard:1987tt} and compare four models
-of mental rotation. We begin the paper by discussing the previous
-literature on mental imagery. Next, we outline computational- and
-algorithmic-level analyses of the problem of mental rotation.  We then
-describe a behavioral experiment based on the classic mental rotation
-studies \cite<e.g.,>{Cooper:1975wp}, and compare the results of our
-experiment with each of the models. We conclude with a discussion of
-the strengths and weaknesses of each model, and lay out directions for
-future work.
+\cite{Marr:1983to,Anderson:1990,Shepard:1987tt} and compare four
+models of mental rotation. We begin the paper by discussing the
+previous literature on mental imagery. Next, we outline computational-
+and algorithmic-level analyses of the problem of mental rotation.  We
+then describe a behavioral experiment based on the classic mental
+rotation studies \cite<e.g.,>{Cooper:1975wp}, and compare the results
+of our experiment with each of the models. We conclude with a
+discussion of the strengths and weaknesses of each model, and lay out
+directions for future work.
 
 \section{Modeling mental rotation}
 
@@ -178,7 +178,7 @@ even rotate \textit{away} from near perfect matches
 If people are not computing the rotation beforehand, what might they
 be doing? To answer this question, we perform a rational analysis of
 the problem of mental rotation
-\cite{Marr:1983to,anderson90,Shepard:1987tt}. At the computational
+\cite{Marr:1983to,Anderson:1990,Shepard:1987tt}. At the computational
 level, we can say that the \textit{problem} is to determine which
 spatial transformations an object has undergone based on two images of
 that object (which do not include information about point
@@ -295,7 +295,7 @@ matrix. Then:
 where $2N$ is the total number of possible mappings,\footnote{It is
   $2N$ and not $N^2$ because, in polar coordinates, vertices are
   always connected to their two nearest neighbors in the $\theta$
-  dimension.}and $\sigma_S^2=0.15$ is the variance of the
+  dimension.} and $\sigma_S^2=0.15$ is the variance of the
 similarity. Example similarity curves are shown in
 Figure~\ref{fig:shapes}.
 
@@ -587,14 +587,14 @@ comparisons.
 
 \subsubsection{Human}
 
-The average RT across all correctly-judged stimuli was \ExpTime{} ms;
-the full histogram of RTs can be seen in
-Figure~\ref{fig:histograms}. The minimum angle of rotation was
-significantly rank-order (Spearman) correlated with average
-per-stimulus RTs, both for ``flipped'' (\ExpThetaTimeCorrFlipped{})
-and ``same'' pairs (\ExpThetaTimeCorrSame{}). While this replicates
-the general result of previous experiments
-\cite<e.g.,>{Shepard1971,Cooper:1975wp}, our results are not as linear
+The average RT across all correctly-judged stimuli was \ExpTime{}; the
+full histogram of RTs can be seen in Figure~\ref{fig:histograms}. The
+minimum angle of rotation was significantly rank-order (Spearman)
+correlated with average per-stimulus RTs, both for ``flipped''
+(\ExpThetaTimeCorrFlipped{}) and ``same'' pairs
+(\ExpThetaTimeCorrSame{}). While this replicates the general result of
+previous experiments \cite<e.g.,>{Shepard1971,Cooper:1975wp}, our
+results are not as linear
 (Figure~\ref{fig:response-time-accuracy}).\\
 \indent The average accuracy across all stimuli was \ExpAccuracy{},
 though there were \ExpNumChance{} stimuli (out of 720) for which
@@ -755,6 +755,7 @@ understanding of \textit{what} people choose to simulate.
 \renewcommand{\bibliographytypesize}{\small}
 \setlength{\bibleftmargin}{.125in}
 \setlength{\bibindent}{-\bibleftmargin}
+\vspace{-0.27cm}
 \bibliography{references}
 
 \end{document}
