@@ -107,13 +107,16 @@ def X0():
 def sim_params(request, tmproot):
     # TODO: if there are issues with clean up, might have to fix scope
     params = {}
+    params["model"] = "TestModel"
+    params["version"] = "A"
     params["tasks_path"] = tmproot.joinpath("tasks.json")
     params["completed_path"] = tmproot.joinpath("completed.json")
     params["sim_root"] = tmproot
-    params["stim_paths"] = tmproot
-    params["num_samples"] = 10
-    params["chunksize"] = 2
-    params["model_opts"] = ''
+    params["stim_paths"] = ["tests/stimuli/test-example/example_320_0.json",
+                            "tests/stimuli/test-example/example_320_1.json"]
+    params["num_samples"] = 2
+    params["chunksize"] = 3
+    params["model_opts"] = {"S_sigma": [1, 2, 3], "step": [123], "prior": [123]}
     params["loglevel"] = "INFO"
     return params
 
