@@ -31,7 +31,7 @@ def run(data, results_path, seed):
         for model, stats in results.iterrows():
             cmd = util.newcommand(
                 "%sTime" % model.capitalize(),
-                util.latex_mean.format(**dict(stats)))
+                util.latex_msec.format(**dict(stats)))
             fh.write(cmd)
 
     return pth

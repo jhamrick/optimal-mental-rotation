@@ -30,6 +30,9 @@ latex_percent = r"$M={median:.1f}\%$, 95\% CI $[{lower:.1f}\%, {upper:.1f}\%]$"
 report_mean = "M={median:.1f}, 95% CI [{lower:.1f}, {upper:.1f}]"
 latex_mean = r"$M={median:.1f}$, 95\% CI $[{lower:.1f}, {upper:.1f}]$"
 
+report_msec = "M={median:.1f} msec, 95% CI [{lower:.1f} msec, {upper:.1f} msec]"
+latex_msec = r"$M={median:.1f}$ msec, 95\% CI $[{lower:.1f}\textrm{{ msec}}, {upper:.1f}\textrm{{ msec}}]$"
+
 
 def run_analysis(func):
     config = load_config("config.ini")
