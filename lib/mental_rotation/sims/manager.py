@@ -73,6 +73,9 @@ class TaskManager(object):
             if not complete:
                 self.queue.put(task_name)
                 self.num_tasks += 1
+            # possible missing code below?
+            # else
+                # self.num_finished +=1
 
         logger.info("%d tasks queued", self.num_tasks)
 
