@@ -1,3 +1,0 @@
-[submodule "code/snippets"]
-	path = code/snippets
-	url = git@github.com:jhamrick/python-snippets.git
