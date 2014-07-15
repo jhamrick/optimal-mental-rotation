@@ -276,9 +276,9 @@ def make_plot(func):
     print func(results_path, fig_path)
 
 
-def save_video(anim, filename, show=True):
+def save_video(anim, filename, show=True, fps=10):
     anim.save(
-        filename, fps=10,
+        filename, fps=fps,
         extra_args=['-vcodec', 'libx264', '-pix_fmt', 'yuv420p'])
     plt.close(anim._fig)
 
