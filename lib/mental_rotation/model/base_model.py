@@ -244,10 +244,10 @@ class BaseModel(object):
             markersize=8,
             label="flipped ($h=1$)")
         curr_line, = ax1.plot([], [], 'k-', alpha=0.5)
-        Xa, = ax2.plot([], [], 'k-', lw=2)
-        Xb1, = ax3.plot([], [], 'k-', lw=2)
-        Xb2, = ax2.plot([], [], 'k-', alpha=0.2, lw=2)
-        lines = [line0, line1, curr_line, Xa, Xb1, Xb2]
+        Xa, = ax2.plot([], [], 'k-', alpha=0.2, lw=2)
+        Xr, = ax2.plot([], [], 'k-', lw=2)
+        Xb, = ax3.plot([], [], 'k-', lw=2)
+        lines = [line0, line1, curr_line, Xa, Xr, Xb]
 
         ymin = 0
         ymax = 0.14
@@ -284,13 +284,19 @@ class BaseModel(object):
             for line in lines:
                 line.set_data([], [])
 
+            v = self.model['Xa'].value.copy()
+            X = np.empty((v.shape[0] + 1, 2))
+            X[:-1] = v
+            X[-1] = v[0]
+
+            Xa.set_data(X[:, 0], X[:, 1])
+
             v = self.model['Xb'].value.copy()
             X = np.empty((v.shape[0] + 1, 2))
             X[:-1] = v
             X[-1] = v[0]
 
-            Xb1.set_data(X[:, 0], X[:, 1])
-            Xb2.set_data(X[:, 0], X[:, 1])
+            Xb.set_data(X[:, 0], X[:, 1])
 
             return lines
 
@@ -314,7 +320,7 @@ class BaseModel(object):
             X[:-1] = v
             X[-1] = v[0]
 
-            Xa.set_data(X[:, 0], X[:, 1])
+            Xr.set_data(X[:, 0], X[:, 1])
 
             return lines
 
