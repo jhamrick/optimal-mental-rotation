@@ -382,9 +382,10 @@ class BayesianQuadratureModel(BaseModel):
 
         R = np.linspace(-np.pi, np.pi, 1000)
 
-        ax1 = plt.subplot2grid((2, 3), (0, 0), colspan=2, rowspan=2)
-        ax2 = plt.subplot2grid((2, 3), (0, 2))
-        ax3 = plt.subplot2grid((2, 3), (1, 2))
+        ax1 = plt.subplot2grid((3, 4), (0, 0), colspan=3, rowspan=3)
+        ax2 = plt.subplot2grid((3, 4), (0, 3))
+        ax3 = plt.subplot2grid((3, 4), (1, 3))
+        ax4 = plt.subplot2grid((3, 4), (2, 3))
         fig = plt.gcf()
 
         line0, = ax1.plot([], [], 'r-', lw=2)
@@ -398,9 +399,9 @@ class BayesianQuadratureModel(BaseModel):
             markersize=8,
             label="flipped ($h=1$)")
         curr_line, = ax1.plot([], [], 'k-', alpha=0.5)
-        Xa, = ax2.plot([], [], 'k-', alpha=0.2, lw=2)
-        Xr, = ax2.plot([], [], 'k-', lw=2)
-        Xb, = ax3.plot([], [], 'k-', lw=2)
+        Xa, = ax2.plot([], [], 'k-', lw=2)
+        Xr, = ax3.plot([], [], 'k-', lw=2)
+        Xb, = ax4.plot([], [], 'k-', lw=2)
         lines = [line0, line1, points0, points1, curr_line, Xa, Xr, Xb]
 
         ymin = 0
@@ -421,7 +422,7 @@ class BayesianQuadratureModel(BaseModel):
         ax1.tick_params(direction='out')
         ax1.tick_params(axis='both', which='major', labelsize=14)
 
-        for ax in [ax2, ax3]:
+        for ax in [ax2, ax3, ax4]:
             ax.set_xticks([])
             ax.set_xticklabels([])
             ax.set_yticks([])
@@ -429,6 +430,10 @@ class BayesianQuadratureModel(BaseModel):
             ax.axis([-1, 1, -1, 1])
             ax.set_aspect('equal')
             ax.axis('off')
+
+        ax2.text(1.5, 0, "$X_a$", fontsize=24)
+        ax3.text(1.5, 0, "$X_{R,F}$", fontsize=24)
+        ax4.text(1.5, 0, "$X_b$", fontsize=24)
 
         fig.set_figwidth(10)
         fig.set_figheight(6)
