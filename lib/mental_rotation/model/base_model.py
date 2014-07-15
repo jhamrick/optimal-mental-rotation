@@ -5,8 +5,10 @@ import scipy.stats
 import tarfile
 import tempfile
 
+from matplotlib import animation
 from path import path
 from . import model
+from .. import Stimulus2D
 
 
 class BaseModel(object):
@@ -82,7 +84,7 @@ class BaseModel(object):
 
         if self.status == "done":
             self._finish()
-            
+
     def loop(self):
         while self._current_iter < self._iter and self.status == 'running':
             self.draw()
@@ -222,6 +224,108 @@ class BaseModel(object):
             ax.legend(
                 [p0, p1], ["$h=0$", "$h=1$"],
                 frameon=False, numpoints=1, fontsize=12)
+
+    def animate(self, interval=1):
+        R_i = self.R_i
+        F_i = self.F_i
+        S_i = self.S_i
+
+        ax1 = plt.subplot2grid((2, 3), (0, 0), colspan=2, rowspan=2)
+        ax2 = plt.subplot2grid((2, 3), (0, 2))
+        ax3 = plt.subplot2grid((2, 3), (1, 2))
+        fig = plt.gcf()
+
+        line0, = ax1.plot(
+            [], [], 'ro',
+            markersize=8,
+            label="same ($h=0$)")
+        line1, = ax1.plot(
+            [], [], 'bo',
+            markersize=8,
+            label="flipped ($h=1$)")
+        curr_line, = ax1.plot([], [], 'k-', alpha=0.5)
+        Xa, = ax2.plot([], [], 'k-', lw=2)
+        Xb1, = ax3.plot([], [], 'k-', lw=2)
+        Xb2, = ax2.plot([], [], 'k-', alpha=0.2, lw=2)
+        lines = [line0, line1, curr_line, Xa, Xb1, Xb2]
+
+        ymin = 0
+        ymax = 0.14
+
+        ax1.legend(loc="upper left", fontsize=14, frameon=False)
+        ax1.set_xlim(-np.pi, np.pi)
+        ax1.set_xticks([-np.pi, -np.pi / 2., 0.0, np.pi / 2.0, np.pi])
+        ax1.set_xticklabels([-180, -90, 0, 90, 180])
+        ax1.set_ylim(ymin, ymax)
+        ax1.set_xlabel("Rotation", fontsize=16)
+        ax1.set_ylabel("Similarity", fontsize=16)
+
+        ax1.spines['top'].set_color('none')
+        ax1.xaxis.set_ticks_position('bottom')
+        ax1.spines['right'].set_color('none')
+        ax1.yaxis.set_ticks_position('left')
+        ax1.tick_params(direction='out')
+        ax1.tick_params(axis='both', which='major', labelsize=14)
+
+        for ax in [ax2, ax3]:
+            ax.set_xticks([])
+            ax.set_xticklabels([])
+            ax.set_yticks([])
+            ax.set_yticklabels([])
+            ax.axis([-1, 1, -1, 1])
+            ax.set_aspect('equal')
+            ax.axis('off')
+
+        fig.set_figwidth(10)
+        fig.set_figheight(6)
+        plt.subplots_adjust(bottom=0.2)
+
+        def init():
+            for line in lines:
+                line.set_data([], [])
+
+            v = self.model['Xb'].value.copy()
+            X = np.empty((v.shape[0] + 1, 2))
+            X[:-1] = v
+            X[-1] = v[0]
+
+            Xb1.set_data(X[:, 0], X[:, 1])
+            Xb2.set_data(X[:, 0], X[:, 1])
+
+            return lines
+
+        def plot(i):
+            ix0 = np.nonzero(F_i[:(i + 1)] == 0)
+            ix1 = np.nonzero(F_i[:(i + 1)] == 1)
+            R0 = R_i[ix0]
+            S0 = S_i[ix0]
+            R1 = R_i[ix1]
+            S1 = S_i[ix1]
+            lines[0].set_data(R0, S0)
+            lines[1].set_data(R1, S1)
+
+            curr_line.set_data([R_i[i], R_i[i]], [ymin, ymax])
+
+            v = self.model['Xa'].value.copy()
+            if F_i[i] == 1:
+                Stimulus2D._flip(v, np.array([0, 1]))
+            Stimulus2D._rotate(v, np.degrees(R_i[i]))
+            X = np.empty((v.shape[0] + 1, 2))
+            X[:-1] = v
+            X[-1] = v[0]
+
+            Xa.set_data(X[:, 0], X[:, 1])
+
+            return lines
+
+        anim = animation.FuncAnimation(
+            fig, plot,
+            init_func=init,
+            frames=len(R_i),
+            interval=interval,
+            blit=False)
+
+        return anim
 
     ##################################################################
     # Misc

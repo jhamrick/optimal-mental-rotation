@@ -8,8 +8,10 @@ import pickle
 
 from bayesian_quadrature import BQ
 from gp import PeriodicKernel
+from matplotlib import animation
 
 from . import BaseModel
+from .. import Stimulus2D
 
 logger = logging.getLogger("mental_rotation.model.bq")
 
@@ -372,6 +374,128 @@ class BayesianQuadratureModel(BaseModel):
         lines['points'] = ax.plot(Ri, Si, 'o', markersize=5, color=color)
 
         return lines
+
+    def animate(self, interval=1):
+        self._current_iter = 0
+        self._init_traces()
+        self.status = 'running'
+
+        R = np.linspace(-np.pi, np.pi, 1000)
+
+        ax1 = plt.subplot2grid((2, 3), (0, 0), colspan=2, rowspan=2)
+        ax2 = plt.subplot2grid((2, 3), (0, 2))
+        ax3 = plt.subplot2grid((2, 3), (1, 2))
+        fig = plt.gcf()
+
+        line0, = ax1.plot([], [], 'r-', lw=2)
+        line1, = ax1.plot([], [], 'b-', lw=2)
+        points0, = ax1.plot(
+            [], [], 'ro',
+            markersize=8,
+            label="same ($h=0$)")
+        points1, = ax1.plot(
+            [], [], 'bo',
+            markersize=8,
+            label="flipped ($h=1$)")
+        curr_line, = ax1.plot([], [], 'k-', alpha=0.5)
+        Xa, = ax2.plot([], [], 'k-', lw=2)
+        Xb1, = ax3.plot([], [], 'k-', lw=2)
+        Xb2, = ax2.plot([], [], 'k-', alpha=0.2, lw=2)
+        lines = [line0, line1, points0, points1, curr_line, Xa, Xb1, Xb2]
+
+        ymin = 0
+        ymax = 0.14
+
+        ax1.legend(loc="upper left", fontsize=14, frameon=False)
+        ax1.set_xlim(-np.pi, np.pi)
+        ax1.set_xticks([-np.pi, -np.pi / 2., 0.0, np.pi / 2.0, np.pi])
+        ax1.set_xticklabels([-180, -90, 0, 90, 180])
+        ax1.set_ylim(ymin, ymax)
+        ax1.set_xlabel("Rotation", fontsize=16)
+        ax1.set_ylabel("Similarity", fontsize=16)
+
+        ax1.spines['top'].set_color('none')
+        ax1.xaxis.set_ticks_position('bottom')
+        ax1.spines['right'].set_color('none')
+        ax1.yaxis.set_ticks_position('left')
+        ax1.tick_params(direction='out')
+        ax1.tick_params(axis='both', which='major', labelsize=14)
+
+        for ax in [ax2, ax3]:
+            ax.set_xticks([])
+            ax.set_xticklabels([])
+            ax.set_yticks([])
+            ax.set_yticklabels([])
+            ax.axis([-1, 1, -1, 1])
+            ax.set_aspect('equal')
+            ax.axis('off')
+
+        fig.set_figwidth(10)
+        fig.set_figheight(6)
+        plt.subplots_adjust(bottom=0.2)
+
+        def init():
+            for line in lines:
+                line.set_data([], [])
+
+            v = self.model['Xb'].value.copy()
+            X = np.empty((v.shape[0] + 1, 2))
+            X[:-1] = v
+            X[-1] = v[0]
+
+            Xb1.set_data(X[:, 0], X[:, 1])
+            Xb2.set_data(X[:, 0], X[:, 1])
+
+            return lines
+
+        def plot(i):
+            if self.status != 'running':
+                return lines
+
+            i = self._current_iter
+
+            self.draw()
+            self.tally()
+            self._current_iter += 1
+
+            if (self.F_i == 0).any():
+                S0 = self.S(R, 0)
+                line0.set_data(R, S0)
+            if (self.F_i == 1).any():
+                S1 = self.S(R, 1)
+                line1.set_data(R, S1)
+
+            ix0 = np.nonzero(self.F_i[:(i + 1)] == 0)
+            ix1 = np.nonzero(self.F_i[:(i + 1)] == 1)
+            R0 = self.R_i[ix0]
+            S0 = self.S_i[ix0]
+            R1 = self.R_i[ix1]
+            S1 = self.S_i[ix1]
+            points0.set_data(R0, S0)
+            points1.set_data(R1, S1)
+
+            curr_line.set_data([self.R_i[i], self.R_i[i]], [ymin, ymax])
+
+            v = self.model['Xa'].value.copy()
+            if self.F_i[i] == 1:
+                Stimulus2D._flip(v, np.array([0, 1]))
+            Stimulus2D._rotate(v, np.degrees(self.R_i[i]))
+            X = np.empty((v.shape[0] + 1, 2))
+            X[:-1] = v
+            X[-1] = v[0]
+
+            Xa.set_data(X[:, 0], X[:, 1])
+
+            return lines
+
+        anim = animation.FuncAnimation(
+            fig, plot,
+            init_func=init,
+            frames=50,
+            interval=interval,
+            blit=False)
+
+        return anim
 
     ##################################################################
     # Misc

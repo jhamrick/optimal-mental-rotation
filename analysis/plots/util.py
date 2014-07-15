@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import os
 import sys
 from path import path
+from IPython.display import HTML
+from base64 import b64encode
 
 from mental_rotation.analysis import load_human, load_all, zscore
 
@@ -272,3 +274,15 @@ def make_plot(func):
     results_path = path(config.get("paths", "results")).joinpath(version)
     fig_path = path(config.get("paths", "figures")).joinpath(version)
     print func(results_path, fig_path)
+
+
+def save_video(anim, filename, show=True):
+    anim.save(
+        filename, fps=10,
+        extra_args=['-vcodec', 'libx264', '-pix_fmt', 'yuv420p'])
+    plt.close(anim._fig)
+
+    video = open(filename, "rb").read()
+    video_encoded = b64encode(video)
+    video_tag = '<video controls alt="test" src="data:video/x-m4v;base64,{0}">'.format(video_encoded)
+    return HTML(data=video_tag)
