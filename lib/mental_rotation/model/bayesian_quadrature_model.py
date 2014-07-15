@@ -436,7 +436,7 @@ class BayesianQuadratureModel(BaseModel):
         ax4.text(1.5, 0, "$X_b$", fontsize=24)
 
         fig.set_figwidth(10)
-        fig.set_figheight(6)
+        fig.set_figheight(7)
         plt.subplots_adjust(bottom=0.2)
 
         def init():

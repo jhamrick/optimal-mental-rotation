@@ -59,9 +59,10 @@ class GoldStandardModel(BaseModel):
         F_i = self.F_i
         S_i = self.S_i
 
-        ax1 = plt.subplot2grid((2, 3), (0, 0), colspan=2, rowspan=2)
-        ax2 = plt.subplot2grid((2, 3), (0, 2))
-        ax3 = plt.subplot2grid((2, 3), (1, 2))
+        ax1 = plt.subplot2grid((3, 4), (0, 0), colspan=3, rowspan=3)
+        ax2 = plt.subplot2grid((3, 4), (0, 3))
+        ax3 = plt.subplot2grid((3, 4), (1, 3))
+        ax4 = plt.subplot2grid((3, 4), (2, 3))
         fig = plt.gcf()
 
         line0, = ax1.plot(
@@ -71,9 +72,10 @@ class GoldStandardModel(BaseModel):
             [], [], 'b-', lw=2,
             label="flipped ($h=1$)")
         curr_line, = ax1.plot([], [], 'k-', alpha=0.5)
-        Xr, = ax2.plot([], [], 'k-', lw=2)
-        Xb, = ax3.plot([], [], 'k-', lw=2)
-        lines = [line0, line1, curr_line, Xr, Xb]
+        Xa, = ax2.plot([], [], 'k-', lw=2)
+        Xr, = ax3.plot([], [], 'k-', lw=2)
+        Xb, = ax4.plot([], [], 'k-', lw=2)
+        lines = [line0, line1, curr_line, Xa, Xr, Xb]
 
         ymin = 0
         ymax = 0.14
@@ -93,7 +95,7 @@ class GoldStandardModel(BaseModel):
         ax1.tick_params(direction='out')
         ax1.tick_params(axis='both', which='major', labelsize=14)
 
-        for ax in [ax2, ax3]:
+        for ax in [ax2, ax3, ax4]:
             ax.set_xticks([])
             ax.set_xticklabels([])
             ax.set_yticks([])
@@ -102,13 +104,24 @@ class GoldStandardModel(BaseModel):
             ax.set_aspect('equal')
             ax.axis('off')
 
+        ax2.text(1.5, 0, "$X_a$", fontsize=24)
+        ax3.text(1.5, 0, "$X_{R,F}$", fontsize=24)
+        ax4.text(1.5, 0, "$X_b$", fontsize=24)
+
         fig.set_figwidth(10)
-        fig.set_figheight(6)
+        fig.set_figheight(7)
         plt.subplots_adjust(bottom=0.2)
 
         def init():
             for line in lines:
                 line.set_data([], [])
+
+            v = self.model['Xa'].value.copy()
+            X = np.empty((v.shape[0] + 1, 2))
+            X[:-1] = v
+            X[-1] = v[0]
+
+            Xa.set_data(X[:, 0], X[:, 1])
 
             v = self.model['Xb'].value.copy()
             X = np.empty((v.shape[0] + 1, 2))
