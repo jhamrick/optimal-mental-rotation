@@ -35,11 +35,11 @@ def load_human(version, data_path):
 
     # remove trials where people took a ridiculous amount of time
     # (i.e., greater than 20 seconds) or they took way too little time
-    too_long = exp.index[(exp['time'] > 20000) | (exp['time'] < 100)]
-    logger.warn(
-        "Excluding %d/%d trials from analysis",
-        len(too_long), len(exp))
-    exp = exp.drop(too_long)
+    confint = np.percentile(exp['time'].dropna(), [0.5, 99.5])
+    good = (exp['time'] > confint[0]) & (exp['time'] < confint[1])
+    logger.warn("99% confidence interval is {}".format(confint))
+    logger.warn("Dropping {:d} ({:.2%}) bad trials".format(len(good) - good.sum(), (len(good) - good.sum()) / float(len(good))))
+    exp = exp[good]
 
     # compute correct responses
     exp.loc[:, 'correct'] = exp['flipped'] == exp['response']
@@ -100,12 +100,12 @@ def load_all(version, data_path, human=None):
     return data
 
 
-def bootstrap_mean(x, nsamples=1000):
+def bootstrap(x, nsamples=1000, f=np.mean):
     arr = np.asarray(x)
     n, = arr.shape
     boot_idx = np.random.randint(0, n, n * nsamples)
     boot_arr = arr[boot_idx].reshape((n, nsamples))
-    boot_mean = boot_arr.mean(axis=0)
+    boot_mean = f(boot_arr, axis=0)
     stats = pd.Series(
         np.percentile(boot_mean, [2.5, 50, 97.5]),
         index=['lower', 'median', 'upper'],
@@ -113,17 +113,16 @@ def bootstrap_mean(x, nsamples=1000):
     return stats
 
 
+def bootstrap_mean(x, nsamples=1000):
+    return bootstrap(x, nsamples=nsamples, f=np.mean)
+
+
+def bootstrap_logmean(x, nsamples=1000):
+    return bootstrap(x, nsamples=nsamples, f=logmean)
+
+
 def bootstrap_median(x, nsamples=1000):
-    arr = np.asarray(x)
-    n, = arr.shape
-    boot_idx = np.random.randint(0, n, n * nsamples)
-    boot_arr = arr[boot_idx].reshape((n, nsamples))
-    boot_median = np.percentile(boot_arr, 50, axis=0)
-    stats = pd.Series(
-        np.percentile(boot_median, [2.5, 50, 97.5]),
-        index=['lower', 'median', 'upper'],
-        name=x.name)
-    return stats
+    return bootstrap(x, nsamples=nsamples, f=np.median)
 
 
 def beta(x, percentiles=None):
@@ -173,3 +172,7 @@ def bootcorr(x, y, nsamples=10000, method='pearson'):
         index=['lower', 'median', 'upper'])
 
     return stats
+
+
+def logmean(x, axis=1):
+    return np.exp(np.mean(np.log(x), axis=axis))

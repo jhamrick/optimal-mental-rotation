@@ -35,10 +35,10 @@ def run(data, results_path, seed):
 
         tm0 = df0[df0['correct']]\
             .groupby(['stimulus', 'theta', 'flipped'])['time']\
-            .apply(lambda x: 1. / (1. / x).mean())
+            .apply(util.logmean)
         tm1 = df1[df1['correct']]\
             .groupby(['stimulus', 'theta', 'flipped'])['time']\
-            .apply(lambda x: 1. / (1. / x).mean())
+            .apply(util.logmean)
 
         am0 = df0\
             .groupby(['stimulus', 'theta', 'flipped'])['correct']\

@@ -4,7 +4,7 @@ import pandas as pd
 
 from mental_rotation.analysis import load_human, load_model, load_all
 from mental_rotation.analysis import beta, bootcorr, modtheta
-from mental_rotation.analysis import bootstrap_median, bootstrap_mean
+from mental_rotation.analysis import bootstrap_median, bootstrap_mean, bootstrap_logmean
 
 
 def load_config(pth):

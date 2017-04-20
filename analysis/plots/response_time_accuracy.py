@@ -18,8 +18,8 @@ def plot(results_path, fig_path):
     }
 
     colors = {
-        'same': 'r',
-        'flipped': 'b'
+        'same': [ 0.16339869,  0.4449827 ,  0.69750096],
+        'flipped': [ 0.72848904,  0.1550173 ,  0.19738562]
     }
 
     time_results = pd.read_csv(
