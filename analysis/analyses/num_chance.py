@@ -30,7 +30,7 @@ def run(data, results_path, seed):
     results.columns = ['stimulus', 'theta', 'flipped', 'model', 'chance']
 
     pth = results_path.joinpath(filename)
-    results.to_csv(pth)
+    results.set_index("stimulus").to_csv(pth)
 
     with open(results_path.joinpath(texname), "w") as fh:
         fh.write("%% AUTOMATICALLY GENERATED -- DO NOT EDIT!\n")

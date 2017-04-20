@@ -7,10 +7,9 @@ import sys
 import tempfile
 import traceback
 import time
-
+import path
 
 from datetime import datetime
-from path import path
 from xmlrpclib import ServerProxy
 
 import mental_rotation.model as m
@@ -31,7 +30,7 @@ def simulate(task):
     stim_path = task["stim_path"]
     model_name = task["model"]
     seed = task["seed"]
-    data_path = path(task["data_path"])
+    data_path = path.Path(task["data_path"])
     model_opts = task["model_opts"]
 
     X = Stimulus2D.load(stim_path)
@@ -68,13 +67,13 @@ def worker_job(host, port):
     pandaserver = ServerProxy("http://%s:%d" % (host, port))
     while True:
         try:
-            sim_root = path(pandaserver.panda_connect())
+            sim_root = path.Path(pandaserver.panda_connect())
         except:
             time.sleep(1)
         else:
             break
 
-    tmpdir = path(tempfile.mkdtemp())
+    tmpdir = path.Path(tempfile.mkdtemp())
 
     while True:
         # get the next task from the pandaserver
@@ -112,7 +111,7 @@ def worker_job(host, port):
                     break
 
         else:
-            data_path = path(task["data_path"])
+            data_path = path.Path(task["data_path"])
             src_path = data_path.dirname().joinpath("%s.tar.gz" % task_name)
 
             # first compress the data

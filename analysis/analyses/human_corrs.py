@@ -15,7 +15,7 @@ def run(data, results_path, seed):
     exp = data['exp'].set_index(['pid', 'trial'])
 
     pids = pd.Series(exp.index.get_level_values('pid')).drop_duplicates()
-    pids.sort()
+    pids.sort_values(inplace=True)
     pids = pids.reset_index(drop=True)
 
     n = len(pids)

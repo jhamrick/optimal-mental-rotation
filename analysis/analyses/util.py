@@ -1,5 +1,5 @@
 from ConfigParser import SafeConfigParser
-from path import path
+import path
 import pandas as pd
 
 from mental_rotation.analysis import load_human, load_model, load_all
@@ -37,9 +37,9 @@ latex_msec = r"$M={median:.1f}$ msec, 95\% CI $[{lower:.1f}\textrm{{ msec}}, {up
 def run_analysis(func):
     config = load_config("config.ini")
     version = config.get("global", "version")
-    data_path = path(config.get("paths", "data"))
+    data_path = path.Path(config.get("paths", "data"))
     data = load_all(version, data_path)
-    results_path = path(config.get("paths", "results")).joinpath(version)
+    results_path = path.Path(config.get("paths", "results")).joinpath(version)
     seed = config.getint("global", "seed")
     pth = func(data, results_path, seed)
     print pth

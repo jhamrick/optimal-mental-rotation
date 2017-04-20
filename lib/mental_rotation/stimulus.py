@@ -1,7 +1,7 @@
 import numpy as np
 import json
+import path
 from copy import copy
-from path import path
 
 
 class Stimulus2D(object):
@@ -90,7 +90,7 @@ class Stimulus2D(object):
         return stim
 
     def save(self, filename, force=False):
-        filename = path(filename)
+        filename = path.Path(filename)
         if filename.exists() and not force:
             raise IOError("'%s' already exists", filename.relpath())
         state = self.__getstate__()
@@ -99,7 +99,7 @@ class Stimulus2D(object):
 
     @classmethod
     def load(cls, filename):
-        filename = path(filename)
+        filename = path.Path(filename)
         with open(filename, "r") as fh:
             state = json.load(fh)
         stim = cls.__new__(cls)

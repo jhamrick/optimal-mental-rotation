@@ -49,8 +49,6 @@ def plot(results_path, fig_path):
         util.clear_top(ax)
         util.outward_ticks(ax)
 
-        ax.set_axis_bgcolor('0.95')
-
     util.sync_xlims(axes[order.index('bq')], axes[order.index('bqp')])
 
     axes[0].set_xlim(-4, 4)

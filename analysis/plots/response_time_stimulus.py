@@ -64,7 +64,6 @@ def plot(results_path, fig_path):
         util.clear_right(ax)
         util.clear_top(ax)
         util.outward_ticks(ax)
-        ax.set_axis_bgcolor('0.95')
 
     p0 = plt.Rectangle(
         (0, 0), 1, 1,

@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import scipy.stats
 import tarfile
 import tempfile
+import path
 
-from path import path
 from . import model
 
 
@@ -282,14 +282,14 @@ class BaseModel(object):
         self.status = state['status']
 
     def save(self, loc, force=False):
-        loc = path(loc)
+        loc = path.Path(loc)
         if loc.exists() and not force:
             raise IOError("path %s already exists" % loc.abspath())
         elif loc.exists() and force:
             loc.remove()
 
         tar = tarfile.open(loc, "w")
-        tmp = path(tempfile.mkdtemp())
+        tmp = path.Path(tempfile.mkdtemp())
 
         state = self.__getstate__()
         traces = state['_traces']
@@ -319,7 +319,7 @@ class BaseModel(object):
             tar = tarfile.open(fileobj=loc, mode="r")
 
         else:
-            loc = path(loc)
+            loc = path.Path(loc)
             if not loc.exists():
                 raise IOError("path does not exist: %s" % loc.abspath())
             tar = tarfile.open(loc, "r")
@@ -335,9 +335,9 @@ class BaseModel(object):
             elif member.name == "traces":
                 continue
 
-            elif path(member.name).dirname() == "traces":
+            elif path.Path(member.name).dirname() == "traces":
                 fh = tar.extractfile(member)
-                traces[path(member.name).namebase] = np.load(fh)
+                traces[path.Path(member.name).namebase] = np.load(fh)
                 fh.close()
 
             else:

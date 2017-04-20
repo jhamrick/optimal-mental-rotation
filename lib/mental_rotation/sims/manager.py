@@ -2,8 +2,8 @@ import logging
 import json
 import multiprocessing as mp
 import Queue
+import path
 
-from path import path
 from datetime import datetime, timedelta
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SocketServer import ThreadingMixIn
@@ -37,8 +37,8 @@ class TaskManager(object):
     def create_tasks(self):
         logger.debug("Creating tasks...")
 
-        tasks_file = path(self.params["tasks_path"])
-        completed_file = path(self.params["completed_path"])
+        tasks_file = path.Path(self.params["tasks_path"])
+        completed_file = path.Path(self.params["completed_path"])
 
         if tasks_file.exists() and completed_file.exists() and not self.force:
             logger.debug("Note: tasks file already exists")
@@ -56,8 +56,8 @@ class TaskManager(object):
     def load_tasks(self):
         logger.debug("Loading tasks...")
 
-        tasks_file = path(self.params["tasks_path"])
-        completed_file = path(self.params["completed_path"])
+        tasks_file = path.Path(self.params["tasks_path"])
+        completed_file = path.Path(self.params["completed_path"])
 
         self.save_lock.acquire()
         self.tasks = Tasks.load(tasks_file)
@@ -80,7 +80,7 @@ class TaskManager(object):
         logger.debug("Got request for sim_root")
 
         # send the client the path to save the data
-        return str(path(self.params['sim_root']).abspath())
+        return str(path.Path(self.params['sim_root']).abspath())
 
     def get_next_task(self):
         # process a request for a new task
@@ -103,7 +103,7 @@ class TaskManager(object):
                 "task '%s' has already been completed!" % task_name)
 
         # mark the task as done
-        completed_file = path(self.params["completed_path"])
+        completed_file = path.Path(self.params["completed_path"])
         self.completed[task_name] = True
         self.save_lock.acquire()
         self.completed.save(completed_file)

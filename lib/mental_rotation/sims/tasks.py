@@ -1,19 +1,19 @@
-from path import path
 from itertools import product
 import json
 import numpy as np
+import path
 
 
 class Tasks(dict):
 
     def save(self, filename):
-        with open(path(filename), "w") as fh:
+        with open(path.Path(filename), "w") as fh:
             json.dump(self, fh)
 
     @classmethod
     def load(cls, filename):
         tasks = cls()
-        with open(path(filename), "r") as fh:
+        with open(path.Path(filename), "r") as fh:
             tasks.update(json.load(fh))
         return tasks
 
@@ -21,7 +21,7 @@ class Tasks(dict):
     def create(cls, params):
         """Create the tasks dictionary from the parameters."""
 
-        sim_root = path(params["sim_root"])
+        sim_root = path.Path(params["sim_root"])
         if not sim_root.exists():
             sim_root.makedirs_p()
 
@@ -33,7 +33,7 @@ class Tasks(dict):
         tasks = cls()
         completed = cls()
         for istim, stim in enumerate(stim_paths):
-            stim = path(stim)
+            stim = path.Path(stim)
             rot = float(stim.namebase.split("_")[1])
             if rot in (0, 180):
                 ns = num_samples * 2

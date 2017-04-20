@@ -9,7 +9,7 @@ def plot(results_path, fig_path):
     data = pd.read_csv(
         results_path.joinpath("trial_accuracy_means.csv"))\
         .groupby('model').get_group('exp')\
-        .sort('trial')
+        .sort_values(by='trial')
 
     trials = data['trial']
     acc = data['median'] * 100
