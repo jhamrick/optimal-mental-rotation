@@ -709,7 +709,7 @@ stimulus,theta,flipped,model,chance
 3,80.0,same,th,False
 3,100.0,flipped,bq,False
 3,100.0,flipped,bqp,False
-3,100.0,flipped,exp,True
+3,100.0,flipped,exp,False
 3,100.0,flipped,hc,False
 3,100.0,flipped,oc,False
 3,100.0,flipped,th,False
@@ -2695,7 +2695,7 @@ stimulus,theta,flipped,model,chance
 12,160.0,flipped,th,False
 12,160.0,same,bq,False
 12,160.0,same,bqp,False
-12,160.0,same,exp,True
+12,160.0,same,exp,False
 12,160.0,same,hc,False
 12,160.0,same,oc,False
 12,160.0,same,th,False

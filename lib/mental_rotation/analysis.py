@@ -174,5 +174,5 @@ def bootcorr(x, y, nsamples=10000, method='pearson'):
     return stats
 
 
-def logmean(x, axis=1):
-    return np.exp(np.mean(np.log(x), axis=axis))
+def logmean(x, **kwargs):
+    return np.exp(np.mean(np.log(x), **kwargs))
