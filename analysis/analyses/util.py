@@ -19,19 +19,19 @@ def newcommand(name, val):
 
 
 report_spearman = "\rho={median:.2f}, 95% CI [{lower:.2f}, {upper:.2f}]"
-latex_spearman = r"$\rho={median:.2f}$, 95\%\ \mathrm{{CI}}\ $[{lower:.2f}, {upper:.2f}]$"
+latex_spearman = r"$\rho={median:.2f}$, 95\% CI $[{lower:.2f}, {upper:.2f}]$"
 
 report_pearson = "r={median:.2f}, 95% CI [{lower:.2f}, {upper:.2f}]"
-latex_pearson = r"$r={median:.2f}$, 95\%\ \mathrm{{CI}}\ $[{lower:.2f}, {upper:.2f}]$"
+latex_pearson = r"$r={median:.2f}$, 95\% CI $[{lower:.2f}, {upper:.2f}]$"
 
 report_percent = "M={median:.1f}%, 95% CI [{lower:.1f}%, {upper:.1f}%]"
-latex_percent = r"$M={median:.1f}\%$, 95\%\ \mathrm{{CI}}\ $[{lower:.1f}\%, {upper:.1f}\%]$"
+latex_percent = r"$M={median:.1f}\%$, 95\% CI $[{lower:.1f}\%, {upper:.1f}\%]$"
 
 report_mean = "M={median:.1f}, 95% CI [{lower:.1f}, {upper:.1f}]"
-latex_mean = r"$M={median:.1f}$, 95\%\ \mathrm{{CI}}\ $[{lower:.1f}, {upper:.1f}]$"
+latex_mean = r"$M={median:.1f}$, 95\% CI $[{lower:.1f}, {upper:.1f}]$"
 
 report_msec = "M={median:.1f} msec, 95% CI [{lower:.1f} msec, {upper:.1f} msec]"
-latex_msec = r"$M={median:.1f}$ msec, 95\%\ \mathrm{{CI}}\ $[{lower:.1f}\textrm{{ msec}}, {upper:.1f}\textrm{{ msec}}]$"
+latex_msec = r"$M={median:.1f}$ msec, 95\% CI $[{lower:.1f}\textrm{{ msec}}, {upper:.1f}\textrm{{ msec}}]$"
 
 
 def run_analysis(func):
