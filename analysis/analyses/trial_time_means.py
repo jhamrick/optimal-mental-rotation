@@ -15,7 +15,7 @@ def run(data, results_path, seed):
     for key in keys:
         df = data[key]
         times = df[df['correct']].groupby('trial')['time']
-        results[key] = times.apply(util.bootstrap_logmean(x))
+        results[key] = times.apply(util.bootstrap_logmean)
 
     results = pd.DataFrame.from_dict(results, orient='index')
     results.index.name = 'model'

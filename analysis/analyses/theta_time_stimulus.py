@@ -14,7 +14,7 @@ def run(data, results_path, seed):
     for key, df in data.iteritems():
         y = df[df['correct']].groupby(
             ['stimulus', 'modtheta', 'flipped'])['time']
-        results[key] = y.apply(util.bootstrap_logmean(x))
+        results[key] = y.apply(util.bootstrap_logmean)
 
     results = pd.DataFrame.from_dict(results)
     results.index = pd.MultiIndex.from_tuples(

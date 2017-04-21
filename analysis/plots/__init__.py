@@ -12,6 +12,8 @@ import theta_time_corrs
 import theta_accuracy_corrs
 import response_time_stimulus
 import human_model_corrs
+import response_times
+import accuracy
 
 __all__ = [
     'response_time_histograms',
@@ -25,5 +27,7 @@ __all__ = [
     'theta_time_corrs',
     'theta_accuracy_corrs',
     'response_time_stimulus',
-    'human_model_corrs'
+    'human_model_corrs',
+    'response_times',
+    'accuracy'
 ]

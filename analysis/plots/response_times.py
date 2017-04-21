@@ -8,7 +8,7 @@ import seaborn as sns
 
 
 def plot(results_path, fig_path):
-    order = ['exp', 'th', 'bqp']
+    order = ['exp', 'oc', 'th', 'hc', 'bq', 'bqp']
     titles = {
         'exp': "Human",
         'oc': "Oracle",
@@ -19,21 +19,19 @@ def plot(results_path, fig_path):
     }
 
     colors = {
-        'same': [ 0.16339869,  0.4449827 ,  0.69750096],
-        'flipped': [ 0.72848904,  0.1550173 ,  0.19738562]
+        'same': [0.16339869, 0.4449827, 0.69750096],
+        'flipped': [0.72848904, 0.1550173, 0.19738562]
     }
 
-    means = pd.read_csv(
-        results_path.joinpath("theta_time_stimulus.csv"))\
-        .set_index(['stimulus', 'flipped', 'model'])\
-        .groupby(level='stimulus').get_group(2)
+    time_results = pd.read_csv(
+        results_path.joinpath("theta_time.csv"))
 
-    fig, axes = plt.subplots(1, len(order), sharex=True)
+    fig, axes = plt.subplots(2, 3, sharex=False)
     for i, key in enumerate(order):
-        ax = axes[i]
-        df = means.groupby(level='model').get_group(key)
+        ax = axes.flat[i]
+        df = time_results.groupby('model').get_group(key)
 
-        for flipped, stats in df.groupby(level='flipped'):
+        for flipped, stats in df.groupby('flipped'):
             if key == 'exp':
                 median = stats['median'] / 1000.
                 lower = (stats['median'] - stats['lower']) / 1000.
@@ -55,13 +53,21 @@ def plot(results_path, fig_path):
         ax.set_title(titles[key])
 
         if key == "exp":
-            ax.set_yticks([0.5, 1, 1.5, 2, 2.5, 3])
-            ax.set_ylabel("Rotation")
+            ax.set_yticks([1, 1.5, 2, 2.5, 3])
+        elif key == "oc":
+            ax.set_yticks([0, 10, 20, 30, 40])
         elif key == "th":
-            ax.set_yticks([0, 10, 20, 30, 40, 50, 60])
-            ax.set_ylabel("# Steps")
+            ax.set_yticks([0, 10, 20, 30, 40])
+        elif key == "hc":
+            ax.set_yticks([10, 15, 20, 25, 30])
+        elif key == "bq":
+            ax.set_yticks([15, 20, 25, 30])
         elif key == "bqp":
-            ax.set_yticks([10, 15, 20, 25])
+            ax.set_yticks([15, 20, 25, 30])
+
+        if key == "exp":
+            ax.set_ylabel("Response Time")
+        else:
             ax.set_ylabel("# Steps")
 
     p0 = plt.Rectangle(
@@ -73,18 +79,18 @@ def plot(results_path, fig_path):
         fc=colors['flipped'],
         ec=colors['flipped'])
 
-    leg = axes.flat[0].legend(
+    leg = axes[0, 0].legend(
         [p0, p1], ["same", "flipped"],
         numpoints=1,
         loc='lower right',
         bbox_to_anchor=[1.1, 0])
 
-    fig.set_size_inches(6, 2)
     sns.despine()
+    fig.set_size_inches(6, 4)
     plt.tight_layout()
     plt.subplots_adjust(left=0.1)
 
-    pths = [fig_path.joinpath("response_time_stimulus.%s" % ext)
+    pths = [fig_path.joinpath("response_time.%s" % ext)
             for ext in ('png', 'pdf')]
     for pth in pths:
         util.save(pth, close=False)

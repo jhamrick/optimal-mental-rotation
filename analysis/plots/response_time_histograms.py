@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import util
 import pickle
 import numpy as np
+import seaborn as sns
 
 
 def plot(results_path, fig_path):
@@ -21,9 +22,9 @@ def plot(results_path, fig_path):
     with open(pth, "r") as fh:
         times = pickle.load(fh)
 
-    fig, axes = plt.subplots(1, len(order), sharey=True)
+    fig, axes = plt.subplots(2, 3, sharey=True)
     for i, key in enumerate(order):
-        ax = axes[i]
+        ax = axes.flat[i]
         bins = 200
 
         if key == 'exp':
@@ -38,26 +39,25 @@ def plot(results_path, fig_path):
         edges = edges[:101]
         hist = hist[:100]
         hist = hist * 100 / float(len(times[key]))
-        width = edges[1] - edges[0]
-        ax.bar(edges[:-1], hist, width=width, color='k')
+        ax.fill_between(edges[:-1], hist, np.zeros_like(hist), color='#666666')
 
         ax.set_xlim(0, edges[-1])
-        ax.set_title(titles[key], fontsize=14)
-        util.clear_right(ax)
-        util.clear_top(ax)
-        util.outward_ticks(ax)
+        ax.set_title(titles[key])
 
         if key == 'exp':
-            ax.set_xlabel("RT (seconds)", fontsize=14)
+            ax.set_xlabel("RT (seconds)")
         else:
-            ax.set_xlabel("Number of actions", fontsize=14)
-    axes[0].set_ylabel("Percent", fontsize=14)
+            ax.set_xlabel("Number of actions")
 
-    fig.set_figheight(2.5)
-    fig.set_figwidth(16)
+    axes[0, 0].set_ylabel("Percent")
+    axes[1, 0].set_ylabel("Percent")
 
-    plt.draw()
+    sns.despine()
+
+    fig.set_figheight(4)
+    fig.set_figwidth(6)
     plt.tight_layout()
+    plt.subplots_adjust(left=0.1)
 
     pths = [fig_path.joinpath("response_time_histograms.%s" % ext)
             for ext in ('png', 'pdf')]

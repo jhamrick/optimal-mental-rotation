@@ -263,7 +263,7 @@ def sync_ylabel_coords(axes, x, y=0.5):
         ax.yaxis.set_label_coords(x, y)
 
 
-report_pearson = r"$r$ = {median:.2f}, 95% CI [{lower:.2f}, {upper:.2f}]"
+report_pearson = r"$r = {median:.2f}, 95\%\ \mathrm{{CI}}\ [{lower:.2f}, {upper:.2f}]$"
 
 
 def make_plot(func):
